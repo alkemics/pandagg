@@ -1,0 +1,548 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import copy
+import collections
+
+from pandagg.tree import Tree
+from pandagg.utils import NestedMixin, bool_if_required
+from pandagg.aggs.agg_nodes import (
+    AggregationNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAllAggregation, BucketAggregationNode,
+    Filters, Histogram, DateHistogram
+)
+from pandagg.mapping.mapping import Mapping, TreeMapping
+from pandagg.aggs.response_tree import AggregationResponse
+
+
+class Aggregation(NestedMixin, Tree):
+    """Tree combination of aggregation nodes.
+
+    Mapping declaration is optional, but doing so validates aggregation validity.
+    """
+
+    node_class = AggregationNode
+    tree_mapping = None
+    DEFAULT_OUTPUT = 'dict'
+
+    def __init__(self, from_dict=None, mapping=None, output=DEFAULT_OUTPUT, from_tree=None):
+        super(Aggregation, self).__init__(tree=from_tree)
+        assert output in ('raw', 'dict', 'tree', 'dataframe')
+        self.output = output
+        if mapping is not None:
+            if isinstance(mapping, TreeMapping):
+                self.tree_mapping = mapping
+            elif isinstance(mapping, Mapping):
+                self.tree_mapping = mapping._tree
+            elif isinstance(mapping, dict):
+                mapping_name, mapping_detail = next(mapping.iteritems())
+                self.tree_mapping = TreeMapping(mapping_name, mapping_detail)
+            else:
+                raise NotImplementedError()
+        if from_dict is not None:
+            assert isinstance(from_dict, dict)
+            from_dict = copy.deepcopy(from_dict)
+            if len(from_dict.keys()) != 1:
+                # TODO handle this case by adding root
+                raise Exception()
+            agg_name, agg_detail = next(from_dict.iteritems())
+            self.build_tree_from_dict(agg_name, agg_detail)
+
+    def copy(self):
+        return Aggregation(mapping=self.tree_mapping, output=self.output, from_tree=self)
+
+    def build_tree_from_dict(self, agg_name, agg_detail, pid=None):
+        assert isinstance(agg_detail, dict)
+        meta = agg_detail.pop('meta', None)
+        children_aggs = agg_detail.pop('aggs', None) or agg_detail.pop('aggregations', None) or {}
+        assert len(agg_detail.keys()) == 1
+        agg_type = agg_detail.keys()[0]
+        agg_body = agg_detail.values()[0]
+        node = self.node_from_dict(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
+        self.add_node(node, pid)
+        for child_name, child_detail in children_aggs.iteritems():
+            self.build_tree_from_dict(child_name, child_detail, node.identifier)
+
+    def node_from_dict(self, agg_type, agg_name, agg_body, meta):
+        if agg_type not in PUBLIC_AGGS.keys():
+            raise NotImplementedError('Unknown aggregation type <%s>' % agg_type)
+        agg_class = PUBLIC_AGGS[agg_type]
+        kwargs = agg_class.agg_body_to_init_kwargs(agg_body)
+        return agg_class(agg_name=agg_name, meta=meta, **kwargs)
+
+    def groupby(self, by, **kwargs):
+        """Group by is available only if there is a succession of unique childs.
+
+
+        Accepts single occurence or sequence of following formats:
+        - string
+        - dict ES aggregation
+        - dict pandas like aggregation
+        - Aggregation object instance
+
+        String:
+        Interpreted as a terms aggregation counting number of documents per value occurence:
+        >>> a = Aggregation().groupby(['owner.type', 'owner.id'])
+        >>> a
+        <Aggregation>
+        owner.type
+        └── owner.id
+        >>> a.build_aggregation()
+        {
+            "owner.type": {
+                "aggs": {
+                    "owner.id": {
+                        "terms": {
+                            "field": "owner.id",
+                            "size": 20
+                        }
+                    }
+                },
+                "terms": {
+                    "field": "owner.type",
+                    "size": 20
+                }
+            }
+        }
+
+        # TODO - allow AggregationNodes objects, and regular ES dict aggs
+
+        :param by:
+        :param kwargs:
+        :return:
+        """
+        new_agg = self.copy()
+        if not new_agg.root:
+            new_agg.add_node(MatchAllAggregation('root'))
+            sub_aggs_parent_id = new_agg.root
+        else:
+            paths = new_agg.paths_to_leaves()
+            assert len(paths) == 1
+            sub_aggs_parent_id = paths[0][-1]
+
+        if isinstance(by, collections.Iterable) and not isinstance(by, basestring) and not isinstance(by, dict):
+            for arg_el in by:
+                new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
+                sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
+        else:
+            new_agg._interpret_agg(sub_aggs_parent_id, by, **kwargs)
+        return new_agg
+
+    def agg(self, arg=None, **kwargs):
+        """Horizontally adds aggregation on top of succession of unique children.
+
+        Suppose pre-existing aggregations:
+        OK: A──> B ─> C ─> NEW_AGGS
+
+        KO: A──> B
+            └──> C
+
+        Accepts single occurence or sequence of following formats:
+        - string
+        - dict ES aggregation
+        - dict pandas like aggregation
+        - Aggregation object instance
+
+        String:
+        Interpreted as a terms aggregation counting number of documents per value occurence:
+        >>> a = Aggregation().groupby(['owner.type', 'owner.id'])
+        >>> a
+        <Aggregation>
+        owner.type
+        └── owner.id
+        >>> a.agg(['validation.status', 'retailerStatus'])
+        <Aggregation>
+        owner.type
+        └── owner.id
+            ├── retailerStatus
+            └── validation.status
+        """
+        if arg is None:
+            if not self.root:
+                raise ValueError('Empty aggregation')
+            return self
+        new_agg = self.copy()
+        if not new_agg.root:
+            new_agg.add_node(MatchAllAggregation('root'))
+            sub_aggs_parent_id = new_agg.root
+        else:
+            paths = new_agg.paths_to_leaves()
+            assert len(paths) == 1
+            sub_aggs_parent_id = paths[0][-1]
+
+        if isinstance(arg, collections.Iterable) and not isinstance(arg, basestring) and not isinstance(arg, dict):
+            for arg_el in arg:
+                new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
+        else:
+            new_agg._interpret_agg(sub_aggs_parent_id, arg, **kwargs)
+        return new_agg
+
+    def _interpret_agg(self, insert_below, element, **kwargs):
+        if isinstance(element, basestring):
+            node = Terms(agg_name=element, field=element, size=kwargs.get('default_size', Terms.DEFAULT_SIZE))
+            self.add_node(node, parent=insert_below)
+            return self
+        if isinstance(element, dict):
+            # TODO - check pandas format
+            for sub_agg_name, sub_agg_detail in element.iteritems():
+                sub_agg = Aggregation(from_dict={sub_agg_name: sub_agg_detail})
+                self.paste(nid=insert_below, new_tree=sub_agg)
+            return self
+        if isinstance(element, AggregationNode):
+            assert element.AGG_TYPE in PUBLIC_AGGS.keys()
+            self.add_node(copy.deepcopy(element), parent=insert_below)
+            return self
+        if isinstance(element, Aggregation):
+            # TODO - recheck nested checks
+            self.paste_with_nested_check(
+                nid=insert_below,
+                tree=element,
+                required_nested_path=self.applied_nested_path_at_node(insert_below)
+            )
+            return self
+        raise NotImplementedError()
+
+    def build_aggregation(self, from_=None, depth=None):
+        from_ = self.root if from_ is None else from_
+        root_agg = self[from_]
+        return root_agg.build_aggregation(tree=self, depth=depth)
+
+    def path_from_to(self, parent_name, child_name):
+        path = list(self.subtree(parent_name).rsearch(child_name))
+        return list(reversed(path))
+
+    def extract_subaggs_direct(self, response, parent_name, child_name, parent_included=False):
+        # shortcut for single bucket parsing
+        agg_names = self.path_from_to(parent_name, child_name)[:-1]
+        if not parent_included:
+            agg_names = agg_names[1:]
+        for agg_name in agg_names:
+            agg_node = self[agg_name]
+            if agg_name not in response:
+                return {}
+            _, response = next(agg_node.extract_buckets(response[agg_name]))
+        return response
+
+    def applied_nested_path_at_node(self, nid):
+        applied_nested_path = None
+        # travel parent nodes from root to required node
+        for nid in reversed(list(self.rsearch(nid))):
+            node = self[nid]
+            if isinstance(node, Nested):
+                applied_nested_path = self.safe_apply_nested(applied_nested_path, node.path)
+            elif isinstance(node, ReverseNested):
+                # a reverse nested remove nested paths, except the one specified if there is one
+                applied_nested_path = self.safe_apply_outnested(applied_nested_path, node.path)
+        return applied_nested_path
+
+    def paste_multiple_with_nested_check(self, nid, *trees_with_nested_requirement):
+        """Paste multiple trees at a given node, and generating all necessary nested or reverse nested aggregations.
+        """
+        root_nid_nested = self.applied_nested_path_at_node(nid)
+
+        # apply paste on all trees currently at right level
+        trees_right_nested = [tree for tree, required_nested in trees_with_nested_requirement if required_nested == root_nid_nested]
+        for tree in trees_right_nested:
+            super(Aggregation, self).paste(nid, tree, deep=True)
+
+        # if some trees require to reverse nested, apply reverse nested to highest path (nearest to root)
+        trees_to_reverse_nest = [
+            (tree, required_nested) for tree, required_nested in trees_with_nested_requirement
+            if self.requires_outnested(root_nid_nested, required_nested)
+        ]
+        if trees_to_reverse_nest:
+            ordered_nested_path = sorted([el[1] for el in trees_to_reverse_nest])
+            common_path = self.safe_apply_outnested(root_nid_nested, ordered_nested_path[0])
+            reverse_nested_identifier = '%s_reverse_nested_below_%s' % (common_path.replace('.', '_') if common_path else 'root', nid)
+            reverse_nested_node = ReverseNested(agg_name=reverse_nested_identifier, path=common_path)
+            self.add_node(reverse_nested_node, nid)
+            self.paste_multiple_with_nested_check(reverse_nested_identifier, *trees_to_reverse_nest)
+
+        # if some trees require nested, apply nested to highest path (nearest to root)
+        trees_to_nest = [
+            (tree, required_nested) for tree, required_nested in trees_with_nested_requirement
+            if self.requires_nested(root_nid_nested, required_nested)
+        ]
+        if trees_to_nest:
+            ordered_nested_path = sorted([el[1] for el in trees_to_nest])
+            common_path = self.safe_apply_nested(root_nid_nested, ordered_nested_path[0])
+            nested_identifier = '%s_nested_below_%s' % (common_path.replace('.', '_') if common_path else 'root', nid)
+            nested_node = Nested(agg_name=nested_identifier, path=common_path)
+            self.add_node(nested_node, nid)
+            self.paste_multiple_with_nested_check(nested_identifier, *trees_to_nest)
+
+    def paste_with_nested_check(self, nid, tree, required_nested_path=None):
+        self.paste_multiple_with_nested_check(nid, (tree, required_nested_path))
+
+    def add_node(self, node, parent=None):
+        """If mapping is provided, nested and outnested are automatically applied.
+        """
+        # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
+        if isinstance(node, Nested) or isinstance(node, ReverseNested):
+            super(Aggregation, self).add_node(node, parent)
+            return self.validate(exc=True)
+
+        agg_field = node.agg_body.get('field')
+        if agg_field is None or self.tree_mapping is None:
+            return super(Aggregation, self).add_node(node, parent)
+
+        if agg_field not in self.tree_mapping:
+            raise ValueError('Agg of type <%s> on non-existing field <%s>.' % (node.AGG_TYPE, agg_field))
+
+        # from deepest to highest
+        mapping_nested_fields = list(self.tree_mapping.rsearch(agg_field, filter=lambda n: n.type == 'nested'))
+        required_nested_level = next(iter(mapping_nested_fields), None)
+        current_nested_level = self.applied_nested_path_at_node(parent)
+        if current_nested_level == required_nested_level:
+            return super(Aggregation, self).add_node(node, parent)
+        if current_nested_level and (required_nested_level or '' in current_nested_level):
+            # requires reverse-nested
+            rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % parent)
+            super(Aggregation, self).add_node(rv_node, parent)
+            return super(Aggregation, self).add_node(node, rv_node.identifier)
+
+        # requires nested - apply all required nested fields
+        for nested_lvl in reversed(mapping_nested_fields):
+            if current_nested_level != nested_lvl:
+                nested_node = Nested(agg_name='nested_below_%s' % parent, path=nested_lvl)
+                super(Aggregation, self).add_node(nested_node, parent)
+                parent = nested_node.identifier
+        super(Aggregation, self).add_node(node, parent)
+
+    @property
+    def multi_buckets_node_ids(self):
+        nids = [
+            nid for nid, node in self.nodes.iteritems() if
+            any((isinstance(node, agg_class) for agg_class in (
+                Histogram, Terms, Filters, DateHistogram
+            )))
+        ]
+        return sorted(nids, key=lambda x: self.level(x))
+
+    @property
+    def deepest_linear_bucket_agg(self):
+        if not isinstance(self[self.root], BucketAggregationNode):
+            return None
+        last_bucket_agg_name = self.root
+        children = self.children(last_bucket_agg_name)
+        while len(children) == 1:
+            last_agg = children[0]
+            if not isinstance(last_agg, BucketAggregationNode):
+                break
+            last_bucket_agg_name = last_agg.agg_name
+            children = self.children(last_bucket_agg_name)
+        return last_bucket_agg_name
+
+    def build_filter_for(self, **levels_keys):
+        """Build filters to select documents based on aggregations definition.
+        Support 2 modes:
+        - either build filters in elasticsearch syntax
+        - either build filters in 'advanced search' syntax
+
+        Level keys arguments defines which buckets to filter for multi-buckets aggregations.
+        For instance, in a term aggregation with `agg_name='owner_id'`, to select Nestlé you would call:
+        `agg.build_filter_for(owner_id=35)`
+        """
+        all_level_keys = [(level, levels_keys.get(level)) for level in self.nodes.keys()]
+        # sort from deepest to highest and replace agg_name by aggs
+        all_level_keys.sort(key=lambda x: self.depth(x[0]), reverse=True)
+        all_level_aggs_keys = [(self[level], key) for level, key in all_level_keys]
+
+        current_searches = []
+        for level_agg, key in all_level_aggs_keys:
+            if current_searches:
+                # in advanced search syntax, nested are applied in service-search
+                if isinstance(level_agg, Nested):
+                    current_searches = [{'nested': {'path': level_agg.path, 'query': bool_if_required(current_searches)}}]
+                    continue
+            level_agg_filter = level_agg.get_filter(key)
+            # remove unnecessary match_all filters
+            if level_agg_filter is not None and 'match_all' not in level_agg_filter:
+                current_searches.append(level_agg_filter)
+
+        return bool_if_required(current_searches)
+
+    def apply_reverse_nested_to_leaves(self):
+        for leaf in self.leaves():
+            if isinstance(leaf, BucketAggregationNode) and leaf.AGG_TYPE != ReverseNested.AGG_TYPE:
+                # do not reverse nest metric aggregations
+                reverse_agg = ReverseNested(agg_name='reverse_nested_%s' % leaf.identifier)
+                self.add_node(reverse_agg, leaf.identifier)
+
+    def validate(self, exc=False):
+        if self.tree_mapping is None:
+            return True
+        for agg_node in self.nodes.values():
+            if 'field' not in agg_node.agg_body or {}:
+                continue
+            field = agg_node.agg_body['field']
+            if field is None:
+                continue
+            if field not in self.tree_mapping:
+                if exc:
+                    raise ValueError('Agg of type <%s> on non-existing field <%s>.' % (agg_node.AGG_TYPE, field))
+                return False
+            field_type = self.tree_mapping[field].type
+            if agg_node.APPLICABLE_MAPPING_TYPES is not None and field_type not in agg_node.APPLICABLE_MAPPING_TYPES:
+                if exc:
+                    raise ValueError('Agg of type <%s> not possible on field of type <%s>.' % (agg_node.AGG_TYPE, field_type))
+                return False
+        return True
+
+    def _parse_group_by(self, response, row=None, agg_name=None, until=None, yield_incomplete=False, row_as_tuple=False):
+        """Recursive parsing of succession of unique child bucket aggregations.
+
+        Yields each row for which last bucket aggregation generated buckets.
+        """
+        if not row:
+            row = [] if row_as_tuple else {}
+        agg_name = self.root if agg_name is None else agg_name
+        if agg_name in response:
+            agg_node = self[agg_name]
+            yielded_child_bucket = False
+            for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
+                yielded_child_bucket = True
+                child_name = next((child.agg_name for child in self.children(agg_name)), None)
+                sub_row = copy.deepcopy(row)
+                if row_as_tuple:
+                    sub_row.append(key)
+                else:
+                    sub_row[agg_name] = key
+                if child_name and agg_name != until:
+                    # yield children
+                    for sub_row, sub_raw_bucket in self._parse_group_by(
+                            row=sub_row,
+                            response=raw_bucket,
+                            agg_name=child_name,
+                            until=until,
+                            yield_incomplete=yield_incomplete,
+                            row_as_tuple=row_as_tuple
+                    ):
+                        yield sub_row, sub_raw_bucket
+                else:
+                    # end real yield
+                    if row_as_tuple:
+                        sub_row = tuple(sub_row)
+                    yield sub_row, raw_bucket
+            if not yielded_child_bucket and yield_incomplete:
+                # in this case, delete last key
+                if agg_name in row:
+                    if row_as_tuple:
+                        row.pop()
+                    else:
+                        del row[agg_name]
+                yield row, None
+
+    def _normalize_buckets(self, agg_response, agg_name=None):
+        """Recursive function to parse aggregation response as a normalized entities.
+        Each response bucket is represented as a dict with keys (key, level, value, children):
+        {
+            "level": "owner.id",
+            "key": 35,
+            "value": 235,
+            "children": [
+            ]
+        }
+        """
+        agg_name = agg_name or self.root
+        agg_node = self[agg_name]
+        agg_children = self.children(agg_node.agg_name)
+        for key, raw_bucket in agg_node.extract_buckets(agg_response[agg_name]):
+            result = {
+                "level": agg_name,
+                "key": key,
+                "value": agg_node.extract_bucket_value(raw_bucket)
+            }
+            normalized_children = [
+                normalized_child
+                for child in agg_children
+                for normalized_child in self._normalize_buckets(
+                    agg_name=child.agg_name,
+                    agg_response=raw_bucket
+                )
+            ]
+            if normalized_children:
+                result['children'] = normalized_children
+            yield result
+
+    def _parse_as_dict(self, aggs_response, row_as_tuple=False, **kwargs):
+        return self._parse_group_by(response=aggs_response, row_as_tuple=row_as_tuple, until=kwargs.get('grouped_by'))
+
+    def _parse_as_dataframe(self, aggs, normalize_children=True, **kwargs):
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError('Using dataframe format requires to install pandas.')
+        grouping_agg_name = self.deepest_linear_bucket_agg
+        index, values = zip(*self._parse_as_dict(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
+        index_names = reversed(list(self.rsearch(grouping_agg_name)))
+        index = pd.MultiIndex.from_tuples(index, names=index_names)
+
+        grouping_agg = self[grouping_agg_name]
+        grouping_agg_children = self.children(grouping_agg_name)
+
+        def expand(row_data):
+            result = {grouping_agg.VALUE_ATTRS[0]: grouping_agg.extract_bucket_value(row_data)}
+            if not grouping_agg_children:
+                return result
+            for child in grouping_agg_children:
+                if normalize_children:
+                    result[child.agg_name] = next(self._normalize_buckets(row_data, child.agg_name), None)
+                else:
+                    result[child.agg_name] = row_data[child.agg_name]
+            return result
+
+        return pd.DataFrame(index=index, data=map(expand, values))
+
+    def parse(self, aggs, **kwargs):
+        output = kwargs.get('output', self.output)
+        if output == 'raw':
+            return aggs
+        elif output == 'tree':
+            return AggregationResponse(self).parse_aggregation(aggs)
+        elif output == 'dict':
+            return self._parse_as_dict(aggs, **kwargs)
+        elif output == 'dataframe':
+            return self._parse_as_dataframe(aggs, **kwargs)
+        else:
+            NotImplementedError()
+
+    def __repr__(self):
+        self.show()
+        return (u'<Aggregation>\n%s' % self._reader).encode('utf-8')
+
+
+class ClientBoundAggregation(Aggregation):
+
+    def __init__(self, client, from_dict=None, mapping=None, index_name=None, output='tree', from_tree=None):
+        self.client = client
+        self.index_name = index_name
+        super(ClientBoundAggregation, self).__init__(
+            from_dict=from_dict,
+            mapping=mapping,
+            output=output,
+            from_tree=from_tree,
+        )
+
+    def copy(self):
+        return ClientBoundAggregation(
+            client=self.client,
+            mapping=self.tree_mapping,
+            output=self.output,
+            from_tree=self,
+        )
+
+    def agg(self, arg=None, **kwargs):
+        aggregation = super(ClientBoundAggregation, self).agg(arg, **kwargs)
+        if not kwargs.get('execute', True):
+            return aggregation
+        es_response = self._execute(aggregation.build_aggregation(), self.index_name, kwargs.get('query'))
+        return self.parse(es_response['aggregations'], **kwargs)
+
+    def _execute(self, aggregation, index=None, query=None):
+        body = {"aggs": aggregation, "size": 0}
+        if query:
+            validity = self.client.indices.validate_query(index=index, body={"query": query})
+            if not validity['valid']:
+                raise ValueError('Wrong query: %s\n%s' % (query, validity))
+            body['query'] = query
+        return self.client.search(index=index, body={"aggs": aggregation, "size": 0})

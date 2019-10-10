@@ -1,0 +1,41 @@
+#########################################
+# Editor temporary/working/backup files #
+.#*
+*\#*\#
+[#]*#
+*~
+*$
+*.bak
+*flymake*
+*.iml
+*.kdev4
+*.log
+*.swp
+*.pdb
+.project
+.pydevproject
+.settings
+.idea
+.noseids
+.ipynb_checkpoints
+.tags
+.cache/
+.vscode/
+
+# Python files #
+################
+# Egg metadata
+*.egg-info
+*.pyc
+*.ipynb
+
+# OS generated files #
+######################
+.directory
+.gdb_history
+.DS_Store
+ehthumbs.db
+Icon?
+Thumbs.db
+
+env/
