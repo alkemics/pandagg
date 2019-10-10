@@ -8,7 +8,7 @@ from pandagg.utils import Obj, PrettyNode
 
 class MappingNode(Node):
 
-    REPR_SIZE = 100
+    REPR_SIZE = 60
 
     def __init__(self, field_path, field_name, detail, lvl):
         self.field_path = field_path

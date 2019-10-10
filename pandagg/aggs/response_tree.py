@@ -7,17 +7,6 @@ from collections import OrderedDict
 from treelib.exceptions import NodeIDAbsentError
 
 
-def _str_current_level(level, key, lvl, sep=':', value=None):
-    place = 50
-    s = level
-    if key is not None:
-        s = '%s%s%s' % (s, sep, key)
-    if value is not None:
-        pad = max(place - 4 * lvl - len(s) - len(str(value)), 4)
-        s = s + ' ' * pad + str(value)
-    return s
-
-
 class PrettyNode:
     # class to display pretty nodes while working with trees
     def __init__(self, pretty):
@@ -25,6 +14,9 @@ class PrettyNode:
 
 
 class ResponseNode(Node):
+
+    REPR_SIZE = 60
+
     def __init__(self, aggregation_node, value, lvl, key=None, override_current_level=None):
         self.aggregation_node = aggregation_node
         self.value = value
@@ -32,8 +24,23 @@ class ResponseNode(Node):
         # `override_current_level` is only used to create root node of response tree
         self.current_level = override_current_level or aggregation_node.agg_name
         self.current_key = key
-        pretty = _str_current_level(level=self.current_level, key=self.current_key, lvl=self.lvl, sep='=', value=self.extract_bucket_value())
+        pretty = self._str_current_level(
+            level=self.current_level,
+            key=self.current_key,
+            lvl=self.lvl, sep='=',
+            value=self.extract_bucket_value()
+        )
         super(ResponseNode, self).__init__(data=PrettyNode(pretty=pretty))
+
+    @classmethod
+    def _str_current_level(cls, level, key, lvl, sep=':', value=None):
+        s = level
+        if key is not None:
+            s = '%s%s%s' % (s, sep, key)
+        if value is not None:
+            pad = max(cls.REPR_SIZE - 4 * lvl - len(s) - len(str(value)), 4)
+            s = s + ' ' * pad + str(value)
+        return s
 
     def extract_bucket_value(self, value_as_dict=False):
         attrs = self.aggregation_node.VALUE_ATTRS
