@@ -111,13 +111,12 @@ class Aggregation(NestedMixin, Tree):
         :return:
         """
         new_agg = self.copy()
-        if not new_agg.root:
-            new_agg.add_node(MatchAllAggregation('root'))
-            sub_aggs_parent_id = new_agg.root
-        else:
-            paths = new_agg.paths_to_leaves()
-            assert len(paths) == 1
+        paths = new_agg.paths_to_leaves()
+        assert len(paths) <= 1
+        if paths:
             sub_aggs_parent_id = paths[0][-1]
+        else:
+            sub_aggs_parent_id = None
 
         if isinstance(by, collections.Iterable) and not isinstance(by, basestring) and not isinstance(by, dict):
             for arg_el in by:
