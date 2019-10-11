@@ -467,9 +467,10 @@ class Aggregation(NestedMixin, Tree):
 
 class ClientBoundAggregation(Aggregation):
 
-    def __init__(self, client, mapping=None, index_name=None, output='tree', from_=None):
+    def __init__(self, client, mapping=None, index_name=None, output='tree', from_=None, query=None):
         self.client = client
         self.index_name = index_name
+        self._query = query
         super(ClientBoundAggregation, self).__init__(
             from_=from_,
             mapping=mapping,
@@ -482,20 +483,27 @@ class ClientBoundAggregation(Aggregation):
             mapping=self.tree_mapping,
             output=self.output,
             from_=self,
+            query=self._query
         )
+
+    def query(self, query, validate=True):
+        if validate:
+            validity = self.client.indices.validate_query(index=self.index_name, body={"query": query})
+            if not validity['valid']:
+                raise ValueError('Wrong query: %s\n%s' % (query, validity))
+        new_agg = self.copy()
+        new_agg._query = query
+        return new_agg
 
     def agg(self, arg=None, **kwargs):
         aggregation = super(ClientBoundAggregation, self).agg(arg, **kwargs)
         if not kwargs.get('execute', True):
             return aggregation
-        es_response = self._execute(aggregation.agg_dict(), self.index_name, kwargs.get('query'))
+        es_response = self._execute(aggregation.agg_dict(), self.index_name, self._query)
         return aggregation.parse(es_response['aggregations'], **kwargs)
 
     def _execute(self, aggregation, index=None, query=None):
         body = {"aggs": aggregation, "size": 0}
         if query:
-            validity = self.client.indices.validate_query(index=index, body={"query": query})
-            if not validity['valid']:
-                raise ValueError('Wrong query: %s\n%s' % (query, validity))
             body['query'] = query
         return self.client.search(index=index, body={"aggs": aggregation, "size": 0})

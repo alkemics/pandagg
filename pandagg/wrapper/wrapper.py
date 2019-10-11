@@ -6,9 +6,7 @@ from collections import defaultdict
 from elasticsearch import Elasticsearch
 from pandagg.utils import Obj
 from pandagg.index.index import ClientBoundIndex
-from pandagg.aggs.aggregation import (
-    PUBLIC_AGGS, AggregationNode, Aggregation
-)
+from pandagg.aggs.aggregation import PUBLIC_AGGS
 from pandagg.wrapper.method_generator import _method_generator
 
 
@@ -46,31 +44,3 @@ class PandAgg:
 
         for alias, indices_names in alias_to_indices.iteritems():
             self.aliases[alias] = list(indices_names)
-
-    def execute(self, index, aggs, query):
-        """
-        :param aggregation:
-        :return: dataframe, or tree, or raw
-        """
-        if isinstance(aggs, dict):
-            aggs_tree = Aggregation(from_=aggs)
-            if aggs_tree.agg_dict() != aggs:
-                raise NotImplementedError("Some stuff is not implemented yet.")
-        elif isinstance(aggs, AggregationNode):
-            # aggs_tree = aggs.as_tree()
-            # Aggregation(aggs)
-            raise NotImplementedError()
-        elif isinstance(aggs, Aggregation):
-            aggs_tree = aggs
-        else:
-            raise Exception("Unsupported type of aggs: %s" % type(aggs))
-        assert len(aggs_tree.nodes.keys())
-        dict_aggs = aggs_tree.agg_dict()
-        body = {"aggs": dict_aggs, "size": 0}
-        if query:
-            validity = self.client.indices.validate_query(index=index, body={"query": query})
-            if not validity['valid']:
-                raise ValueError('Wrong query: %s\n%s' % (query, validity))
-            body['query'] = query
-        response = self.client.search(index=index, body={"aggs": dict_aggs, "size": 0})['aggregations']
-        return response
