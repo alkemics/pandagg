@@ -17,6 +17,7 @@ class AggregationNode(Node):
     AGG_TYPE = None
     VALUE_ATTRS = NotImplementedError()
     APPLICABLE_MAPPING_TYPES = None
+    SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, agg_name, agg_body, meta=None):
         self.agg_name = agg_name
@@ -56,6 +57,7 @@ class AggregationNode(Node):
 class MetricAggregation(AggregationNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
     VALUE_ATTRS = NotImplementedError()
+    SINGLE_BUCKET = True
 
     @staticmethod
     def extract_buckets(response_value):
@@ -84,6 +86,7 @@ class BucketAggregationNode(AggregationNode):
     - to build query to filter documents belonging to that bucket
     """
     VALUE_ATTRS = ['doc_count']
+    SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, agg_name, agg_body, meta=None, children=None):
         super(BucketAggregationNode, self).__init__(
@@ -130,6 +133,7 @@ class ListBucketAggregation(BucketAggregationNode):
 
     # Aggregation that return a list of buckets as a list (terms, histogram, date-histogram).
     KEY_PATH = 'key'
+    SINGLE_BUCKET = False
 
     def extract_buckets(self, response_value):
         for bucket in response_value['buckets']:
@@ -322,6 +326,7 @@ class DateHistogram(Histogram):
 
 class UniqueBucketAggregation(BucketAggregationNode):
     """Aggregations providing a single bucket."""
+    SINGLE_BUCKET = True
 
     def extract_buckets(self, response_value):
         yield (None, response_value)

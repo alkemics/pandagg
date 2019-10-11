@@ -437,7 +437,9 @@ class Aggregation(NestedMixin, Tree):
             if not grouping_agg_children:
                 return result
             for child in grouping_agg_children:
-                if normalize_children:
+                if child.SINGLE_BUCKET:
+                    result[child.agg_name] = child.extract_bucket_value(row_data[child.agg_name])
+                elif normalize_children:
                     result[child.agg_name] = next(self._normalize_buckets(row_data, child.agg_name), None)
                 else:
                     result[child.agg_name] = row_data[child.agg_name]
