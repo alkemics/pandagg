@@ -108,7 +108,7 @@ class BucketAggregationNode(AggregationNode):
             depth -= 1
         sub_aggs = {}
         for child in tree.children(self.agg_name):
-            sub_aggs.update(child.build_aggregation(tree, depth))
+            sub_aggs.update(child.agg_dict(tree, depth))
 
         if sub_aggs:
             aggs[self.agg_name]['aggs'] = sub_aggs

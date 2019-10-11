@@ -54,7 +54,7 @@ class PandAgg:
         """
         if isinstance(aggs, dict):
             aggs_tree = Aggregation(from_dict=aggs)
-            if aggs_tree.build_aggregation() != aggs:
+            if aggs_tree.agg_dict() != aggs:
                 raise NotImplementedError("Some stuff is not implemented yet.")
         elif isinstance(aggs, AggregationNode):
             aggs_tree = aggs.as_tree()
@@ -63,7 +63,7 @@ class PandAgg:
         else:
             raise Exception("Unsupported type of aggs: %s" % type(aggs))
         assert len(aggs_tree.nodes.keys())
-        dict_aggs = aggs_tree.build_aggregation()
+        dict_aggs = aggs_tree.agg_dict()
         body = {"aggs": dict_aggs, "size": 0}
         if query:
             validity = self.client.indices.validate_query(index=index, body={"query": query})
