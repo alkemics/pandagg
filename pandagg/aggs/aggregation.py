@@ -22,7 +22,7 @@ class Aggregation(NestedMixin, Tree):
 
     node_class = AggregationNode
     tree_mapping = None
-    DEFAULT_OUTPUT = 'dict'
+    DEFAULT_OUTPUT = 'dataframe'
 
     def __init__(self, from_=None, mapping=None, output=DEFAULT_OUTPUT):
         from_tree = None
