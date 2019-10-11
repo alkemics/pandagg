@@ -10,18 +10,18 @@ class MappingNode(Node):
 
     REPR_SIZE = 60
 
-    def __init__(self, field_path, field_name, detail, lvl):
+    def __init__(self, field_path, field_name, detail, depth):
         self.field_path = field_path
         self.field_name = field_name
         self.type = detail.get('type', 'object')
         self.dynamic = detail.get('dynamic', False)
-        self.lvl = lvl
+        self.depth = depth
         self.extra = detail
         super(MappingNode, self).__init__(identifier=field_path, data=PrettyNode(pretty=self.pretty))
 
     @property
     def pretty(self):
-        pad = max(self.REPR_SIZE - 4 * self.lvl - len(self.field_name), 4)
+        pad = max(self.REPR_SIZE - 4 * self.depth - len(self.field_name), 4)
         s = self.field_name
         if self.type == 'object':
             s += ' ' * (pad - 1) + '{%s}' % self.type.capitalize()
@@ -51,15 +51,15 @@ class TreeMapping(Tree):
         if mapping_detail:
             self.build_mapping_from_dict(mapping_name, mapping_detail)
 
-    def build_mapping_from_dict(self, name, detail, pid=None, lvl=0, path=None):
+    def build_mapping_from_dict(self, name, detail, pid=None, depth=0, path=None):
         path = path or ''
-        node = MappingNode(field_path=path, field_name=name, detail=detail, lvl=lvl)
+        node = MappingNode(field_path=path, field_name=name, detail=detail, depth=depth)
         self.add_node(node, parent=pid)
         if detail:
-            lvl += 1
+            depth += 1
             for sub_name, sub_detail in (detail.get('properties') or {}).iteritems():
                 sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-                self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, lvl=lvl, path=sub_path)
+                self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
 
     def subtree(self, nid):
         st = TreeMapping(mapping_name=self.mapping_name)

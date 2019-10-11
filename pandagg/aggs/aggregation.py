@@ -6,10 +6,9 @@ import collections
 
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation
 from pandagg.tree import Tree
-from pandagg.utils import NestedMixin, bool_if_required
+from pandagg.utils import NestedMixin
 from pandagg.aggs.agg_nodes import (
     AggregationNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAllAggregation, BucketAggregationNode,
-    Filters, Histogram, DateHistogram
 )
 from pandagg.mapping.mapping import Mapping, TreeMapping
 from pandagg.aggs.response_tree import AggregationResponse
@@ -466,7 +465,7 @@ class Aggregation(NestedMixin, Tree):
 
 class ClientBoundAggregation(Aggregation):
 
-    def __init__(self, client, from_dict=None, mapping=None, index_name=None, output='tree', from_=None):
+    def __init__(self, client, mapping=None, index_name=None, output='tree', from_=None):
         self.client = client
         self.index_name = index_name
         super(ClientBoundAggregation, self).__init__(
