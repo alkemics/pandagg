@@ -493,13 +493,14 @@ class ClientBoundAggregation(Aggregation):
         return new_agg
 
     def agg(self, arg=None, execute=True, output=Aggregation.DEFAULT_OUTPUT, **kwargs):
-        aggregation = super(ClientBoundAggregation, self).agg(arg, **kwargs)
+        new_agg = self.copy()
+        aggregation = super(ClientBoundAggregation, new_agg).agg(arg, **kwargs)
         if not execute:
             return aggregation
         es_response = self._execute(
             aggregation=aggregation.agg_dict(),
-            index=self.index_name,
-            query=self._query
+            index=aggregation.index_name,
+            query=aggregation._query
         )
         return aggregation.parse(
             aggs=es_response['aggregations'],
@@ -511,4 +512,4 @@ class ClientBoundAggregation(Aggregation):
         body = {"aggs": aggregation, "size": 0}
         if query:
             body['query'] = query
-        return self.client.search(index=index, body={"aggs": aggregation, "size": 0})
+        return self.client.search(index=index, body=body)
