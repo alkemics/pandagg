@@ -3,6 +3,8 @@
 
 import re
 
+from pandagg.exceptions import InvalidElasticSearchClientError
+
 
 class Obj(object):
 
@@ -84,3 +86,9 @@ def bool_if_required(sub_filters, advanced_search_syntax=True, operator='must'):
             return {operator: sub_filters}
         return {'bool': {operator: sub_filters}}
     return None
+
+
+def validate_client(client):
+    for method_name in ('info', 'search', 'validate'):
+        if not hasattr(client, method_name) and callable(client):
+            raise InvalidElasticSearchClientError('You client doesn\'t seem compatible.')

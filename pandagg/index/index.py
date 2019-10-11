@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.utils import Obj
+from pandagg.utils import Obj, validate_client
 from pandagg.aggs.aggregation import (
     Aggregation, Mapping, TreeMapping, ClientBoundAggregation
 )
@@ -42,6 +42,8 @@ class ClientBoundIndex(Index):
 
     def __init__(self, client, name, settings, mapping, aliases, warmers):
         self.client = client
+        if client is not None:
+            validate_client(self.client)
         super(ClientBoundIndex, self).__init__(name, settings, mapping, aliases, warmers)
 
     def groupby(self, by, **kwargs):

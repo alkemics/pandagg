@@ -3,8 +3,8 @@
 
 from collections import defaultdict
 
-from elasticsearch import Elasticsearch
-from pandagg.utils import Obj
+from pandagg.exceptions import VersionIncompatibilityError
+from pandagg.utils import Obj, validate_client
 from pandagg.index.index import ClientBoundIndex
 from pandagg.aggs.aggregation import PUBLIC_AGGS
 from pandagg.wrapper.method_generator import _method_generator
@@ -12,12 +12,15 @@ from pandagg.wrapper.method_generator import _method_generator
 
 class PandAgg:
 
+    ES_COMPATIBILITY_VERSIONS = ('2',)
+
     def __init__(self, client):
-        assert isinstance(client, Elasticsearch)
         self.client = client
+        validate_client(self.client)
         self.indices = Obj()
         self.aliases = Obj()
         self._indices = None
+        self._info = None
 
     for agg_class in PUBLIC_AGGS.values():
         exec _method_generator(agg_class)
@@ -44,3 +47,14 @@ class PandAgg:
 
         for alias, indices_names in alias_to_indices.iteritems():
             self.aliases[alias] = list(indices_names)
+
+    def validate_version(self):
+        self._info = self.client.info()
+        version = self._info.get('version', {}).get('number') or ''
+        major_version = next(iter(version.split('.')), None)
+        if major_version not in self.ES_COMPATIBILITY_VERSIONS:
+            raise VersionIncompatibilityError(
+                'ElasticSearch version %s is not compatible with this Pandagg release. Allowed ES versions are: %s.' % (
+                    version, list(self.ES_COMPATIBILITY_VERSIONS))
+            )
+        return True
