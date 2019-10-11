@@ -322,20 +322,22 @@ class Aggregation(NestedMixin, Tree):
         if self.tree_mapping is None:
             return True
         for agg_node in self.nodes.values():
-            if 'field' not in agg_node.agg_body or {}:
-                continue
-            field = agg_node.agg_body['field']
-            if field is None:
-                continue
-            if field not in self.tree_mapping:
-                if exc:
-                    raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (agg_node.AGG_TYPE, field))
-                return False
-            field_type = self.tree_mapping[field].type
-            if agg_node.APPLICABLE_MAPPING_TYPES is not None and field_type not in agg_node.APPLICABLE_MAPPING_TYPES:
-                if exc:
-                    raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.' % (agg_node.AGG_TYPE, field_type))
-                return False
+            # path for 'nested'/'reverse-nested', field for metric aggregations
+            for field_arg in ('field', 'path'):
+                if field_arg not in agg_node.agg_body or {}:
+                    continue
+                field = agg_node.agg_body[field_arg]
+                if field is None:
+                    continue
+                if field not in self.tree_mapping:
+                    if exc:
+                        raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (agg_node.AGG_TYPE, field))
+                    return False
+                field_type = self.tree_mapping[field].type
+                if agg_node.APPLICABLE_MAPPING_TYPES is not None and field_type not in agg_node.APPLICABLE_MAPPING_TYPES:
+                    if exc:
+                        raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.' % (agg_node.AGG_TYPE, field_type))
+                    return False
         return True
 
     def _parse_group_by(self, response, row=None, agg_name=None, until=None, yield_incomplete=False, row_as_tuple=False):
@@ -421,7 +423,8 @@ class Aggregation(NestedMixin, Tree):
         try:
             import pandas as pd
         except ImportError:
-            raise ImportError('Using dataframe format requires to install pandas.')
+            raise ImportError('Using dataframe output format requires to install pandas. Please install "pandas" or '
+                              'use another output format.')
         grouping_agg_name = self.deepest_linear_bucket_agg
         index, values = zip(*self._parse_as_dict(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
         index_names = reversed(list(self.rsearch(grouping_agg_name)))
@@ -450,7 +453,7 @@ class Aggregation(NestedMixin, Tree):
             return aggs
         elif output == 'tree':
             return AggregationResponse(self).parse_aggregation(aggs)
-        elif output == 'dict':
+        elif output == 'dict_rows':
             return self._parse_as_dict(aggs, **kwargs)
         elif output == 'dataframe':
             return self._parse_as_dataframe(aggs, **kwargs)

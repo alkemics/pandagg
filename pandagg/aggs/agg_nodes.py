@@ -407,6 +407,7 @@ class Nested(UniqueBucketAggregation):
 class ReverseNested(UniqueBucketAggregation):
 
     AGG_TYPE = 'reverse_nested'
+    APPLICABLE_MAPPING_TYPES = ['nested']
 
     def __init__(self, agg_name, path=None, meta=None, children=None):
         self.path = path

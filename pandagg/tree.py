@@ -11,6 +11,8 @@ from treelib.exceptions import NodeIDAbsentError
 # slighly modifier version of treelib.Tree
 class Tree(OriginalTree):
 
+    # copy are done with deep=True by default, because with shallow copies of nodes, nodes' parent/children pointers
+    # would be mixed up
     DEEP = True
 
     def __init__(self, tree=None, deep=DEEP, node_class=None):
