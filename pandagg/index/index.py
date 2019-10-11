@@ -23,16 +23,10 @@ class Index(Obj):
         self.mapping = Mapping(tree=TreeMapping(mapping_name, mapping_detail))
 
     def groupby(self, by, **kwargs):
-        return Aggregation(
-            mapping=self.mapping,
-            output=kwargs.get('output', Aggregation.DEFAULT_OUTPUT)
-        ).groupby(by, **kwargs)
+        return Aggregation(mapping=self.mapping).groupby(by, **kwargs)
 
-    def agg(self, arg, **kwargs):
-        return Aggregation(
-            mapping=self.mapping,
-            output=kwargs.get('output', Aggregation.DEFAULT_OUTPUT)
-        ).agg(arg, **kwargs)
+    def agg(self, arg, output=None, **kwargs):
+        return Aggregation(mapping=self.mapping).agg(arg, **kwargs)
 
     def __repr__(self):
         return '<Index %s>' % self.name
@@ -46,16 +40,11 @@ class ClientBoundIndex(Index):
             validate_client(self.client)
         super(ClientBoundIndex, self).__init__(name, settings, mapping, aliases, warmers)
 
-    def groupby(self, by, **kwargs):
-        return ClientBoundAggregation(
-            client=self.client,
-            mapping=self.mapping,
-            output=kwargs.get('output', Aggregation.DEFAULT_OUTPUT)
-        ).groupby(by, **kwargs)
+    def query(self, query, validate=False):
+        return ClientBoundAggregation(client=self.client, mapping=self.mapping).query(query, validate=validate)
 
-    def agg(self, arg, **kwargs):
-        return ClientBoundAggregation(
-            client=self.client,
-            mapping=self.mapping,
-            output=kwargs.get('output', Aggregation.DEFAULT_OUTPUT)
-        ).agg(arg, **kwargs)
+    def groupby(self, by, **kwargs):
+        return ClientBoundAggregation(client=self.client, mapping=self.mapping).groupby(by, **kwargs)
+
+    def agg(self, arg, output=Aggregation.DEFAULT_OUTPUT, execute=True, **kwargs):
+        return ClientBoundAggregation(client=self.client, mapping=self.mapping).agg(arg, execute=execute, **kwargs)

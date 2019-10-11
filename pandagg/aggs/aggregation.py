@@ -24,7 +24,7 @@ class Aggregation(NestedMixin, Tree):
     tree_mapping = None
     DEFAULT_OUTPUT = 'dataframe'
 
-    def __init__(self, from_=None, mapping=None, output=DEFAULT_OUTPUT):
+    def __init__(self, from_=None, mapping=None):
         from_tree = None
         from_dict = None
         if isinstance(from_, Aggregation):
@@ -32,8 +32,6 @@ class Aggregation(NestedMixin, Tree):
         if isinstance(from_, dict):
             from_dict = from_
         super(Aggregation, self).__init__(tree=from_tree)
-        assert output in ('raw', 'dict', 'tree', 'dataframe')
-        self.output = output
         self.set_mapping(mapping)
         if from_dict:
             self.build_tree_from_dict(from_dict)
@@ -51,7 +49,7 @@ class Aggregation(NestedMixin, Tree):
                 raise NotImplementedError()
 
     def copy(self):
-        return Aggregation(mapping=self.tree_mapping, output=self.output, from_=self)
+        return Aggregation(mapping=self.tree_mapping, from_=self)
 
     def build_tree_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)
@@ -447,8 +445,7 @@ class Aggregation(NestedMixin, Tree):
 
         return pd.DataFrame(index=index, data=map(expand, values))
 
-    def parse(self, aggs, **kwargs):
-        output = kwargs.get('output', self.output)
+    def parse(self, aggs, output, **kwargs):
         if output == 'raw':
             return aggs
         elif output == 'tree':
@@ -458,7 +455,7 @@ class Aggregation(NestedMixin, Tree):
         elif output == 'dataframe':
             return self._parse_as_dataframe(aggs, **kwargs)
         else:
-            NotImplementedError()
+            NotImplementedError('Unkown %s output format.' % output)
 
     def __repr__(self):
         self.show()
@@ -467,7 +464,7 @@ class Aggregation(NestedMixin, Tree):
 
 class ClientBoundAggregation(Aggregation):
 
-    def __init__(self, client, mapping=None, index_name=None, output='tree', from_=None, query=None):
+    def __init__(self, client, mapping=None, index_name=None, from_=None, query=None):
         self.client = client
         if client is not None:
             validate_client(self.client)
@@ -476,19 +473,17 @@ class ClientBoundAggregation(Aggregation):
         super(ClientBoundAggregation, self).__init__(
             from_=from_,
             mapping=mapping,
-            output=output,
         )
 
     def copy(self):
         return ClientBoundAggregation(
             client=self.client,
             mapping=self.tree_mapping,
-            output=self.output,
             from_=self,
             query=self._query
         )
 
-    def query(self, query, validate=True):
+    def query(self, query, validate=False):
         if validate:
             validity = self.client.indices.validate_query(index=self.index_name, body={"query": query})
             if not validity['valid']:
@@ -497,12 +492,20 @@ class ClientBoundAggregation(Aggregation):
         new_agg._query = query
         return new_agg
 
-    def agg(self, arg=None, **kwargs):
+    def agg(self, arg=None, execute=True, output=Aggregation.DEFAULT_OUTPUT, **kwargs):
         aggregation = super(ClientBoundAggregation, self).agg(arg, **kwargs)
-        if not kwargs.get('execute', True):
+        if not execute:
             return aggregation
-        es_response = self._execute(aggregation.agg_dict(), self.index_name, self._query)
-        return aggregation.parse(es_response['aggregations'], **kwargs)
+        es_response = self._execute(
+            aggregation=aggregation.agg_dict(),
+            index=self.index_name,
+            query=self._query
+        )
+        return aggregation.parse(
+            aggs=es_response['aggregations'],
+            output=output,
+            **kwargs
+        )
 
     def _execute(self, aggregation, index=None, query=None):
         body = {"aggs": aggregation, "size": 0}
