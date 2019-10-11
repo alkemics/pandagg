@@ -24,7 +24,7 @@ class AggregationNode(Node):
         self.agg_body = agg_body
         self.meta = meta
 
-    def build_aggregation(self, tree=None, depth=None):
+    def agg_dict(self, tree=None, depth=None):
         """ElasticSearch aggregation queries follow this formatting:
         {
             "<aggregation_name>" : {
@@ -99,9 +99,9 @@ class BucketAggregationNode(AggregationNode):
     def extract_buckets(self, response_value):
         raise NotImplementedError()
 
-    def build_aggregation(self, tree=None, depth=None):
+    def agg_dict(self, tree=None, depth=None):
         # compute also sub-aggregations
-        aggs = super(BucketAggregationNode, self).build_aggregation()
+        aggs = super(BucketAggregationNode, self).agg_dict()
         if tree is None or depth == 0:
             return aggs
         if depth is not None:

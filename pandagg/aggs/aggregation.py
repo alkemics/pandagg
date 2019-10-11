@@ -220,22 +220,6 @@ class Aggregation(NestedMixin, Tree):
         root_agg = self[from_]
         return root_agg.agg_dict(tree=self, depth=depth)
 
-    def path_from_to(self, parent_name, child_name):
-        path = list(self.subtree(parent_name).rsearch(child_name))
-        return list(reversed(path))
-
-    def extract_subaggs_direct(self, response, parent_name, child_name, parent_included=False):
-        # shortcut for single bucket parsing
-        agg_names = self.path_from_to(parent_name, child_name)[:-1]
-        if not parent_included:
-            agg_names = agg_names[1:]
-        for agg_name in agg_names:
-            agg_node = self[agg_name]
-            if agg_name not in response:
-                return {}
-            _, response = next(agg_node.extract_buckets(response[agg_name]))
-        return response
-
     def applied_nested_path_at_node(self, nid):
         applied_nested_path = None
         # travel parent nodes from root to required node
@@ -324,16 +308,6 @@ class Aggregation(NestedMixin, Tree):
         super(Aggregation, self).add_node(node, parent)
 
     @property
-    def multi_buckets_node_ids(self):
-        nids = [
-            nid for nid, node in self.nodes.iteritems() if
-            any((isinstance(node, agg_class) for agg_class in (
-                Histogram, Terms, Filters, DateHistogram
-            )))
-        ]
-        return sorted(nids, key=lambda x: self.level(x))
-
-    @property
     def deepest_linear_bucket_agg(self):
         if not isinstance(self[self.root], BucketAggregationNode):
             return None
@@ -346,42 +320,6 @@ class Aggregation(NestedMixin, Tree):
             last_bucket_agg_name = last_agg.agg_name
             children = self.children(last_bucket_agg_name)
         return last_bucket_agg_name
-
-    def build_filter_for(self, **levels_keys):
-        """Build filters to select documents based on aggregations definition.
-        Support 2 modes:
-        - either build filters in elasticsearch syntax
-        - either build filters in 'advanced search' syntax
-
-        Level keys arguments defines which buckets to filter for multi-buckets aggregations.
-        For instance, in a term aggregation with `agg_name='owner_id'`, to select Nestlé you would call:
-        `agg.build_filter_for(owner_id=35)`
-        """
-        all_level_keys = [(level, levels_keys.get(level)) for level in self.nodes.keys()]
-        # sort from deepest to highest and replace agg_name by aggs
-        all_level_keys.sort(key=lambda x: self.depth(x[0]), reverse=True)
-        all_level_aggs_keys = [(self[level], key) for level, key in all_level_keys]
-
-        current_searches = []
-        for level_agg, key in all_level_aggs_keys:
-            if current_searches:
-                # in advanced search syntax, nested are applied in service-search
-                if isinstance(level_agg, Nested):
-                    current_searches = [{'nested': {'path': level_agg.path, 'query': bool_if_required(current_searches)}}]
-                    continue
-            level_agg_filter = level_agg.get_filter(key)
-            # remove unnecessary match_all filters
-            if level_agg_filter is not None and 'match_all' not in level_agg_filter:
-                current_searches.append(level_agg_filter)
-
-        return bool_if_required(current_searches)
-
-    def apply_reverse_nested_to_leaves(self):
-        for leaf in self.leaves():
-            if isinstance(leaf, BucketAggregationNode) and leaf.AGG_TYPE != ReverseNested.AGG_TYPE:
-                # do not reverse nest metric aggregations
-                reverse_agg = ReverseNested(agg_name='reverse_nested_%s' % leaf.identifier)
-                self.add_node(reverse_agg, leaf.identifier)
 
     def validate(self, exc=False):
         if self.tree_mapping is None:
