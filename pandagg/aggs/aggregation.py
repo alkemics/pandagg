@@ -308,7 +308,7 @@ class Aggregation(NestedMixin, Tree):
 
     @property
     def deepest_linear_bucket_agg(self):
-        if not isinstance(self[self.root], BucketAggregationNode):
+        if not self.root or not isinstance(self[self.root], BucketAggregationNode):
             return None
         last_bucket_agg_name = self.root
         children = self.children(last_bucket_agg_name)
@@ -487,7 +487,7 @@ class ClientBoundAggregation(Aggregation):
         if not kwargs.get('execute', True):
             return aggregation
         es_response = self._execute(aggregation.agg_dict(), self.index_name, kwargs.get('query'))
-        return self.parse(es_response['aggregations'], **kwargs)
+        return aggregation.parse(es_response['aggregations'], **kwargs)
 
     def _execute(self, aggregation, index=None, query=None):
         body = {"aggs": aggregation, "size": 0}

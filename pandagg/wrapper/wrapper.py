@@ -53,11 +53,13 @@ class PandAgg:
         :return: dataframe, or tree, or raw
         """
         if isinstance(aggs, dict):
-            aggs_tree = Aggregation(from_dict=aggs)
+            aggs_tree = Aggregation(from_=aggs)
             if aggs_tree.agg_dict() != aggs:
                 raise NotImplementedError("Some stuff is not implemented yet.")
         elif isinstance(aggs, AggregationNode):
-            aggs_tree = aggs.as_tree()
+            # aggs_tree = aggs.as_tree()
+            # Aggregation(aggs)
+            raise NotImplementedError()
         elif isinstance(aggs, Aggregation):
             aggs_tree = aggs
         else:
