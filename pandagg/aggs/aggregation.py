@@ -24,17 +24,20 @@ class Aggregation(NestedMixin, Tree):
     tree_mapping = None
     DEFAULT_OUTPUT = 'dataframe'
 
-    def __init__(self, from_=None, mapping=None):
+    def __init__(self, from_=None, mapping=None, identifier=None):
         from_tree = None
         from_dict = None
         if isinstance(from_, Aggregation):
             from_tree = from_
         if isinstance(from_, dict):
             from_dict = from_
-        super(Aggregation, self).__init__(tree=from_tree)
+        super(Aggregation, self).__init__(tree=from_tree, identifier=identifier)
         self.set_mapping(mapping)
         if from_dict:
             self.build_tree_from_dict(from_dict)
+
+    def get_instance(self, identifier):
+        return Aggregation(mapping=self.tree_mapping, identifier=identifier)
 
     def set_mapping(self, mapping):
         if mapping is not None:
@@ -238,7 +241,7 @@ class Aggregation(NestedMixin, Tree):
         # apply paste on all trees currently at right level
         trees_right_nested = [tree for tree, required_nested in trees_with_nested_requirement if required_nested == root_nid_nested]
         for tree in trees_right_nested:
-            super(Aggregation, self).paste(nid, tree, deep=True)
+            super(Aggregation, self).paste(nid, tree)
 
         # if some trees require to reverse nested, apply reverse nested to highest path (nearest to root)
         trees_to_reverse_nest = [
@@ -433,7 +436,7 @@ class Aggregation(NestedMixin, Tree):
         grouping_agg = self[grouping_agg_name]
         grouping_agg_children = self.children(grouping_agg_name)
 
-        def expand(row_data):
+        def parse_columns(row_data):
             result = {grouping_agg.VALUE_ATTRS[0]: grouping_agg.extract_bucket_value(row_data)}
             if not grouping_agg_children:
                 return result
@@ -446,7 +449,7 @@ class Aggregation(NestedMixin, Tree):
                     result[child.agg_name] = row_data[child.agg_name]
             return result
 
-        return pd.DataFrame(index=index, data=map(expand, values))
+        return pd.DataFrame(index=index, data=map(parse_columns, values))
 
     def parse(self, aggs, output, **kwargs):
         if output == 'raw':

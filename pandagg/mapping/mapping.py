@@ -45,9 +45,10 @@ class TreeMapping(Tree):
     """
     node_class = MappingNode
 
-    def __init__(self, mapping_name, mapping_detail=None):
-        super(TreeMapping, self).__init__()
+    def __init__(self, mapping_name, mapping_detail=None, identifier=None):
+        super(TreeMapping, self).__init__(identifier=identifier)
         self.mapping_name = mapping_name
+        self.mapping_detail = mapping_detail
         if mapping_detail:
             self.build_mapping_from_dict(mapping_name, mapping_detail)
 
@@ -61,11 +62,15 @@ class TreeMapping(Tree):
                 sub_path = '%s.%s' % (path, sub_name) if path else sub_name
                 self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
 
+    def get_instance(self, identifier):
+        return TreeMapping(mapping_name=self.mapping_name, mapping_detail=self.mapping_detail, identifier=identifier)
+
     def subtree(self, nid):
         st = TreeMapping(mapping_name=self.mapping_name)
         st.root = nid
         for node_n in self.expand_tree(nid):
             st._nodes.update({self[node_n].identifier: self[node_n]})
+            st[node_n].clone_pointers(self.identifier, st.identifier)
         return st
 
     def show(self, data_property='pretty', **kwargs):

@@ -8,16 +8,8 @@ from treelib import Node as OriginalNode
 from treelib.exceptions import NodeIDAbsentError
 
 
-# slighly modifier version of treelib.Tree
+# slighly modified version of treelib.Tree
 class Tree(OriginalTree):
-
-    # copy are done with deep=True by default, because with shallow copies of nodes, nodes' parent/children pointers
-    # would be mixed up
-    DEEP = True
-
-    def __init__(self, tree=None, deep=DEEP, node_class=None):
-        super(Tree, self).__init__(tree=tree, deep=deep, node_class=node_class)
-        self._reader = ''
 
     def show(self, nid=None, level=OriginalTree.ROOT, idhidden=True, filter=None,
              key=None, reverse=False, line_type='ascii-ex', data_property=None):

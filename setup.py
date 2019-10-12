@@ -26,7 +26,6 @@ tests_require = [
 ]
 
 install_requires = [
-    'treelib==1.5.5',
     'elasticsearch==2.3.0'
 ]
 
@@ -50,8 +49,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     test_suite='pandagg.tests',
-    zip_safe= False,
+    zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
     extras_require=extras_require,
+    # waiting for https://github.com/caesar0301/treelib/pull/120 approval
+    dependency_links=['http://github.com/leonardbinet/treelib/tarball/node_dict_pointer']
 )
