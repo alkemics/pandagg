@@ -52,24 +52,14 @@ class ResponseNode(Node):
         return u'<Bucket, {pretty}, identifier={identifier}>'.format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
 
 
-class AggregationResponse(Tree):
+class AggResponse(Tree):
 
-    def __init__(self, agg_tree):
-        super(AggregationResponse, self).__init__()
+    def __init__(self, agg_tree, identifier=None):
+        super(AggResponse, self).__init__(identifier=identifier)
         self.agg_tree = agg_tree
 
-    def subtree(self, nid):
-        st = AggregationResponse(agg_tree=self.agg_tree)
-        if nid is None:
-            return st
-
-        if not self.contains(nid):
-            raise NodeIDAbsentError("Node '%s' is not in the tree" % nid)
-
-        st.root = nid
-        for node_n in self.expand_tree(nid):
-            st._nodes.update({self[node_n].identifier: self[node_n]})
-        return st
+    def get_instance(self, identifier):
+        return AggResponse(agg_tree=self.agg_tree, identifier=identifier)
 
     def parse_aggregation(self, raw_response):
         # init tree with fist node called 'aggs'
@@ -123,7 +113,7 @@ class AggregationResponse(Tree):
         return self.bucket_id_dict(parent, id_dict, end_level, depth)
 
     def show(self, data_property='pretty', **kwargs):
-        super(AggregationResponse, self).show(data_property=data_property)
+        super(AggResponse, self).show(data_property=data_property)
 
     def __repr__(self):
         self.show()

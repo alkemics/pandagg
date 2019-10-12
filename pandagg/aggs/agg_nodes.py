@@ -5,7 +5,7 @@ import re
 from pandagg.tree import Node
 
 
-class AggregationNode(Node):
+class AggNode(Node):
     """Wrapper around elasticsearch aggregation concept.
     https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
 
@@ -21,7 +21,7 @@ class AggregationNode(Node):
 
     def __init__(self, agg_name, agg_body, meta=None):
         self.agg_name = agg_name
-        super(AggregationNode, self).__init__(identifier=self.agg_name)
+        super(AggNode, self).__init__(identifier=self.agg_name)
         self.agg_body = agg_body
         self.meta = meta
 
@@ -54,7 +54,7 @@ class AggregationNode(Node):
         ).encode('utf-8')
 
 
-class MetricAggregation(AggregationNode):
+class MetricAgg(AggNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
     VALUE_ATTRS = NotImplementedError()
     SINGLE_BUCKET = True
@@ -76,7 +76,7 @@ class MetricAggregation(AggregationNode):
         raise NotImplementedError()
 
 
-class BucketAggregationNode(AggregationNode):
+class BucketAggNode(AggNode):
     """Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
     Each time, the extracted value is a 'doc_count'.
 
@@ -89,14 +89,14 @@ class BucketAggregationNode(AggregationNode):
     SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, agg_name, agg_body, meta=None, children=None):
-        super(BucketAggregationNode, self).__init__(
+        super(BucketAggNode, self).__init__(
             agg_name=agg_name,
             agg_body=agg_body,
             meta=meta,
         )
         children = children or []
         for child in children:
-            assert isinstance(child, AggregationNode)
+            assert isinstance(child, AggNode)
         self.children = children
 
     def extract_buckets(self, response_value):
@@ -104,7 +104,7 @@ class BucketAggregationNode(AggregationNode):
 
     def agg_dict(self, tree=None, depth=None):
         # compute also sub-aggregations
-        aggs = super(BucketAggregationNode, self).agg_dict()
+        aggs = super(BucketAggNode, self).agg_dict()
         if tree is None or depth == 0:
             return aggs
         if depth is not None:
@@ -129,7 +129,7 @@ class BucketAggregationNode(AggregationNode):
         raise NotImplementedError()
 
 
-class ListBucketAggregation(BucketAggregationNode):
+class ListBucketAgg(BucketAggNode):
 
     # Aggregation that return a list of buckets as a list (terms, histogram, date-histogram).
     KEY_PATH = 'key'
@@ -150,7 +150,7 @@ class ListBucketAggregation(BucketAggregationNode):
         raise NotImplementedError()
 
 
-class Terms(ListBucketAggregation):
+class Terms(ListBucketAgg):
     AGG_TYPE = 'terms'
     VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
     DEFAULT_SIZE = 20
@@ -205,7 +205,7 @@ class Terms(ListBucketAggregation):
         return keys
 
 
-class Filters(BucketAggregationNode):
+class Filters(BucketAggNode):
 
     AGG_TYPE = 'filters'
 
@@ -237,10 +237,10 @@ class Filters(BucketAggregationNode):
         return {'filters': agg_body['filters']}
 
 
-class MatchAllAggregation(Filters):
+class MatchAll(Filters):
 
     def __init__(self, agg_name, meta=None, children=None):
-        super(MatchAllAggregation, self).__init__(
+        super(MatchAll, self).__init__(
             agg_name=agg_name,
             filters={'All': {'match_all': {}}},
             meta=meta,
@@ -252,7 +252,7 @@ class MatchAllAggregation(Filters):
         return agg_body
 
 
-class Histogram(ListBucketAggregation):
+class Histogram(ListBucketAgg):
 
     AGG_TYPE = 'histogram'
 
@@ -324,7 +324,7 @@ class DateHistogram(Histogram):
         return kwargs
 
 
-class UniqueBucketAggregation(BucketAggregationNode):
+class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
     SINGLE_BUCKET = True
 
@@ -342,7 +342,7 @@ class UniqueBucketAggregation(BucketAggregationNode):
         raise NotImplementedError()
 
 
-class Global(UniqueBucketAggregation):
+class Global(UniqueBucketAgg):
 
     AGG_TYPE = 'global'
 
@@ -359,7 +359,7 @@ class Global(UniqueBucketAggregation):
         return {}
 
 
-class Filter(UniqueBucketAggregation):
+class Filter(UniqueBucketAgg):
 
     AGG_TYPE = 'filter'
 
@@ -383,7 +383,7 @@ class Filter(UniqueBucketAggregation):
         return {'filter_': agg_body}
 
 
-class Nested(UniqueBucketAggregation):
+class Nested(UniqueBucketAgg):
 
     AGG_TYPE = 'nested'
     APPLICABLE_MAPPING_TYPES = ['nested']
@@ -404,7 +404,7 @@ class Nested(UniqueBucketAggregation):
         return {'path': agg_body['path']}
 
 
-class ReverseNested(UniqueBucketAggregation):
+class ReverseNested(UniqueBucketAgg):
 
     AGG_TYPE = 'reverse_nested'
     APPLICABLE_MAPPING_TYPES = ['nested']
@@ -426,14 +426,14 @@ class ReverseNested(UniqueBucketAggregation):
         return {}
 
 
-class FieldMetricAggregation(MetricAggregation):
+class FieldMetricAgg(MetricAgg):
     """Metric aggregation based on single field."""
     VALUE_ATTRS = NotImplementedError()
 
     def __init__(self, agg_name, field, meta=None, **agg_body_kwargs):
         agg_body = dict(agg_body_kwargs)
         agg_body['field'] = field
-        super(FieldMetricAggregation, self).__init__(
+        super(FieldMetricAgg, self).__init__(
             agg_name=agg_name,
             agg_body=agg_body,
             meta=meta
@@ -444,27 +444,27 @@ class FieldMetricAggregation(MetricAggregation):
         return agg_body
 
 
-class Avg(FieldMetricAggregation):
+class Avg(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'avg'
 
 
-class Max(FieldMetricAggregation):
+class Max(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'max'
 
 
-class Min(FieldMetricAggregation):
+class Min(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'min'
 
 
-class ValueCount(FieldMetricAggregation):
+class ValueCount(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'value_count'
 
 
-class Cardinality(FieldMetricAggregation):
+class Cardinality(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'cardinality'
 
@@ -482,7 +482,7 @@ class Cardinality(FieldMetricAggregation):
         )
 
 
-class Stats(FieldMetricAggregation):
+class Stats(FieldMetricAgg):
     VALUE_ATTRS = ['count', 'min', 'max', 'avg', 'sum']
     AGG_TYPE = 'stats'
 

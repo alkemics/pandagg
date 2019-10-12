@@ -6,7 +6,7 @@ from collections import defaultdict
 from pandagg.exceptions import VersionIncompatibilityError
 from pandagg.utils import Obj, validate_client
 from pandagg.index.index import ClientBoundIndex
-from pandagg.aggs.aggregation import PUBLIC_AGGS
+from pandagg.aggs.agg import PUBLIC_AGGS
 from pandagg.wrapper.method_generator import _method_generator
 
 

@@ -8,36 +8,39 @@ from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingF
 from pandagg.tree import Tree
 from pandagg.utils import NestedMixin, validate_client
 from pandagg.aggs.agg_nodes import (
-    AggregationNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAllAggregation, BucketAggregationNode,
+    AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode,
 )
 from pandagg.mapping.mapping import Mapping, TreeMapping
-from pandagg.aggs.response_tree import AggregationResponse
+from pandagg.aggs.response_tree import AggResponse
 
 
-class Aggregation(NestedMixin, Tree):
+class Agg(NestedMixin, Tree):
     """Tree combination of aggregation nodes.
 
     Mapping declaration is optional, but doing so validates aggregation validity.
     """
 
-    node_class = AggregationNode
+    node_class = AggNode
     tree_mapping = None
     DEFAULT_OUTPUT = 'dataframe'
 
     def __init__(self, from_=None, mapping=None, identifier=None):
         from_tree = None
         from_dict = None
-        if isinstance(from_, Aggregation):
+        if isinstance(from_, Agg):
             from_tree = from_
         if isinstance(from_, dict):
             from_dict = from_
-        super(Aggregation, self).__init__(tree=from_tree, identifier=identifier)
+        super(Agg, self).__init__(tree=from_tree, identifier=identifier)
         self.set_mapping(mapping)
         if from_dict:
             self.build_tree_from_dict(from_dict)
 
-    def get_instance(self, identifier):
-        return Aggregation(mapping=self.tree_mapping, identifier=identifier)
+    def get_instance(self, identifier=None):
+        return Agg(mapping=self.tree_mapping, identifier=identifier)
+
+    def copy(self, identifier=None):
+        return Agg(mapping=self.tree_mapping, from_=self, identifier=identifier)
 
     def set_mapping(self, mapping):
         if mapping is not None:
@@ -51,14 +54,11 @@ class Aggregation(NestedMixin, Tree):
             else:
                 raise NotImplementedError()
 
-    def copy(self):
-        return Aggregation(mapping=self.tree_mapping, from_=self)
-
     def build_tree_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)
         from_dict = copy.deepcopy(from_dict)
         if len(from_dict.keys()) > 1:
-            self.add_node(MatchAllAggregation('root'))
+            self.add_node(MatchAll('root'))
         agg_name, agg_detail = next(from_dict.iteritems())
         self._build_tree_from_dict(agg_name, agg_detail, self.root)
 
@@ -94,7 +94,7 @@ class Aggregation(NestedMixin, Tree):
 
         String:
         Interpreted as a terms aggregation counting number of documents per value occurence:
-        >>> a = Aggregation().groupby(['owner.type', 'owner.id'])
+        >>> a = Agg().groupby(['owner.type', 'owner.id'])
         >>> a
         <Aggregation>
         owner.type
@@ -156,7 +156,7 @@ class Aggregation(NestedMixin, Tree):
 
         String:
         Interpreted as a terms aggregation counting number of documents per value occurence:
-        >>> a = Aggregation().groupby(['owner.type', 'owner.id'])
+        >>> a = Agg().groupby(['owner.type', 'owner.id'])
         >>> a
         <Aggregation>
         owner.type
@@ -174,7 +174,7 @@ class Aggregation(NestedMixin, Tree):
             return self
         new_agg = self.copy()
         if not new_agg.root:
-            new_agg.add_node(MatchAllAggregation('root'))
+            new_agg.add_node(MatchAll('root'))
             sub_aggs_parent_id = new_agg.root
         else:
             paths = new_agg.paths_to_leaves()
@@ -197,15 +197,15 @@ class Aggregation(NestedMixin, Tree):
         if isinstance(element, dict):
             # TODO - double check nested
             try:
-                self.paste(nid=insert_below, new_tree=Aggregation(from_=element))
+                self.paste(nid=insert_below, new_tree=Agg(from_=element))
             except AbsentMappingFieldError:
                 pass
             return self
-        if isinstance(element, AggregationNode):
+        if isinstance(element, AggNode):
             assert element.AGG_TYPE in PUBLIC_AGGS.keys()
             self.add_node(copy.deepcopy(element), parent=insert_below)
             return self
-        if isinstance(element, Aggregation):
+        if isinstance(element, Agg):
             # TODO - recheck nested checks
             self.paste_with_nested_check(
                 nid=insert_below,
@@ -241,7 +241,7 @@ class Aggregation(NestedMixin, Tree):
         # apply paste on all trees currently at right level
         trees_right_nested = [tree for tree, required_nested in trees_with_nested_requirement if required_nested == root_nid_nested]
         for tree in trees_right_nested:
-            super(Aggregation, self).paste(nid, tree)
+            super(Agg, self).paste(nid, tree)
 
         # if some trees require to reverse nested, apply reverse nested to highest path (nearest to root)
         trees_to_reverse_nest = [
@@ -277,12 +277,12 @@ class Aggregation(NestedMixin, Tree):
         """
         # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
         if isinstance(node, Nested) or isinstance(node, ReverseNested):
-            super(Aggregation, self).add_node(node, parent)
+            super(Agg, self).add_node(node, parent)
             return self.validate(exc=True)
 
         agg_field = node.agg_body.get('field')
         if agg_field is None or self.tree_mapping is None:
-            return super(Aggregation, self).add_node(node, parent)
+            return super(Agg, self).add_node(node, parent)
 
         if agg_field not in self.tree_mapping:
             raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (node.AGG_TYPE, agg_field))
@@ -292,30 +292,30 @@ class Aggregation(NestedMixin, Tree):
         required_nested_level = next(iter(mapping_nested_fields), None)
         current_nested_level = self.applied_nested_path_at_node(parent)
         if current_nested_level == required_nested_level:
-            return super(Aggregation, self).add_node(node, parent)
+            return super(Agg, self).add_node(node, parent)
         if current_nested_level and (required_nested_level or '' in current_nested_level):
             # requires reverse-nested
             rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % parent)
-            super(Aggregation, self).add_node(rv_node, parent)
-            return super(Aggregation, self).add_node(node, rv_node.identifier)
+            super(Agg, self).add_node(rv_node, parent)
+            return super(Agg, self).add_node(node, rv_node.identifier)
 
         # requires nested - apply all required nested fields
         for nested_lvl in reversed(mapping_nested_fields):
             if current_nested_level != nested_lvl:
                 nested_node = Nested(agg_name='nested_below_%s' % parent, path=nested_lvl)
-                super(Aggregation, self).add_node(nested_node, parent)
+                super(Agg, self).add_node(nested_node, parent)
                 parent = nested_node.identifier
-        super(Aggregation, self).add_node(node, parent)
+        super(Agg, self).add_node(node, parent)
 
     @property
     def deepest_linear_bucket_agg(self):
-        if not self.root or not isinstance(self[self.root], BucketAggregationNode):
+        if not self.root or not isinstance(self[self.root], BucketAggNode):
             return None
         last_bucket_agg_name = self.root
         children = self.children(last_bucket_agg_name)
         while len(children) == 1:
             last_agg = children[0]
-            if not isinstance(last_agg, BucketAggregationNode):
+            if not isinstance(last_agg, BucketAggNode):
                 break
             last_bucket_agg_name = last_agg.agg_name
             children = self.children(last_bucket_agg_name)
@@ -429,7 +429,10 @@ class Aggregation(NestedMixin, Tree):
             raise ImportError('Using dataframe output format requires to install pandas. Please install "pandas" or '
                               'use another output format.')
         grouping_agg_name = self.deepest_linear_bucket_agg
-        index, values = zip(*self._parse_as_dict(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
+        index_values = list(self._parse_as_dict(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
+        if not index_values:
+            return None
+        index, values = zip(*index_values)
         index_names = reversed(list(self.rsearch(grouping_agg_name)))
         index = pd.MultiIndex.from_tuples(index, names=index_names)
 
@@ -455,7 +458,7 @@ class Aggregation(NestedMixin, Tree):
         if output == 'raw':
             return aggs
         elif output == 'tree':
-            return AggregationResponse(self).parse_aggregation(aggs)
+            return AggResponse(self).parse_aggregation(aggs)
         elif output == 'dict_rows':
             return self._parse_as_dict(aggs, **kwargs)
         elif output == 'dataframe':
@@ -468,9 +471,9 @@ class Aggregation(NestedMixin, Tree):
         return (u'<Aggregation>\n%s' % self._reader).encode('utf-8')
 
 
-class ClientBoundAggregation(Aggregation):
+class ClientBoundAggregation(Agg):
 
-    def __init__(self, client, mapping=None, index_name=None, from_=None, query=None):
+    def __init__(self, client, mapping=None, index_name=None, from_=None, query=None, identifier=None):
         self.client = client
         if client is not None:
             validate_client(self.client)
@@ -479,14 +482,16 @@ class ClientBoundAggregation(Aggregation):
         super(ClientBoundAggregation, self).__init__(
             from_=from_,
             mapping=mapping,
+            identifier=identifier
         )
 
-    def copy(self):
+    def copy(self, identifier=None):
         return ClientBoundAggregation(
             client=self.client,
             mapping=self.tree_mapping,
             from_=self,
-            query=self._query
+            query=self._query,
+            identifier=identifier
         )
 
     def query(self, query, validate=False):
@@ -498,7 +503,7 @@ class ClientBoundAggregation(Aggregation):
         new_agg._query = query
         return new_agg
 
-    def agg(self, arg=None, execute=True, output=Aggregation.DEFAULT_OUTPUT, **kwargs):
+    def agg(self, arg=None, execute=True, output=Agg.DEFAULT_OUTPUT, **kwargs):
         new_agg = self.copy()
         aggregation = super(ClientBoundAggregation, new_agg).agg(arg, **kwargs)
         if not execute:

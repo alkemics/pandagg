@@ -15,6 +15,6 @@ from agg_nodes import (
     Stats
 )
 
-from aggregation import Aggregation
+from agg import Agg
 
-from response_tree import AggregationResponse
+from response_tree import AggResponse

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from elasticsearch import Elasticsearch
-from pandagg.aggs.aggregation import Aggregation
+from pandagg.aggs.agg import Agg
 from pandagg.wrapper.wrapper import PandAgg
 
 if __name__ == '__main__':
@@ -11,4 +11,4 @@ if __name__ == '__main__':
     p = PandAgg(client=es)
     p.fetch_indices()
 
-    a = Aggregation(mapping=p.indices.productversion_2.mapping)
+    a = Agg(mapping=p.indices.productversion_2.mapping)
