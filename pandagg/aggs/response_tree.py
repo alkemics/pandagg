@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from pandagg.tree import Tree, Node
-from collections import OrderedDict
 
 
 class PrettyNode:
@@ -82,34 +81,6 @@ class AggResponse(Tree):
                 self.add_node(bucket, parent_node.identifier)
                 for child in self.agg_tree.children(agg_node.agg_name):
                     self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
-
-    def list_buckets(self, nid=None, current_level=None):
-        if nid is not None:
-            return self.subtree(nid).list_buckets(nid=None, current_level=current_level)
-        buckets = self.nodes.values()
-        if current_level is not None:
-            buckets = [bucket for bucket in buckets if bucket.current_level == current_level]
-        return buckets
-
-    def bucket_level_key(self, bucket, level, exc=False):
-        if bucket.current_level == level:
-            return bucket.current_key
-        parent = self.parent(bucket.identifier)
-        if parent:
-            return self.bucket_level_key(parent, level, exc)
-        if exc:
-            raise ValueError('Level not found %s' % level)
-
-    def bucket_id_dict(self, bucket, id_dict=None, end_level=None, depth=None):
-        if id_dict is None:
-            id_dict = OrderedDict()
-        id_dict[bucket.current_level] = bucket.current_key
-        if depth is not None:
-            depth -= 1
-        parent = self.parent(bucket.identifier)
-        if bucket.current_level == end_level or depth == 0 or parent is None:
-            return id_dict
-        return self.bucket_id_dict(parent, id_dict, end_level, depth)
 
     def show(self, data_property='pretty', **kwargs):
         super(AggResponse, self).show(data_property=data_property)
