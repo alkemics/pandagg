@@ -8,7 +8,7 @@ from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingF
 from pandagg.tree import Tree
 from pandagg.utils import NestedMixin, validate_client
 from pandagg.aggs.agg_nodes import (
-    AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode,
+    AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
 )
 from pandagg.mapping.mapping import Mapping, TreeMapping
 from pandagg.aggs.response_tree import AggResponse
@@ -205,7 +205,7 @@ class Agg(NestedMixin, Tree):
     def _interpret_agg(self, insert_below, element, **kwargs):
         if isinstance(element, basestring):
             node = Terms(agg_name=element, field=element, size=kwargs.get('default_size', Terms.DEFAULT_SIZE))
-            self.add_node(node, parent=insert_below)
+            self.add_node(node, pid=insert_below)
             return self
         if isinstance(element, dict):
             # TODO - double check nested
@@ -288,17 +288,17 @@ class Agg(NestedMixin, Tree):
     def paste_with_nested_check(self, nid, tree, required_nested_path=None):
         self.paste_multiple_with_nested_check(nid, (tree, required_nested_path))
 
-    def add_node(self, node, parent=None):
+    def add_node(self, node, pid=None):
         """If mapping is provided, nested and outnested are automatically applied.
         """
         # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
         if isinstance(node, Nested) or isinstance(node, ReverseNested):
-            super(Agg, self).add_node(node, parent)
+            super(Agg, self).add_node(node, pid)
             return self.validate(exc=True)
 
         agg_field = node.agg_body.get('field')
         if agg_field is None or self.tree_mapping is None:
-            return super(Agg, self).add_node(node, parent)
+            return super(Agg, self).add_node(node, pid)
 
         if agg_field not in self.tree_mapping:
             raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (node.AGG_TYPE, agg_field))
@@ -306,22 +306,38 @@ class Agg(NestedMixin, Tree):
         # from deepest to highest
         mapping_nested_fields = list(self.tree_mapping.rsearch(agg_field, filter=lambda n: n.type == 'nested'))
         required_nested_level = next(iter(mapping_nested_fields), None)
-        current_nested_level = self.applied_nested_path_at_node(parent)
+        current_nested_level = self.applied_nested_path_at_node(pid)
         if current_nested_level == required_nested_level:
-            return super(Agg, self).add_node(node, parent)
+            return super(Agg, self).add_node(node, pid)
         if current_nested_level and (required_nested_level or '' in current_nested_level):
             # requires reverse-nested
-            rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % parent)
-            super(Agg, self).add_node(rv_node, parent)
-            return super(Agg, self).add_node(node, rv_node.identifier)
+            # check if already exists in direct children, else create it
+            child_reverse_nested = next(
+                (n for n in self.children(pid) if isinstance(n, ReverseNested) and n.path == required_nested_level)
+                , None
+            )
+            if child_reverse_nested:
+                return super(Agg, self).add_node(node, child_reverse_nested.identifier)
+            else:
+                rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % pid)
+                super(Agg, self).add_node(rv_node, pid)
+                return super(Agg, self).add_node(node, rv_node.identifier)
 
         # requires nested - apply all required nested fields
         for nested_lvl in reversed(mapping_nested_fields):
             if current_nested_level != nested_lvl:
-                nested_node = Nested(agg_name='nested_below_%s' % parent, path=nested_lvl)
-                super(Agg, self).add_node(nested_node, parent)
-                parent = nested_node.identifier
-        super(Agg, self).add_node(node, parent)
+                # check if already exists in direct children, else create it
+                child_nested = next(
+                    (n for n in self.children(pid) if isinstance(n, Nested) and n.path == nested_lvl)
+                    , None
+                )
+                if child_nested:
+                    pid = child_nested.identifier
+                    continue
+                nested_node = Nested(agg_name='nested_below_%s' % pid, path=nested_lvl)
+                super(Agg, self).add_node(nested_node, pid)
+                pid = nested_node.identifier
+        super(Agg, self).add_node(node, pid)
 
     @property
     def deepest_linear_bucket_agg(self):
@@ -378,10 +394,12 @@ class Agg(NestedMixin, Tree):
                 yielded_child_bucket = True
                 child_name = next((child.agg_name for child in self.children(agg_name)), None)
                 sub_row = copy.deepcopy(row)
-                if row_as_tuple:
-                    sub_row.append(key)
-                else:
-                    sub_row[agg_name] = key
+                # aggs generating a single bucket don't require to be listed in grouping keys
+                if not isinstance(agg_node, UniqueBucketAgg):
+                    if row_as_tuple:
+                        sub_row.append(key)
+                    else:
+                        sub_row[agg_name] = key
                 if child_name and agg_name != until:
                     # yield children
                     for sub_row, sub_raw_bucket in self._parse_group_by(
@@ -453,7 +471,7 @@ class Agg(NestedMixin, Tree):
         if not index_values:
             return None
         index, values = zip(*index_values)
-        index_names = reversed(list(self.rsearch(grouping_agg_name)))
+        index_names = reversed(list(self.rsearch(grouping_agg_name, filter=lambda x: not isinstance(x, UniqueBucketAgg))))
         index = pd.MultiIndex.from_tuples(index, names=index_names)
 
         grouping_agg = self[grouping_agg_name]
