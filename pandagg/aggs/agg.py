@@ -39,7 +39,7 @@ class Agg(NestedMixin, Tree):
         if from_dict:
             self._init_build_tree_from_dict(from_dict)
         if from_agg_node:
-            self._build_tree_from_agg_node(from_agg_node)
+            self._build_tree_from_node(from_agg_node)
 
     def _get_instance(self, identifier=None):
         return Agg(mapping=self.tree_mapping, identifier=identifier)
@@ -87,13 +87,13 @@ class Agg(NestedMixin, Tree):
         kwargs = agg_class.agg_body_to_init_kwargs(agg_body)
         return agg_class(agg_name=agg_name, meta=meta, **kwargs)
 
-    def _build_tree_from_agg_node(self, agg_node, pid=None):
+    def _build_tree_from_node(self, agg_node, pid=None):
         self.add_node(agg_node, pid)
         if isinstance(agg_node, BucketAggNode):
             for child_agg_node in agg_node.aggs or []:
-                self._build_tree_from_agg_node(child_agg_node, pid=agg_node.identifier)
+                self._build_tree_from_node(child_agg_node, pid=agg_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
-            agg_node.children = None
+            agg_node.aggs = None
 
     def groupby(self, by, **kwargs):
         """Group by is available only if there is a succession of unique childs.
@@ -216,7 +216,7 @@ class Agg(NestedMixin, Tree):
             return self
         if isinstance(element, AggNode):
             assert element.AGG_TYPE in PUBLIC_AGGS.keys()
-            self._build_tree_from_agg_node(element, pid=insert_below)
+            self._build_tree_from_node(element, pid=insert_below)
             return self
         if isinstance(element, Agg):
             # TODO - recheck nested checks
