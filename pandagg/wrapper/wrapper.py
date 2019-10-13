@@ -15,8 +15,8 @@ class PandAgg:
     def __init__(self, client):
         self.client = client
         validate_client(self.client)
-        self.indices = Obj()
-        self.aliases = Obj()
+        self.indices = Obj('Indices')
+        self.aliases = Obj('Aliases')
         self._indices = None
         self._info = None
 

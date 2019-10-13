@@ -8,8 +8,11 @@ from pandagg.exceptions import InvalidElasticSearchClientError
 
 class Obj(object):
 
-    def __init__(self):
+    def __init__(self, obj_name=None):
         # will store non-valid names
+        self.__private = {
+            'obj_name': obj_name or self.__class__.__name__
+        }
         self.__d = dict()
 
     def __getitem__(self, item):
@@ -25,16 +28,16 @@ class Obj(object):
             super(Obj, self).__setattr__(key, value)
 
     def __keys(self):
-        return self.__d.keys() + [k for k in self.__dict__.keys() if k != '_Obj__d']
+        return self.__d.keys() + [k for k in self.__dict__.keys() if k not in ('_Obj__d', '_Obj__private')]
 
     def __repr__(self):
-        return list.__repr__(self.__keys())
+        return '<%s> %s' % (self.__private['obj_name'], list.__repr__(self.__keys()))
 
     def __str__(self):
         return self.__repr__()
 
 
-class PrettyNode(Obj):
+class PrettyNode(object):
     # class to display pretty nodes while working with trees
     def __init__(self, pretty):
         super(PrettyNode, self).__init__()
