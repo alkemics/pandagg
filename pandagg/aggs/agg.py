@@ -26,17 +26,22 @@ class Agg(NestedMixin, Tree):
 
     def __init__(self, from_=None, mapping=None, identifier=None):
         from_tree = None
+        from_agg_node = None
         from_dict = None
         if isinstance(from_, Agg):
             from_tree = from_
+        if isinstance(from_, AggNode):
+            from_agg_node = from_
         if isinstance(from_, dict):
             from_dict = from_
         super(Agg, self).__init__(tree=from_tree, identifier=identifier)
         self.set_mapping(mapping)
         if from_dict:
-            self.build_tree_from_dict(from_dict)
+            self._init_build_tree_from_dict(from_dict)
+        if from_agg_node:
+            self._build_tree_from_agg_node(from_agg_node)
 
-    def get_instance(self, identifier=None):
+    def _get_instance(self, identifier=None):
         return Agg(mapping=self.tree_mapping, identifier=identifier)
 
     def copy(self, identifier=None):
@@ -54,7 +59,7 @@ class Agg(NestedMixin, Tree):
             else:
                 raise NotImplementedError()
 
-    def build_tree_from_dict(self, from_dict):
+    def _init_build_tree_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)
         from_dict = copy.deepcopy(from_dict)
         if len(from_dict.keys()) > 1:
@@ -70,17 +75,26 @@ class Agg(NestedMixin, Tree):
         assert len(agg_detail.keys()) == 1
         agg_type = agg_detail.keys()[0]
         agg_body = agg_detail.values()[0]
-        node = self.node_from_dict(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
+        node = self._node_from_dict(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
         self.add_node(node, pid)
         for child_name, child_detail in children_aggs.iteritems():
             self._build_tree_from_dict(child_name, child_detail, node.identifier)
 
-    def node_from_dict(self, agg_type, agg_name, agg_body, meta):
+    def _node_from_dict(self, agg_type, agg_name, agg_body, meta):
         if agg_type not in PUBLIC_AGGS.keys():
             raise NotImplementedError('Unknown aggregation type <%s>' % agg_type)
         agg_class = PUBLIC_AGGS[agg_type]
         kwargs = agg_class.agg_body_to_init_kwargs(agg_body)
         return agg_class(agg_name=agg_name, meta=meta, **kwargs)
+
+    def _build_tree_from_agg_node(self, agg_node, pid=None):
+        self.add_node(agg_node, pid)
+        if not hasattr(agg_node, 'children'):
+            return
+        for child in agg_node.children or []:
+            self._build_tree_from_agg_node(child, pid=agg_node.identifier)
+        # reset children to None to avoid confusion since this serves only __init__ syntax.
+        agg_node.children = None
 
     def groupby(self, by, **kwargs):
         """Group by is available only if there is a succession of unique childs.

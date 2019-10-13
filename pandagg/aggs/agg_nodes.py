@@ -84,6 +84,20 @@ class BucketAggNode(AggNode):
     - to build aggregation request (with children aggregations)
     - to to extract buckets from raw response
     - to build query to filter documents belonging to that bucket
+
+    Note: the children attribute's only purpose is for initiation with the following syntax:
+    >>> from pandagg.aggs import Agg, Terms, Avg
+    >>> agg = Agg(
+    >>>     Terms(
+    >>>         agg_name='term_agg',
+    >>>         field='some_path',
+    >>>         children=[
+    >>>             Avg(agg_name='avg_agg', field='some_other_path')
+    >>>         ]
+    >>>     )
+    >>> )
+    Yet, the children attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
+    bpointer/fpointer attributes inherited from treelib.Tree class.
     """
     VALUE_ATTRS = ['doc_count']
     SINGLE_BUCKET = NotImplementedError()

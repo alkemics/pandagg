@@ -4,8 +4,6 @@
 from pandagg.tree import Tree, Node
 from collections import OrderedDict
 
-from treelib.exceptions import NodeIDAbsentError
-
 
 class PrettyNode:
     # class to display pretty nodes while working with trees
