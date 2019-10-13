@@ -3,8 +3,11 @@
 
 import copy
 import collections
+import warnings
 
-from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation
+from pandagg.exceptions import (
+    AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation, MappingError
+)
 from pandagg.tree import Tree
 from pandagg.utils import NestedMixin, validate_client
 from pandagg.aggs.agg_nodes import (
@@ -194,7 +197,6 @@ class Agg(NestedMixin, Tree):
             assert len(paths) == 1
             sub_aggs_parent_id = paths[0][-1]
 
-        # TODO - double check nested in case of iterable
         if isinstance(arg, collections.Iterable) and not isinstance(arg, basestring) and not isinstance(arg, dict):
             for arg_el in arg:
                 new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
@@ -208,7 +210,6 @@ class Agg(NestedMixin, Tree):
             self.add_node(node, pid=insert_below)
             return self
         if isinstance(element, dict):
-            # TODO - double check nested
             try:
                 self.paste(nid=insert_below, new_tree=Agg(from_=element))
             except AbsentMappingFieldError:
@@ -219,12 +220,7 @@ class Agg(NestedMixin, Tree):
             self._build_tree_from_node(element, pid=insert_below)
             return self
         if isinstance(element, Agg):
-            # TODO - recheck nested checks
-            self.paste_with_nested_check(
-                nid=insert_below,
-                tree=element,
-                required_nested_path=self.applied_nested_path_at_node(insert_below)
-            )
+            self.paste(nid=insert_below, new_tree=element)
             return self
         raise NotImplementedError()
 
@@ -245,48 +241,71 @@ class Agg(NestedMixin, Tree):
                 applied_nested_path = self.safe_apply_outnested(applied_nested_path, node.path)
         return applied_nested_path
 
-    def paste_multiple_with_nested_check(self, nid, *trees_with_nested_requirement):
-        # TODO - rethink this, with provided mapping
-        """Paste multiple trees at a given node, and generating all necessary nested or reverse nested aggregations.
+    def paste(self, nid, new_tree, deep=False):
+        """Pastes a tree handling nested implications if mapping is provided.
+        The provided tree should be validated beforehands.
         """
-        root_nid_nested = self.applied_nested_path_at_node(nid)
+        if self.tree_mapping is None:
+            return super(Agg, self).paste(nid, new_tree, deep)
+        # validates that mappings are similar
+        if new_tree.tree_mapping is not None:
+            if new_tree.tree_mapping.mapping_detail != self.tree_mapping.mapping_detail:
+                raise MappingError('Pasted tree has a different mapping.')
 
-        # apply paste on all trees currently at right level
-        trees_right_nested = [
-            tree for tree, required_nested in trees_with_nested_requirement if required_nested == root_nid_nested
-        ]
-        for tree in trees_right_nested:
-            super(Agg, self).paste(nid, tree)
+        # check root node nested position in mapping
+        pasted_root = new_tree[new_tree.root]
+        # if it is a nested or reverse-nested agg, assumes you know what you are doing, validates afterwards
+        if isinstance(pasted_root, Nested) or isinstance(pasted_root, ReverseNested):
+            super(Agg, self).paste(nid, new_tree, deep)
+            return self.validate(exc=True)
 
-        # if some trees require to reverse nested, apply reverse nested to highest path (nearest to root)
-        trees_to_reverse_nest = [
-            (tree, required_nested) for tree, required_nested in trees_with_nested_requirement
-            if self.requires_outnested(root_nid_nested, required_nested)
-        ]
-        if trees_to_reverse_nest:
-            ordered_nested_path = sorted([el[1] for el in trees_to_reverse_nest])
-            common_path = self.safe_apply_outnested(root_nid_nested, ordered_nested_path[0])
-            reverse_nested_identifier = '%s_reverse_nested_below_%s' % (common_path.replace('.', '_') if common_path
-                                                                        else 'root', nid)
-            reverse_nested_node = ReverseNested(agg_name=reverse_nested_identifier, path=common_path)
-            self.add_node(reverse_nested_node, nid)
-            self.paste_multiple_with_nested_check(reverse_nested_identifier, *trees_to_reverse_nest)
+        agg_field = new_tree[new_tree.root].agg_body.get('field')
+        if agg_field is None:
+            warnings.warn('Paste operation could not validate nested integrity: unknown nested position of pasted root'
+                          'node: %s.' % pasted_root)
+            super(Agg, self).paste(nid, new_tree, deep)
+            return self.validate(exc=True)
 
-        # if some trees require nested, apply nested to highest path (nearest to root)
-        trees_to_nest = [
-            (tree, required_nested) for tree, required_nested in trees_with_nested_requirement
-            if self.requires_nested(root_nid_nested, required_nested)
-        ]
-        if trees_to_nest:
-            ordered_nested_path = sorted([el[1] for el in trees_to_nest])
-            common_path = self.safe_apply_nested(root_nid_nested, ordered_nested_path[0])
-            nested_identifier = '%s_nested_below_%s' % (common_path.replace('.', '_') if common_path else 'root', nid)
-            nested_node = Nested(agg_name=nested_identifier, path=common_path)
-            self.add_node(nested_node, nid)
-            self.paste_multiple_with_nested_check(nested_identifier, *trees_to_nest)
+        if agg_field not in self.tree_mapping:
+            raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.'
+                                          % (pasted_root.AGG_TYPE, agg_field))
 
-    def paste_with_nested_check(self, nid, tree, required_nested_path=None):
-        self.paste_multiple_with_nested_check(nid, (tree, required_nested_path))
+        # from deepest to highest
+        mapping_nested_fields = list(self.tree_mapping.rsearch(agg_field, filter=lambda n: n.type == 'nested'))
+        required_nested_level = next(iter(mapping_nested_fields), None)
+        current_nested_level = self.applied_nested_path_at_node(nid)
+        if current_nested_level == required_nested_level:
+            return super(Agg, self).paste(nid, new_tree, deep)
+        if current_nested_level and (required_nested_level or '' in current_nested_level):
+            # requires reverse-nested
+            # check if already exists in direct children, else create it
+            child_reverse_nested = next(
+                (n for n in self.children(nid) if isinstance(n, ReverseNested) and n.path == required_nested_level),
+                None
+            )
+            if child_reverse_nested:
+                return super(Agg, self).paste(child_reverse_nested.identifier, new_tree, deep)
+            else:
+                rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % nid)
+                super(Agg, self).add_node(rv_node, nid)
+                return super(Agg, self).paste(rv_node.identifier, new_tree, deep)
+
+        # requires nested - apply all required nested fields
+        pid = nid
+        for nested_lvl in reversed(mapping_nested_fields):
+            if current_nested_level != nested_lvl:
+                # check if already exists in direct children, else create it
+                child_nested = next(
+                    (n for n in self.children(nid) if isinstance(n, Nested) and n.path == nested_lvl),
+                    None
+                )
+                if child_nested:
+                    pid = child_nested.identifier
+                    continue
+                nested_node = Nested(agg_name='nested_below_%s' % pid, path=nested_lvl)
+                super(Agg, self).add_node(nested_node, pid)
+                pid = nested_node.identifier
+        super(Agg, self).paste(pid, new_tree, deep)
 
     def add_node(self, node, pid=None):
         """If mapping is provided, nested and outnested are automatically applied.
@@ -313,8 +332,8 @@ class Agg(NestedMixin, Tree):
             # requires reverse-nested
             # check if already exists in direct children, else create it
             child_reverse_nested = next(
-                (n for n in self.children(pid) if isinstance(n, ReverseNested) and n.path == required_nested_level)
-                , None
+                (n for n in self.children(pid) if isinstance(n, ReverseNested) and n.path == required_nested_level),
+                None
             )
             if child_reverse_nested:
                 return super(Agg, self).add_node(node, child_reverse_nested.identifier)
@@ -328,8 +347,8 @@ class Agg(NestedMixin, Tree):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
-                    (n for n in self.children(pid) if isinstance(n, Nested) and n.path == nested_lvl)
-                    , None
+                    (n for n in self.children(pid) if isinstance(n, Nested) and n.path == nested_lvl),
+                    None
                 )
                 if child_nested:
                     pid = child_nested.identifier
@@ -471,7 +490,9 @@ class Agg(NestedMixin, Tree):
         if not index_values:
             return None
         index, values = zip(*index_values)
-        index_names = reversed(list(self.rsearch(grouping_agg_name, filter=lambda x: not isinstance(x, UniqueBucketAgg))))
+        index_names = reversed(list(self.rsearch(
+            grouping_agg_name, filter=lambda x: not isinstance(x, UniqueBucketAgg)
+        )))
         index = pd.MultiIndex.from_tuples(index, names=index_names)
 
         grouping_agg = self[grouping_agg_name]
