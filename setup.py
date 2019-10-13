@@ -26,11 +26,15 @@ tests_require = [
 ]
 
 install_requires = [
-    'elasticsearch==2.3.0'
+    # treelib when https://github.com/caesar0301/treelib/pull/120 is approved
 ]
 
 extras_require = {
-    'test': tests_require
+    'test': tests_require,
+    'dev': [
+        'elasticsearch==2.3.0',
+        'pandas==0.24.2'
+    ]
 }
 
 # =============================================================================
