@@ -9,7 +9,7 @@ from pandagg.exceptions import (
     AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation, MappingError
 )
 from pandagg.tree import Tree
-from pandagg.utils import NestedMixin, validate_client
+from pandagg.utils import validate_client
 from pandagg.aggs.agg_nodes import (
     AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
 )
@@ -17,7 +17,7 @@ from pandagg.mapping.mapping import Mapping, TreeMapping
 from pandagg.aggs.response_tree import AggResponse
 
 
-class Agg(NestedMixin, Tree):
+class Agg(Tree):
     """Tree combination of aggregation nodes.
 
     Mapping declaration is optional, but doing so validates aggregation validity.
@@ -235,10 +235,10 @@ class Agg(NestedMixin, Tree):
         for nid in reversed(list(self.rsearch(nid))):
             node = self[nid]
             if isinstance(node, Nested):
-                applied_nested_path = self.safe_apply_nested(applied_nested_path, node.path)
+                applied_nested_path = node.path
             elif isinstance(node, ReverseNested):
-                # a reverse nested remove nested paths, except the one specified if there is one
-                applied_nested_path = self.safe_apply_outnested(applied_nested_path, node.path)
+                # a reverse nested removes nested, except if one path is specified
+                applied_nested_path = node.path
         return applied_nested_path
 
     def paste(self, nid, new_tree, deep=False):

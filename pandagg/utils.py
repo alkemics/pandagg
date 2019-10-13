@@ -41,42 +41,6 @@ class PrettyNode(Obj):
         self.pretty = pretty
 
 
-class NestedMixin(object):
-
-    @staticmethod
-    def requires_nested(previous, next):
-        if next is None:
-            return False
-        if previous is None:
-            return True
-        return previous in next and next not in previous
-
-    @staticmethod
-    def requires_outnested(previous, next):
-        if previous is None:
-            return False
-        if next is None:
-            return True
-        return next in previous and previous not in next
-
-    @staticmethod
-    def safe_apply_nested(previous, next):
-        if next and (previous is None or previous in next):
-            return next
-        raise ValueError('Cannot navigate from nested "%s" to nested "%s".' % (previous, next))
-
-    @staticmethod
-    def safe_apply_outnested(previous, next):
-        if previous is None:
-            raise ValueError('Cannot navigate outnested if no nested is applied.')
-        if next is None:
-            return next
-        if next in previous:
-            return next
-        else:
-            raise ValueError('Cannot navigate from nested "%s" to outnested "%s".' % (previous, next))
-
-
 def bool_if_required(sub_filters, advanced_search_syntax=True, operator='must'):
     # wrap conditions in bool only if necessary
     if len(sub_filters) == 1:
