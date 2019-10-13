@@ -84,17 +84,31 @@ class Mapping(Obj):
     Autocomplete attributes
     """
 
-    def __init__(self, tree, root_path=None):
+    def __init__(self, tree, root_path=None, depth=None):
         super(Mapping, self).__init__()
         self._tree = tree
         self._root_path = root_path
+        self._expand_attrs(depth)
 
-        for child in self._tree.children(nid=self._tree.root):
-            child_root = '%s.%s' % (root_path, child.field_name) if root_path is not None else child.field_name
-            self[child.field_name] = self._get_instance(child.identifier, root_path=child_root)
+    def _get_instance(self, nid, root_path, depth):
+        return Mapping(tree=self._tree.subtree(nid), root_path=root_path, depth=depth)
 
-    def _get_instance(self, nid, root_path):
-        return Mapping(tree=self._tree.subtree(nid), root_path=root_path)
+    def _expand_attrs(self, depth):
+        if depth:
+            for child in self._tree.children(nid=self._tree.root):
+                if hasattr(self, child.field_name):
+                    continue
+                if self._root_path is None:
+                    child_root = '%s.%s' % (self._root_path, child.field_name)
+                else:
+                    child_root = child.field_name
+                self[child.field_name] = self._get_instance(child.identifier, root_path=child_root, depth=depth-1)
+
+    def __getattribute__(self, item):
+        r = super(Mapping, self).__getattribute__(item)
+        if isinstance(r, Mapping):
+            r._expand_attrs(depth=1)
+        return r
 
     def __repr__(self):
         tree_repr = self._tree.show()
@@ -110,14 +124,14 @@ class Mapping(Obj):
 
 class ClientBoundMapping(Mapping):
 
-    def __init__(self, client, tree, root_path=None):
+    def __init__(self, client, tree, root_path=None, depth=None):
         self._client = client
-        super(ClientBoundMapping, self).__init__(tree, root_path)
+        super(ClientBoundMapping, self).__init__(tree, root_path, depth)
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         if not self._tree.children(self._tree.root):
             field_type = self._tree[self._tree.root].type
             if field_type in field_classes_per_name:
                 self.a = field_classes_per_name[field_type](self._client)
 
-    def _get_instance(self, nid, root_path):
-        return ClientBoundMapping(tree=self._tree.subtree(nid), root_path=root_path, client=self._client)
+    def _get_instance(self, nid, root_path, depth):
+        return ClientBoundMapping(tree=self._tree.subtree(nid), root_path=root_path, client=self._client, depth=depth)
