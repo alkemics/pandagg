@@ -4,7 +4,7 @@
 from pandagg.utils import Obj, validate_client
 from pandagg.mapping.mapping import ClientBoundMapping
 from pandagg.aggs.agg import (
-    Agg, Mapping, TreeMapping, ClientBoundAggregation
+    Agg, Mapping, MappingTree, ClientBoundAggregation
 )
 
 
@@ -21,7 +21,7 @@ class Index(Obj):
 
     def set_mapping(self, mapping):
         mapping_name, mapping_detail = next(mapping.iteritems())
-        self.mapping = Mapping(tree=TreeMapping(mapping_name, mapping_detail), depth=1)
+        self.mapping = Mapping(tree=MappingTree(mapping_name, mapping_detail), depth=1)
 
     def groupby(self, by, **kwargs):
         return Agg(mapping=self.mapping).groupby(by, **kwargs)
@@ -48,7 +48,7 @@ class ClientBoundIndex(Index):
 
     def set_mapping(self, mapping):
         mapping_name, mapping_detail = next(mapping.iteritems())
-        self.mapping = ClientBoundMapping(client=self.client, tree=TreeMapping(mapping_name, mapping_detail), depth=1)
+        self.mapping = ClientBoundMapping(client=self.client, tree=MappingTree(mapping_name, mapping_detail), depth=1)
 
     def query(self, query, validate=False):
         return ClientBoundAggregation(client=self.client, mapping=self.mapping).query(query, validate=validate)

@@ -41,14 +41,14 @@ class MappingNode(Node):
         )
 
 
-class TreeMapping(Tree):
+class MappingTree(Tree):
     """
     Tree
     """
     node_class = MappingNode
 
     def __init__(self, mapping_name, mapping_detail=None, identifier=None):
-        super(TreeMapping, self).__init__(identifier=identifier)
+        super(MappingTree, self).__init__(identifier=identifier)
         self.mapping_name = mapping_name
         self.mapping_detail = mapping_detail
         if mapping_detail:
@@ -65,7 +65,7 @@ class TreeMapping(Tree):
                 self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
 
     def subtree(self, nid):
-        st = TreeMapping(mapping_name=self.mapping_name)
+        st = MappingTree(mapping_name=self.mapping_name)
         st.root = nid
         for node_n in self.expand_tree(nid):
             st._nodes.update({self[node_n].identifier: self[node_n]})
@@ -73,7 +73,7 @@ class TreeMapping(Tree):
         return st
 
     def show(self, data_property='pretty', **kwargs):
-        return super(TreeMapping, self).show(data_property=data_property, **kwargs)
+        return super(MappingTree, self).show(data_property=data_property, **kwargs)
 
 
 class Mapping(TreeBasedObj):

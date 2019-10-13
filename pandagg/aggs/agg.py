@@ -13,8 +13,8 @@ from pandagg.utils import validate_client
 from pandagg.aggs.agg_nodes import (
     AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
 )
-from pandagg.mapping.mapping import Mapping, TreeMapping
-from pandagg.aggs.response_tree import AggResponse
+from pandagg.mapping.mapping import Mapping, MappingTree
+from pandagg.aggs.response_tree import ResponseTree, AggResponse
 
 
 class Agg(Tree):
@@ -52,13 +52,13 @@ class Agg(Tree):
 
     def set_mapping(self, mapping):
         if mapping is not None:
-            if isinstance(mapping, TreeMapping):
+            if isinstance(mapping, MappingTree):
                 self.tree_mapping = mapping
             elif isinstance(mapping, Mapping):
                 self.tree_mapping = mapping._tree
             elif isinstance(mapping, dict):
                 mapping_name, mapping_detail = next(mapping.iteritems())
-                self.tree_mapping = TreeMapping(mapping_name, mapping_detail)
+                self.tree_mapping = MappingTree(mapping_name, mapping_detail)
             else:
                 raise NotImplementedError()
 
@@ -517,7 +517,8 @@ class Agg(Tree):
         if output == 'raw':
             return aggs
         elif output == 'tree':
-            return AggResponse(self).parse_aggregation(aggs)
+            response_tree = ResponseTree(self).parse_aggregation(aggs)
+            return AggResponse(tree=response_tree, depth=1)
         elif output == 'dict_rows':
             return self._parse_as_dict(aggs, **kwargs)
         elif output == 'dataframe':

@@ -17,7 +17,7 @@ from agg_nodes import (
 
 from agg import Agg
 
-from response_tree import AggResponse
+from response_tree import ResponseTree
 
 __all__ = [
     # nodes
@@ -37,5 +37,5 @@ __all__ = [
     "Stats",
     # trees
     "Agg",
-    "AggResponse"
+    "ResponseTree"
 ]

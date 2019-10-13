@@ -1,3 +1,3 @@
-from mapping import Mapping, TreeMapping
+from mapping import Mapping, MappingTree
 
-__all__ = ["Mapping", "TreeMapping"]
+__all__ = ["Mapping", "MappingTree"]

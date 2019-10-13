@@ -53,7 +53,7 @@ class Obj(object):
     def __keys(self):
         return self.__d.keys() + [
             k for k in self.__dict__.keys()
-            if k not in map(lambda x: '_%s%s' % (self.__class__.__name__, x), ['__d', '__REPR_NAME'])
+            if k not in map(lambda x: '_%s%s' % (self.__class__.__name__, x), ['__d', '_REPR_NAME'])
         ]
 
     def __repr__(self):
@@ -68,9 +68,8 @@ class TreeBasedObj(Obj):
     Recursive Obj whose structure is defined by a treelib.Tree object.
 
     The main purpose of this object is to iteratively expand the tree as attributes of this object. To avoid creating
-    useless instances, only children of accessed nodes are expanded.
+    useless instances, only direct children of accessed nodes are expanded.
     """
-    __REPR_NAME = None
     _NODE_PATH_ATTR = NotImplementedError()
 
     def __init__(self, tree, root_path=None, depth=None):
@@ -80,11 +79,8 @@ class TreeBasedObj(Obj):
         self._root_path = root_path
         self._expand_attrs(depth)
 
-    def _get_node_path_attr(self):
-        return 'field_name'
-
     def _get_instance(self, nid, root_path, depth):
-        return self.TreeBasedObj(tree=self._tree.subtree(nid), root_path=root_path, depth=depth)
+        return self.__class__(tree=self._tree.subtree(nid), root_path=root_path, depth=depth)
 
     def _expand_attrs(self, depth):
         if depth:
@@ -96,7 +92,7 @@ class TreeBasedObj(Obj):
                     child_root = '%s.%s' % (self._root_path, child_path)
                 else:
                     child_root = child_path
-                self[child.field_name] = self._get_instance(child.identifier, root_path=child_root, depth=depth-1)
+                self[child_path] = self._get_instance(child.identifier, root_path=child_root, depth=depth-1)
 
     def __getattribute__(self, item):
         r = super(TreeBasedObj, self).__getattribute__(item)
@@ -116,9 +112,9 @@ class TreeBasedObj(Obj):
     def __repr__(self):
         tree_repr = self._tree.show()
         if self._root_path is None:
-            return (u'\n<%s>\n%s' % (self.__class__.__REPR_NAME or self.__class__.__name__, tree_repr)).encode('utf-8')
+            return (u'\n<%s>\n%s' % (self.__class__._REPR_NAME or self.__class__.__name__, tree_repr)).encode('utf-8')
         current_path = self._root_path
-        return (u'\n<%s subpart: %s>\n%s' % (self.__class__.__REPR_NAME or self.__class__.__name__, current_path, tree_repr)).encode('utf-8')
+        return (u'\n<%s subpart: %s>\n%s' % (self.__class__._REPR_NAME or self.__class__.__name__, current_path, tree_repr)).encode('utf-8')
 
 
 class PrettyNode(object):

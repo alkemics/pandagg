@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pandagg.tree import Tree, Node
+from pandagg.utils import TreeBasedObj
 
 
 class PrettyNode:
@@ -21,6 +22,10 @@ class ResponseNode(Node):
         # `override_current_level` is only used to create root node of response tree
         self.current_level = override_current_level or aggregation_node.agg_name
         self.current_key = key
+        if self.current_key is not None:
+            self.path = '%s_%s' % (self.current_level.replace('.', '_'), self.current_key)
+        else:
+            self.path = self.current_level.replace('.', '_')
         pretty = self._str_current_level(
             level=self.current_level,
             key=self.current_key,
@@ -50,14 +55,14 @@ class ResponseNode(Node):
             .format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
 
 
-class AggResponse(Tree):
+class ResponseTree(Tree):
 
     def __init__(self, agg_tree, identifier=None):
-        super(AggResponse, self).__init__(identifier=identifier)
+        super(ResponseTree, self).__init__(identifier=identifier)
         self.agg_tree = agg_tree
 
     def get_instance(self, identifier):
-        return AggResponse(agg_tree=self.agg_tree, identifier=identifier)
+        return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
 
     def parse_aggregation(self, raw_response):
         # init tree with fist node called 'aggs'
@@ -83,8 +88,14 @@ class AggResponse(Tree):
                     self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
 
     def show(self, data_property='pretty', **kwargs):
-        super(AggResponse, self).show(data_property=data_property)
+        return super(ResponseTree, self).show(data_property=data_property)
 
     def __repr__(self):
         self.show()
         return (u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)).encode('utf-8')
+
+
+class AggResponse(TreeBasedObj):
+
+    _REPR_NAME = 'AggResponse'
+    _NODE_PATH_ATTR = 'path'
