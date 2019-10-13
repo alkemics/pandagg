@@ -29,8 +29,13 @@ class Index(Obj):
     def agg(self, arg, output=None, **kwargs):
         return Agg(mapping=self.mapping).agg(arg, **kwargs)
 
-    def __repr__(self):
-        return '<Index %s>' % self.name
+
+class Indices(Obj):
+    __REPR_NAME = 'Indices'
+
+
+class Aliases(Obj):
+    __REPR_NAME = 'Aliases'
 
 
 class ClientBoundIndex(Index):

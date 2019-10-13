@@ -4,8 +4,8 @@
 from collections import defaultdict
 
 from pandagg.exceptions import VersionIncompatibilityError
-from pandagg.utils import Obj, validate_client
-from pandagg.index.index import ClientBoundIndex
+from pandagg.utils import validate_client
+from pandagg.index.index import ClientBoundIndex, Indices, Aliases
 
 
 class PandAgg:
@@ -15,8 +15,8 @@ class PandAgg:
     def __init__(self, client):
         self.client = client
         validate_client(self.client)
-        self.indices = Obj('Indices')
-        self.aliases = Obj('Aliases')
+        self.indices = Indices()
+        self.aliases = Aliases()
         self._indices = None
         self._info = None
 

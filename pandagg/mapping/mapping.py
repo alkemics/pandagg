@@ -5,7 +5,7 @@ import json
 
 from pandagg.mapping.types import field_classes_per_name
 from pandagg.tree import Tree, Node
-from pandagg.utils import Obj, PrettyNode
+from pandagg.utils import PrettyNode, TreeBasedObj
 
 
 class MappingNode(Node):
@@ -64,9 +64,6 @@ class TreeMapping(Tree):
                 sub_path = '%s.%s' % (path, sub_name) if path else sub_name
                 self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
 
-    def get_instance(self, identifier):
-        return TreeMapping(mapping_name=self.mapping_name, mapping_detail=self.mapping_detail, identifier=identifier)
-
     def subtree(self, nid):
         st = TreeMapping(mapping_name=self.mapping_name)
         st.root = nid
@@ -79,44 +76,11 @@ class TreeMapping(Tree):
         return super(TreeMapping, self).show(data_property=data_property, **kwargs)
 
 
-class Mapping(Obj):
+class Mapping(TreeBasedObj):
     """
     Autocomplete attributes
     """
-
-    def __init__(self, tree, root_path=None, depth=None):
-        super(Mapping, self).__init__()
-        self._tree = tree
-        self._root_path = root_path
-        self._expand_attrs(depth)
-
-    def _get_instance(self, nid, root_path, depth):
-        return Mapping(tree=self._tree.subtree(nid), root_path=root_path, depth=depth)
-
-    def _expand_attrs(self, depth):
-        if depth:
-            for child in self._tree.children(nid=self._tree.root):
-                if hasattr(self, child.field_name):
-                    continue
-                if self._root_path is None:
-                    child_root = '%s.%s' % (self._root_path, child.field_name)
-                else:
-                    child_root = child.field_name
-                self[child.field_name] = self._get_instance(child.identifier, root_path=child_root, depth=depth-1)
-
-    def __getattribute__(self, item):
-        r = super(Mapping, self).__getattribute__(item)
-        if isinstance(r, Mapping):
-            r._expand_attrs(depth=1)
-        return r
-
-    def __repr__(self):
-        tree_repr = self._tree.show()
-        mapping_name = self._tree.mapping_name
-        if self._root_path is None:
-            return (u'\n<Mapping %s>\n%s' % (mapping_name, tree_repr)).encode('utf-8')
-        current_path = self._root_path
-        return (u'\n<Mapping %s subpart: %s>\n%s' % (mapping_name, current_path, tree_repr)).encode('utf-8')
+    _NODE_PATH_ATTR = 'field_name'
 
     def __call__(self, *args, **kwargs):
         return self._tree[self._tree.root]
