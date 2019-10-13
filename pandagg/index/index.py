@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pandagg.utils import Obj, validate_client
+from pandagg.mapping.mapping import ClientBoundMapping
 from pandagg.aggs.agg import (
     Agg, Mapping, TreeMapping, ClientBoundAggregation
 )
@@ -13,12 +14,12 @@ class Index(Obj):
         super(Index, self).__init__()
         self.name = name
         self.settings = settings
-        mapping_name, mapping_detail = next(mapping.iteritems())
-        self.mapping = Mapping(tree=TreeMapping(mapping_name, mapping_detail))
+        self.mapping = None
+        self.set_mapping(mapping)
         self.aliases = aliases
         self.warmers = warmers
 
-    def override_mapping(self, mapping):
+    def set_mapping(self, mapping):
         mapping_name, mapping_detail = next(mapping.iteritems())
         self.mapping = Mapping(tree=TreeMapping(mapping_name, mapping_detail))
 
@@ -39,6 +40,10 @@ class ClientBoundIndex(Index):
         if client is not None:
             validate_client(self.client)
         super(ClientBoundIndex, self).__init__(name, settings, mapping, aliases, warmers)
+
+    def set_mapping(self, mapping):
+        mapping_name, mapping_detail = next(mapping.iteritems())
+        self.mapping = ClientBoundMapping(client=self.client, tree=TreeMapping(mapping_name, mapping_detail))
 
     def query(self, query, validate=False):
         return ClientBoundAggregation(client=self.client, mapping=self.mapping).query(query, validate=validate)

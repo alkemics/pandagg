@@ -16,7 +16,8 @@ class AggNode(Node):
 
     AGG_TYPE = None
     VALUE_ATTRS = NotImplementedError()
-    APPLICABLE_MAPPING_TYPES = None
+    WHITELISTED_MAPPING_TYPES = None
+    BLACKLISTED_MAPPING_TYPES = None
     SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, agg_name, agg_body, meta=None):
@@ -163,8 +164,11 @@ class ListBucketAgg(BucketAggNode):
 
 
 class Terms(ListBucketAgg):
+    """Terms aggregation.
+    """
     AGG_TYPE = 'terms'
     VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
+    WHITELISTED_MAPPING_TYPES = ['string', 'boolean', 'integer']
     DEFAULT_SIZE = 20
 
     def __init__(self, agg_name, field, meta=None, missing=None, size=None, aggs=None):
@@ -267,6 +271,7 @@ class MatchAll(Filters):
 class Histogram(ListBucketAgg):
 
     AGG_TYPE = 'histogram'
+    WHITELISTED_MAPPING_TYPES = ['date']
 
     def __init__(self, agg_name, field, interval, hist_format=None, meta=None, aggs=None):
         self.field = field
@@ -399,7 +404,7 @@ class Filter(UniqueBucketAgg):
 class Nested(UniqueBucketAgg):
 
     AGG_TYPE = 'nested'
-    APPLICABLE_MAPPING_TYPES = ['nested']
+    WHITELISTED_MAPPING_TYPES = ['nested']
 
     def __init__(self, agg_name, path, meta=None, aggs=None):
         super(Nested, self).__init__(
@@ -420,7 +425,7 @@ class Nested(UniqueBucketAgg):
 class ReverseNested(UniqueBucketAgg):
 
     AGG_TYPE = 'reverse_nested'
-    APPLICABLE_MAPPING_TYPES = ['nested']
+    WHITELISTED_MAPPING_TYPES = ['nested']
 
     def __init__(self, agg_name, path=None, meta=None, aggs=None):
         self.path = path
@@ -458,16 +463,19 @@ class FieldMetricAgg(MetricAgg):
 
 
 class Avg(FieldMetricAgg):
+    WHITELISTED_MAPPING_TYPES = ['integer', 'float']
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'avg'
 
 
 class Max(FieldMetricAgg):
+    WHITELISTED_MAPPING_TYPES = ['integer', 'float']
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'max'
 
 
 class Min(FieldMetricAgg):
+    WHITELISTED_MAPPING_TYPES = ['integer', 'float']
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'min'
 
@@ -496,6 +504,7 @@ class Cardinality(FieldMetricAgg):
 
 
 class Stats(FieldMetricAgg):
+    WHITELISTED_MAPPING_TYPES = ['integer', 'float']
     VALUE_ATTRS = ['count', 'min', 'max', 'avg', 'sum']
     AGG_TYPE = 'stats'
 

@@ -6,8 +6,6 @@ from collections import defaultdict
 from pandagg.exceptions import VersionIncompatibilityError
 from pandagg.utils import Obj, validate_client
 from pandagg.index.index import ClientBoundIndex
-from pandagg.aggs.agg import PUBLIC_AGGS
-from pandagg.wrapper.method_generator import _method_generator
 
 
 class PandAgg:
@@ -21,9 +19,6 @@ class PandAgg:
         self.aliases = Obj()
         self._indices = None
         self._info = None
-
-    for agg_class in PUBLIC_AGGS.values():
-        exec _method_generator(agg_class)
 
     def fetch_indices(self, index='*'):
         """

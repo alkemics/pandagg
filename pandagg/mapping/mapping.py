@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import json
+
+from pandagg.mapping.types import field_classes_per_name
 from pandagg.tree import Tree, Node
 from pandagg.utils import Obj, PrettyNode
 
@@ -89,7 +91,10 @@ class Mapping(Obj):
 
         for child in self._tree.children(nid=self._tree.root):
             child_root = '%s.%s' % (root_path, child.field_name) if root_path is not None else child.field_name
-            self[child.field_name] = Mapping(tree=self._tree.subtree(child.identifier), root_path=child_root)
+            self[child.field_name] = self._get_instance(child.identifier, root_path=child_root)
+
+    def _get_instance(self, nid, root_path):
+        return Mapping(tree=self._tree.subtree(nid), root_path=root_path)
 
     def __repr__(self):
         tree_repr = self._tree.show()
@@ -101,3 +106,18 @@ class Mapping(Obj):
 
     def __call__(self, *args, **kwargs):
         return self._tree[self._tree.root]
+
+
+class ClientBoundMapping(Mapping):
+
+    def __init__(self, client, tree, root_path=None):
+        self._client = client
+        super(ClientBoundMapping, self).__init__(tree, root_path)
+        # if we reached a leave, add aggregation capabilities based on reached mapping type
+        if not self._tree.children(self._tree.root):
+            field_type = self._tree[self._tree.root].type
+            if field_type in field_classes_per_name:
+                self.a = field_classes_per_name[field_type](self._client)
+
+    def _get_instance(self, nid, root_path):
+        return ClientBoundMapping(tree=self._tree.subtree(nid), root_path=root_path, client=self._client)
