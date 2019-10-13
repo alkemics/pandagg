@@ -252,7 +252,9 @@ class Agg(NestedMixin, Tree):
         root_nid_nested = self.applied_nested_path_at_node(nid)
 
         # apply paste on all trees currently at right level
-        trees_right_nested = [tree for tree, required_nested in trees_with_nested_requirement if required_nested == root_nid_nested]
+        trees_right_nested = [
+            tree for tree, required_nested in trees_with_nested_requirement if required_nested == root_nid_nested
+        ]
         for tree in trees_right_nested:
             super(Agg, self).paste(nid, tree)
 
@@ -264,7 +266,8 @@ class Agg(NestedMixin, Tree):
         if trees_to_reverse_nest:
             ordered_nested_path = sorted([el[1] for el in trees_to_reverse_nest])
             common_path = self.safe_apply_outnested(root_nid_nested, ordered_nested_path[0])
-            reverse_nested_identifier = '%s_reverse_nested_below_%s' % (common_path.replace('.', '_') if common_path else 'root', nid)
+            reverse_nested_identifier = '%s_reverse_nested_below_%s' % (common_path.replace('.', '_') if common_path
+                                                                        else 'root', nid)
             reverse_nested_node = ReverseNested(agg_name=reverse_nested_identifier, path=common_path)
             self.add_node(reverse_nested_node, nid)
             self.paste_multiple_with_nested_check(reverse_nested_identifier, *trees_to_reverse_nest)
@@ -347,16 +350,20 @@ class Agg(NestedMixin, Tree):
                     continue
                 if field not in self.tree_mapping:
                     if exc:
-                        raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (agg_node.AGG_TYPE, field))
+                        raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' %
+                                                      (agg_node.AGG_TYPE, field))
                     return False
                 field_type = self.tree_mapping[field].type
-                if agg_node.APPLICABLE_MAPPING_TYPES is not None and field_type not in agg_node.APPLICABLE_MAPPING_TYPES:
+                if agg_node.APPLICABLE_MAPPING_TYPES is not None and \
+                        field_type not in agg_node.APPLICABLE_MAPPING_TYPES:
                     if exc:
-                        raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.' % (agg_node.AGG_TYPE, field_type))
+                        raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
+                                                                % (agg_node.AGG_TYPE, field_type))
                     return False
         return True
 
-    def _parse_group_by(self, response, row=None, agg_name=None, until=None, yield_incomplete=False, row_as_tuple=False):
+    def _parse_group_by(self,
+                        response, row=None, agg_name=None, until=None, yield_incomplete=False, row_as_tuple=False):
         """Recursive parsing of succession of unique child bucket aggregations.
 
         Yields each row for which last bucket aggregation generated buckets.

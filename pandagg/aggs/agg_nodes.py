@@ -307,7 +307,8 @@ class DateHistogram(Histogram):
 
     ALLOWED_INTERVAL_UNITS = ('y', 'q', 'M', 'w', 'd')  # not under a day to avoid breaking ES ('h', 'm', 's')
 
-    def __init__(self, agg_name, field, interval, meta=None, date_format="yyyy-MM-dd", use_key_as_string=True, aggs=None):
+    def __init__(self,
+                 agg_name, field, interval, meta=None, date_format="yyyy-MM-dd", use_key_as_string=True, aggs=None):
         self._validate_interval(interval)
         if use_key_as_string:
             self.KEY_PATH = 'key_as_string'

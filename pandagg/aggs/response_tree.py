@@ -47,7 +47,8 @@ class ResponseNode(Node):
         return self.value.get(attrs[0])
 
     def __repr__(self):
-        return u'<Bucket, {pretty}, identifier={identifier}>'.format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
+        return u'<Bucket, {pretty}, identifier={identifier}>'\
+            .format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
 
 
 class AggResponse(Tree):
@@ -77,10 +78,10 @@ class AggResponse(Tree):
         if agg_value:
             # if no data is present, elasticsearch doesn't return any bucket, for instance for TermAggregations
             for key, value in agg_node.extract_buckets(agg_value):
-                bucket = ResponseNode(aggregation_node=agg_node, key=key, value=value, lvl=lvl+1)
+                bucket = ResponseNode(aggregation_node=agg_node, key=key, value=value, lvl=lvl + 1)
                 self.add_node(bucket, parent_node.identifier)
                 for child in self.agg_tree.children(agg_node.agg_name):
-                    self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl+1)
+                    self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
 
     def list_buckets(self, nid=None, current_level=None):
         if nid is not None:

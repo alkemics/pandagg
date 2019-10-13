@@ -26,7 +26,7 @@ class MappingNode(Node):
         if self.type == 'object':
             s += ' ' * (pad - 1) + '{%s}' % self.type.capitalize()
         elif self.type == 'nested':
-            s += ' ' * (pad -1) + '[%s]' % self.type.capitalize()
+            s += ' ' * (pad - 1) + '[%s]' % self.type.capitalize()
         else:
             s += ' ' * pad + '%s' % self.type.capitalize()
         return s

@@ -9,7 +9,7 @@ from pandagg.aggs.agg import (
 
 class Index(Obj):
 
-    def __init__(self,  name, settings, mapping, aliases, warmers):
+    def __init__(self, name, settings, mapping, aliases, warmers):
         super(Index, self).__init__()
         self.name = name
         self.settings = settings
