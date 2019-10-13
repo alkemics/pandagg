@@ -89,12 +89,11 @@ class Agg(NestedMixin, Tree):
 
     def _build_tree_from_agg_node(self, agg_node, pid=None):
         self.add_node(agg_node, pid)
-        if not hasattr(agg_node, 'children'):
-            return
-        for child in agg_node.children or []:
-            self._build_tree_from_agg_node(child, pid=agg_node.identifier)
-        # reset children to None to avoid confusion since this serves only __init__ syntax.
-        agg_node.children = None
+        if isinstance(agg_node, BucketAggNode):
+            for child_agg_node in agg_node.aggs or []:
+                self._build_tree_from_agg_node(child_agg_node, pid=agg_node.identifier)
+            # reset children to None to avoid confusion since this serves only __init__ syntax.
+            agg_node.children = None
 
     def groupby(self, by, **kwargs):
         """Group by is available only if there is a succession of unique childs.
@@ -217,7 +216,7 @@ class Agg(NestedMixin, Tree):
             return self
         if isinstance(element, AggNode):
             assert element.AGG_TYPE in PUBLIC_AGGS.keys()
-            self.add_node(copy.deepcopy(element), parent=insert_below)
+            self._build_tree_from_agg_node(element, pid=insert_below)
             return self
         if isinstance(element, Agg):
             # TODO - recheck nested checks
@@ -518,8 +517,7 @@ class ClientBoundAggregation(Agg):
         return new_agg
 
     def agg(self, arg=None, execute=True, output=Agg.DEFAULT_OUTPUT, **kwargs):
-        new_agg = self.copy()
-        aggregation = super(ClientBoundAggregation, new_agg).agg(arg, **kwargs)
+        aggregation = super(ClientBoundAggregation, self.copy()).agg(arg, **kwargs)
         if not execute:
             return aggregation
         es_response = self._execute(

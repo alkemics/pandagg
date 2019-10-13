@@ -86,15 +86,13 @@ class BucketAggNode(AggNode):
     - to build query to filter documents belonging to that bucket
 
     Note: the children attribute's only purpose is for initiation with the following syntax:
-    >>> from pandagg.aggs import Agg, Terms, Avg
-    >>> agg = Agg(
-    >>>     Terms(
-    >>>         agg_name='term_agg',
-    >>>         field='some_path',
-    >>>         children=[
-    >>>             Avg(agg_name='avg_agg', field='some_other_path')
-    >>>         ]
-    >>>     )
+    >>> from pandagg.aggs import Terms, Avg
+    >>> agg = Terms(
+    >>>     agg_name='term_agg',
+    >>>     field='some_path',
+    >>>     aggs=[
+    >>>         Avg(agg_name='avg_agg', field='some_other_path')
+    >>>     ]
     >>> )
     Yet, the children attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
     bpointer/fpointer attributes inherited from treelib.Tree class.
@@ -102,16 +100,16 @@ class BucketAggNode(AggNode):
     VALUE_ATTRS = ['doc_count']
     SINGLE_BUCKET = NotImplementedError()
 
-    def __init__(self, agg_name, agg_body, meta=None, children=None):
+    def __init__(self, agg_name, agg_body, meta=None, aggs=None):
         super(BucketAggNode, self).__init__(
             agg_name=agg_name,
             agg_body=agg_body,
             meta=meta,
         )
-        children = children or []
-        for child in children:
+        aggs = aggs or []
+        for child in aggs:
             assert isinstance(child, AggNode)
-        self.children = children
+        self.aggs = aggs
 
     def extract_buckets(self, response_value):
         raise NotImplementedError()
@@ -169,7 +167,7 @@ class Terms(ListBucketAgg):
     VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
     DEFAULT_SIZE = 20
 
-    def __init__(self, agg_name, field, meta=None, missing=None, size=None, children=None):
+    def __init__(self, agg_name, field, meta=None, missing=None, size=None, aggs=None):
         self.field = field
         self.missing = missing
 
@@ -184,7 +182,7 @@ class Terms(ListBucketAgg):
             agg_name=agg_name,
             agg_body=agg_body,
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     @staticmethod
@@ -223,13 +221,13 @@ class Filters(BucketAggNode):
 
     AGG_TYPE = 'filters'
 
-    def __init__(self, agg_name, filters, meta=None, children=None):
+    def __init__(self, agg_name, filters, meta=None, aggs=None):
         self.filters = filters
         super(Filters, self).__init__(
             agg_name=agg_name,
             agg_body={"filters": filters},
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     def extract_buckets(self, response_value):
@@ -253,12 +251,12 @@ class Filters(BucketAggNode):
 
 class MatchAll(Filters):
 
-    def __init__(self, agg_name, meta=None, children=None):
+    def __init__(self, agg_name, meta=None, aggs=None):
         super(MatchAll, self).__init__(
             agg_name=agg_name,
             filters={'All': {'match_all': {}}},
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     @staticmethod
@@ -270,7 +268,7 @@ class Histogram(ListBucketAgg):
 
     AGG_TYPE = 'histogram'
 
-    def __init__(self, agg_name, field, interval, hist_format=None, meta=None, children=None):
+    def __init__(self, agg_name, field, interval, hist_format=None, meta=None, aggs=None):
         self.field = field
         self.interval = interval
         self.hist_format = hist_format
@@ -281,7 +279,7 @@ class Histogram(ListBucketAgg):
             agg_name=agg_name,
             agg_body=body,
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     def get_filter(self, key):
@@ -309,7 +307,7 @@ class DateHistogram(Histogram):
 
     ALLOWED_INTERVAL_UNITS = ('y', 'q', 'M', 'w', 'd')  # not under a day to avoid breaking ES ('h', 'm', 's')
 
-    def __init__(self, agg_name, field, interval, meta=None, date_format="yyyy-MM-dd", use_key_as_string=True, children=None):
+    def __init__(self, agg_name, field, interval, meta=None, date_format="yyyy-MM-dd", use_key_as_string=True, aggs=None):
         self._validate_interval(interval)
         if use_key_as_string:
             self.KEY_PATH = 'key_as_string'
@@ -319,7 +317,7 @@ class DateHistogram(Histogram):
             interval=interval,
             hist_format=date_format,
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     @classmethod
@@ -360,12 +358,12 @@ class Global(UniqueBucketAgg):
 
     AGG_TYPE = 'global'
 
-    def __init__(self, agg_name, meta=None, children=None):
+    def __init__(self, agg_name, meta=None, aggs=None):
         super(Global, self).__init__(
             agg_name=agg_name,
             agg_body={},
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     @staticmethod
@@ -377,13 +375,13 @@ class Filter(UniqueBucketAgg):
 
     AGG_TYPE = 'filter'
 
-    def __init__(self, agg_name, filter_, meta=None, children=None):
+    def __init__(self, agg_name, filter_, meta=None, aggs=None):
         self.filter_ = filter_
         super(Filter, self).__init__(
             agg_name=agg_name,
             agg_body=filter_,
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     def get_filter(self, key):
@@ -402,12 +400,12 @@ class Nested(UniqueBucketAgg):
     AGG_TYPE = 'nested'
     APPLICABLE_MAPPING_TYPES = ['nested']
 
-    def __init__(self, agg_name, path, meta=None, children=None):
+    def __init__(self, agg_name, path, meta=None, aggs=None):
         super(Nested, self).__init__(
             agg_name=agg_name,
             agg_body={"path": path},
             meta=meta,
-            children=children
+            aggs=aggs
         )
         self.path = path
 
@@ -423,13 +421,13 @@ class ReverseNested(UniqueBucketAgg):
     AGG_TYPE = 'reverse_nested'
     APPLICABLE_MAPPING_TYPES = ['nested']
 
-    def __init__(self, agg_name, path=None, meta=None, children=None):
+    def __init__(self, agg_name, path=None, meta=None, aggs=None):
         self.path = path
         super(ReverseNested, self).__init__(
             agg_name=agg_name,
             agg_body={"path": path} if path else {},
             meta=meta,
-            children=children
+            aggs=aggs
         )
 
     @staticmethod
