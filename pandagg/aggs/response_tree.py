@@ -82,7 +82,7 @@ class TreeBoundResponseNode(ResponseNode):
         """Bucket properties (including parents) relative to this tree.
         TODO - optimize using rsearch
         """
-        return self._tree.bucket_id_dict(self, end_level=end_level, depth=depth)
+        return self._tree.bucket_properties(self, end_level=end_level, depth=depth)
 
     def build_filter(self):
         """Build query filtering documents belonging to that bucket.
@@ -156,7 +156,7 @@ class ResponseTree(Tree):
                 for child in self.agg_tree.children(agg_node.agg_name):
                     self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
 
-    def bucket_id_dict(self, bucket, properties=None, end_level=None, depth=None):
+    def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
         if properties is None:
             properties = OrderedDict()
         properties[bucket.current_level] = bucket.current_key
@@ -165,7 +165,7 @@ class ResponseTree(Tree):
         parent = self.parent(bucket.identifier)
         if bucket.current_level == end_level or depth == 0 or parent is None or parent.identifier == 'crafted_root':
             return properties
-        return self.bucket_id_dict(parent, properties, end_level, depth)
+        return self.bucket_properties(parent, properties, end_level, depth)
 
     def show(self, data_property='pretty', **kwargs):
         return super(ResponseTree, self).show(data_property=data_property)
