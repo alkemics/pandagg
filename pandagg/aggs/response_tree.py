@@ -3,6 +3,7 @@
 
 from pandagg.tree import Tree, Node
 from pandagg.utils import TreeBasedObj
+from collections import OrderedDict
 
 
 class PrettyNode:
@@ -15,7 +16,7 @@ class ResponseNode(Node):
 
     REPR_SIZE = 60
 
-    def __init__(self, aggregation_node, value, lvl, key=None, override_current_level=None):
+    def __init__(self, aggregation_node, value, lvl, key=None, override_current_level=None, identifier=None):
         self.aggregation_node = aggregation_node
         self.value = value
         self.lvl = lvl
@@ -32,7 +33,7 @@ class ResponseNode(Node):
             lvl=self.lvl, sep='=',
             value=self.extract_bucket_value()
         )
-        super(ResponseNode, self).__init__(data=PrettyNode(pretty=pretty))
+        super(ResponseNode, self).__init__(data=PrettyNode(pretty=pretty), identifier=identifier)
 
     @classmethod
     def _str_current_level(cls, level, key, lvl, sep=':', value=None):
@@ -50,9 +51,46 @@ class ResponseNode(Node):
             return {attr_: self.value.get(attr_) for attr_ in attrs}
         return self.value.get(attrs[0])
 
+    def _bind(self, tree):
+        return TreeBoundResponseNode(
+            tree=tree,
+            aggregation_node=self.aggregation_node,
+            value=self.value,
+            lvl=self.lvl,
+            key=self.current_key,
+            identifier=self.identifier
+        )
+
     def __repr__(self):
-        return u'<Bucket, {pretty}, identifier={identifier}>'\
+        return u'<Bucket, identifier={identifier}>\n{pretty}'\
             .format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
+
+
+class TreeBoundResponseNode(ResponseNode):
+
+    def __init__(self, tree, aggregation_node, value, lvl, identifier, key=None):
+        self._tree = tree
+        super(TreeBoundResponseNode, self).__init__(
+            aggregation_node=aggregation_node,
+            value=value,
+            lvl=lvl,
+            key=key,
+            identifier=identifier
+        )
+
+    def bucket_properties(self, properties=None, end_level=None, depth=None):
+        """Bucket properties (including parents) relative to this tree.
+        TODO - optimize using rsearch
+        """
+        if properties is None:
+            properties = OrderedDict()
+        properties[self.current_level] = self.current_key
+        if depth is not None:
+            depth -= 1
+        parent = self._tree.parent(self.identifier)
+        if self.current_level == end_level or depth == 0 or parent is None:
+            return properties
+        return self._tree.bucket_properties(parent, properties, end_level, depth)
 
 
 class ResponseTree(Tree):
@@ -98,3 +136,8 @@ class ResponseTree(Tree):
 class AggResponse(TreeBasedObj):
 
     _NODE_PATH_ATTR = 'path'
+
+    def __call__(self, *args, **kwargs):
+        initial_tree = self._tree if self._initial_tree is None else self._initial_tree
+        root_bucket = self._tree[self._tree.root]
+        return root_bucket._bind(initial_tree)
