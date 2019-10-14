@@ -93,9 +93,9 @@ class ClientBoundMapping(Mapping):
         super(ClientBoundMapping, self).__init__(tree, root_path, depth)
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         if not self._tree.children(self._tree.root):
-            field_type = self._tree[self._tree.root].type
-            if field_type in field_classes_per_name:
-                self.a = field_classes_per_name[field_type](self._client)
+            field_node = self._tree[self._tree.root]
+            if field_node.type in field_classes_per_name:
+                self.a = field_classes_per_name[field_node.type](client=self._client, field=field_node.field_path)
 
     def _get_instance(self, nid, root_path, depth):
         return ClientBoundMapping(tree=self._tree.subtree(nid), root_path=root_path, client=self._client, depth=depth)

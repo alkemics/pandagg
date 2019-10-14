@@ -28,15 +28,16 @@ def list_available_aggs_on_field(field_type):
     return available
 
 
-def field_klass_init(self, client):
+def field_klass_init(self, client, field):
     self._client = client
+    self._field = field
 
 
-def aggregator_factory(field_type, agg_klass):
+def aggregator_factory(agg_klass):
     def aggregator(self, index=None, **kwargs):
         node = agg_klass(
-            agg_name='%s_agg' % agg_klass.__class__.__name__,
-            field=field_type,
+            agg_name='%sAgg' % agg_klass.AGG_TYPE.capitalize(),
+            field=self._field,
             **kwargs
         )
         return self._operate(node, index)
@@ -48,7 +49,7 @@ def _operate(self, agg_node, index):
     aggregation = agg_node.agg_dict()
     if self._client is not None:
         body = {"aggs": aggregation, "size": 0}
-        return self._client.search(index=index, body=body)
+        return self._client.search(index=index, body=body)['aggregations'][agg_node.agg_name]
     return aggregation
 
 
@@ -58,7 +59,7 @@ def field_type_klass_factory(field_type):
         '_operate': _operate
     }
     for agg_klass in list_available_aggs_on_field(field_type):
-        d[agg_klass.AGG_TYPE] = aggregator_factory(field_type, agg_klass)
+        d[agg_klass.AGG_TYPE] = aggregator_factory(agg_klass)
     klass = type(
         "%sAggs" % field_type.capitalize(),
         (),
