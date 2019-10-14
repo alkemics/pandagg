@@ -130,13 +130,11 @@ class PrettyNode(object):
         self.pretty = pretty
 
 
-def bool_if_required(sub_filters, advanced_search_syntax=True, operator='must'):
+def bool_if_required(sub_filters, operator='must'):
     # wrap conditions in bool only if necessary
     if len(sub_filters) == 1:
         return sub_filters[0]
     if len(sub_filters) > 1:
-        if advanced_search_syntax:
-            return {operator: sub_filters}
         return {'bool': {operator: sub_filters}}
     return None
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from pandagg.aggs import Nested
 from pandagg.tree import Tree, Node
-from pandagg.utils import TreeBasedObj
-from collections import OrderedDict
+from pandagg.utils import TreeBasedObj, bool_if_required
+from collections import OrderedDict, defaultdict
 
 
 class PrettyNode:
@@ -78,19 +78,48 @@ class TreeBoundResponseNode(ResponseNode):
             identifier=identifier
         )
 
-    def bucket_properties(self, properties=None, end_level=None, depth=None):
+    def bucket_properties(self, end_level=None, depth=None):
         """Bucket properties (including parents) relative to this tree.
         TODO - optimize using rsearch
         """
-        if properties is None:
-            properties = OrderedDict()
-        properties[self.current_level] = self.current_key
-        if depth is not None:
-            depth -= 1
-        parent = self._tree.parent(self.identifier)
-        if self.current_level == end_level or depth == 0 or parent is None:
-            return properties
-        return self._tree.bucket_properties(parent, properties, end_level, depth)
+        return self._tree.bucket_id_dict(self, end_level=end_level, depth=depth)
+
+    def build_filter(self):
+        """Build query filtering documents belonging to that bucket.
+        """
+        agg_tree = self._tree.agg_tree
+        mapping_tree = agg_tree.tree_mapping
+
+        aggs_keys = [
+            (agg_tree[level], key) for
+            level, key in self.bucket_properties().items()
+        ]
+
+        filters_per_nested_level = defaultdict(list)
+
+        for level_agg, key in aggs_keys:
+            level_agg_filter = level_agg.get_filter(key)
+            # remove unnecessary match_all filters
+            if level_agg_filter is not None and 'match_all' not in level_agg_filter:
+                current_nested = agg_tree.applied_nested_path_at_node(level_agg.identifier)
+                filters_per_nested_level[current_nested].append(level_agg_filter)
+
+        # order nested by depth, deepest to highest
+        # TODO - handle nested hierarchies (if there are multiple layers of nested, in different branches)
+        ordered_nested = sorted(filters_per_nested_level.keys(), key=lambda x: mapping_tree.depth(x) if x else -1, reverse=True)
+
+        current_conditions = []
+        for nested in ordered_nested:
+            level_condition = bool_if_required(filters_per_nested_level[nested])
+            if nested:
+                level_condition = {
+                    'nested': {
+                        'path': nested,
+                        'query': level_condition
+                    }
+                }
+            current_conditions.append(level_condition)
+        return bool_if_required(current_conditions)
 
 
 class ResponseTree(Tree):
@@ -109,7 +138,8 @@ class ResponseTree(Tree):
             aggregation_node=agg_node,
             value=raw_response,
             override_current_level='aggs',
-            lvl=0
+            lvl=0,
+            identifier='crafted_root'
         )
         self.add_node(response_node)
         self._parse_node_with_children(agg_node, response_node)
@@ -124,6 +154,17 @@ class ResponseTree(Tree):
                 self.add_node(bucket, parent_node.identifier)
                 for child in self.agg_tree.children(agg_node.agg_name):
                     self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
+
+    def bucket_id_dict(self, bucket, properties=None, end_level=None, depth=None):
+        if properties is None:
+            properties = OrderedDict()
+        properties[bucket.current_level] = bucket.current_key
+        if depth is not None:
+            depth -= 1
+        parent = self.parent(bucket.identifier)
+        if bucket.current_level == end_level or depth == 0 or parent is None or parent.identifier == 'crafted_root':
+            return properties
+        return self.bucket_id_dict(parent, properties, end_level, depth)
 
     def show(self, data_property='pretty', **kwargs):
         return super(ResponseTree, self).show(data_property=data_property)
