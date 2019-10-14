@@ -84,8 +84,35 @@ class TreeBoundResponseNode(ResponseNode):
         """
         return self._tree.bucket_properties(self, end_level=end_level, depth=depth)
 
+    @classmethod
+    def _build_filter(cls, nid_to_children, filters_per_nested_level, current_nested_path=None):
+        """Recursive function to build bucket filters from highest to deepest nested conditions.
+        """
+        current_conditions = filters_per_nested_level.get(current_nested_path, [])
+        nested_children = nid_to_children[current_nested_path]
+        for nested_child in nested_children:
+            nested_child_conditions = cls._build_filter(
+                nid_to_children=nid_to_children,
+                filters_per_nested_level=filters_per_nested_level,
+                current_nested_path=nested_child
+            )
+            if nested_child_conditions:
+                current_conditions.append({'nested': {'path': nested_child, 'query': nested_child_conditions}})
+        return bool_if_required(current_conditions)
+
     def build_filter(self):
         """Build query filtering documents belonging to that bucket.
+        Suppose the following configuration:
+
+        Base                        <- filter on base
+          |── Nested_A                 no filter on A (nested still must be applied for children)
+          |     |── SubNested A1
+          |     └── SubNested A2    <- filter on A2
+          └── Nested_B              <- filter on B
+
+        Note: on Filter and Filters query, if some filter condition is nested, it might require some propagation in
+        children conditions on that same nested. This feature is not implemented yet. The main difficulty being to
+        disambiguate if OR or AND operator must be applied on conditions of same nested level in some cases.
         """
         agg_tree = self._tree.agg_tree
         mapping_tree = agg_tree.tree_mapping
@@ -104,23 +131,21 @@ class TreeBoundResponseNode(ResponseNode):
                 current_nested = agg_tree.applied_nested_path_at_node(level_agg.identifier)
                 filters_per_nested_level[current_nested].append(level_agg_filter)
 
-        # order nested by depth, deepest to highest
-        # TODO - handle nested hierarchies (if there are multiple layers of nested, in different branches)
-        ordered_nested = sorted(
-            filters_per_nested_level.keys(), key=lambda x: mapping_tree.depth(x) if x else -1, reverse=True)
+        nested_with_conditions = [n for n in filters_per_nested_level.keys() if n]
 
-        current_conditions = []
-        for nested in ordered_nested:
-            level_condition = bool_if_required(filters_per_nested_level[nested])
-            if nested:
-                level_condition = {
-                    'nested': {
-                        'path': nested,
-                        'query': level_condition
-                    }
-                }
-            current_conditions.append(level_condition)
-        return bool_if_required(current_conditions)
+        all_nesteds = [
+            n.identifier
+            for n in mapping_tree.filter_nodes(
+                lambda x: (x.type == 'nested') and any((i in x.identifier or '' for i in nested_with_conditions))
+            )
+        ]
+
+        nid_to_children = defaultdict(set)
+        for nested in all_nesteds:
+            nested_with_parents = list(mapping_tree.rsearch(nid=nested, filter=lambda x: x.type == 'nested'))
+            nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
+            nid_to_children[nearest_nested_parent].add(nested)
+        return self._build_filter(nid_to_children, filters_per_nested_level)
 
 
 class ResponseTree(Tree):
