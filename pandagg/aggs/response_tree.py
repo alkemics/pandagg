@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from pandagg.aggs import Nested
+
 from pandagg.tree import Tree, Node
 from pandagg.utils import TreeBasedObj, bool_if_required
 from collections import OrderedDict, defaultdict
@@ -106,7 +106,8 @@ class TreeBoundResponseNode(ResponseNode):
 
         # order nested by depth, deepest to highest
         # TODO - handle nested hierarchies (if there are multiple layers of nested, in different branches)
-        ordered_nested = sorted(filters_per_nested_level.keys(), key=lambda x: mapping_tree.depth(x) if x else -1, reverse=True)
+        ordered_nested = sorted(
+            filters_per_nested_level.keys(), key=lambda x: mapping_tree.depth(x) if x else -1, reverse=True)
 
         current_conditions = []
         for nested in ordered_nested:

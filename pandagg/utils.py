@@ -98,7 +98,7 @@ class TreeBasedObj(Obj):
                     child_root = '%s.%s' % (self._root_path, child_path)
                 else:
                     child_root = child_path
-                self[child_path] = self._get_instance(child.identifier, root_path=child_root, depth=depth-1)
+                self[child_path] = self._get_instance(child.identifier, root_path=child_root, depth=depth - 1)
 
     def __getattribute__(self, item):
         r = super(TreeBasedObj, self).__getattribute__(item)
@@ -120,7 +120,8 @@ class TreeBasedObj(Obj):
         if self._root_path is None:
             return (u'\n<%s>\n%s' % (self.__class__._REPR_NAME or self.__class__.__name__, tree_repr)).encode('utf-8')
         current_path = self._root_path
-        return (u'\n<%s subpart: %s>\n%s' % (self.__class__._REPR_NAME or self.__class__.__name__, current_path, tree_repr)).encode('utf-8')
+        return (u'\n<%s subpart: %s>\n%s' % (
+            self.__class__._REPR_NAME or self.__class__.__name__, current_path, tree_repr)).encode('utf-8')
 
 
 class PrettyNode(object):
