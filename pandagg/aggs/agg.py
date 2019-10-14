@@ -531,7 +531,7 @@ class Agg(Tree):
         return (u'<Aggregation>\n%s' % self._reader).encode('utf-8')
 
 
-class ClientBoundAggregation(Agg):
+class ClientBoundAgg(Agg):
 
     def __init__(self, client, mapping=None, index_name=None, from_=None, query=None, identifier=None):
         self.client = client
@@ -539,14 +539,14 @@ class ClientBoundAggregation(Agg):
             validate_client(self.client)
         self.index_name = index_name
         self._query = query
-        super(ClientBoundAggregation, self).__init__(
+        super(ClientBoundAgg, self).__init__(
             from_=from_,
             mapping=mapping,
             identifier=identifier
         )
 
     def copy(self, identifier=None):
-        return ClientBoundAggregation(
+        return ClientBoundAgg(
             client=self.client,
             mapping=self.tree_mapping,
             from_=self,
@@ -564,7 +564,7 @@ class ClientBoundAggregation(Agg):
         return new_agg
 
     def agg(self, arg=None, execute=True, output=Agg.DEFAULT_OUTPUT, **kwargs):
-        aggregation = super(ClientBoundAggregation, self.copy()).agg(arg, **kwargs)
+        aggregation = super(ClientBoundAgg, self.copy()).agg(arg, **kwargs)
         if not execute:
             return aggregation
         return aggregation.execute(
