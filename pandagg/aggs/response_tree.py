@@ -97,5 +97,4 @@ class ResponseTree(Tree):
 
 class AggResponse(TreeBasedObj):
 
-    _REPR_NAME = 'AggResponse'
     _NODE_PATH_ATTR = 'path'

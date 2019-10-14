@@ -31,11 +31,11 @@ class Index(Obj):
 
 
 class Indices(Obj):
-    __REPR_NAME = 'Indices'
+    pass
 
 
 class Aliases(Obj):
-    __REPR_NAME = 'Aliases'
+    pass
 
 
 class ClientBoundIndex(Index):
