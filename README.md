@@ -1,5 +1,8 @@
 ## Roadmap
 
+- readme
+- examples
+- code mode precise doc
 - write tests
 - python 2/3 compatibility
 - ES 6-7 compatibility
