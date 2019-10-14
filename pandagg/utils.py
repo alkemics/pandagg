@@ -53,7 +53,7 @@ class Obj(object):
     def __keys(self):
         return self.__d.keys() + [
             k for k in self.__dict__.keys()
-            if k not in map(lambda x: '_%s%s' % (self.__class__.__name__, x), ['__d', '_REPR_NAME'])
+            if k not in map(lambda x: '%s%s' % ('_Obj', x), ['__d', '_REPR_NAME'])
         ]
 
     def __repr__(self):
