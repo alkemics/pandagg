@@ -70,14 +70,14 @@ class TreeBasedObj(Obj):
     The main purpose of this object is to iteratively expand the tree as attributes of this object. To avoid creating
     useless instances, only direct children of accessed nodes are expanded.
     """
-    _NODE_PATH_ATTR = NotImplementedError()
+    _NODE_PATH_ATTR = 'tag'
 
     def __init__(self, tree, root_path=None, depth=None, initial_tree=None):
         super(TreeBasedObj, self).__init__()
         assert isinstance(tree, Tree)
         self._tree = tree
         self._root_path = root_path
-        self._initial_tree = initial_tree
+        self._initial_tree = initial_tree if initial_tree is not None else tree
         self._expand_attrs(depth)
 
     def _get_instance(self, nid, root_path, depth):
@@ -85,7 +85,7 @@ class TreeBasedObj(Obj):
             tree=self._tree.subtree(nid),
             root_path=root_path,
             depth=depth,
-            initial_tree=self._tree if self._initial_tree is None else self._initial_tree
+            initial_tree=self._initial_tree
         )
 
     def _expand_attrs(self, depth):
