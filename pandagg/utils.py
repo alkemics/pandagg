@@ -31,7 +31,7 @@ class Obj(object):
         # will store non-valid names
         self.__d = dict()
         for k, v in kwargs.items():
-            assert isinstance(k, basestring) and not k.startswith('__')
+            assert isinstance(k, basestring) and k not in ('_REPR_NAME', '_Obj__d') and not k.startswith('__')
             self[k] = v
 
     def __getitem__(self, item):
@@ -53,7 +53,7 @@ class Obj(object):
     def __keys(self):
         return self.__d.keys() + [
             k for k in self.__dict__.keys()
-            if k not in map(lambda x: '%s%s' % ('_Obj', x), ['__d', '_REPR_NAME'])
+            if k not in ('_REPR_NAME', '_Obj__d')
         ]
 
     def __repr__(self):
