@@ -64,13 +64,8 @@ class MappingTree(Tree):
                 sub_path = '%s.%s' % (path, sub_name) if path else sub_name
                 self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
 
-    def subtree(self, nid):
-        st = MappingTree(mapping_name=self.mapping_name)
-        st.root = nid
-        for node_n in self.expand_tree(nid):
-            st._nodes.update({self[node_n].identifier: self[node_n]})
-            st[node_n].clone_pointers(self.identifier, st.identifier)
-        return st
+    def _get_instance(self, identifier):
+        return MappingTree(mapping_name=self.mapping_name, identifier=identifier)
 
     def show(self, data_property='pretty', **kwargs):
         return super(MappingTree, self).show(data_property=data_property, **kwargs)
