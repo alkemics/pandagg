@@ -513,12 +513,26 @@ class Agg(Tree):
 
         return pd.DataFrame(index=index, data=map(parse_columns, values))
 
+    def _parse_normalized(self, aggs):
+        children = []
+        for k in aggs.keys():
+            for child in self._normalize_buckets(aggs, k):
+                children.append(child)
+        return {
+            'level': 'root',
+            'key': None,
+            'value': None,
+            'children': children
+        }
+
     def parse(self, aggs, output, **kwargs):
         if output == 'raw':
             return aggs
         elif output == 'tree':
             response_tree = ResponseTree(self).parse_aggregation(aggs)
             return AggResponse(tree=response_tree, depth=1)
+        elif output == 'normalized_tree':
+            return self._parse_normalized(aggs)
         elif output == 'dict_rows':
             return self._parse_as_dict(aggs, **kwargs)
         elif output == 'dataframe':
