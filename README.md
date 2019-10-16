@@ -1,10 +1,9 @@
 ## Roadmap
 
-- readme
+- write README
 - examples
-- code mode precise doc
-- write tests
+- missing tests: pandagg.aggs.agg / pandagg.aggs.response_tree / pandagg.wrapper.wrapper / pandagg.mapping.types
+- more precise doc on pandagg.aggs.agg.ClientBoundAgg/Agg
 - python 2/3 compatibility
 - ES 6-7 compatibility
-- ability to generate query returning documents belonging to a bucket
-- nested filters conditions propagation to children filters aggregations
+- nested conditions of Filters aggregation propagated to children Filters aggregations
