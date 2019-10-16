@@ -101,7 +101,6 @@ class Agg(Tree):
     def groupby(self, by, **kwargs):
         """Group by is available only if there is a succession of unique childs.
 
-
         Accepts single occurence or sequence of following formats:
         - string
         - dict ES aggregation
@@ -133,11 +132,9 @@ class Agg(Tree):
             }
         }
 
-        # TODO - allow AggregationNodes objects, and regular ES dict aggs
-
-        :param by:
-        :param kwargs:
-        :return:
+        :param by: aggregation(s) used to group results
+        :param kwargs: arguments to customize dict aggregation parsing TODO - detail this part
+        :rtype: pandagg.aggs.agg.Agg
         """
         new_agg = self.copy()
         paths = new_agg.paths_to_leaves()
@@ -183,6 +180,8 @@ class Agg(Tree):
         └── owner.id
             ├── retailerStatus
             └── validation.status
+
+        :rtype: pandagg.aggs.agg.Agg
         """
         if arg is None:
             if not self.root:
