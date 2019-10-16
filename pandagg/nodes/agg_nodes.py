@@ -42,8 +42,11 @@ class AggNode(Node):
             aggs["meta"] = self.meta
         return {self.agg_name: aggs}
 
-    @staticmethod
-    def get_filter(*args, **kwargs):
+    def get_filter(self, key):
+        """Return filter query to list documents having this aggregation key.
+        :param key: string
+        :return: elasticsearch filter query
+        """
         raise NotImplementedError()
 
     @classmethod
@@ -68,8 +71,7 @@ class MetricAgg(AggNode):
     def extract_buckets(response_value):
         yield (None, response_value)
 
-    @staticmethod
-    def get_filter(*args, **kwargs):
+    def get_filter(self, key):
         return None
 
     @staticmethod
@@ -116,6 +118,7 @@ class BucketAggNode(AggNode):
         raise NotImplementedError()
 
     def agg_dict(self, tree=None, depth=None):
+        # TODO - reintegrate this in Agg class
         # compute also sub-aggregations
         aggs = super(BucketAggNode, self).agg_dict()
         if tree is None or depth == 0:

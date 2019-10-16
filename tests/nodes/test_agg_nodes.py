@@ -1,4 +1,4 @@
-from pandagg.nodes.agg_nodes import AggNode
+from pandagg.nodes.agg_nodes import AggNode, BucketAggNode
 from unittest import TestCase
 
 
@@ -9,7 +9,11 @@ class AggNodesTestCase(TestCase):
         class CustomAgg(AggNode):
             AGG_TYPE = 'custom_type'
             VALUE_ATTRS = ['bucket_value_path']
-            SINGLE_BUCKET = False
+
+            # depends on ElasticSearch aggregation handling, since this is a fake Aggregation this get_filter method
+            # doesn't really make sense, just wrote one so that all abstract methods are implemented
+            def get_filter(self, key):
+                return {'exists': {'field': key}}
 
         node = CustomAgg(agg_name='custom_agg_name', agg_body={'custom_body': {'stuff': 2}})
         self.assertEqual(
@@ -50,3 +54,7 @@ class AggNodesTestCase(TestCase):
             'bucket_value_path': 43
         }
         self.assertEqual(node.extract_bucket_value(hypothetic_es_response_bucket), 43)
+
+    def test_bucket_node(self):
+        # BucketAggNodes can have children aggregations
+        pass
