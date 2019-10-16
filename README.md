@@ -10,8 +10,34 @@
 - ability to build filter query listing documents belonging to an aggregation bucket
 
 ## Installation
+### Once added in pypi, and treelib PR merged
 ```
 pip install pandagg
+```
+
+### Until then
+You will need to:
+- clone **treelib** fork
+- clone **pandagg**
+
+```
+# clone libraries
+git clone git@github.com:leonardbinet/treelib.git --branch node_dict_pointer --single-branch
+git clone git@github.com:alkemics/pandagg.git
+
+# create virtualenv for your project
+cd pandagg
+virtualenv env
+source env/bin/activate
+python setup.py develop
+
+# still using your pandagg environment
+cd ../treelib
+python setup.py develop
+cd ../pandagg
+
+# depending on your usage you might need as well
+pip install pandas seaborn jupyter elasticsearch
 ```
 
 ## Dependencies
