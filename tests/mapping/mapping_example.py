@@ -1,5 +1,5 @@
-
-CLASSIFICATION_REPORT_MAPPING = {
+MAPPING_NAME = 'classification_report'
+MAPPING_DETAIL = {
     "dynamic": False,
     "properties": {
         "classification_type": {

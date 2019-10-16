@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from pandagg.mapping.types import field_classes_per_name
 from pandagg.mapping.mapping import Mapping, MappingTree, MappingNode, ClientBoundMapping
-from tests.mapping.mapping_example import CLASSIFICATION_REPORT_MAPPING
+from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
 
 
 class MappingTreeTestCase(TestCase):
@@ -26,7 +26,7 @@ class MappingTreeTestCase(TestCase):
         )
 
     def test_parse_tree_from_dict(self):
-        mapping_tree = MappingTree(mapping_name='classification_report', mapping_detail=CLASSIFICATION_REPORT_MAPPING)
+        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
 
         self.assertEqual(
             mapping_tree.__repr__().decode('utf-8'),
@@ -73,7 +73,7 @@ class MappingTestCase(TestCase):
     """
 
     def test_mapping_aggregations(self):
-        mapping_tree = MappingTree(mapping_name='classification_report', mapping_detail=CLASSIFICATION_REPORT_MAPPING)
+        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
         # check that leaves are expanded, based on 'field_name' attribute of nodes
         mapping = Mapping(tree=mapping_tree, depth=1)
         for field_name in ('classification_type', 'date', 'global_metrics', 'id', 'language', 'local_metrics', 'workflow'):
@@ -89,7 +89,7 @@ class ClientBoundMappingTestCase(TestCase):
     aggregations on that field type.
     """
     def test_client_bound(self):
-        mapping_tree = MappingTree(mapping_name='classification_report', mapping_detail=CLASSIFICATION_REPORT_MAPPING)
+        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
         client_bound_mapping = ClientBoundMapping(client=None, tree=mapping_tree, depth=1)
         workflow_field = client_bound_mapping.workflow
         self.assertTrue(hasattr(workflow_field, 'a'))

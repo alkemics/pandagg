@@ -26,6 +26,14 @@ class AggNode(Node):
         self.agg_body = agg_body
         self.meta = meta
 
+    @classmethod
+    def valid_on_field_type(cls, field_type):
+        if cls.WHITELISTED_MAPPING_TYPES is not None:
+            return field_type in cls.WHITELISTED_MAPPING_TYPES
+        if cls.BLACKLISTED_MAPPING_TYPES is not None:
+            return field_type not in cls.BLACKLISTED_MAPPING_TYPES
+        return False
+
     def query_dict(self):
         """ElasticSearch aggregation queries follow this formatting:
         {
@@ -55,6 +63,9 @@ class AggNode(Node):
         :param key: string
         :return: elasticsearch filter query
         """
+        raise NotImplementedError()
+
+    def extract_buckets(self, response_value):
         raise NotImplementedError()
 
     @classmethod
@@ -301,7 +312,7 @@ class DateHistogram(Histogram):
     @classmethod
     def _validate_interval(cls, interval):
         units_pattern = '(%s)' % '|'.join(cls.ALLOWED_INTERVAL_UNITS)
-        full_pattern = r'\d+' + units_pattern
+        full_pattern = r'\d*' + units_pattern
         pattern = re.compile(full_pattern)
         if not pattern.match(interval):
             raise ValueError('Wrong interval pattern %s for %s.' % (interval, cls.__name__))

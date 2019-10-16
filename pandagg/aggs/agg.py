@@ -5,16 +5,16 @@ import copy
 import collections
 import warnings
 
-import pandagg.mapping.mapping
+from pandagg.aggs.response_tree import ResponseTree, AggResponse
 from pandagg.exceptions import (
     AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation, MappingError
 )
-from pandagg.tree import Tree
-from pandagg.utils import validate_client
+from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes.agg_nodes import (
     AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
 )
-from pandagg.aggs.response_tree import ResponseTree, AggResponse
+from pandagg.tree import Tree
+from pandagg.utils import validate_client
 
 
 class Agg(Tree):
@@ -52,13 +52,13 @@ class Agg(Tree):
 
     def set_mapping(self, mapping):
         if mapping is not None:
-            if isinstance(mapping, pandagg.mapping.mapping.MappingTree):
+            if isinstance(mapping, MappingTree):
                 self.tree_mapping = mapping
-            elif isinstance(mapping, pandagg.mapping.mapping.Mapping):
+            elif isinstance(mapping, Mapping):
                 self.tree_mapping = mapping._tree
             elif isinstance(mapping, dict):
                 mapping_name, mapping_detail = next(mapping.iteritems())
-                self.tree_mapping = pandagg.mapping.mapping.MappingTree(mapping_name, mapping_detail)
+                self.tree_mapping = MappingTree(mapping_name, mapping_detail)
             else:
                 raise NotImplementedError()
 
@@ -223,7 +223,7 @@ class Agg(Tree):
             return self
         raise NotImplementedError()
 
-    def query_dict(self, from_=None, depth=None):
+    def query_dict(self, from_=None, depth=None, with_name=True):
         from_ = self.root if from_ is None else from_
         node = self[from_]
         children_queries = {}
@@ -231,10 +231,13 @@ class Agg(Tree):
             if depth is not None:
                 depth -= 1
             for child_node in self.children(node.agg_name):
-                children_queries[child_node.agg_name] = self.query_dict(from_=child_node.agg_name, depth=depth)
+                children_queries[child_node.agg_name] = self.query_dict(
+                    from_=child_node.agg_name, depth=depth, with_name=False)
         node_query_dict = node.query_dict()
         if children_queries:
             node_query_dict['aggs'] = children_queries
+        if with_name:
+            return {node.agg_name: node_query_dict}
         return node_query_dict
 
     def applied_nested_path_at_node(self, nid):
@@ -397,8 +400,7 @@ class Agg(Tree):
                                                       (agg_node.AGG_TYPE, field))
                     return False
                 field_type = self.tree_mapping[field].type
-                if agg_node.APPLICABLE_MAPPING_TYPES is not None and \
-                        field_type not in agg_node.APPLICABLE_MAPPING_TYPES:
+                if not agg_node.valid_on_field_type(field_type):
                     if exc:
                         raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
                                                                 % (agg_node.AGG_TYPE, field_type))
@@ -603,7 +605,7 @@ class ClientBoundAgg(Agg):
 
     def execute(self, index=None, output=Agg.DEFAULT_OUTPUT, **kwargs):
         es_response = self._execute(
-            aggregation={self.root: self.query_dict()},
+            aggregation=self.query_dict(),
             index=index,
             query=self._query
         )

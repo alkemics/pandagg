@@ -17,16 +17,11 @@ def list_available_aggs_on_field(field_type):
     If WHITELISTED_MAPPING_TYPES is defined, field type must be in it. Else if BLACKLISTED_MAPPING_TYPES is defined,
     field type must not be in it.
     """
-    available = []
-    for agg_class in PUBLIC_AGGS.values():
-        if agg_class.WHITELISTED_MAPPING_TYPES is not None:
-            if field_type in agg_class.WHITELISTED_MAPPING_TYPES:
-                available.append(agg_class)
-            continue
-        if agg_class.BLACKLISTED_MAPPING_TYPES is not None:
-            if field_type not in agg_class.BLACKLISTED_MAPPING_TYPES:
-                available.append(agg_class)
-    return available
+    return [
+        agg_class
+        for agg_class in PUBLIC_AGGS.values()
+        if agg_class.valid_on_field_type(field_type)
+    ]
 
 
 def field_klass_init(self, client, field):
@@ -50,7 +45,8 @@ def _operate(self, agg_node, index):
     aggregation = {agg_node.agg_name: agg_node.query_dict()}
     if self._client is not None:
         body = {"aggs": aggregation, "size": 0}
-        return self._client.search(index=index, body=body)['aggregations'][agg_node.agg_name]
+        raw_response = self._client.search(index=index, body=body)['aggregations'][agg_node.agg_name]
+        return list(agg_node.extract_buckets(raw_response))
     return aggregation
 
 
