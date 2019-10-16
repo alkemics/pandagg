@@ -12,10 +12,10 @@ class MappingNode(Node):
 
     REPR_SIZE = 60
 
-    def __init__(self, field_path, field_name, detail, depth):
+    def __init__(self, field_path, field_name, detail, depth, root=False):
         self.field_path = field_path
         self.field_name = field_name
-        self.type = detail.get('type', 'object')
+        self.type = '' if root else detail.get('type', 'object')
         self.dynamic = detail.get('dynamic', False)
         self.depth = depth
         self.extra = detail
@@ -52,11 +52,11 @@ class MappingTree(Tree):
         self.mapping_name = mapping_name
         self.mapping_detail = mapping_detail
         if mapping_detail:
-            self.build_mapping_from_dict(mapping_name, mapping_detail)
+            self.build_mapping_from_dict(mapping_name, mapping_detail, root=True)
 
-    def build_mapping_from_dict(self, name, detail, pid=None, depth=0, path=None):
+    def build_mapping_from_dict(self, name, detail, pid=None, depth=0, path=None, root=False):
         path = path or ''
-        node = MappingNode(field_path=path, field_name=name, detail=detail, depth=depth)
+        node = MappingNode(field_path=path, field_name=name, detail=detail, depth=depth, root=root)
         self.add_node(node, parent=pid)
         if detail:
             depth += 1

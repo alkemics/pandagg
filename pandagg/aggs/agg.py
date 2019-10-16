@@ -5,15 +5,15 @@ import copy
 import collections
 import warnings
 
+import pandagg.mapping.mapping
 from pandagg.exceptions import (
     AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation, MappingError
 )
 from pandagg.tree import Tree
 from pandagg.utils import validate_client
-from pandagg.aggs.agg_nodes import (
+from pandagg.nodes.agg_nodes import (
     AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
 )
-from pandagg.mapping.mapping import Mapping, MappingTree
 from pandagg.aggs.response_tree import ResponseTree, AggResponse
 
 
@@ -52,13 +52,13 @@ class Agg(Tree):
 
     def set_mapping(self, mapping):
         if mapping is not None:
-            if isinstance(mapping, MappingTree):
+            if isinstance(mapping, pandagg.mapping.mapping.MappingTree):
                 self.tree_mapping = mapping
-            elif isinstance(mapping, Mapping):
+            elif isinstance(mapping, pandagg.mapping.mapping.Mapping):
                 self.tree_mapping = mapping._tree
             elif isinstance(mapping, dict):
                 mapping_name, mapping_detail = next(mapping.iteritems())
-                self.tree_mapping = MappingTree(mapping_name, mapping_detail)
+                self.tree_mapping = pandagg.mapping.mapping.MappingTree(mapping_name, mapping_detail)
             else:
                 raise NotImplementedError()
 

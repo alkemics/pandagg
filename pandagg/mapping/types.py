@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from pandagg.aggs.agg_nodes import PUBLIC_AGGS
+
+from pandagg.nodes.agg_nodes import PUBLIC_AGGS
 
 MAPPING_TYPES = [
     'boolean',

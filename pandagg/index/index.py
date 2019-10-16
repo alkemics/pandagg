@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from pandagg.mapping.mapping import ClientBoundMapping, MappingTree, Mapping
+from pandagg.aggs.agg import Agg, ClientBoundAgg
 from pandagg.utils import Obj, validate_client
-from pandagg.mapping.mapping import ClientBoundMapping
-from pandagg.aggs.agg import (
-    Agg, Mapping, MappingTree, ClientBoundAgg
-)
 
 
 class Index(Obj):
@@ -48,7 +46,11 @@ class ClientBoundIndex(Index):
 
     def set_mapping(self, mapping):
         mapping_name, mapping_detail = next(mapping.iteritems())
-        self.mapping = ClientBoundMapping(client=self.client, tree=MappingTree(mapping_name, mapping_detail), depth=1)
+        self.mapping = ClientBoundMapping(
+            client=self.client,
+            tree=MappingTree(mapping_name, mapping_detail),
+            depth=1
+        )
 
     def query(self, query, validate=False):
         return ClientBoundAgg(client=self.client, mapping=self.mapping).query(query, validate=validate)

@@ -25,8 +25,12 @@ class Tree(OriginalTree):
             self._reader = 'Empty'
         return self._reader
 
+    def __repr__(self):
+        self.show()
+        return (u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)).encode('utf-8')
+
     def __str__(self):
-        self.__repr__()
+        return self.__repr__()
 
 
 class Node(OriginalNode):
