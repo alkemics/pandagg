@@ -14,11 +14,11 @@ class AggNode(Node):
     Define a method to build aggregation request.
     """
 
-    AGG_TYPE = None
+    AGG_TYPE = NotImplementedError()
     VALUE_ATTRS = NotImplementedError()
+    SINGLE_BUCKET = NotImplementedError()
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None
-    SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, agg_name, agg_body, meta=None):
         self.agg_name = agg_name
@@ -41,6 +41,10 @@ class AggNode(Node):
         if self.meta:
             aggs["meta"] = self.meta
         return {self.agg_name: aggs}
+
+    @staticmethod
+    def get_filter(*args, **kwargs):
+        raise NotImplementedError()
 
     @classmethod
     def extract_bucket_value(cls, response, value_as_dict=False):
@@ -69,10 +73,6 @@ class MetricAgg(AggNode):
         return None
 
     @staticmethod
-    def list_filter_keys():
-        return []
-
-    @staticmethod
     def agg_body_to_init_kwargs(agg_body):
         raise NotImplementedError()
 
@@ -87,7 +87,7 @@ class BucketAggNode(AggNode):
     - to build query to filter documents belonging to that bucket
 
     Note: the children attribute's only purpose is for initiation with the following syntax:
-    >>> from pandagg.aggs import Terms, Avg
+    >>> from pandagg.nodes import Terms, Avg
     >>> agg = Terms(
     >>>     agg_name='term_agg',
     >>>     field='some_path',
@@ -134,9 +134,6 @@ class BucketAggNode(AggNode):
         """Provide filter to get documents belonging to document of given key."""
         raise NotImplementedError()
 
-    def list_filter_keys(self):
-        raise NotImplementedError()
-
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
         raise NotImplementedError()
@@ -153,9 +150,6 @@ class ListBucketAgg(BucketAggNode):
             yield (bucket[self.KEY_PATH], bucket)
 
     def get_filter(self, key):
-        raise NotImplementedError()
-
-    def list_filter_keys(self):
         raise NotImplementedError()
 
     @staticmethod
@@ -206,19 +200,9 @@ class Terms(ListBucketAgg):
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""
-        if key is None:
-            return None
         if key == 'missing':
-            filter_ = {'bool': {'must_not': {'exists': {'field': self.field}}}}
-        else:
-            filter_ = {'match': {self.field: key}}
-        return filter_
-
-    def list_filter_keys(self):
-        keys = ['%(value)s']
-        if self.missing is not None:
-            keys.append('missing')
-        return keys
+            return {'bool': {'must_not': {'exists': {'field': self.field}}}}
+        return {'match': {self.field: key}}
 
 
 class Filters(BucketAggNode):
@@ -242,9 +226,6 @@ class Filters(BucketAggNode):
         """Provide filter to get documents belonging to document of given key."""
         filter_ = self.filters[key]
         return filter_
-
-    def list_filter_keys(self):
-        return self.filters.keys()
 
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
@@ -290,10 +271,6 @@ class Histogram(ListBucketAgg):
     def get_filter(self, key):
         # TODO
         return None
-
-    def list_filter_keys(self):
-        # TODO
-        return []
 
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
@@ -352,9 +329,6 @@ class UniqueBucketAgg(BucketAggNode):
     def get_filter(self, key):
         return None
 
-    def list_filter_keys(self):
-        return []
-
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
         raise NotImplementedError()
@@ -392,9 +366,6 @@ class Filter(UniqueBucketAgg):
 
     def get_filter(self, key):
         return self.filter_
-
-    def list_filter_keys(self):
-        return ['All']
 
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
