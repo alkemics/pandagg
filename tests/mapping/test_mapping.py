@@ -3,17 +3,14 @@
 
 from unittest import TestCase
 
-import pandagg.mapping.mapping
+from pandagg.mapping.types import field_classes_per_name
+from pandagg.mapping.mapping import Mapping, MappingTree, MappingNode, ClientBoundMapping
 from tests.mapping.mapping_example import CLASSIFICATION_REPORT_MAPPING
-
-MappingTree = pandagg.mapping.mapping.MappingTree
-Mapping = pandagg.mapping.mapping.Mapping
-MappingNode = pandagg.mapping.mapping.MappingNode
 
 
 class MappingTreeTestCase(TestCase):
-    """All tree logic is tested in treelib library.
-    We just check that:
+    """All tree logic is tested in utils.
+    Here, check that:
      - a dict mapping is correctly parsed into a tree,
      - it has the right representation.
     """
@@ -72,9 +69,7 @@ classification_report
 
 
 class MappingTestCase(TestCase):
-    """Check that:
-    - calling a tree will return its root node
-    - leaf nodes (fields without children) have the "a" attribute that can generate aggregations.
+    """Check that calling a tree will return its root node.
     """
 
     def test_mapping_aggregations(self):
@@ -87,3 +82,16 @@ class MappingTestCase(TestCase):
         workflow = mapping.workflow
         workflow_node = workflow()
         self.assertTrue(isinstance(workflow_node, MappingNode))
+
+
+class ClientBoundMappingTestCase(TestCase):
+    """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
+    aggregations on that field type.
+    """
+    def test_client_bound(self):
+        mapping_tree = MappingTree(mapping_name='classification_report', mapping_detail=CLASSIFICATION_REPORT_MAPPING)
+        client_bound_mapping = ClientBoundMapping(client=None, tree=mapping_tree, depth=1)
+        workflow_field = client_bound_mapping.workflow
+        self.assertTrue(hasattr(workflow_field, 'a'))
+        # workflow type is String
+        self.assertIsInstance(workflow_field.a, field_classes_per_name['string'])

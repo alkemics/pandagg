@@ -107,6 +107,7 @@ class TreeBasedObjTestCase(TestCase):
             self.assertTrue(hasattr(obj, child))
 
         # when accessing child, check that it auto-expands children
+        obj.jane.diane
         bill_obj = obj.bill
         """
         Bill
