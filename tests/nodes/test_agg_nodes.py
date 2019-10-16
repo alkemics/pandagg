@@ -17,13 +17,11 @@ class AggNodesTestCase(TestCase):
 
         node = CustomAgg(agg_name='custom_agg_name', agg_body={'custom_body': {'stuff': 2}})
         self.assertEqual(
-            node.agg_dict(),
+            node.query_dict(),
             {
-                'custom_agg_name': {
-                    'custom_type': {
-                        'custom_body': {
-                            'stuff': 2
-                        }
+                'custom_type': {
+                    'custom_body': {
+                        'stuff': 2
                     }
                 }
             }
@@ -31,16 +29,14 @@ class AggNodesTestCase(TestCase):
 
         node = CustomAgg(agg_name='custom_agg_name', agg_body={'custom_body': {'stuff': 2}}, meta='meta_stuff')
         self.assertEqual(
-            node.agg_dict(),
+            node.query_dict(),
             {
-                'custom_agg_name': {
-                    'custom_type': {
-                        'custom_body': {
-                            'stuff': 2
-                        }
-                    },
-                    'meta': 'meta_stuff'
-                }
+                'custom_type': {
+                    'custom_body': {
+                        'stuff': 2
+                    }
+                },
+                'meta': 'meta_stuff'
             }
         )
 

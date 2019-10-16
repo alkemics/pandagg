@@ -26,7 +26,7 @@ class AggNode(Node):
         self.agg_body = agg_body
         self.meta = meta
 
-    def agg_dict(self, tree=None, depth=None):
+    def query_dict(self):
         """ElasticSearch aggregation queries follow this formatting:
         {
             "<aggregation_name>" : {
@@ -36,11 +36,19 @@ class AggNode(Node):
                 [,"meta" : {  [<meta_data_body>] } ]?
             }
         }
+
+        Query dict returns the following part (without aggregation name):
+        {
+            "<aggregation_type>" : {
+                <aggregation_body>
+            }
+            [,"meta" : {  [<meta_data_body>] } ]?
+        }
         """
         aggs = {self.AGG_TYPE: self.agg_body}
         if self.meta:
             aggs["meta"] = self.meta
-        return {self.agg_name: aggs}
+        return aggs
 
     def get_filter(self, key):
         """Return filter query to list documents having this aggregation key.
@@ -116,22 +124,6 @@ class BucketAggNode(AggNode):
 
     def extract_buckets(self, response_value):
         raise NotImplementedError()
-
-    def agg_dict(self, tree=None, depth=None):
-        # TODO - reintegrate this in Agg class
-        # compute also sub-aggregations
-        aggs = super(BucketAggNode, self).agg_dict()
-        if tree is None or depth == 0:
-            return aggs
-        if depth is not None:
-            depth -= 1
-        sub_aggs = {}
-        for child in tree.children(self.agg_name):
-            sub_aggs.update(child.agg_dict(tree, depth))
-
-        if sub_aggs:
-            aggs[self.agg_name]['aggs'] = sub_aggs
-        return aggs
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""

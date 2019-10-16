@@ -47,7 +47,7 @@ def aggregator_factory(agg_klass):
 
 
 def _operate(self, agg_node, index):
-    aggregation = agg_node.agg_dict()
+    aggregation = {agg_node.agg_name: agg_node.query_dict()}
     if self._client is not None:
         body = {"aggs": aggregation, "size": 0}
         return self._client.search(index=index, body=body)['aggregations'][agg_node.agg_name]

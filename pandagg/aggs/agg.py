@@ -44,11 +44,11 @@ class Agg(Tree):
         if from_agg_node:
             self._build_tree_from_node(from_agg_node)
 
-    def _get_instance(self, identifier=None):
-        return Agg(mapping=self.tree_mapping, identifier=identifier)
+    def _get_instance(self, identifier=None, from_=None):
+        return Agg(mapping=self.tree_mapping, identifier=identifier, from_=from_)
 
     def copy(self, identifier=None):
-        return Agg(mapping=self.tree_mapping, from_=self, identifier=identifier)
+        return self._get_instance(identifier=identifier, from_=self)
 
     def set_mapping(self, mapping):
         if mapping is not None:
@@ -224,10 +224,19 @@ class Agg(Tree):
             return self
         raise NotImplementedError()
 
-    def agg_dict(self, from_=None, depth=None):
+    def query_dict(self, from_=None, depth=None):
         from_ = self.root if from_ is None else from_
-        root_agg = self[from_]
-        return root_agg.agg_dict(tree=self, depth=depth)
+        node = self[from_]
+        children_queries = {}
+        if depth is None or depth > 0:
+            if depth is not None:
+                depth -= 1
+            for child_node in self.children(node.agg_name):
+                children_queries[child_node.agg_name] = self.query_dict(from_=child_node.agg_name, depth=depth)
+        node_query_dict = node.query_dict()
+        if children_queries:
+            node_query_dict['aggs'] = children_queries
+        return node_query_dict
 
     def applied_nested_path_at_node(self, nid):
         applied_nested_path = None
@@ -595,7 +604,7 @@ class ClientBoundAgg(Agg):
 
     def execute(self, index=None, output=Agg.DEFAULT_OUTPUT, **kwargs):
         es_response = self._execute(
-            aggregation=self.agg_dict(),
+            aggregation={self.root: self.query_dict()},
             index=index,
             query=self._query
         )
