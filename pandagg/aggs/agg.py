@@ -61,6 +61,7 @@ class Agg(Tree):
                 self.tree_mapping = MappingTree(mapping_name, mapping_detail)
             else:
                 raise NotImplementedError()
+        return self
 
     def _init_build_tree_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)
@@ -332,6 +333,10 @@ class Agg(Tree):
 
         if agg_field not in self.tree_mapping:
             raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (node.AGG_TYPE, agg_field))
+        field_type = self.tree_mapping[agg_field].type
+        if not node.valid_on_field_type(field_type):
+            raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
+                                                    % (node.AGG_TYPE, field_type))
 
         # from deepest to highest
         mapping_nested_fields = list(self.tree_mapping.rsearch(agg_field, filter=lambda n: n.type == 'nested'))
