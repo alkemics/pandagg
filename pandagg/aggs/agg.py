@@ -6,9 +6,7 @@ import collections
 import warnings
 
 from pandagg.aggs.response_tree import ResponseTree, AggResponse
-from pandagg.exceptions import (
-    AbsentMappingFieldError, InvalidOperationMappingFieldError, InvalidAggregation, MappingError
-)
+from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes.agg_nodes import (
     AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
@@ -270,22 +268,18 @@ class Agg(Tree):
         # if it is a nested or reverse-nested agg, assumes you know what you are doing, validates afterwards
         if isinstance(pasted_root, Nested) or isinstance(pasted_root, ReverseNested):
             super(Agg, self).paste(nid, new_tree, deep)
-            return self.validate(exc=True)
+            return self.validate_tree(exc=True)
 
-        agg_field = new_tree[new_tree.root].agg_body.get('field')
-        if agg_field is None:
+        if hasattr(pasted_root, 'field'):
             warnings.warn('Paste operation could not validate nested integrity: unknown nested position of pasted root'
                           'node: %s.' % pasted_root)
             super(Agg, self).paste(nid, new_tree, deep)
-            return self.validate(exc=True)
+            return self.validate_tree(exc=True)
 
-        if agg_field not in self.tree_mapping:
-            raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.'
-                                          % (pasted_root.AGG_TYPE, agg_field))
-
+        self.tree_mapping.validate_agg_node(pasted_root)
         # from deepest to highest
-        mapping_nested_fields = list(self.tree_mapping.rsearch(agg_field, filter=lambda n: n.type == 'nested'))
-        required_nested_level = next(iter(mapping_nested_fields), None)
+        mapping_nested_fields = self.tree_mapping.nested_applied_above_field(pasted_root.field)
+        required_nested_level = mapping_nested_fields[0] if mapping_nested_fields else None
         current_nested_level = self.applied_nested_path_at_node(nid)
         if current_nested_level == required_nested_level:
             return super(Agg, self).paste(nid, new_tree, deep)
@@ -324,24 +318,18 @@ class Agg(Tree):
         """If mapping is provided, nested and outnested are automatically applied.
         """
         # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
-        if isinstance(node, Nested) or isinstance(node, ReverseNested):
+        if isinstance(node, Nested) or isinstance(node, ReverseNested) or self.tree_mapping is None:
             super(Agg, self).add_node(node, pid)
-            return self.validate(exc=True)
+            return self.validate_tree(exc=True)
+        if not hasattr(node, 'field'):
+            super(Agg, self).add_node(node, pid)
+            return self.validate_tree(exc=True)
 
-        agg_field = node.agg_body.get('field')
-        if agg_field is None or self.tree_mapping is None:
-            return super(Agg, self).add_node(node, pid)
-
-        if agg_field not in self.tree_mapping:
-            raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (node.AGG_TYPE, agg_field))
-        field_type = self.tree_mapping[agg_field].type
-        if not node.valid_on_field_type(field_type):
-            raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
-                                                    % (node.AGG_TYPE, field_type))
+        self.tree_mapping.validate_agg_node(node)
 
         # from deepest to highest
-        mapping_nested_fields = list(self.tree_mapping.rsearch(agg_field, filter=lambda n: n.type == 'nested'))
-        required_nested_level = next(iter(mapping_nested_fields), None)
+        mapping_nested_fields = self.tree_mapping.nested_applied_above_field(node.field)
+        required_nested_level = mapping_nested_fields[0] if mapping_nested_fields else None
         current_nested_level = self.applied_nested_path_at_node(pid)
         if current_nested_level == required_nested_level:
             return super(Agg, self).add_node(node, pid)
@@ -389,28 +377,14 @@ class Agg(Tree):
             children = self.children(last_bucket_agg_name)
         return last_bucket_agg_name
 
-    def validate(self, exc=False):
+    def validate_tree(self, exc=False):
         if self.tree_mapping is None:
             return True
         for agg_node in self.nodes.values():
             # path for 'nested'/'reverse-nested', field for metric aggregations
-            for field_arg in ('field', 'path'):
-                if field_arg not in agg_node.agg_body or {}:
-                    continue
-                field = agg_node.agg_body[field_arg]
-                if field is None:
-                    continue
-                if field not in self.tree_mapping:
-                    if exc:
-                        raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' %
-                                                      (agg_node.AGG_TYPE, field))
-                    return False
-                field_type = self.tree_mapping[field].type
-                if not agg_node.valid_on_field_type(field_type):
-                    if exc:
-                        raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
-                                                                % (agg_node.AGG_TYPE, field_type))
-                    return False
+            valid = self.tree_mapping.validate_agg_node(agg_node, exc=exc)
+            if not valid:
+                return False
         return True
 
     def _parse_group_by(self,

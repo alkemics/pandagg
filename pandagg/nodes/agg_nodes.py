@@ -215,11 +215,23 @@ class Filters(BucketAggNode):
 
     AGG_TYPE = 'filters'
 
-    def __init__(self, agg_name, filters, meta=None, aggs=None):
+    def __init__(self, agg_name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **kwargs):
         self.filters = filters
+        self.other_bucket = other_bucket
+        self.other_bucket_key = other_bucket_key
+        body = {
+            "filters": filters,
+            "other_bucket": other_bucket
+        }
+        if other_bucket_key is not None:
+            body['other_bucket_key'] = other_bucket_key
+
+        if kwargs:
+            body.update(kwargs)
+
         super(Filters, self).__init__(
             agg_name=agg_name,
-            agg_body={"filters": filters},
+            agg_body=body,
             meta=meta,
             aggs=aggs
         )
@@ -384,13 +396,13 @@ class Nested(UniqueBucketAgg):
     WHITELISTED_MAPPING_TYPES = ['nested']
 
     def __init__(self, agg_name, path, meta=None, aggs=None):
+        self.path = path
         super(Nested, self).__init__(
             agg_name=agg_name,
             agg_body={"path": path},
             meta=meta,
             aggs=aggs
         )
-        self.path = path
 
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
@@ -426,6 +438,7 @@ class FieldMetricAgg(MetricAgg):
     VALUE_ATTRS = NotImplementedError()
 
     def __init__(self, agg_name, field, meta=None, **agg_body_kwargs):
+        self.field = field
         agg_body = dict(agg_body_kwargs)
         agg_body['field'] = field
         super(FieldMetricAgg, self).__init__(

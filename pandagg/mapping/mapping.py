@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import json
+import re
 
+from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping.types import field_classes_per_name
 from pandagg.tree import Tree, Node
 from pandagg.utils import PrettyNode, TreeBasedObj
@@ -20,6 +22,10 @@ class MappingNode(Node):
         self.depth = depth
         self.extra = detail
         super(MappingNode, self).__init__(identifier=field_path, data=PrettyNode(pretty=self.pretty))
+
+    @property
+    def has_raw(self):
+        return 'fields' in self.extra or {} and 'raw' in self.extra['fields']
 
     @property
     def pretty(self):
@@ -69,6 +75,53 @@ class MappingTree(Tree):
 
     def show(self, data_property='pretty', **kwargs):
         return super(MappingTree, self).show(data_property=data_property, **kwargs)
+
+    def validate_agg_node(self, agg_node, exc=True):
+        if hasattr(agg_node, 'path'):
+            if agg_node.path is None:
+                # reverse nested
+                return True
+            return agg_node.path in self
+
+        if not hasattr(agg_node, 'field'):
+            return True
+
+        if not self.is_field_in_mapping(agg_node.field):
+            if not exc:
+                return False
+            raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (
+                agg_node.AGG_TYPE, agg_node.field))
+
+        field_type = self.mapping_type_of_field(agg_node.field)
+        if not agg_node.valid_on_field_type(field_type):
+            if not exc:
+                return False
+            raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
+                                                    % (agg_node.AGG_TYPE, field_type))
+        return True
+
+    def is_field_in_mapping(self, field_path):
+        if field_path in self:
+            return True
+        if field_path.endswith('.raw'):
+            field_without_raw = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
+            if field_without_raw in self and self[field_without_raw].has_raw:
+                return True
+        return False
+
+    def mapping_type_of_field(self, field_path):
+        if field_path.endswith('.raw'):
+            field_without_raw = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
+            if field_without_raw in self and self[field_without_raw].has_raw:
+                return self[field_without_raw].extra['fields']['raw']['type']
+        if field_path not in self:
+            raise AbsentMappingFieldError('<%s field is not present in mappign>' % field_path)
+        return self[field_path].type
+
+    def nested_applied_above_field(self, field_path):
+        if field_path.endswith('.raw'):
+            field_path = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
+        return list(self.rsearch(field_path, filter=lambda n: n.type == 'nested'))
 
 
 class Mapping(TreeBasedObj):

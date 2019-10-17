@@ -1,4 +1,5 @@
 from agg_nodes import (
+    MatchAll,
     Terms,
     Filters,
     Histogram,
