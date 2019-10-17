@@ -152,7 +152,7 @@ workflow
 """
         )
 
-    def test_withou_mapping(self):
+    def test_add_node_without_mapping(self):
         without_mapping = Agg()
         self.assertEqual(len(without_mapping.nodes.keys()), 0)
 
@@ -161,8 +161,170 @@ workflow
         self.assertEqual(len(without_mapping.nodes.keys()), 1)
 
     # TODO - finish these tests
-    def test_paste_tree(self):
-        pass
+    def test_paste_tree_with_mapping(self):
+        # with explicit nested
+        initial_agg_1 = Agg(
+            mapping={MAPPING_NAME: MAPPING_DETAIL},
+            from_={
+                "week": {
+                    "date_histogram": {
+                        "field": "date",
+                        "format": "yyyy-MM-dd",
+                        "interval": "1w"
+                    }
+                }
+            }
+        )
+        self.assertEqual(initial_agg_1.nodes.keys(), ['week'])
+        pasted_agg_1 = Agg(
+            from_={
+                "nested_below_week": {
+                    "nested": {
+                        "path": "local_metrics"
+                    },
+                    "aggs": {
+                        "local_metrics.field_class.name": {
+                            "terms": {
+                                "field": "local_metrics.field_class.name",
+                                "size": 10
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        self.assertEqual(set(pasted_agg_1.nodes.keys()), {'nested_below_week', 'local_metrics.field_class.name'})
+
+        initial_agg_1.paste('week', pasted_agg_1)
+        self.assertEqual(set(initial_agg_1.nodes.keys()), {'week', 'nested_below_week', 'local_metrics.field_class.name'})
+        self.assertEqual(
+            initial_agg_1.__repr__().decode("utf-8"),
+            u"""<Aggregation>
+week
+└── nested_below_week
+    └── local_metrics.field_class.name
+"""
+        )
+
+        # without explicit nested
+        initial_agg_2 = Agg(
+            mapping={MAPPING_NAME: MAPPING_DETAIL},
+            from_={
+                "week": {
+                    "date_histogram": {
+                        "field": "date",
+                        "format": "yyyy-MM-dd",
+                        "interval": "1w"
+                    }
+                }
+            }
+        )
+        self.assertEqual(initial_agg_2.nodes.keys(), ['week'])
+        pasted_agg_2 = Agg(
+            from_={
+                "local_metrics.field_class.name": {
+                    "terms": {
+                        "field": "local_metrics.field_class.name",
+                        "size": 10
+                    }
+                }
+            }
+        )
+        self.assertEqual(pasted_agg_2.nodes.keys(), ['local_metrics.field_class.name'])
+
+        initial_agg_2.paste("week", pasted_agg_2)
+        self.assertEqual(set(initial_agg_2.nodes.keys()), {'week', 'nested_below_week', 'local_metrics.field_class.name'})
+        self.assertEqual(
+            initial_agg_2.__repr__().decode("utf-8"),
+            u"""<Aggregation>
+week
+└── nested_below_week
+    └── local_metrics.field_class.name
+"""
+        )
+
+    def test_paste_tree_without_mapping(self):
+        # with explicit nested
+        initial_agg_1 = Agg(
+            mapping=None,
+            from_={
+                "week": {
+                    "date_histogram": {
+                        "field": "date",
+                        "format": "yyyy-MM-dd",
+                        "interval": "1w"
+                    }
+                }
+            }
+        )
+        self.assertEqual(initial_agg_1.nodes.keys(), ['week'])
+
+        pasted_agg_1 = Agg(
+            from_={
+                "nested_below_week": {
+                    "nested": {
+                        "path": "local_metrics"
+                    },
+                    "aggs": {
+                        "local_metrics.field_class.name": {
+                            "terms": {
+                                "field": "local_metrics.field_class.name",
+                                "size": 10
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        self.assertEqual(set(pasted_agg_1.nodes.keys()), {'nested_below_week', "local_metrics.field_class.name"})
+
+        initial_agg_1.paste('week', pasted_agg_1)
+        self.assertEqual(set(initial_agg_1.nodes.keys()), {'week', 'nested_below_week', "local_metrics.field_class.name"})
+        self.assertEqual(
+            initial_agg_1.__repr__().decode("utf-8"),
+            u"""<Aggregation>
+week
+└── nested_below_week
+    └── local_metrics.field_class.name
+"""
+        )
+
+        # without explicit nested (will NOT add nested)
+        initial_agg_2 = Agg(
+            mapping=None,
+            from_={
+                "week": {
+                    "date_histogram": {
+                        "field": "date",
+                        "format": "yyyy-MM-dd",
+                        "interval": "1w"
+                    }
+                }
+            }
+        )
+        self.assertEqual(initial_agg_2.nodes.keys(), ["week"])
+
+        pasted_agg_2 = Agg(
+            from_={
+                "local_metrics.field_class.name": {
+                    "terms": {
+                        "field": "local_metrics.field_class.name",
+                        "size": 10
+                    }
+                }
+            }
+        )
+        self.assertEqual(pasted_agg_2.nodes.keys(), ["local_metrics.field_class.name"])
+
+        initial_agg_2.paste("week", pasted_agg_2)
+        self.assertEqual(set(initial_agg_2.nodes.keys()), {"week", "local_metrics.field_class.name"})
+        self.assertEqual(
+            initial_agg_2.__repr__().decode("utf-8"),
+            u"""<Aggregation>
+week
+└── local_metrics.field_class.name
+"""
+        )
 
     def test_validate(self):
         pass

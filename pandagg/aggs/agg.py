@@ -270,7 +270,7 @@ class Agg(Tree):
             super(Agg, self).paste(nid, new_tree, deep)
             return self.validate_tree(exc=True)
 
-        if hasattr(pasted_root, 'field'):
+        if not hasattr(pasted_root, 'field'):
             warnings.warn('Paste operation could not validate nested integrity: unknown nested position of pasted root'
                           'node: %s.' % pasted_root)
             super(Agg, self).paste(nid, new_tree, deep)
