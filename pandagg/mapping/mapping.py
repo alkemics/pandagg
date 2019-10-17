@@ -23,9 +23,8 @@ class MappingNode(Node):
         self.extra = detail
         super(MappingNode, self).__init__(identifier=field_path, data=PrettyNode(pretty=self.pretty))
 
-    @property
-    def has_raw(self):
-        return 'fields' in self.extra or {} and 'raw' in self.extra['fields']
+    def has_subfield(self, subfield):
+        return 'fields' in (self.extra or {}) and subfield in self.extra['fields']
 
     @property
     def pretty(self):
@@ -77,6 +76,12 @@ class MappingTree(Tree):
         return super(MappingTree, self).show(data_property=data_property, **kwargs)
 
     def validate_agg_node(self, agg_node, exc=True):
+        """Ensure if node has field or path that it exists in mapping, and that required aggregation type
+        if allowed on this kind of field.
+        :param agg_node: AggNode you want to validate on this mapping
+        :param exc: boolean, if set to True raise exception if invalid
+        :rtype: boolean
+        """
         if hasattr(agg_node, 'path'):
             if agg_node.path is None:
                 # reverse nested
@@ -103,22 +108,30 @@ class MappingTree(Tree):
     def is_field_in_mapping(self, field_path):
         if field_path in self:
             return True
-        if field_path.endswith('.raw'):
-            field_without_raw = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
-            if field_without_raw in self and self[field_without_raw].has_raw:
-                return True
-        return False
+        m = re.match(string=field_path, pattern=r'(.+)\.([a-zA-Z0-9_]+)$')
+        if not m:
+            return False
+        field, sub_field = m.groups()
+        if field not in self or not self[field].has_subfield(sub_field):
+            return False
+        return True
 
     def mapping_type_of_field(self, field_path):
-        if field_path.endswith('.raw'):
-            field_without_raw = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
-            if field_without_raw in self and self[field_without_raw].has_raw:
-                return self[field_without_raw].extra['fields']['raw']['type']
-        if field_path not in self:
-            raise AbsentMappingFieldError('<%s field is not present in mappign>' % field_path)
-        return self[field_path].type
+        if field_path in self:
+            return self[field_path].type
+        m = re.match(string=field_path, pattern=r'(.+)\.([a-zA-Z0-9_]+)$')
+        if not m:
+            raise AbsentMappingFieldError('<%s field is not present in mapping>' % field_path)
+        field, sub_field = m.groups()
+        if field not in self or not self[field].has_subfield(sub_field):
+            raise AbsentMappingFieldError('<%s field is not present in mapping>' % field_path)
+        return self[field].extra['fields'][sub_field]['type']
 
-    def nested_applied_above_field(self, field_path):
+    def nested_at_field(self, field_path):
+        return next(iter(self.list_nesteds_at_field(field_path)), None)
+
+    def list_nesteds_at_field(self, field_path):
+        # from deepest to highest
         if field_path.endswith('.raw'):
             field_path = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
         return list(self.rsearch(field_path, filter=lambda n: n.type == 'nested'))

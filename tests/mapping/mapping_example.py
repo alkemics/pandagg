@@ -21,7 +21,13 @@ MAPPING_DETAIL = {
                         },
                         "name": {
                             "type": "string",
-                            "index": "not_analyzed"
+                            "fields": {
+                                # subfield
+                                "raw": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                }
+                            },
                         },
                         "type": {
                             "type": "string",

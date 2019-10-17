@@ -278,8 +278,7 @@ class Agg(Tree):
 
         self.tree_mapping.validate_agg_node(pasted_root)
         # from deepest to highest
-        mapping_nested_fields = self.tree_mapping.nested_applied_above_field(pasted_root.field)
-        required_nested_level = mapping_nested_fields[0] if mapping_nested_fields else None
+        required_nested_level = self.tree_mapping.nested_at_field(pasted_root.field)
         current_nested_level = self.applied_nested_path_at_node(nid)
         if current_nested_level == required_nested_level:
             return super(Agg, self).paste(nid, new_tree, deep)
@@ -299,7 +298,7 @@ class Agg(Tree):
 
         # requires nested - apply all required nested fields
         pid = nid
-        for nested_lvl in reversed(mapping_nested_fields):
+        for nested_lvl in reversed(self.tree_mapping.list_nesteds_at_field(pasted_root.field)):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
@@ -328,8 +327,7 @@ class Agg(Tree):
         self.tree_mapping.validate_agg_node(node)
 
         # from deepest to highest
-        mapping_nested_fields = self.tree_mapping.nested_applied_above_field(node.field)
-        required_nested_level = mapping_nested_fields[0] if mapping_nested_fields else None
+        required_nested_level = self.tree_mapping.nested_at_field(node.field)
         current_nested_level = self.applied_nested_path_at_node(pid)
         if current_nested_level == required_nested_level:
             return super(Agg, self).add_node(node, pid)
@@ -348,7 +346,7 @@ class Agg(Tree):
                 return super(Agg, self).add_node(node, rv_node.identifier)
 
         # requires nested - apply all required nested fields
-        for nested_lvl in reversed(mapping_nested_fields):
+        for nested_lvl in reversed(self.tree_mapping.list_nesteds_at_field(node.field)):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
