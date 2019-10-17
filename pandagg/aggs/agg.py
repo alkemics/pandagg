@@ -44,11 +44,11 @@ class Agg(Tree):
         if from_agg_node:
             self._build_tree_from_node(from_agg_node)
 
-    def _get_instance(self, identifier=None, from_=None):
+    def _get_instance(self, identifier=None, from_=None, **kwargs):
         return Agg(mapping=self.tree_mapping, identifier=identifier, from_=from_)
 
-    def copy(self, identifier=None):
-        return self._get_instance(identifier=identifier, from_=self)
+    def copy(self, identifier=None, **kwargs):
+        return self._get_instance(identifier=identifier, from_=self, **kwargs)
 
     def set_mapping(self, mapping):
         if mapping is not None:
@@ -147,10 +147,10 @@ class Agg(Tree):
 
         if isinstance(by, collections.Iterable) and not isinstance(by, basestring) and not isinstance(by, dict):
             for arg_el in by:
-                new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
+                new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
                 sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
         else:
-            new_agg._interpret_agg(sub_aggs_parent_id, by, **kwargs)
+            new_agg = new_agg._interpret_agg(sub_aggs_parent_id, by, **kwargs)
         return new_agg
 
     def agg(self, arg=None, **kwargs):
@@ -189,19 +189,17 @@ class Agg(Tree):
                 raise ValueError('Empty aggregation')
             return self
         new_agg = self.copy()
-        if not new_agg.root:
-            new_agg.add_node(MatchAll('root'))
-            sub_aggs_parent_id = new_agg.root
+        if isinstance(arg, collections.Iterable) and not isinstance(arg, basestring) and not isinstance(arg, dict):
+            if not new_agg.root:
+                new_agg.add_node(MatchAll('root'))
+            sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
+            for arg_el in arg:
+                new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
         else:
             paths = new_agg.paths_to_leaves()
-            assert len(paths) == 1
-            sub_aggs_parent_id = paths[0][-1]
-
-        if isinstance(arg, collections.Iterable) and not isinstance(arg, basestring) and not isinstance(arg, dict):
-            for arg_el in arg:
-                new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
-        else:
-            new_agg._interpret_agg(sub_aggs_parent_id, arg, **kwargs)
+            assert len(paths) <= 1
+            sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
+            new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg, **kwargs)
         return new_agg
 
     def _interpret_agg(self, insert_below, element, **kwargs):
@@ -211,7 +209,10 @@ class Agg(Tree):
             return self
         if isinstance(element, dict):
             try:
-                self.paste(nid=insert_below, new_tree=Agg(from_=element))
+                new_agg = self._get_instance(from_=element)
+                if self.root is None:
+                    return new_agg
+                self.paste(nid=insert_below, new_tree=new_agg)
             except AbsentMappingFieldError:
                 pass
             return self
@@ -219,7 +220,7 @@ class Agg(Tree):
             assert element.AGG_TYPE in PUBLIC_AGGS.keys()
             self._build_tree_from_node(element, pid=insert_below)
             return self
-        if isinstance(element, Agg):
+        if isinstance(element, Agg) or isinstance(element, ClientBoundAgg):
             self.paste(nid=insert_below, new_tree=element)
             return self
         raise NotImplementedError()
@@ -574,7 +575,10 @@ class ClientBoundAgg(Agg):
             identifier=identifier
         )
 
-    def copy(self, identifier=None):
+    def _get_instance(self, identifier=None, from_=None, **kwargs):
+        return ClientBoundAgg(client=self.client, mapping=self.tree_mapping, identifier=identifier, from_=from_)
+
+    def copy(self, identifier=None, **kwargs):
         return ClientBoundAgg(
             client=self.client,
             mapping=self.tree_mapping,

@@ -154,7 +154,7 @@ class ResponseTree(Tree):
         super(ResponseTree, self).__init__(identifier=identifier)
         self.agg_tree = agg_tree
 
-    def _get_instance(self, identifier):
+    def _get_instance(self, identifier, **kwargs):
         return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
 
     def parse_aggregation(self, raw_response):

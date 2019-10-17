@@ -64,7 +64,7 @@ class MappingTree(Tree):
                 sub_path = '%s.%s' % (path, sub_name) if path else sub_name
                 self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
 
-    def _get_instance(self, identifier):
+    def _get_instance(self, identifier, **kwargs):
         return MappingTree(mapping_name=self.mapping_name, identifier=identifier)
 
     def show(self, data_property='pretty', **kwargs):
@@ -92,5 +92,5 @@ class ClientBoundMapping(Mapping):
             if field_node.type in field_classes_per_name:
                 self.a = field_classes_per_name[field_node.type](client=self._client, field=field_node.field_path)
 
-    def _get_instance(self, nid, root_path, depth):
+    def _get_instance(self, nid, root_path, depth, **kwargs):
         return ClientBoundMapping(tree=self._tree.subtree(nid), root_path=root_path, client=self._client, depth=depth)

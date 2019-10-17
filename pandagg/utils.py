@@ -80,7 +80,7 @@ class TreeBasedObj(Obj):
         self._initial_tree = initial_tree if initial_tree is not None else tree
         self._expand_attrs(depth)
 
-    def _get_instance(self, nid, root_path, depth):
+    def _get_instance(self, nid, root_path, depth, **kwargs):
         return self.__class__(
             tree=self._tree.subtree(nid),
             root_path=root_path,
