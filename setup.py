@@ -23,6 +23,8 @@ tests_require = [
     'mock',
     'flake8',
     'coverage',
+    'elasticsearch==2.3.0',
+    'pandas==0.24.2'
 ]
 
 install_requires = [

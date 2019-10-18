@@ -7,7 +7,7 @@ import re
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping.types import field_classes_per_name
 from pandagg.tree import Tree, Node
-from pandagg.utils import PrettyNode, TreeBasedObj
+from pandagg.utils import PrettyNode, TreeBasedObj, validate_client
 
 
 class MappingNode(Node):
@@ -150,6 +150,7 @@ class Mapping(TreeBasedObj):
 class ClientBoundMapping(Mapping):
 
     def __init__(self, client, tree, root_path=None, depth=None):
+        validate_client(client)
         self._client = client
         super(ClientBoundMapping, self).__init__(tree, root_path, depth)
         # if we reached a leave, add aggregation capabilities based on reached mapping type

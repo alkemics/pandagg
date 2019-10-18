@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
+from mock import Mock
 
 from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.mapping.types import field_classes_per_name
@@ -162,9 +163,49 @@ class ClientBoundMappingTestCase(TestCase):
     aggregations on that field type.
     """
     def test_client_bound(self):
+        client_mock = Mock(spec=['info', 'search', 'validate', 'indices'])
+        es_response_mock = {
+            "_shards": {
+                "failed": 0,
+                "successful": 135,
+                "total": 135
+            },
+            "aggregations": {
+                "TermsAgg": {
+                    "buckets": [
+                        {
+                            "doc_count": 25,
+                            "key": 1
+                        },
+                        {
+                            "doc_count": 50,
+                            "key": 2
+                        }
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 4
+                }
+            },
+            "hits": {
+                "hits": [],
+                "max_score": 0.0,
+                "total": 300
+            },
+            "timed_out": False,
+            "took": 30
+        }
+        client_mock.search = Mock(return_value=es_response_mock)
+
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
-        client_bound_mapping = ClientBoundMapping(client=None, tree=mapping_tree, depth=1)
+        client_bound_mapping = ClientBoundMapping(client=client_mock, tree=mapping_tree, depth=1)
+
         workflow_field = client_bound_mapping.workflow
         self.assertTrue(hasattr(workflow_field, 'a'))
         # workflow type is String
         self.assertIsInstance(workflow_field.a, field_classes_per_name['string'])
+
+        response = workflow_field.a.terms()
+        self.assertEqual(response, [
+            (1, {"doc_count": 25, "key": 1}),
+            (2, {"doc_count": 50, "key": 2}),
+        ])

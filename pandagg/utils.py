@@ -146,6 +146,6 @@ def bool_if_required(sub_filters, operator='must'):
 
 
 def validate_client(client):
-    for method_name in ('info', 'search', 'validate'):
+    for method_name in ('info', 'search', 'validate', 'indices'):
         if not hasattr(client, method_name) and callable(client):
             raise InvalidElasticSearchClientError('You client doesn\'t seem compatible.')
