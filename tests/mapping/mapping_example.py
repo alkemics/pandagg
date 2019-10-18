@@ -35,6 +35,17 @@ MAPPING_DETAIL = {
                         }
                     }
                 },
+                "dataset": {
+                    "dynamic": False,
+                    "properties": {
+                        "nb_classes": {
+                            "type": "integer"
+                        },
+                        "support_train": {
+                            "type": "integer"
+                        }
+                    }
+                },
                 "performance": {
                     "dynamic": False,
                     "properties": {

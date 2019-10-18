@@ -9,10 +9,14 @@ from unittest import TestCase
 
 from treelib.exceptions import MultipleRootError
 from pandagg.aggs import Agg
+from pandagg.aggs.response_tree import AggResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes import Avg, Max, Min, DateHistogram, Terms, Filter
 
+from tests.aggs.parsing_data import (
+    ES_AGG_RESPONSE, EXPECTED_NORMALIZED, EXPECTED_DICT_ROWS, EXPECTED_TREE, get_agg_instance
+)
 from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
 
 
@@ -534,16 +538,37 @@ root_agg
             }
         )
 
-    def test_parse_group_by(self):
-        pass
+    def test_parse_as_tree(self):
+        my_agg = get_agg_instance()
+        response_tree = my_agg._parse_as_tree(ES_AGG_RESPONSE)
+        self.assertIsInstance(response_tree, AggResponse)
+        self.assertEqual(
+            response_tree.__repr__().decode('utf-8'),
+            EXPECTED_TREE
+        )
 
     def test_normalize_buckets(self):
-        pass
+        my_agg = get_agg_instance()
+        self.assertEqual(
+            my_agg._parse_normalized(ES_AGG_RESPONSE),
+            EXPECTED_NORMALIZED
+        )
 
-    def test_parse_as_dict(self):
-        pass
+    def test_parse_as_dict_rows(self):
+        my_agg = get_agg_instance()
+        rows_iterator = my_agg._parse_as_dict_rows(ES_AGG_RESPONSE)
+        self.assertTrue(hasattr(rows_iterator, '__iter__'))
+        self.assertEqual(
+            list(rows_iterator),
+            EXPECTED_DICT_ROWS
+        )
 
     def test_parse_as_dataframe(self):
+        # my_agg = get_agg_instance()
+        # self.assertEqual(
+        #     my_agg._parse_as_dataframe(ES_AGG_RESPONSE),
+        #     EXPECTED_DICT_ROWS
+        # )
         pass
 
     def test_agg_method(self):

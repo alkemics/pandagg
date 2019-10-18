@@ -68,6 +68,9 @@ classification_report
 ├── classification_type                                     String
 ├── date                                                    Date
 ├── global_metrics                                         {Object}
+│   ├── dataset                                            {Object}
+│   │   ├── nb_classes                                      Integer
+│   │   └── support_train                                   Integer
 │   ├── field                                              {Object}
 │   │   ├── id                                              Integer
 │   │   ├── name                                            String

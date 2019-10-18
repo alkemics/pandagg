@@ -466,7 +466,7 @@ class Agg(Tree):
                 result['children'] = normalized_children
             yield result
 
-    def _parse_as_dict(self, aggs_response, row_as_tuple=False, **kwargs):
+    def _parse_as_dict_rows(self, aggs_response, row_as_tuple=False, **kwargs):
         return self._parse_group_by(response=aggs_response, row_as_tuple=row_as_tuple, until=kwargs.get('grouped_by'))
 
     def _parse_as_dataframe(self, aggs, normalize_children=True, **kwargs):
@@ -476,7 +476,7 @@ class Agg(Tree):
             raise ImportError('Using dataframe output format requires to install pandas. Please install "pandas" or '
                               'use another output format.')
         grouping_agg_name = self.deepest_linear_bucket_agg
-        index_values = list(self._parse_as_dict(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
+        index_values = list(self._parse_as_dict_rows(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
         if not index_values:
             return None
         index, values = zip(*index_values)
@@ -515,16 +515,19 @@ class Agg(Tree):
             'children': children
         }
 
+    def _parse_as_tree(self, aggs):
+        response_tree = ResponseTree(self).parse_aggregation(aggs)
+        return AggResponse(tree=response_tree, depth=1)
+
     def parse(self, aggs, output, **kwargs):
         if output == 'raw':
             return aggs
         elif output == 'tree':
-            response_tree = ResponseTree(self).parse_aggregation(aggs)
-            return AggResponse(tree=response_tree, depth=1)
+            return self._parse_as_tree(aggs)
         elif output == 'normalized_tree':
             return self._parse_normalized(aggs)
         elif output == 'dict_rows':
-            return self._parse_as_dict(aggs, **kwargs)
+            return self._parse_as_dict_rows(aggs, **kwargs)
         elif output == 'dataframe':
             return self._parse_as_dataframe(aggs, **kwargs)
         else:
