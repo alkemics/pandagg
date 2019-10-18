@@ -26,6 +26,7 @@ class Obj(object):
     with a figure), will be only available through dict `__getitem__` access.
     """
     _REPR_NAME = None
+    _STRING_KEY_CONSTRAINT = True
 
     def __init__(self, **kwargs):
         # will store non-valid names
@@ -37,14 +38,18 @@ class Obj(object):
     def __getitem__(self, item):
         # when calling d[key]
         try:
-            # return d.key
             return self.__getattribute__(item)
-        except AttributeError:
-            # else self.__d[key]
+        except (AttributeError, TypeError):
             return self.__d[item]
 
     def __setitem__(self, key, value):
         # d[key] = value
+        if not isinstance(key, basestring):
+            if self._STRING_KEY_CONSTRAINT:
+                raise AssertionError
+            self.__d[key] = value
+            return
+        assert not key.startswith('__')
         if re.match(string=key, pattern=r'.*[^a-zA-Z0-9_]'):
             self.__d[key] = value
         else:

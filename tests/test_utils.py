@@ -43,9 +43,37 @@ class ObjTestCase(TestCase):
         self.assertEqual(obj2._yolo, "yolo value")
         self.assertEqual(obj2._toto, "toto value")
 
-        # with double underscore
+        # unauthorized attributes/keys
         with self.assertRaises(AssertionError):
             Obj(__d="trying to mess around")
+        with self.assertRaises(AssertionError):
+            obj = Obj()
+            obj['__d'] = 'yolo'
+        with self.assertRaises(AssertionError):
+            obj = Obj()
+            obj[23] = 'yolo'
+        with self.assertRaises(AssertionError):
+            obj = Obj()
+            obj[None] = 'yolo'
+
+        # if other that string is accepted
+        class FlexObj(Obj):
+            _STRING_KEY_CONSTRAINT = False
+
+        # unauthorized attributes/keys
+        with self.assertRaises(AssertionError):
+            FlexObj(__d="trying to mess around")
+        with self.assertRaises(AssertionError):
+            obj = FlexObj()
+            obj['__d'] = 'yolo'
+        # authorized:
+        obj = FlexObj()
+        obj[23] = 'yolo'
+        self.assertEqual(obj[23], 'yolo')
+
+        obj = FlexObj()
+        obj[None] = 'yolo'
+        self.assertEqual(obj[None], 'yolo')
 
     def test_obj_inherit(self):
         class MyCustomObj(Obj):
