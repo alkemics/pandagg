@@ -86,8 +86,8 @@ class MetricAgg(AggNode):
     VALUE_ATTRS = NotImplementedError()
     SINGLE_BUCKET = True
 
-    @staticmethod
-    def extract_buckets(response_value):
+    @classmethod
+    def extract_buckets(cls, response_value):
         yield (None, response_value)
 
     def get_filter(self, key):
@@ -133,7 +133,8 @@ class BucketAggNode(AggNode):
             assert isinstance(child, AggNode)
         self.aggs = aggs
 
-    def extract_buckets(self, response_value):
+    @classmethod
+    def extract_buckets(cls, response_value):
         raise NotImplementedError()
 
     def get_filter(self, key):
@@ -151,9 +152,10 @@ class ListBucketAgg(BucketAggNode):
     KEY_PATH = 'key'
     SINGLE_BUCKET = False
 
-    def extract_buckets(self, response_value):
+    @classmethod
+    def extract_buckets(cls, response_value):
         for bucket in response_value['buckets']:
-            yield (bucket[self.KEY_PATH], bucket)
+            yield (bucket[cls.KEY_PATH], bucket)
 
     def get_filter(self, key):
         raise NotImplementedError()
@@ -236,7 +238,8 @@ class Filters(BucketAggNode):
             aggs=aggs
         )
 
-    def extract_buckets(self, response_value):
+    @classmethod
+    def extract_buckets(cls, response_value):
         for key, value in response_value['buckets'].iteritems():
             yield (key, value)
 

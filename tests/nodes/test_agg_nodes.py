@@ -63,6 +63,14 @@ class AggNodesTestCase(TestCase):
         self.assertEqual(node.valid_on_field_type('string'), False)
         self.assertEqual(node.valid_on_field_type('boolean'), True)
 
-    def test_bucket_node(self):
-        # BucketAggNodes can have children aggregations
+    def test_terms(self):
+        pass
+
+    def test_filters(self):
+        pass
+
+    def test_metric_aggs(self):
+        pass
+
+    def test_all_agg_body_to_init_kwargs(self):
         pass
