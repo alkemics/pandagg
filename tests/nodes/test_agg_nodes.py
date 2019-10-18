@@ -1,4 +1,4 @@
-from pandagg.nodes.agg_nodes import AggNode
+from pandagg.nodes.agg_nodes import AggNode, Terms, Filters, Avg
 from unittest import TestCase
 
 
@@ -64,13 +64,90 @@ class AggNodesTestCase(TestCase):
         self.assertEqual(node.valid_on_field_type('boolean'), True)
 
     def test_terms(self):
-        pass
+        es_raw_response = {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {
+                    "key": "electronic",
+                    "doc_count": 6
+                },
+                {
+                    "key": "rock",
+                    "doc_count": 3
+                },
+                {
+                    "key": "jazz",
+                    "doc_count": 2
+                }
+            ]
+        }
+        # test extract_buckets
+        buckets_iterator = Terms.extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                ('electronic', {'doc_count': 6, 'key': 'electronic'}),
+                ('rock', {'doc_count': 3, 'key': 'rock'}),
+                ('jazz', {'doc_count': 2, 'key': 'jazz'})
+            ]
+        )
+
+        # test extract bucket value
+        self.assertEqual(Terms.extract_bucket_value({'doc_count': 6, 'key': 'electronic'}), 6)
+        self.assertEqual(Terms.extract_bucket_value({'doc_count': 3, 'key': 'rock'}), 3)
+        self.assertEqual(Terms.extract_bucket_value({'doc_count': 2, 'key': 'jazz'}), 2)
 
     def test_filters(self):
-        pass
+        es_raw_response = {
+            "buckets": {
+                "my_first_filter": {
+                    "doc_count": 1
+                },
+                "my_second_filter": {
+                    "doc_count": 2
+                }
+            }
+        }
+        # test extract_buckets
+        buckets_iterator = Filters.extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                ('my_first_filter', {'doc_count': 1}),
+                ('my_second_filter', {'doc_count': 2}),
+            ]
+        )
+
+        # test extract bucket value
+        self.assertEqual(Filters.extract_bucket_value({'doc_count': 1}), 1)
+        self.assertEqual(Filters.extract_bucket_value({'doc_count': 2}), 2)
 
     def test_metric_aggs(self):
-        pass
+        # example for Average metric aggregation
+        es_raw_response = {
+            "value": 75.0
+        }
+        # test extract_buckets
+        buckets_iterator = Avg.extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                (None, {"value": 75.0})
+            ]
+        )
+
+        # test extract bucket value
+        self.assertEqual(Avg.extract_bucket_value({"value": 75.0}), 75.0)
 
     def test_all_agg_body_to_init_kwargs(self):
         pass
