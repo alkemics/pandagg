@@ -7,6 +7,7 @@
 
 from unittest import TestCase
 
+import pandas as pd
 from treelib.exceptions import MultipleRootError
 from pandagg.aggs import Agg
 from pandagg.aggs.response_tree import AggResponse
@@ -330,7 +331,7 @@ week
 """
         )
 
-    def test_validate(self):
+    def test_validate_tree(self):
         pass
 
     def test_interpret_agg_string(self):
@@ -564,12 +565,12 @@ root_agg
         )
 
     def test_parse_as_dataframe(self):
-        # my_agg = get_agg_instance()
-        # self.assertEqual(
-        #     my_agg._parse_as_dataframe(ES_AGG_RESPONSE),
-        #     EXPECTED_DICT_ROWS
-        # )
-        pass
+        my_agg = get_agg_instance()
+        df = my_agg._parse_as_dataframe(ES_AGG_RESPONSE)
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(list(df.index.names), ['classification_type', 'global_metrics.field.name'])
+        self.assertEqual(list(df.columns), ['avg_f1_micro', 'avg_nb_classes', 'doc_count'])
+        self.assertEqual(df.shape, (len(EXPECTED_DICT_ROWS), 3))
 
     def test_agg_method(self):
         pass
