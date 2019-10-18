@@ -329,11 +329,210 @@ week
     def test_validate(self):
         pass
 
-    def test_interpret_agg(self):
-        pass
+    def test_interpret_agg_string(self):
+        empty_agg = Agg()
+        empty_agg._interpret_agg(insert_below=None, element='some_field')
+        self.assertEqual(
+            empty_agg.query_dict(),
+            {'some_field': {'terms': {'field': 'some_field', 'size': 20}}}
+        )
+
+        # with default size
+        empty_agg = Agg()
+        empty_agg._interpret_agg(insert_below=None, element='some_field', default_size=10)
+        self.assertEqual(
+            empty_agg.query_dict(),
+            {'some_field': {'terms': {'field': 'some_field', 'size': 10}}}
+        )
+
+        # with parent
+        agg = Agg(from_={'root_agg_name': {'terms': {'field': 'some_field', 'size': 5}}})
+        agg._interpret_agg(insert_below='root_agg_name', element='child_field')
+        self.assertEqual(
+            agg.query_dict(),
+            {
+                "root_agg_name": {
+                    "aggs": {
+                        "child_field": {
+                            "terms": {
+                                "field": "child_field",
+                                "size": 20
+                            }
+                        }
+                    },
+                    "terms": {
+                        "field": "some_field",
+                        "size": 5
+                    }
+                }
+            }
+        )
+
+        # with required nested
+        agg = Agg(
+            from_={'term_workflow': {'terms': {'field': 'workflow', 'size': 5}}},
+            mapping={MAPPING_NAME: MAPPING_DETAIL}
+        )
+        agg._interpret_agg(insert_below='term_workflow', element='local_metrics.field_class.name')
+        self.assertEqual(
+            agg.query_dict(),
+            {
+                "term_workflow": {
+                    "aggs": {
+                        "nested_below_term_workflow": {
+                            "aggs": {
+                                "local_metrics.field_class.name": {
+                                    "terms": {
+                                        "field": "local_metrics.field_class.name",
+                                        "size": 20
+                                    }
+                                }
+                            },
+                            "nested": {
+                                "path": "local_metrics"
+                            }
+                        }
+                    },
+                    "terms": {
+                        "field": "workflow",
+                        "size": 5
+                    }
+                }
+            }
+        )
+
+        # TODO - check reverse nested implications
+        # with required reverse-nested
+        # (reusing nested example)
+        # agg._interpret_agg(insert_below='local_metrics.field_class.name', element=['language'])
+
+    def test_interpret_node(self):
+        empty_agg = Agg()
+        node = Terms(
+            agg_name='some_name',
+            field='some_field',
+            size=10
+        )
+        empty_agg._interpret_agg(insert_below=None, element=node)
+        self.assertEqual(
+            empty_agg.query_dict(),
+            {
+                "some_name": {
+                    "terms": {
+                        "field": "some_field",
+                        "size": 10
+                    }
+                }
+            }
+        )
+        # with parent with required nested
+        agg = Agg(
+            from_={'term_workflow': {'terms': {'field': 'workflow', 'size': 5}}},
+            mapping={MAPPING_NAME: MAPPING_DETAIL}
+        )
+        node = Avg(
+            agg_name='min_local_f1',
+            field='local_metrics.performance.test.f1_score'
+        )
+        agg._interpret_agg(insert_below='term_workflow', element=node)
+        self.assertEqual(
+            agg.query_dict(),
+            {
+                "term_workflow": {
+                    "aggs": {
+                        "nested_below_term_workflow": {
+                            "aggs": {
+                                "min_local_f1": {
+                                    "avg": {
+                                        "field": "local_metrics.performance.test.f1_score"
+                                    }
+                                }
+                            },
+                            "nested": {
+                                "path": "local_metrics"
+                            }
+                        }
+                    },
+                    "terms": {
+                        "field": "workflow",
+                        "size": 5
+                    }
+                }
+            }
+        )
 
     def test_query_dict(self):
-        pass
+        # empty
+        self.assertEqual(Agg().query_dict(), {})
+
+        # single node
+        agg = Agg()
+        node = Terms(
+            agg_name='root_agg',
+            field='some_field',
+            size=10
+        )
+        agg.add_node(node)
+        self.assertEqual(
+            agg.query_dict(),
+            {
+                "root_agg": {
+                    "terms": {
+                        "field": "some_field",
+                        "size": 10
+                    }
+                }
+            }
+        )
+
+        # hierarchy
+        agg.add_node(
+            Terms(
+                agg_name='other_name',
+                field='other_field',
+                size=30
+            ),
+            'root_agg'
+        )
+        agg.add_node(
+            Avg(
+                agg_name='avg_some_other_field',
+                field='some_other_field'
+            ),
+            'root_agg'
+        )
+        self.assertEqual(
+            agg.__repr__().decode('utf-8'),
+            u"""<Aggregation>
+root_agg
+├── avg_some_other_field
+└── other_name
+"""
+        )
+        self.assertEqual(
+            agg.query_dict(),
+            {
+                "root_agg": {
+                    "aggs": {
+                        "avg_some_other_field": {
+                            "avg": {
+                                "field": "some_other_field"
+                            }
+                        },
+                        "other_name": {
+                            "terms": {
+                                "field": "other_field",
+                                "size": 30
+                            }
+                        }
+                    },
+                    "terms": {
+                        "field": "some_field",
+                        "size": 10
+                    }
+                }
+            }
+        )
 
     def test_parse_group_by(self):
         pass

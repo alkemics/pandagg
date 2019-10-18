@@ -224,6 +224,8 @@ class Agg(Tree):
         raise NotImplementedError()
 
     def query_dict(self, from_=None, depth=None, with_name=True):
+        if self.root is None:
+            return {}
         from_ = self.root if from_ is None else from_
         node = self[from_]
         children_queries = {}
