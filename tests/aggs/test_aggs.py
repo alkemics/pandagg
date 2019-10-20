@@ -10,13 +10,12 @@ from unittest import TestCase
 import pandas as pd
 from treelib.exceptions import MultipleRootError
 from pandagg.aggs import Agg
-from pandagg.aggs.response_tree import AggResponse
+from pandagg.buckets.response import Response
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes import Avg, Min, DateHistogram, Terms, Filter
 
 import tests.aggs.data_sample as sample
-import tests.aggs.data_nested_sample as nested_sample
 
 from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
 
@@ -482,7 +481,7 @@ root_agg
     def test_parse_as_tree(self):
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
         response_tree = my_agg._parse_as_tree(sample.ES_AGG_RESPONSE)
-        self.assertIsInstance(response_tree, AggResponse)
+        self.assertIsInstance(response_tree, Response)
         self.assertEqual(
             response_tree.__repr__().decode('utf-8'),
             sample.EXPECTED_RESPONSE_TREE_REPR

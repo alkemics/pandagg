@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.tree import Tree, Node
-from pandagg.utils import TreeBasedObj, bool_if_required, PrettyNode
-from collections import OrderedDict, defaultdict
+from pandagg.tree import Node
+from pandagg.utils import bool_if_required, PrettyNode
+from collections import defaultdict
 
 
-class ResponseNode(Node):
+class Bucket(Node):
 
     REPR_SIZE = 60
 
@@ -27,7 +27,7 @@ class ResponseNode(Node):
             lvl=self.lvl, sep='=',
             value=self.extract_bucket_value()
         )
-        super(ResponseNode, self).__init__(data=PrettyNode(pretty=pretty), identifier=identifier)
+        super(Bucket, self).__init__(data=PrettyNode(pretty=pretty), identifier=identifier)
 
     @classmethod
     def _str_current_level(cls, level, key, lvl, sep=':', value=None):
@@ -47,7 +47,7 @@ class ResponseNode(Node):
 
     def bind(self, tree, client=None, index_name=None):
         if client is not None:
-            return ClientBoundResponseNode(
+            return ClientBoundBucket(
                 client=client,
                 index_name=index_name,
                 tree=tree,
@@ -57,7 +57,7 @@ class ResponseNode(Node):
                 key=self.current_key,
                 identifier=self.identifier
             )
-        return TreeBoundResponseNode(
+        return TreeBoundBucket(
             tree=tree,
             aggregation_node=self.aggregation_node,
             value=self.value,
@@ -67,15 +67,15 @@ class ResponseNode(Node):
         )
 
     def __repr__(self):
-        return u'<Bucket, identifier={identifier}>\n{pretty}'\
+        return u'<Bucket, identifier={identifier}>\n{pretty}' \
             .format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
 
 
-class TreeBoundResponseNode(ResponseNode):
+class TreeBoundBucket(Bucket):
 
     def __init__(self, tree, aggregation_node, value, lvl, identifier, key=None):
         self._tree = tree
-        super(TreeBoundResponseNode, self).__init__(
+        super(TreeBoundBucket, self).__init__(
             aggregation_node=aggregation_node,
             value=value,
             lvl=lvl,
@@ -153,12 +153,12 @@ class TreeBoundResponseNode(ResponseNode):
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
 
-class ClientBoundResponseNode(TreeBoundResponseNode):
+class ClientBoundBucket(TreeBoundBucket):
 
     def __init__(self, client, index_name, tree, aggregation_node, value, lvl, identifier, key=None):
         self.client = client
         self.index_name = index_name
-        super(ClientBoundResponseNode, self).__init__(
+        super(ClientBoundBucket, self).__init__(
             tree=tree,
             aggregation_node=aggregation_node,
             value=value,
@@ -168,7 +168,7 @@ class ClientBoundResponseNode(TreeBoundResponseNode):
         )
 
     def list_documents(self, size=None, execute=True, _source=None, **kwargs):
-        filter_query = super(ClientBoundResponseNode, self).list_documents()
+        filter_query = super(ClientBoundBucket, self).list_documents()
         if not execute:
             return filter_query
         body = {"query": filter_query}
@@ -178,88 +178,3 @@ class ClientBoundResponseNode(TreeBoundResponseNode):
             body["_source"] = _source
         body.update(kwargs)
         return self.client.search(index=self.index_name, body=body)['hits']
-
-
-class ResponseTree(Tree):
-
-    def __init__(self, agg_tree, identifier=None):
-        super(ResponseTree, self).__init__(identifier=identifier)
-        self.agg_tree = agg_tree
-
-    def _get_instance(self, identifier, **kwargs):
-        return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
-
-    def parse_aggregation(self, raw_response):
-        # init tree with fist node called 'aggs'
-        agg_node = self.agg_tree[self.agg_tree.root]
-        response_node = ResponseNode(
-            aggregation_node=agg_node,
-            value=raw_response,
-            override_current_level='aggs',
-            lvl=0,
-            identifier='crafted_root'
-        )
-        self.add_node(response_node)
-        self._parse_node_with_children(agg_node, response_node)
-        return self
-
-    def _parse_node_with_children(self, agg_node, parent_node, lvl=1):
-        agg_value = parent_node.value.get(agg_node.agg_name)
-        if agg_value:
-            # if no data is present, elasticsearch doesn't return any bucket, for instance for TermAggregations
-            for key, value in agg_node.extract_buckets(agg_value):
-                bucket = ResponseNode(aggregation_node=agg_node, key=key, value=value, lvl=lvl + 1)
-                self.add_node(bucket, parent_node.identifier)
-                for child in self.agg_tree.children(agg_node.agg_name):
-                    self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
-
-    def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
-        if properties is None:
-            properties = OrderedDict()
-        properties[bucket.current_level] = bucket.current_key
-        if depth is not None:
-            depth -= 1
-        parent = self.parent(bucket.identifier)
-        if bucket.current_level == end_level or depth == 0 or parent is None or parent.identifier == 'crafted_root':
-            return properties
-        return self.bucket_properties(parent, properties, end_level, depth)
-
-    def show(self, data_property='pretty', **kwargs):
-        return super(ResponseTree, self).show(data_property=data_property)
-
-    def __repr__(self):
-        self.show()
-        return (u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)).encode('utf-8')
-
-
-class AggResponse(TreeBasedObj):
-
-    _NODE_PATH_ATTR = 'path'
-
-    def __call__(self, *args, **kwargs):
-        initial_tree = self._tree if self._initial_tree is None else self._initial_tree
-        root_bucket = self._tree[self._tree.root]
-        return root_bucket.bind(tree=initial_tree)
-
-
-class ClientBoundAggResponse(AggResponse):
-
-    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None):
-        self._client = client
-        self._index_name = index_name
-        super(AggResponse, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
-
-    def _get_instance(self, nid, root_path, depth, **kwargs):
-        return ClientBoundAggResponse(
-            client=self._client,
-            index_name=self._index_name,
-            tree=self._tree.subtree(nid),
-            root_path=root_path,
-            depth=depth,
-            initial_tree=self._initial_tree
-        )
-
-    def __call__(self, *args, **kwargs):
-        initial_tree = self._tree if self._initial_tree is None else self._initial_tree
-        root_bucket = self._tree[self._tree.root]
-        return root_bucket.bind(tree=initial_tree, client=self._client, index_name=self._index_name)

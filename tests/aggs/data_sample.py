@@ -203,7 +203,7 @@ ES_AGG_RESPONSE = {
 }
 
 EXPECTED_RESPONSE_TREE_REPR = u"""
-<AggResponse>
+<Response>
 aggs
 ├── classification_type=multilabel                  1797
 │   ├── global_metrics.field.name=hazardpictograms    369
