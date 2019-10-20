@@ -2,14 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from pandagg.tree import Tree, Node
-from pandagg.utils import TreeBasedObj, bool_if_required
+from pandagg.utils import TreeBasedObj, bool_if_required, PrettyNode
 from collections import OrderedDict, defaultdict
-
-
-class PrettyNode:
-    # class to display pretty nodes while working with trees
-    def __init__(self, pretty):
-        self.pretty = pretty
 
 
 class ResponseNode(Node):
@@ -51,7 +45,18 @@ class ResponseNode(Node):
             return {attr_: self.value.get(attr_) for attr_ in attrs}
         return self.value.get(attrs[0])
 
-    def _bind(self, tree):
+    def _bind(self, tree, client=None, index_name=None):
+        if client is not None:
+            return ClientBoundResponseNode(
+                client=client,
+                index_name=index_name,
+                tree=tree,
+                aggregation_node=self.aggregation_node,
+                value=self.value,
+                lvl=self.lvl,
+                key=self.current_key,
+                identifier=self.identifier
+            )
         return TreeBoundResponseNode(
             tree=tree,
             aggregation_node=self.aggregation_node,
@@ -100,7 +105,7 @@ class TreeBoundResponseNode(ResponseNode):
                 current_conditions.append({'nested': {'path': nested_child, 'query': nested_child_conditions}})
         return bool_if_required(current_conditions)
 
-    def build_filter(self):
+    def list_documents(self, *args, **kwargs):
         """Build query filtering documents belonging to that bucket.
         Suppose the following configuration:
 
@@ -146,6 +151,31 @@ class TreeBoundResponseNode(ResponseNode):
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
+
+
+class ClientBoundResponseNode(TreeBoundResponseNode):
+
+    def __init__(self, client, index_name, tree, aggregation_node, value, lvl, identifier, key=None):
+        self.client = client
+        self.index_name = index_name
+        super(ClientBoundResponseNode, self).__init__(
+            tree=tree,
+            aggregation_node=aggregation_node,
+            value=value,
+            lvl=lvl,
+            key=key,
+            identifier=identifier
+        )
+
+    def list_documents(self, size=None, execute=True, **kwargs):
+        filter_query = super(ClientBoundResponseNode, self).list_documents()
+        if not execute:
+            return filter_query
+        body = {"query": filter_query}
+        if size is not None:
+            body["size"] = size
+        body.update(kwargs)
+        return self.client.search(index=self.index_name, body=body)
 
 
 class ResponseTree(Tree):
@@ -207,4 +237,27 @@ class AggResponse(TreeBasedObj):
     def __call__(self, *args, **kwargs):
         initial_tree = self._tree if self._initial_tree is None else self._initial_tree
         root_bucket = self._tree[self._tree.root]
-        return root_bucket._bind(initial_tree)
+        return root_bucket._bind(tree=initial_tree)
+
+
+class ClientBoundAggResponse(AggResponse):
+
+    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None):
+        self._client = client
+        self._index_name = index_name
+        super(AggResponse, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
+
+    def _get_instance(self, nid, root_path, depth, **kwargs):
+        return ClientBoundAggResponse(
+            client=self._client,
+            index_name=self._index_name,
+            tree=self._tree.subtree(nid),
+            root_path=root_path,
+            depth=depth,
+            initial_tree=self._initial_tree
+        )
+
+    def __call__(self, *args, **kwargs):
+        initial_tree = self._tree if self._initial_tree is None else self._initial_tree
+        root_bucket = self._tree[self._tree.root]
+        return root_bucket._bind(tree=initial_tree, client=self._client, index_name=self._index_name)

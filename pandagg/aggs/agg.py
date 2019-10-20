@@ -5,7 +5,7 @@ import copy
 import collections
 import warnings
 
-from pandagg.aggs.response_tree import ResponseTree, AggResponse
+from pandagg.aggs.response_tree import ResponseTree, AggResponse, ClientBoundAggResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes.agg_nodes import (
@@ -540,7 +540,7 @@ class Agg(Tree):
 
 class ClientBoundAgg(Agg):
 
-    def __init__(self, client, mapping=None, index_name=None, from_=None, query=None, identifier=None):
+    def __init__(self, client, index_name, mapping=None, from_=None, query=None, identifier=None):
         self.client = client
         if client is not None:
             validate_client(self.client)
@@ -552,8 +552,18 @@ class ClientBoundAgg(Agg):
             identifier=identifier
         )
 
+    def _parse_as_tree(self, aggs):
+        response_tree = ResponseTree(self).parse_aggregation(aggs)
+        return ClientBoundAggResponse(client=self.client, index_name=self.index_name, tree=response_tree, depth=1)
+
     def _get_instance(self, identifier=None, from_=None, **kwargs):
-        return ClientBoundAgg(client=self.client, mapping=self.tree_mapping, identifier=identifier, from_=from_)
+        return ClientBoundAgg(
+            client=self.client,
+            index_name=self.index_name,
+            mapping=self.tree_mapping,
+            identifier=identifier,
+            from_=from_
+        )
 
     def copy(self, identifier=None, **kwargs):
         return ClientBoundAgg(

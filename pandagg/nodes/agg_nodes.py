@@ -210,7 +210,7 @@ class Terms(ListBucketAgg):
         """Provide filter to get documents belonging to document of given key."""
         if key == 'missing':
             return {'bool': {'must_not': {'exists': {'field': self.field}}}}
-        return {'match': {self.field: key}}
+        return {'term': {self.field: key}}
 
 
 class Filters(BucketAggNode):

@@ -25,7 +25,7 @@ class Index(Obj):
         return Agg(mapping=self.mapping).groupby(by, **kwargs)
 
     def agg(self, arg, output=None, **kwargs):
-        return Agg(mapping=self.mapping).agg(arg, **kwargs)
+        return Agg(mapping=self.mapping).agg(arg, output=output, **kwargs)
 
 
 class Indices(Obj):
@@ -77,4 +77,4 @@ class ClientBoundIndex(Index):
             client=self.client,
             index_name=self.name,
             mapping=self.mapping
-        ).agg(arg, execute=execute, **kwargs)
+        ).agg(arg, execute=execute, output=output, **kwargs)
