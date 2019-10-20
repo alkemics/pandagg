@@ -32,33 +32,6 @@ class MappingTreeTestCase(TestCase):
 }"""
         )
 
-    def test_has_subfield(self):
-        node = MappingNode(
-            field_path='main_path',
-            field_name='main_path',
-            depth=1,
-            detail={'type': 'string'}
-        )
-        self.assertEqual(node.has_subfield('yolo'), False)
-        self.assertEqual(node.has_subfield('some_sub_field'), False)
-
-        node_with_subfield = MappingNode(
-            field_path='main_path',
-            field_name='main_path',
-            depth=1,
-            detail={
-                'type': 'string',
-                'fields': {
-                    'some_sub_field': {
-                        "type":  "string",
-                        "index": "not_analyzed"
-                    }
-                }
-            }
-        )
-        self.assertEqual(node_with_subfield.has_subfield('yolo'), False)
-        self.assertEqual(node_with_subfield.has_subfield('some_sub_field'), True)
-
     def test_parse_tree_from_dict(self):
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
 
@@ -75,6 +48,7 @@ classification_report
 │   ├── field                                              {Object}
 │   │   ├── id                                              Integer
 │   │   ├── name                                            String
+│   │   │   └── raw                                       ~ String
 │   │   └── type                                            String
 │   └── performance                                        {Object}
 │       └── test                                           {Object}
@@ -118,18 +92,6 @@ classification_report
         self.assertEqual(mapping_tree.list_nesteds_at_field('local_metrics'), ['local_metrics'])
         self.assertEqual(mapping_tree.nested_at_field('local_metrics.dataset.support_test'), 'local_metrics')
         self.assertEqual(mapping_tree.list_nesteds_at_field('local_metrics.dataset.support_test'), ['local_metrics'])
-
-    def test_is_field_in_mapping(self):
-        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
-        self.assertEqual(mapping_tree.is_field_in_mapping('yolo'), False)
-
-        self.assertEqual(mapping_tree.is_field_in_mapping('date'), True)
-        self.assertEqual(mapping_tree.is_field_in_mapping('local_metrics.dataset'), True)
-        self.assertEqual(mapping_tree.is_field_in_mapping('local_metrics.dataset.support_test'), True)
-
-        # test sub fields
-        self.assertEqual(mapping_tree.is_field_in_mapping('global_metrics.field.name'), True)
-        self.assertEqual(mapping_tree.is_field_in_mapping('global_metrics.field.name.raw'), True)
 
     def test_mapping_type_of_field(self):
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)

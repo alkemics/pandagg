@@ -62,6 +62,7 @@ classification_report
 │   ├── field                                              {Object}
 │   │   ├── id                                              Integer
 │   │   ├── name                                            String
+│   │   │   └── raw                                       ~ String
 │   │   └── type                                            String
 │   └── performance                                        {Object}
 │       └── test                                           {Object}

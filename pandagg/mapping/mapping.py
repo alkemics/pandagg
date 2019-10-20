@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import re
 
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping.types import field_classes_per_name
@@ -14,17 +13,15 @@ class MappingNode(Node):
 
     REPR_SIZE = 60
 
-    def __init__(self, field_path, field_name, detail, depth, root=False):
+    def __init__(self, field_path, field_name, detail, depth, root=False, sub_field=False):
         self.field_path = field_path
         self.field_name = field_name
         self.type = '' if root else detail.get('type', 'object')
+        self.sub_field = sub_field
         self.dynamic = detail.get('dynamic', False)
         self.depth = depth
         self.extra = detail
         super(MappingNode, self).__init__(identifier=field_path, data=PrettyNode(pretty=self.pretty))
-
-    def has_subfield(self, subfield):
-        return 'fields' in (self.extra or {}) and subfield in self.extra['fields']
 
     @property
     def pretty(self):
@@ -34,6 +31,8 @@ class MappingNode(Node):
             s += ' ' * (pad - 1) + '{%s}' % self.type.capitalize()
         elif self.type == 'nested':
             s += ' ' * (pad - 1) + '[%s]' % self.type.capitalize()
+        elif self.sub_field:
+            s += ' ' * (pad - 2) + '~ %s' % self.type.capitalize()
         else:
             s += ' ' * pad + '%s' % self.type.capitalize()
         return s
@@ -47,8 +46,7 @@ class MappingNode(Node):
 
 
 class MappingTree(Tree):
-    """
-    Tree
+    """Mapping hierarchy represented as a tree.
     """
     node_class = MappingNode
 
@@ -59,15 +57,20 @@ class MappingTree(Tree):
         if mapping_detail:
             self.build_mapping_from_dict(mapping_name, mapping_detail, root=True)
 
-    def build_mapping_from_dict(self, name, detail, pid=None, depth=0, path=None, root=False):
+    def build_mapping_from_dict(self, name, detail, pid=None, depth=0, path=None, root=False, sub_field=False):
         path = path or ''
-        node = MappingNode(field_path=path, field_name=name, detail=detail, depth=depth, root=root)
+        node = MappingNode(field_path=path, field_name=name, detail=detail, depth=depth, root=root, sub_field=sub_field)
         self.add_node(node, parent=pid)
-        if detail:
-            depth += 1
-            for sub_name, sub_detail in (detail.get('properties') or {}).iteritems():
-                sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-                self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
+        if not detail:
+            return
+        depth += 1
+        for sub_name, sub_detail in (detail.get('properties') or {}).iteritems():
+            sub_path = '%s.%s' % (path, sub_name) if path else sub_name
+            self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
+        for sub_name, sub_detail in (detail.get('fields') or {}).iteritems():
+            sub_path = '%s.%s' % (path, sub_name) if path else sub_name
+            self.build_mapping_from_dict(
+                sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path, sub_field=True)
 
     def _get_instance(self, identifier, **kwargs):
         return MappingTree(mapping_name=self.mapping_name, identifier=identifier)
@@ -91,7 +94,7 @@ class MappingTree(Tree):
         if not hasattr(agg_node, 'field'):
             return True
 
-        if not self.is_field_in_mapping(agg_node.field):
+        if agg_node.field not in self:
             if not exc:
                 return False
             raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (
@@ -105,41 +108,21 @@ class MappingTree(Tree):
                                                     % (agg_node.AGG_TYPE, field_type))
         return True
 
-    def is_field_in_mapping(self, field_path):
-        if field_path in self:
-            return True
-        m = re.match(string=field_path, pattern=r'(.+)\.([a-zA-Z0-9_]+)$')
-        if not m:
-            return False
-        field, sub_field = m.groups()
-        if field not in self or not self[field].has_subfield(sub_field):
-            return False
-        return True
-
     def mapping_type_of_field(self, field_path):
-        if field_path in self:
-            return self[field_path].type
-        m = re.match(string=field_path, pattern=r'(.+)\.([a-zA-Z0-9_]+)$')
-        if not m:
+        if field_path not in self:
             raise AbsentMappingFieldError('<%s field is not present in mapping>' % field_path)
-        field, sub_field = m.groups()
-        if field not in self or not self[field].has_subfield(sub_field):
-            raise AbsentMappingFieldError('<%s field is not present in mapping>' % field_path)
-        return self[field].extra['fields'][sub_field]['type']
+        return self[field_path].type
 
     def nested_at_field(self, field_path):
         return next(iter(self.list_nesteds_at_field(field_path)), None)
 
     def list_nesteds_at_field(self, field_path):
         # from deepest to highest
-        if field_path.endswith('.raw'):
-            field_path = re.sub(string=field_path, repl='', pattern=r'(\.raw)$')
         return list(self.rsearch(field_path, filter=lambda n: n.type == 'nested'))
 
 
 class Mapping(TreeBasedObj):
-    """
-    Autocomplete attributes
+    """Wrapper upon mapping tree, enabling interactive navigation in ipython.
     """
     _NODE_PATH_ATTR = 'field_name'
 
