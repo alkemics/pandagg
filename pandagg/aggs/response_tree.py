@@ -45,7 +45,7 @@ class ResponseNode(Node):
             return {attr_: self.value.get(attr_) for attr_ in attrs}
         return self.value.get(attrs[0])
 
-    def _bind(self, tree, client=None, index_name=None):
+    def bind(self, tree, client=None, index_name=None):
         if client is not None:
             return ClientBoundResponseNode(
                 client=client,
@@ -239,7 +239,7 @@ class AggResponse(TreeBasedObj):
     def __call__(self, *args, **kwargs):
         initial_tree = self._tree if self._initial_tree is None else self._initial_tree
         root_bucket = self._tree[self._tree.root]
-        return root_bucket._bind(tree=initial_tree)
+        return root_bucket.bind(tree=initial_tree)
 
 
 class ClientBoundAggResponse(AggResponse):
@@ -262,4 +262,4 @@ class ClientBoundAggResponse(AggResponse):
     def __call__(self, *args, **kwargs):
         initial_tree = self._tree if self._initial_tree is None else self._initial_tree
         root_bucket = self._tree[self._tree.root]
-        return root_bucket._bind(tree=initial_tree, client=self._client, index_name=self._index_name)
+        return root_bucket.bind(tree=initial_tree, client=self._client, index_name=self._index_name)
