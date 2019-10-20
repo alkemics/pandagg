@@ -167,15 +167,17 @@ class ClientBoundResponseNode(TreeBoundResponseNode):
             identifier=identifier
         )
 
-    def list_documents(self, size=None, execute=True, **kwargs):
+    def list_documents(self, size=None, execute=True, _source=None, **kwargs):
         filter_query = super(ClientBoundResponseNode, self).list_documents()
         if not execute:
             return filter_query
         body = {"query": filter_query}
         if size is not None:
             body["size"] = size
+        if _source is not None:
+            body["_source"] = _source
         body.update(kwargs)
-        return self.client.search(index=self.index_name, body=body)
+        return self.client.search(index=self.index_name, body=body)['hits']
 
 
 class ResponseTree(Tree):
