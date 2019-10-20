@@ -1,18 +1,76 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Sample regrouping all representations of a given aggregation, and its expected ES response/pandagg expected parsing
+results.
+"""
+
 from pandagg.aggs import Agg
-from pandagg.nodes import Avg
-from tests.mapping.mapping_example import MAPPING_DETAIL, MAPPING_NAME
+from pandagg.nodes import Avg, Terms
+from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
 
 
-def get_agg_instance():
+EXPECTED_REPR = u"""<Aggregation>
+classification_type
+└── global_metrics.field.name
+    ├── avg_f1_micro
+    └── avg_nb_classes
+"""
+
+EXPECTED_AGG_QUERY = {
+    "classification_type": {
+        "aggs": {
+            "global_metrics.field.name": {
+                "aggs": {
+                    "avg_f1_micro": {
+                        "avg": {
+                            "field": "global_metrics.performance.test.micro.f1_score"
+                        }
+                    },
+                    "avg_nb_classes": {
+                        "avg": {
+                            "field": "global_metrics.dataset.nb_classes"
+                        }
+                    }
+                },
+                "terms": {
+                    "field": "global_metrics.field.name",
+                    "size": 20
+                }
+            }
+        },
+        "terms": {
+            "field": "classification_type",
+            "size": 20
+        }
+    }
+}
+
+
+def get_wrapper_declared_agg():
     return Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}) \
         .groupby(['classification_type', 'global_metrics.field.name']) \
         .agg([
             Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),
             Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score'),
         ])
+
+
+def get_node_hierarchy():
+    return Terms(
+        agg_name='classification_type',
+        field='classification_type',
+        aggs=[
+            Terms(
+                agg_name='global_metrics.field.name',
+                field='global_metrics.field.name',
+                aggs=[
+                    Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),
+                    Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score')
+                ]
+            )
+        ]
+    )
 
 
 ES_AGG_RESPONSE = {
@@ -144,7 +202,7 @@ ES_AGG_RESPONSE = {
     }
 }
 
-EXPECTED_TREE = u"""
+EXPECTED_RESPONSE_TREE_REPR = u"""
 <AggResponse>
 aggs
 ├── classification_type=multilabel                  1797
@@ -182,7 +240,7 @@ aggs
 """
 
 
-EXPECTED_NORMALIZED = {
+EXPECTED_NORMALIZED_RESPONSE = {
     "children": [
         {
             "children": [
@@ -374,7 +432,7 @@ EXPECTED_NORMALIZED = {
     "value": None
 }
 
-EXPECTED_DICT_ROWS = [
+EXPECTED_DICT_ROWS_RESPONSE = [
     (
         {
             'avg_nb_classes': None,

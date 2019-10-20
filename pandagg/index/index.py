@@ -42,7 +42,13 @@ class ClientBoundIndex(Index):
         self.client = client
         if client is not None:
             validate_client(self.client)
-        super(ClientBoundIndex, self).__init__(name, settings, mapping, aliases, warmers)
+        super(ClientBoundIndex, self).__init__(
+            name=name,
+            settings=settings,
+            mapping=mapping,
+            aliases=aliases,
+            warmers=warmers
+        )
 
     def set_mapping(self, mapping):
         mapping_name, mapping_detail = next(mapping.iteritems())
@@ -53,10 +59,22 @@ class ClientBoundIndex(Index):
         )
 
     def query(self, query, validate=False):
-        return ClientBoundAgg(client=self.client, mapping=self.mapping).query(query, validate=validate)
+        return ClientBoundAgg(
+            client=self.client,
+            index_name=self.name,
+            mapping=self.mapping
+        ).query(query, validate=validate)
 
     def groupby(self, by, **kwargs):
-        return ClientBoundAgg(client=self.client, mapping=self.mapping).groupby(by, **kwargs)
+        return ClientBoundAgg(
+            client=self.client,
+            index_name=self.name,
+            mapping=self.mapping
+        ).groupby(by, **kwargs)
 
     def agg(self, arg, output=Agg.DEFAULT_OUTPUT, execute=True, **kwargs):
-        return ClientBoundAgg(client=self.client, mapping=self.mapping).agg(arg, execute=execute, **kwargs)
+        return ClientBoundAgg(
+            client=self.client,
+            index_name=self.name,
+            mapping=self.mapping
+        ).agg(arg, execute=execute, **kwargs)

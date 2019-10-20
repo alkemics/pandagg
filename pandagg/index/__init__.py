@@ -1,1 +1,1 @@
-from index import Index
+from index import Index, ClientBoundIndex

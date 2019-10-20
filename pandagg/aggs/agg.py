@@ -557,6 +557,7 @@ class ClientBoundAgg(Agg):
 
     def copy(self, identifier=None, **kwargs):
         return ClientBoundAgg(
+            index_name=self.index_name,
             client=self.client,
             mapping=self.tree_mapping,
             from_=self,

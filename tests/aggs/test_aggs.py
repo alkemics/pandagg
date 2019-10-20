@@ -13,64 +13,12 @@ from pandagg.aggs import Agg
 from pandagg.aggs.response_tree import AggResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping import MappingTree, Mapping
-from pandagg.nodes import Avg, Max, Min, DateHistogram, Terms, Filter
+from pandagg.nodes import Avg, Min, DateHistogram, Terms, Filter
 
-from tests.aggs.parsing_data import (
-    ES_AGG_RESPONSE, EXPECTED_NORMALIZED, EXPECTED_DICT_ROWS, EXPECTED_TREE, get_agg_instance
-)
+import tests.aggs.data_sample as sample
+import tests.aggs.data_nested_sample as nested_sample
+
 from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
-
-
-EXPECTED_DICT_AGG = {
-    "week": {
-        "date_histogram": {
-            "field": "date",
-            "format": "yyyy-MM-dd",
-            "interval": "1w"
-        },
-        "aggs": {
-            "nested_below_week": {
-                "nested": {
-                    "path": "local_metrics"
-                },
-                "aggs": {
-                    "local_metrics.field_class.name": {
-                        "terms": {
-                            "field": "local_metrics.field_class.name",
-                            "size": 10
-                        },
-                        "aggs": {
-                            "avg_f1_score": {
-                                "avg": {
-                                    "field": "local_metrics.performance.test.f1_score"
-                                }
-                            },
-                            "max_f1_score": {
-                                "max": {
-                                    "field": "local_metrics.performance.test.f1_score"
-                                }
-                            },
-                            "min_f1_score": {
-                                "min": {
-                                    "field": "local_metrics.performance.test.f1_score"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-expected_repr = u"""<Aggregation>
-week
-└── nested_below_week
-    └── local_metrics.field_class.name
-        ├── avg_f1_score
-        ├── max_f1_score
-        └── min_f1_score
-"""
 
 
 class AggTestCase(TestCase):
@@ -165,7 +113,7 @@ workflow
         without_mapping.add_node(Terms('workflow_not_existing', field='field_not_existing'))
         self.assertEqual(len(without_mapping.nodes.keys()), 1)
 
-    # TODO - finish these tests
+    # TODO - finish these tests (reverse nested)
     def test_paste_tree_with_mapping(self):
         # with explicit nested
         initial_agg_1 = Agg(
@@ -331,9 +279,6 @@ week
 """
         )
 
-    def test_validate_tree(self):
-        pass
-
     def test_interpret_agg_string(self):
         empty_agg = Agg()
         empty_agg._interpret_agg(insert_below=None, element='some_field')
@@ -405,11 +350,6 @@ week
                 }
             }
         )
-
-        # TODO - check reverse nested implications
-        # with required reverse-nested
-        # (reusing nested example)
-        # agg._interpret_agg(insert_below='local_metrics.field_class.name', element=['language'])
 
     def test_interpret_node(self):
         empty_agg = Agg()
@@ -540,37 +480,37 @@ root_agg
         )
 
     def test_parse_as_tree(self):
-        my_agg = get_agg_instance()
-        response_tree = my_agg._parse_as_tree(ES_AGG_RESPONSE)
+        my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
+        response_tree = my_agg._parse_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response_tree, AggResponse)
         self.assertEqual(
             response_tree.__repr__().decode('utf-8'),
-            EXPECTED_TREE
+            sample.EXPECTED_RESPONSE_TREE_REPR
         )
 
     def test_normalize_buckets(self):
-        my_agg = get_agg_instance()
+        my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
         self.assertEqual(
-            my_agg._parse_normalized(ES_AGG_RESPONSE),
-            EXPECTED_NORMALIZED
+            my_agg._parse_normalized(sample.ES_AGG_RESPONSE),
+            sample.EXPECTED_NORMALIZED_RESPONSE
         )
 
     def test_parse_as_dict_rows(self):
-        my_agg = get_agg_instance()
-        rows_iterator = my_agg._parse_as_dict_rows(ES_AGG_RESPONSE)
+        my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
+        rows_iterator = my_agg._parse_as_dict_rows(sample.ES_AGG_RESPONSE)
         self.assertTrue(hasattr(rows_iterator, '__iter__'))
         self.assertEqual(
             list(rows_iterator),
-            EXPECTED_DICT_ROWS
+            sample.EXPECTED_DICT_ROWS_RESPONSE
         )
 
     def test_parse_as_dataframe(self):
-        my_agg = get_agg_instance()
-        df = my_agg._parse_as_dataframe(ES_AGG_RESPONSE)
+        my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
+        df = my_agg._parse_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(list(df.index.names), ['classification_type', 'global_metrics.field.name'])
         self.assertEqual(list(df.columns), ['avg_f1_micro', 'avg_nb_classes', 'doc_count'])
-        self.assertEqual(df.shape, (len(EXPECTED_DICT_ROWS), 3))
+        self.assertEqual(df.shape, (len(sample.EXPECTED_DICT_ROWS_RESPONSE), 3))
 
     def test_agg_method(self):
         pass
@@ -615,11 +555,18 @@ root_agg
         self.assertIsInstance(agg_from_obj_mapping, Agg)
 
     def test_init_from_dict(self):
-        agg = Agg(from_=EXPECTED_DICT_AGG, mapping={MAPPING_NAME: MAPPING_DETAIL})
-        self.assertEqual(agg.query_dict(), EXPECTED_DICT_AGG)
-        self.assertEqual(agg.__repr__().decode('utf-8'), expected_repr)
+        my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
+        self.assertEqual(my_agg.query_dict(), sample.EXPECTED_AGG_QUERY)
+        self.assertEqual(my_agg.__repr__().decode('utf-8'), sample.EXPECTED_REPR)
 
     def test_init_from_node_hierarchy(self):
+        node_hierarchy = sample.get_node_hierarchy()
+
+        agg = Agg(from_=node_hierarchy, mapping={MAPPING_NAME: MAPPING_DETAIL})
+        self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
+        self.assertEqual(agg.__repr__().decode('utf-8'), sample.EXPECTED_REPR)
+
+        # with nested
         node_hierarchy = DateHistogram(
             agg_name='week',
             field='date',
@@ -630,30 +577,63 @@ root_agg
                     field="local_metrics.field_class.name",
                     size=10,
                     aggs=[
-                        Min(agg_name='min_f1_score', field='local_metrics.performance.test.f1_score'),
-                        Max(agg_name='max_f1_score', field='local_metrics.performance.test.f1_score'),
-                        Avg(agg_name='avg_f1_score', field='local_metrics.performance.test.f1_score')
+                        Min(
+                            agg_name='min_f1_score',
+                            field='local_metrics.performance.test.f1_score'
+                        )
                     ]
                 )
             ]
         )
         agg = Agg(from_=node_hierarchy, mapping={MAPPING_NAME: MAPPING_DETAIL})
-        self.assertEqual(agg.query_dict(), EXPECTED_DICT_AGG)
-        self.assertEqual(agg.__repr__().decode('utf-8'), expected_repr)
+        self.assertEqual(
+            agg.query_dict(),
+            {
+                "week": {
+                    "aggs": {
+                        "nested_below_week": {
+                            "aggs": {
+                                "local_metrics.field_class.name": {
+                                    "aggs": {
+                                        "min_f1_score": {
+                                            "min": {
+                                                "field": "local_metrics.performance.test.f1_score"
+                                            }
+                                        }
+                                    },
+                                    "terms": {
+                                        "field": "local_metrics.field_class.name",
+                                        "size": 10
+                                    }
+                                }
+                            },
+                            "nested": {
+                                "path": "local_metrics"
+                            }
+                        }
+                    },
+                    "date_histogram": {
+                        "field": "date",
+                        "format": "yyyy-MM-dd",
+                        "interval": "1w"
+                    }
+                }
+            }
+        )
+        self.assertEqual(
+            agg.__repr__().decode('utf-8'),
+            u"""<Aggregation>
+week
+└── nested_below_week
+    └── local_metrics.field_class.name
+        └── min_f1_score
+"""
+        )
 
     def test_groupby_and_agg(self):
-        week = DateHistogram(agg_name='week', field='date', interval='1w')
-
-        # default size defines size of terms aggregations, (impacts "local_metrics.field_class.name" terms agg)
-        agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}) \
-            .groupby([week, "local_metrics.field_class.name"], default_size=10) \
-            .agg([
-                Min(agg_name='min_f1_score', field='local_metrics.performance.test.f1_score'),
-                Max(agg_name='max_f1_score', field='local_metrics.performance.test.f1_score'),
-                Avg(agg_name='avg_f1_score', field='local_metrics.performance.test.f1_score')
-            ])
-        self.assertEqual(agg.query_dict(), EXPECTED_DICT_AGG)
-        self.assertEqual(agg.__repr__().decode('utf-8'), expected_repr)
+        agg = sample.get_wrapper_declared_agg()
+        self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
+        self.assertEqual(agg.__repr__().decode('utf-8'), sample.EXPECTED_REPR)
 
     def test_applied_nested_path_at_node(self):
         """ Check that correct nested path is detected at node levels:
@@ -664,11 +644,28 @@ root_agg
                 ├── max_f1_score
                 └── min_f1_score
         """
-        agg = Agg(from_=EXPECTED_DICT_AGG, mapping={MAPPING_NAME: MAPPING_DETAIL})
+        node_hierarchy = DateHistogram(
+            agg_name='week',
+            field='date',
+            interval='1w',
+            aggs=[
+                Terms(
+                    agg_name="local_metrics.field_class.name",
+                    field="local_metrics.field_class.name",
+                    size=10,
+                    aggs=[
+                        Min(
+                            agg_name='min_f1_score',
+                            field='local_metrics.performance.test.f1_score'
+                        )
+                    ]
+                )
+            ]
+        )
+        agg = Agg(from_=node_hierarchy, mapping={MAPPING_NAME: MAPPING_DETAIL})
 
         self.assertEqual(agg.applied_nested_path_at_node('week'), None)
-        for nid in ('nested_below_week', 'local_metrics.field_class.name', 'max_f1_score',
-                    'max_f1_score', 'min_f1_score'):
+        for nid in ('nested_below_week', 'local_metrics.field_class.name', 'min_f1_score'):
             self.assertEqual(agg.applied_nested_path_at_node(nid), 'local_metrics')
 
     def test_deepest_linear_agg(self):
