@@ -255,21 +255,6 @@ class Filters(BucketAggNode):
         return {'filters': agg_body['filters']}
 
 
-class MatchAll(Filters):
-
-    def __init__(self, agg_name, meta=None, aggs=None):
-        super(MatchAll, self).__init__(
-            agg_name=agg_name,
-            filters={'All': {'match_all': {}}},
-            meta=meta,
-            aggs=aggs
-        )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return agg_body
-
-
 class Histogram(ListBucketAgg):
 
     AGG_TYPE = 'histogram'
@@ -391,6 +376,21 @@ class Filter(UniqueBucketAgg):
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):
         return {'filter_': agg_body}
+
+
+class MatchAll(Filter):
+
+    def __init__(self, agg_name, meta=None, aggs=None):
+        super(MatchAll, self).__init__(
+            agg_name=agg_name,
+            filter_={'match_all': {}},
+            meta=meta,
+            aggs=aggs
+        )
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        return agg_body
 
 
 class Nested(UniqueBucketAgg):
