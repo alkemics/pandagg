@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+from collections import OrderedDict, defaultdict
+
 from pandagg.buckets.buckets import Bucket
 from pandagg.tree import Tree
-from pandagg.utils import TreeBasedObj
-from collections import OrderedDict
+from pandagg.utils import TreeBasedObj, bool_if_required
 
 
 class ResponseTree(Tree):
@@ -62,10 +64,9 @@ class Response(TreeBasedObj):
 
     _NODE_PATH_ATTR = 'path'
 
-    def __call__(self, *args, **kwargs):
+    def list_documents(self, **kwargs):
         initial_tree = self._tree if self._initial_tree is None else self._initial_tree
-        root_bucket = self._tree[self._tree.root]
-        return root_bucket.bind(tree=initial_tree)
+        return initial_tree.list_documents()
 
 
 class ClientBoundResponse(Response):
@@ -85,7 +86,78 @@ class ClientBoundResponse(Response):
             initial_tree=self._initial_tree
         )
 
-    def __call__(self, *args, **kwargs):
-        initial_tree = self._tree if self._initial_tree is None else self._initial_tree
-        root_bucket = self._tree[self._tree.root]
-        return root_bucket.bind(tree=initial_tree, client=self._client, index_name=self._index_name)
+    @classmethod
+    def _build_filter(cls, nid_to_children, filters_per_nested_level, current_nested_path=None):
+        """Recursive function to build bucket filters from highest to deepest nested conditions.
+        """
+        current_conditions = filters_per_nested_level.get(current_nested_path, [])
+        nested_children = nid_to_children[current_nested_path]
+        for nested_child in nested_children:
+            nested_child_conditions = cls._build_filter(
+                nid_to_children=nid_to_children,
+                filters_per_nested_level=filters_per_nested_level,
+                current_nested_path=nested_child
+            )
+            if nested_child_conditions:
+                current_conditions.append({'nested': {'path': nested_child, 'query': nested_child_conditions}})
+        return bool_if_required(current_conditions)
+
+    def _documents_query(self):
+        """Build query filtering documents belonging to that bucket.
+        Suppose the following configuration:
+
+        Base                        <- filter on base
+          |── Nested_A                 no filter on A (nested still must be applied for children)
+          |     |── SubNested A1
+          |     └── SubNested A2    <- filter on A2
+          └── Nested_B              <- filter on B
+
+        Note: on Filter and Filters query, if some filter condition is nested, it might require some propagation in
+        children conditions on that same nested. This feature is not implemented yet. The main difficulty being to
+        disambiguate if OR or AND operator must be applied on conditions of same nested level in some cases.
+        """
+        current_bucket = self._tree[self._tree.root]
+        agg_tree = self._initial_tree.agg_tree
+        tree_mapping = self._initial_tree.agg_tree.tree_mapping
+
+        aggs_keys = [
+            (agg_tree[level], key) for
+            level, key in self._tree.bucket_properties(current_bucket).items()
+        ]
+
+        filters_per_nested_level = defaultdict(list)
+
+        for level_agg, key in aggs_keys:
+            level_agg_filter = level_agg.get_filter(key)
+            # remove unnecessary match_all filters
+            if level_agg_filter is not None and 'match_all' not in level_agg_filter:
+                current_nested = agg_tree.applied_nested_path_at_node(level_agg.identifier)
+                filters_per_nested_level[current_nested].append(level_agg_filter)
+
+        nested_with_conditions = [n for n in filters_per_nested_level.keys() if n]
+
+        all_nesteds = [
+            n.identifier
+            for n in tree_mapping.filter_nodes(
+                lambda x: (x.type == 'nested') and any((i in x.identifier or '' for i in nested_with_conditions))
+            )
+        ]
+
+        nid_to_children = defaultdict(set)
+        for nested in all_nesteds:
+            nested_with_parents = list(tree_mapping.rsearch(nid=nested, filter=lambda x: x.type == 'nested'))
+            nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
+            nid_to_children[nearest_nested_parent].add(nested)
+        return self._build_filter(nid_to_children, filters_per_nested_level)
+
+    def list_documents(self, size=None, execute=True, _source=None, **kwargs):
+        filter_query = self._documents_query()
+        if not execute:
+            return filter_query
+        body = {"query": filter_query}
+        if size is not None:
+            body["size"] = size
+        if _source is not None:
+            body["_source"] = _source
+        body.update(kwargs)
+        return self._client.search(index=self._index_name, body=body)['hits']
