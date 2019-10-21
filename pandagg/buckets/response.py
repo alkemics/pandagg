@@ -44,11 +44,13 @@ class ResponseTree(Tree):
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
         if properties is None:
             properties = OrderedDict()
+        if bucket.identifier == 'crafted_root':
+            return properties
         properties[bucket.current_level] = bucket.current_key
         if depth is not None:
             depth -= 1
         parent = self.parent(bucket.identifier)
-        if bucket.current_level == end_level or depth == 0 or parent is None or parent.identifier == 'crafted_root':
+        if bucket.current_level == end_level or depth == 0 or parent is None:
             return properties
         return self.bucket_properties(parent, properties, end_level, depth)
 
@@ -154,7 +156,9 @@ class ClientBoundResponse(Response):
         filter_query = self._documents_query()
         if not execute:
             return filter_query
-        body = {"query": filter_query}
+        body = {}
+        if filter_query:
+            body["query"] = filter_query
         if size is not None:
             body["size"] = size
         if _source is not None:
