@@ -157,7 +157,7 @@ class ClientBoundResponse(Response):
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
-    def list_documents(self, size=None, execute=True, _source=None, **kwargs):
+    def list_documents(self, size=None, execute=True, _source=None, compact=True, **kwargs):
         filter_query = self._documents_query()
         if not execute:
             return filter_query
@@ -169,4 +169,10 @@ class ClientBoundResponse(Response):
         if _source is not None:
             body["_source"] = _source
         body.update(kwargs)
-        return self._client.search(index=self._index_name, body=body)['hits']
+        response = self._client.search(index=self._index_name, body=body)['hits']
+        if not compact:
+            return response
+        return {
+            'total': response['total'],
+            'hits': map(lambda x: x['_source'], response['hits'])
+        }
