@@ -24,6 +24,7 @@ class Agg(Tree):
     node_class = AggNode
     tree_mapping = None
     DEFAULT_OUTPUT = 'dataframe'
+    _crafted_root_name = 'root'
 
     def __init__(self, from_=None, mapping=None, identifier=None):
         from_tree = None
@@ -65,7 +66,7 @@ class Agg(Tree):
         assert isinstance(from_dict, dict)
         from_dict = copy.deepcopy(from_dict)
         if len(from_dict.keys()) > 1:
-            self.add_node(MatchAll('root'))
+            self.add_node(MatchAll(self._crafted_root_name))
         agg_name, agg_detail = next(from_dict.iteritems())
         self._build_tree_from_dict(agg_name, agg_detail, self.root)
 
@@ -189,7 +190,7 @@ class Agg(Tree):
         new_agg = self.copy()
         if isinstance(arg, collections.Iterable) and not isinstance(arg, basestring) and not isinstance(arg, dict):
             if not new_agg.root:
-                new_agg.add_node(MatchAll('root'))
+                new_agg.add_node(MatchAll(self._crafted_root_name))
             sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
             for arg_el in arg:
                 new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)

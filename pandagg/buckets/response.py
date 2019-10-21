@@ -4,6 +4,7 @@
 from collections import OrderedDict, defaultdict
 
 from pandagg.buckets.buckets import Bucket
+from pandagg.nodes.agg_nodes import UniqueBucketAgg
 from pandagg.tree import Tree
 from pandagg.utils import TreeBasedObj, bool_if_required
 
@@ -18,39 +19,43 @@ class ResponseTree(Tree):
         return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
 
     def parse_aggregation(self, raw_response):
-        # init tree with fist node called 'aggs'
-        agg_node = self.agg_tree[self.agg_tree.root]
-        response_node = Bucket(
-            aggregation_node=agg_node,
-            value=raw_response,
-            override_current_level='aggs',
-            lvl=0,
-            identifier='crafted_root'
-        )
-        self.add_node(response_node)
-        self._parse_node_with_children(agg_node, response_node)
+        root_node = self.agg_tree[self.agg_tree.root]
+        if not isinstance(root_node, UniqueBucketAgg):
+            bucket = Bucket(value=None, depth=0)
+            self.add_node(bucket, None)
+            self._parse_node_with_children(root_node, raw_response, pid=bucket.identifier)
+        else:
+            self._parse_node_with_children(root_node, raw_response)
         return self
 
-    def _parse_node_with_children(self, agg_node, parent_node, lvl=1):
-        agg_value = parent_node.value.get(agg_node.agg_name)
-        if agg_value:
+    def _parse_node_with_children(self, agg_node, raw_response, pid=None, lvl=0):
+        agg_raw_response = raw_response.get(agg_node.agg_name)
+        if agg_raw_response:
             # if no data is present, elasticsearch doesn't return any bucket, for instance for TermAggregations
-            for key, value in agg_node.extract_buckets(agg_value):
-                bucket = Bucket(aggregation_node=agg_node, key=key, value=value, lvl=lvl + 1)
-                self.add_node(bucket, parent_node.identifier)
+            for key, raw_value in agg_node.extract_buckets(agg_raw_response):
+                bucket = Bucket(
+                    aggregation_node=agg_node,
+                    key=key,
+                    value=agg_node.extract_bucket_value(raw_value),
+                    depth=lvl + 1
+                )
+                self.add_node(bucket, pid)
                 for child in self.agg_tree.children(agg_node.agg_name):
-                    self._parse_node_with_children(agg_node=child, parent_node=bucket, lvl=lvl + 1)
+                    self._parse_node_with_children(
+                        agg_node=child,
+                        raw_response=raw_value,
+                        lvl=lvl + 1,
+                        pid=bucket.identifier
+                    )
 
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
         if properties is None:
             properties = OrderedDict()
-        if bucket.identifier == 'crafted_root':
-            return properties
-        properties[bucket.current_level] = bucket.current_key
+        properties[bucket.level] = bucket.key
         if depth is not None:
             depth -= 1
         parent = self.parent(bucket.identifier)
-        if bucket.current_level == end_level or depth == 0 or parent is None:
+        if bucket.level == end_level or depth == 0 or parent is None:
             return properties
         return self.bucket_properties(parent, properties, end_level, depth)
 

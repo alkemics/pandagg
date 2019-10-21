@@ -204,39 +204,39 @@ ES_AGG_RESPONSE = {
 
 EXPECTED_RESPONSE_TREE_REPR = u"""
 <Response>
-aggs
-├── classification_type=multilabel                  1797
-│   ├── global_metrics.field.name=hazardpictograms    369
-│   │   ├── avg_nb_classes                           5.2
-│   │   └── avg_f1_micro                            0.83
-│   ├── global_metrics.field.name=islabeledby        369
-│   │   ├── avg_nb_classes                         88.72
-│   │   └── avg_f1_micro                            0.81
-│   ├── global_metrics.field.name=flavors            367
-│   │   ├── avg_nb_classes                         27.57
-│   │   └── avg_f1_micro                            0.41
+root
+├── classification_type=multilabel                      1797
+│   ├── global_metrics.field.name=hazardpictograms       369
+│   │   ├── avg_nb_classes                               5.2
+│   │   └── avg_f1_micro                                0.83
+│   ├── global_metrics.field.name=islabeledby            369
+│   │   ├── avg_nb_classes                             88.72
+│   │   └── avg_f1_micro                                0.81
+│   ├── global_metrics.field.name=flavors                367
+│   │   ├── avg_nb_classes                             27.57
+│   │   └── avg_f1_micro                                0.41
 │   ├── global_metrics.field.name=hasnotableingredients    239
-│   │   ├── avg_nb_classes                        107.82
-│   │   └── avg_f1_micro                            0.83
-│   ├── global_metrics.field.name=allergentypelist    130
-│   │   ├── avg_nb_classes                         65.59
-│   │   └── avg_f1_micro                            0.82
+│   │   ├── avg_nb_classes                            107.82
+│   │   └── avg_f1_micro                                0.83
+│   ├── global_metrics.field.name=allergentypelist       130
+│   │   ├── avg_nb_classes                             65.59
+│   │   └── avg_f1_micro                                0.82
 │   ├── global_metrics.field.name=ispracticecompatible    128
-│   │   ├── avg_nb_classes                         18.71
-│   │   └── avg_f1_micro                            0.72
-│   ├── global_metrics.field.name=gpc                119
-│   │   ├── avg_nb_classes                        183.21
-│   │   └── avg_f1_micro                            0.95
-│   └── global_metrics.field.name=preservationmethods    76
-│       ├── avg_nb_classes                          9.97
-│       └── avg_f1_micro                             0.8
-└── classification_type=multiclass                   568
-    ├── global_metrics.field.name=kind               370
-    │   ├── avg_nb_classes                         206.5
-    │   └── avg_f1_micro                            0.89
-    └── global_metrics.field.name=gpc                198
-        ├── avg_nb_classes                        211.12
-        └── avg_f1_micro                            0.93
+│   │   ├── avg_nb_classes                             18.71
+│   │   └── avg_f1_micro                                0.72
+│   ├── global_metrics.field.name=gpc                    119
+│   │   ├── avg_nb_classes                            183.21
+│   │   └── avg_f1_micro                                0.95
+│   └── global_metrics.field.name=preservationmethods     76
+│       ├── avg_nb_classes                              9.97
+│       └── avg_f1_micro                                 0.8
+└── classification_type=multiclass                       568
+    ├── global_metrics.field.name=kind                   370
+    │   ├── avg_nb_classes                             206.5
+    │   └── avg_f1_micro                                0.89
+    └── global_metrics.field.name=gpc                    198
+        ├── avg_nb_classes                            211.12
+        └── avg_f1_micro                                0.93
 """
 
 
