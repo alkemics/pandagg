@@ -3,13 +3,13 @@
 
 from __future__ import unicode_literals
 from builtins import str as text
-from six import iteritems, python_2_unicode_compatible
+
 import re
-from treelib import Node
 import json
 
+from treelib import Node
 
-@python_2_unicode_compatible
+
 class AggNode(Node):
     """Wrapper around elasticsearch aggregation concept.
     https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
@@ -81,12 +81,14 @@ class AggNode(Node):
         return response.get(attrs[0])
 
     def __repr__(self):
-        return u"<{class_}, name={name}, type={type}, body={body}>".format(
-            class_=self.__class__.__name__, type=text(self.AGG_TYPE), name=text(self.agg_name), body=json.dumps(self.agg_body)
-        )
+        return self.__str__()
 
     def __str__(self):
-        return self.__repr__()
+        return "<{class_}, name={name}, type={type}, body={body}>".format(
+            class_=text(self.__class__.__name__),
+            type=text(self.AGG_TYPE),
+            name=text(self.agg_name), body=json.dumps(self.agg_body)
+        )
 
 
 class MetricAgg(AggNode):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from six import python_2_unicode_compatible
+from builtins import str as text
 from treelib import Tree as OriginalTree
 
 
@@ -10,7 +10,6 @@ from treelib.exceptions import NodeIDAbsentError
 
 
 # slighly modified version of treelib.Tree
-@python_2_unicode_compatible
 class Tree(OriginalTree):
 
     def show(self, nid=None, level=OriginalTree.ROOT, idhidden=True, filter=None,
@@ -32,4 +31,7 @@ class Tree(OriginalTree):
 
     def __str__(self):
         self.show()
-        return u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)
+        return '<{class_}>\n{tree}'.format(
+            class_=text(self.__class__.__name__),
+            tree=self._reader
+        )

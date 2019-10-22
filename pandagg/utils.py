@@ -6,12 +6,11 @@ from __future__ import unicode_literals
 from builtins import str as text
 
 import re
-from six import string_types, python_2_unicode_compatible
+from six import string_types
 from pandagg.exceptions import InvalidElasticSearchClientError
 from pandagg.tree import Tree
 
 
-@python_2_unicode_compatible
 class Obj(object):
     """Object class that allows to get items both by attribute `__getattribute__` access: `obj.attribute` or by dict
     `__getitem__` access:
@@ -70,10 +69,12 @@ class Obj(object):
         return self.__str__()
 
     def __str__(self):
-        return '<%s> %s' % (self.__class__._REPR_NAME or self.__class__.__name__, sorted(map(text, self.__keys())))
+        return '<%s> %s' % (
+            text(self.__class__._REPR_NAME or self.__class__.__name__),
+            text(sorted(map(text, self.__keys())))
+        )
 
 
-@python_2_unicode_compatible
 class TreeBasedObj(Obj):
     """
     Recursive Obj whose structure is defined by a treelib.Tree object.
@@ -132,11 +133,15 @@ class TreeBasedObj(Obj):
     def __str__(self):
         tree_repr = self._tree.show()
         if self._root_path is None:
-            return u'\n<%s>\n%s' % (
-                self.__class__._REPR_NAME or self.__class__.__name__, text(tree_repr))
+            return '\n<%s>\n%s' % (
+                text(self.__class__._REPR_NAME or self.__class__.__name__),
+                tree_repr
+            )
         current_path = self._root_path
-        return u'\n<%s subpart: %s>\n%s' % (
-            self.__class__._REPR_NAME or self.__class__.__name__, current_path, text(tree_repr))
+        return '\n<%s subpart: %s>\n%s' % (
+            text(self.__class__._REPR_NAME or self.__class__.__name__),
+            current_path, tree_repr
+        )
 
 
 class PrettyNode(object):
