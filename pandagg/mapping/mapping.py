@@ -135,15 +135,30 @@ class Mapping(TreeBasedObj):
 
 class ClientBoundMapping(Mapping):
 
-    def __init__(self, client, tree, root_path=None, depth=None):
+    def __init__(self, client, tree, root_path=None, depth=None, initial_tree=None):
         validate_client(client)
         self._client = client
-        super(ClientBoundMapping, self).__init__(tree, root_path, depth)
+        super(ClientBoundMapping, self).__init__(
+            tree=tree,
+            root_path=root_path,
+            depth=depth,
+            initial_tree=initial_tree
+        )
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         if not self._tree.children(self._tree.root):
             field_node = self._tree[self._tree.root]
             if field_node.type in field_classes_per_name:
-                self.a = field_classes_per_name[field_node.type](client=self._client, field=field_node.field_path)
+                self.a = field_classes_per_name[field_node.type](
+                    mapping_tree=self._initial_tree,
+                    client=self._client,
+                    field=field_node.field_path
+                )
 
     def _get_instance(self, nid, root_path, depth, **kwargs):
-        return ClientBoundMapping(tree=self._tree.subtree(nid), root_path=root_path, client=self._client, depth=depth)
+        return ClientBoundMapping(
+            client=self._client,
+            tree=self._tree.subtree(nid),
+            root_path=root_path,
+            depth=depth,
+            initial_tree=self._initial_tree
+        )

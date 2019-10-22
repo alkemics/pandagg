@@ -358,7 +358,8 @@ class Agg(Tree):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
-                    (n for n in self.children(pid) if isinstance(n, Nested) and n.path == nested_lvl),
+                    (n for n in (self.children(pid) if pid is not None else [])
+                     if isinstance(n, Nested) and n.path == nested_lvl),
                     None
                 )
                 if child_nested:

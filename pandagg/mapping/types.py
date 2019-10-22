@@ -24,29 +24,41 @@ def list_available_aggs_on_field(field_type):
     ]
 
 
-def field_klass_init(self, client, field):
+def field_klass_init(self, mapping_tree, client, field):
+    self._mapping_tree = mapping_tree
     self._client = client
     self._field = field
 
 
 def aggregator_factory(agg_klass):
-    def aggregator(self, index=None, **kwargs):
+    def aggregator(self, index=None, execute=True, **kwargs):
         node = agg_klass(
             agg_name='%sAgg' % agg_klass.AGG_TYPE.capitalize(),
             field=self._field,
             **kwargs
         )
-        return self._operate(node, index)
+        return self._operate(node, index, execute)
     aggregator.__doc__ = agg_klass.__doc__
     return aggregator
 
 
-def _operate(self, agg_node, index):
+def _operate(self, agg_node, index, execute):
     aggregation = {agg_node.agg_name: agg_node.query_dict()}
-    if self._client is not None:
+    nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
+    for nested in nesteds:
+        aggregation = {
+            nested: {
+                'nested': {'path': nested},
+                'aggs': aggregation
+            }
+        }
+
+    if self._client is not None and execute:
         body = {"aggs": aggregation, "size": 0}
-        raw_response = self._client.search(index=index, body=body)['aggregations'][agg_node.agg_name]
-        return list(agg_node.extract_buckets(raw_response))
+        raw_response = self._client.search(index=index, body=body)['aggregations']
+        for nested in nesteds:
+            raw_response = raw_response[nested]
+        return list(agg_node.extract_buckets(raw_response[agg_node.agg_name]))
     return aggregation
 
 
