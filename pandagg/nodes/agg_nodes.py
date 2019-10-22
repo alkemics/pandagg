@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+from builtins import str as text
+from six import iteritems, python_2_unicode_compatible
 import re
-from pandagg.tree import Node
+from treelib import Node
+import json
 
 
+@python_2_unicode_compatible
 class AggNode(Node):
     """Wrapper around elasticsearch aggregation concept.
     https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
@@ -77,8 +82,11 @@ class AggNode(Node):
 
     def __repr__(self):
         return u"<{class_}, name={name}, type={type}, body={body}>".format(
-            class_=self.__class__.__name__, type=self.AGG_TYPE, name=self.agg_name, body=self.agg_body
-        ).encode('utf-8')
+            class_=self.__class__.__name__, type=text(self.AGG_TYPE), name=text(self.agg_name), body=json.dumps(self.agg_body)
+        )
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class MetricAgg(AggNode):
@@ -240,8 +248,9 @@ class Filters(BucketAggNode):
 
     @classmethod
     def extract_buckets(cls, response_value):
-        for key, value in response_value['buckets'].iteritems():
-            yield (key, value)
+        buckets = response_value['buckets']
+        for key in sorted(buckets.keys()):
+            yield (key, buckets[key])
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""

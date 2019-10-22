@@ -1,3 +1,6 @@
+from __future__ import unicode_literals
+
+
 class InvalidAggregation(Exception):
     """Wrong aggregation definition"""
 

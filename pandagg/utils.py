@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from builtins import str as text
 
 import re
-
+from six import string_types, python_2_unicode_compatible
 from pandagg.exceptions import InvalidElasticSearchClientError
 from pandagg.tree import Tree
 
 
+@python_2_unicode_compatible
 class Obj(object):
     """Object class that allows to get items both by attribute `__getattribute__` access: `obj.attribute` or by dict
     `__getitem__` access:
@@ -32,7 +37,7 @@ class Obj(object):
         # will store non-valid names
         self.__d = dict()
         for k, v in kwargs.items():
-            assert isinstance(k, basestring) and k not in ('_REPR_NAME', '_Obj__d') and not k.startswith('__')
+            assert isinstance(k, string_types) and k not in ('_REPR_NAME', '_Obj__d') and not k.startswith('__')
             self[k] = v
 
     def __getitem__(self, item):
@@ -44,7 +49,7 @@ class Obj(object):
 
     def __setitem__(self, key, value):
         # d[key] = value
-        if not isinstance(key, basestring):
+        if not isinstance(key, string_types):
             if self._STRING_KEY_CONSTRAINT:
                 raise AssertionError
             self.__d[key] = value
@@ -56,18 +61,19 @@ class Obj(object):
             super(Obj, self).__setattr__(key, value)
 
     def __keys(self):
-        return self.__d.keys() + [
+        return list(self.__d.keys()) + [
             k for k in self.__dict__.keys()
             if k not in ('_REPR_NAME', '_Obj__d')
         ]
 
     def __repr__(self):
-        return '<%s> %s' % (self.__class__._REPR_NAME or self.__class__.__name__, list.__repr__(self.__keys()))
+        return self.__str__()
 
     def __str__(self):
-        return self.__repr__()
+        return '<%s> %s' % (self.__class__._REPR_NAME or self.__class__.__name__, sorted(map(text, self.__keys())))
 
 
+@python_2_unicode_compatible
 class TreeBasedObj(Obj):
     """
     Recursive Obj whose structure is defined by a treelib.Tree object.
@@ -121,12 +127,16 @@ class TreeBasedObj(Obj):
         return r
 
     def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
         tree_repr = self._tree.show()
         if self._root_path is None:
-            return (u'\n<%s>\n%s' % (self.__class__._REPR_NAME or self.__class__.__name__, tree_repr)).encode('utf-8')
+            return u'\n<%s>\n%s' % (
+                self.__class__._REPR_NAME or self.__class__.__name__, text(tree_repr))
         current_path = self._root_path
-        return (u'\n<%s subpart: %s>\n%s' % (
-            self.__class__._REPR_NAME or self.__class__.__name__, current_path, tree_repr)).encode('utf-8')
+        return u'\n<%s subpart: %s>\n%s' % (
+            self.__class__._REPR_NAME or self.__class__.__name__, current_path, text(tree_repr))
 
 
 class PrettyNode(object):

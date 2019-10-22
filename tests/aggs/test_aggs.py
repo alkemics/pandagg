@@ -4,9 +4,10 @@
 # =============================================================================
 #                                   IMPORTS
 # =============================================================================
+from __future__ import unicode_literals
 
 from unittest import TestCase
-
+from builtins import str as text
 import pandas as pd
 from treelib.exceptions import MultipleRootError
 from pandagg.aggs import Agg
@@ -127,7 +128,7 @@ workflow
                 }
             }
         )
-        self.assertEqual(initial_agg_1.nodes.keys(), ['week'])
+        self.assertEqual(set(initial_agg_1.nodes.keys()), {'week'})
         pasted_agg_1 = Agg(
             from_={
                 "nested_below_week": {
@@ -171,7 +172,7 @@ week
                 }
             }
         )
-        self.assertEqual(initial_agg_2.nodes.keys(), ['week'])
+        self.assertEqual(set(initial_agg_2.nodes.keys()), {'week'})
         pasted_agg_2 = Agg(
             from_={
                 "local_metrics.field_class.name": {
@@ -182,7 +183,7 @@ week
                 }
             }
         )
-        self.assertEqual(pasted_agg_2.nodes.keys(), ['local_metrics.field_class.name'])
+        self.assertEqual(set(pasted_agg_2.nodes.keys()), {'local_metrics.field_class.name'})
 
         initial_agg_2.paste("week", pasted_agg_2)
         self.assertEqual(set(initial_agg_2.nodes.keys()), {'week', 'nested_below_week', 'local_metrics.field_class.name'})
@@ -209,7 +210,7 @@ week
                 }
             }
         )
-        self.assertEqual(initial_agg_1.nodes.keys(), ['week'])
+        self.assertEqual(set(initial_agg_1.nodes.keys()), {'week'})
 
         pasted_agg_1 = Agg(
             from_={
@@ -254,7 +255,7 @@ week
                 }
             }
         )
-        self.assertEqual(initial_agg_2.nodes.keys(), ["week"])
+        self.assertEqual(set(initial_agg_2.nodes.keys()), {"week"})
 
         pasted_agg_2 = Agg(
             from_={
@@ -266,7 +267,7 @@ week
                 }
             }
         )
-        self.assertEqual(pasted_agg_2.nodes.keys(), ["local_metrics.field_class.name"])
+        self.assertEqual(set(pasted_agg_2.nodes.keys()), {"local_metrics.field_class.name"})
 
         initial_agg_2.paste("week", pasted_agg_2)
         self.assertEqual(set(initial_agg_2.nodes.keys()), {"week", "local_metrics.field_class.name"})
@@ -483,8 +484,8 @@ root_agg
         response_tree = my_agg._parse_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response_tree, Response)
         self.assertEqual(
-            response_tree.__repr__().decode('utf-8'),
-            sample.EXPECTED_RESPONSE_TREE_REPR
+            response_tree.__str__(),
+            text(sample.EXPECTED_RESPONSE_TREE_REPR)
         )
 
     def test_normalize_buckets(self):
@@ -507,8 +508,8 @@ root_agg
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
         df = my_agg._parse_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(list(df.index.names), ['classification_type', 'global_metrics.field.name'])
-        self.assertEqual(list(df.columns), ['avg_f1_micro', 'avg_nb_classes', 'doc_count'])
+        self.assertEqual(set(df.index.names), {'classification_type', 'global_metrics.field.name'})
+        self.assertEqual(set(df.columns), {'avg_f1_micro', 'avg_nb_classes', 'doc_count'})
         self.assertEqual(df.shape, (len(sample.EXPECTED_DICT_ROWS_RESPONSE), 3))
 
     def test_agg_method(self):

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
-from pandagg.tree import Node
+from treelib import Node
 from pandagg.utils import PrettyNode
 
 

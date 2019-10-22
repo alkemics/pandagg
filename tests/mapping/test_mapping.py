@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
+from builtins import str as text
 from unittest import TestCase
 from mock import Mock
 
@@ -36,8 +38,8 @@ class MappingTreeTestCase(TestCase):
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
 
         self.assertEqual(
-            mapping_tree.__repr__().decode('utf-8'),
-            u"""<MappingTree>
+            mapping_tree.__str__(),
+            text(u"""<MappingTree>
 classification_report                                       
 ├── classification_type                                     String
 ├── date                                                    Date
@@ -75,7 +77,7 @@ classification_report
 │           ├── precision                                   Float
 │           └── recall                                      Float
 └── workflow                                                String
-"""
+""")
         )
 
     def test_nesteds_applied_at_field(self):

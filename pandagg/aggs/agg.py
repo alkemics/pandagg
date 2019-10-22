@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import copy
 import collections
 import warnings
+from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
 from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
@@ -15,6 +17,7 @@ from pandagg.tree import Tree
 from pandagg.utils import validate_client
 
 
+@python_2_unicode_compatible
 class Agg(Tree):
     """Tree combination of aggregation nodes.
 
@@ -56,7 +59,7 @@ class Agg(Tree):
             elif isinstance(mapping, Mapping):
                 self.tree_mapping = mapping._tree
             elif isinstance(mapping, dict):
-                mapping_name, mapping_detail = next(mapping.iteritems())
+                mapping_name, mapping_detail = next(iteritems(mapping))
                 self.tree_mapping = MappingTree(mapping_name, mapping_detail)
             else:
                 raise NotImplementedError()
@@ -67,7 +70,7 @@ class Agg(Tree):
         from_dict = copy.deepcopy(from_dict)
         if len(from_dict.keys()) > 1:
             self.add_node(MatchAll(self._crafted_root_name))
-        agg_name, agg_detail = next(from_dict.iteritems())
+        agg_name, agg_detail = next(iteritems(from_dict))
         self._build_tree_from_dict(agg_name, agg_detail, self.root)
 
     def _build_tree_from_dict(self, agg_name, agg_detail, pid=None):
@@ -76,12 +79,11 @@ class Agg(Tree):
         meta = agg_detail.pop('meta', None)
         children_aggs = agg_detail.pop('aggs', None) or agg_detail.pop('aggregations', None) or {}
         assert len(agg_detail.keys()) == 1
-        agg_type = agg_detail.keys()[0]
-        agg_body = agg_detail.values()[0]
+        agg_type, agg_body = next(iteritems(agg_detail))
         node = self._node_from_dict(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
         self.add_node(node, pid)
-        for child_name, child_detail in children_aggs.iteritems():
-            self._build_tree_from_dict(child_name, child_detail, node.identifier)
+        for child_name in sorted(children_aggs.keys()):
+            self._build_tree_from_dict(child_name, children_aggs[child_name], node.identifier)
 
     def _node_from_dict(self, agg_type, agg_name, agg_body, meta):
         if agg_type not in PUBLIC_AGGS.keys():
@@ -144,7 +146,7 @@ class Agg(Tree):
         else:
             sub_aggs_parent_id = None
 
-        if isinstance(by, collections.Iterable) and not isinstance(by, basestring) and not isinstance(by, dict):
+        if isinstance(by, collections.Iterable) and not isinstance(by, string_types) and not isinstance(by, dict):
             for arg_el in by:
                 new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
                 sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
@@ -188,7 +190,7 @@ class Agg(Tree):
                 raise ValueError('Empty aggregation')
             return self
         new_agg = self.copy()
-        if isinstance(arg, collections.Iterable) and not isinstance(arg, basestring) and not isinstance(arg, dict):
+        if isinstance(arg, collections.Iterable) and not isinstance(arg, string_types) and not isinstance(arg, dict):
             if not new_agg.root:
                 new_agg.add_node(MatchAll(self._crafted_root_name))
             sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
@@ -202,7 +204,7 @@ class Agg(Tree):
         return new_agg
 
     def _interpret_agg(self, insert_below, element, **kwargs):
-        if isinstance(element, basestring):
+        if isinstance(element, string_types):
             node = Terms(agg_name=element, field=element, size=kwargs.get('default_size', Terms.DEFAULT_SIZE))
             self.add_node(node, pid=insert_below)
             return self
@@ -509,7 +511,7 @@ class Agg(Tree):
 
     def _parse_normalized(self, aggs):
         children = []
-        for k in aggs.keys():
+        for k in sorted(iterkeys(aggs)):
             for child in self._normalize_buckets(aggs, k):
                 children.append(child)
         return {
@@ -540,6 +542,9 @@ class Agg(Tree):
     def __repr__(self):
         self.show()
         return (u'<Aggregation>\n%s' % self._reader).encode('utf-8')
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class ClientBoundAgg(Agg):

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+from builtins import str as text
 from pandagg.tree import Tree
 from pandagg.utils import Obj, TreeBasedObj
 from unittest import TestCase
@@ -31,7 +33,7 @@ class ObjTestCase(TestCase):
         self.assertIn('some-key', obj['_Obj__d'])
         self.assertEqual(obj['_Obj__d']['some-key'], 'some-value')
 
-        self.assertEqual(obj.__repr__(), "<Obj> ['some-key', 'some_key_2', 'some_key']")
+        self.assertEqual(obj.__str__(), "<Obj> ['some-key', 'some_key', 'some_key_2']")
 
     def test_obj_init(self):
         obj = Obj(yolo="yolo value", toto="toto value")
@@ -87,13 +89,13 @@ class ObjTestCase(TestCase):
         self.assertIn('some-key', obj['_Obj__d'])
         self.assertEqual(obj['_Obj__d']['some-key'], 'some-value')
 
-        self.assertEqual(obj.__repr__(), "<MyCustomObj> ['some-key']")
+        self.assertEqual(obj.__str__(), "<MyCustomObj> ['some-key']")
 
         class MyOtherCustomObj(Obj):
             _REPR_NAME = 'CallMe'
 
         other_obj = MyOtherCustomObj(maybe='...')
-        self.assertEqual(other_obj.__repr__(), "<CallMe> ['maybe']")
+        self.assertEqual(other_obj.__str__(), "<CallMe> ['maybe']")
 
 
 class TreeBasedObjTestCase(TestCase):
@@ -148,28 +150,28 @@ class TreeBasedObjTestCase(TestCase):
 
         # test representations
         self.assertEqual(
-            obj.__repr__().decode('utf-8'),
-            u"""
+            obj.__str__(),
+            text(u"""
 <TreeBasedObj>
 harry
 ├── bill
 │   └── george
 └── jane
     └── diane
-"""
+""")
         )
         self.assertEqual(
-            bill_obj.__repr__().decode('utf-8'),
-            u"""
+            bill_obj.__str__(),
+            text(u"""
 <TreeBasedObj subpart: bill>
 bill
 └── george
-"""
+""")
         )
         self.assertEqual(
-            bill_obj.george.__repr__().decode('utf-8'),
-            u"""
+            bill_obj.george.__str__(),
+            text(u"""
 <TreeBasedObj subpart: bill.george>
 george
-"""
+""")
         )

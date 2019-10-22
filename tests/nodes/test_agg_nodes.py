@@ -1,3 +1,6 @@
+
+from __future__ import unicode_literals
+
 from pandagg.nodes.agg_nodes import AggNode, Terms, Filters, Avg
 from unittest import TestCase
 
@@ -50,8 +53,8 @@ class AggNodesTestCase(TestCase):
         )
 
         self.assertEqual(
-            node.__repr__().encode('utf-8'),
-            u"<CustomAgg, name=custom_agg_name, type=custom_type, body={'custom_body': {'stuff': 2}}>"
+            node.__str__(),
+            u"<CustomAgg, name=custom_agg_name, type=custom_type, body={\"custom_body\": {\"stuff\": 2}}>"
         )
 
         # suppose this aggregation type provide buckets in the following format

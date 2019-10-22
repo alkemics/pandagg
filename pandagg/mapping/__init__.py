@@ -1,1 +1,1 @@
-from mapping import Mapping, MappingTree
+from .mapping import Mapping, MappingTree

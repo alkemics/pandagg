@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
+from six import iteritems
 from collections import defaultdict
 
 from pandagg.exceptions import VersionIncompatibilityError
@@ -28,7 +31,7 @@ class PandAgg:
         self._indices = self.client.indices.get(index=index)
 
         alias_to_indices = defaultdict(set)
-        for index_name, index_detail in self._indices.iteritems():
+        for index_name, index_detail in iteritems(self._indices):
             self.indices[index_name] = ClientBoundIndex(
                 client=self.client,
                 name=index_name,
@@ -40,7 +43,7 @@ class PandAgg:
             for alias in index_detail.get('aliases', {}).keys():
                 alias_to_indices[alias].add(index_name)
 
-        for alias, indices_names in alias_to_indices.iteritems():
+        for alias, indices_names in alias_to_indices.items():
             self.aliases[alias] = list(indices_names)
 
     def validate_version(self):

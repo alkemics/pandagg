@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
+from builtins import str as text
 from unittest import TestCase
 from pandagg import PandAgg
 from mock import Mock
@@ -43,14 +46,14 @@ class WrapperTestCase(TestCase):
 
         report_index = p.indices.classification_report
         self.assertEqual(
-            report_index.__repr__().decode('utf-8'),
-            u"<ClientBoundIndex> ['warmers', 'name', 'settings', 'mapping', 'client', 'aliases']"
+            report_index.__str__(),
+            u"<ClientBoundIndex> ['aliases', 'client', 'mapping', 'name', 'settings', 'warmers']"
         )
 
         self.assertIsInstance(report_index.mapping, ClientBoundMapping)
         self.assertEqual(
-            report_index.mapping.__repr__().decode('utf-8'),
-            u"""
+            report_index.mapping.__str__(),
+            text(u"""
 <ClientBoundMapping>
 classification_report                                       
 ├── classification_type                                     String
@@ -89,5 +92,5 @@ classification_report
 │           ├── precision                                   Float
 │           └── recall                                      Float
 └── workflow                                                String
-"""
+""")
         )

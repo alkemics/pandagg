@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from __future__ import unicode_literals
+from six import iteritems
 from pandagg.mapping.mapping import ClientBoundMapping, MappingTree, Mapping
 from pandagg.aggs.agg import Agg, ClientBoundAgg
 from pandagg.utils import Obj, validate_client
@@ -18,7 +19,7 @@ class Index(Obj):
         self.warmers = warmers
 
     def set_mapping(self, mapping):
-        mapping_name, mapping_detail = next(mapping.iteritems())
+        mapping_name, mapping_detail = next(iteritems(mapping))
         self.mapping = Mapping(tree=MappingTree(mapping_name, mapping_detail), depth=1)
 
     def groupby(self, by, **kwargs):
@@ -51,7 +52,7 @@ class ClientBoundIndex(Index):
         )
 
     def set_mapping(self, mapping):
-        mapping_name, mapping_detail = next(mapping.iteritems())
+        mapping_name, mapping_detail = next(iteritems(mapping))
         self.mapping = ClientBoundMapping(
             client=self.client,
             tree=MappingTree(mapping_name, mapping_detail),

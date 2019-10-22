@@ -1,1 +1,1 @@
-from wrapper import PandAgg
+from .wrapper import PandAgg

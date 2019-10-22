@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json
+from __future__ import unicode_literals
 
+from six import iteritems
+import json
+from treelib import Node
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping.types import field_classes_per_name
-from pandagg.tree import Tree, Node
+from pandagg.tree import Tree
 from pandagg.utils import PrettyNode, TreeBasedObj, validate_client
 
 
@@ -41,7 +44,7 @@ class MappingNode(Node):
         return '<Mapping Field %s> of type %s:\n%s' % (
             self.field_path,
             self.type,
-            json.dumps(self.extra, indent=4, encoding='utf-8')
+            json.dumps(self.extra, indent=4)
         )
 
 
@@ -64,10 +67,10 @@ class MappingTree(Tree):
         if not detail:
             return
         depth += 1
-        for sub_name, sub_detail in (detail.get('properties') or {}).iteritems():
+        for sub_name, sub_detail in iteritems(detail.get('properties') or {}):
             sub_path = '%s.%s' % (path, sub_name) if path else sub_name
             self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
-        for sub_name, sub_detail in (detail.get('fields') or {}).iteritems():
+        for sub_name, sub_detail in iteritems(detail.get('fields') or {}):
             sub_path = '%s.%s' % (path, sub_name) if path else sub_name
             self.build_mapping_from_dict(
                 sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path, sub_field=True)

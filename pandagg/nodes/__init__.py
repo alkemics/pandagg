@@ -1,4 +1,4 @@
-from agg_nodes import (
+from .agg_nodes import (
     MatchAll,
     Terms,
     Filters,
