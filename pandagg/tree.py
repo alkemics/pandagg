@@ -6,6 +6,7 @@ from builtins import str as text
 
 from six import python_2_unicode_compatible
 from treelib import Tree as OriginalTree
+from treelib import Node as OriginalNode
 
 
 from treelib.exceptions import NodeIDAbsentError
@@ -35,6 +36,22 @@ class Tree(OriginalTree):
             class_=text(self.__class__.__name__),
             tree=text(self._reader)
         )
+
+    def __repr__(self):
+        return self.__str__()
+
+
+@python_2_unicode_compatible
+class Node(OriginalNode):
+
+    def __str__(self):
+        name = text(self.__class__.__name__)
+        kwargs = [
+            "tag={0}".format(text(self.tag)),
+            "identifier={0}".format(text(self.identifier)),
+            "data={0}".format(text(self.data)),
+        ]
+        return "%s(%s)" % (name, ", ".join(kwargs))
 
     def __repr__(self):
         return self.__str__()

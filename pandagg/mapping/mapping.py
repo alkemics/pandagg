@@ -6,10 +6,9 @@ from __future__ import unicode_literals
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 import json
-from treelib import Node
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping.types import field_classes_per_name
-from pandagg.tree import Tree
+from pandagg.tree import Tree, Node
 from pandagg.utils import PrettyNode, TreeBasedObj, validate_client
 
 
