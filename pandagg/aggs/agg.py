@@ -527,7 +527,7 @@ class Agg(Tree):
         elif output == 'dataframe':
             return self._parse_as_dataframe(aggs, **kwargs)
         else:
-            NotImplementedError('Unkown %s output format.' % output)
+            raise NotImplementedError('Unkown %s output format.' % output)
 
     def __str__(self):
         self.show()
