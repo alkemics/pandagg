@@ -69,6 +69,7 @@ class GeoCentroid(FieldMetricAgg):
 
 
 class Percentiles(FieldMetricAgg):
+    """Percents body argument can be passed to specify which percentiles to fetch."""
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['values']
     AGG_TYPE = 'percentiles'
@@ -78,6 +79,12 @@ class PercentileRanks(FieldMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['values']
     AGG_TYPE = 'percentile_ranks'
+
+    def __init__(self, agg_name, field, values=None, meta=None):
+        agg_body = {}
+        if values:
+            agg_body['values'] = values
+        super(PercentileRanks, self).__init__(agg_name=agg_name, field=field, meta=meta, **agg_body)
 
 
 class TopHits(FieldMetricAgg):

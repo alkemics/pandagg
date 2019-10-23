@@ -57,7 +57,7 @@ def _operate(self, agg_node, index, execute, output):
         if output != 'dataframe':
             return result
         keys = map(itemgetter(0), result)
-        raw_values = map(agg_node.extract_bucket_value, map(itemgetter(1), result))
+        raw_values = map(itemgetter(1), result)
         return pd.DataFrame(index=keys, data=raw_values, columns=[agg_node.VALUE_ATTRS[0]])
     return aggregation
 
