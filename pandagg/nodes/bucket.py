@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Not implemented aggregations include:
+- children agg
+- geo-distance
+- geo-hash grid
+- ipv4
+- sampler
+- significant terms
+"""
 
 from __future__ import unicode_literals
 import re
