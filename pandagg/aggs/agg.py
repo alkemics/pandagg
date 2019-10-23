@@ -395,7 +395,7 @@ class Agg(Tree):
         return True
 
     def _parse_group_by(self,
-                        response, row=None, agg_name=None, until=None, yield_incomplete=False, row_as_tuple=False):
+                        response, row=None, agg_name=None, until=None, row_as_tuple=False):
         """Recursive parsing of succession of unique child bucket aggregations.
 
         Yields each row for which last bucket aggregation generated buckets.
@@ -405,9 +405,7 @@ class Agg(Tree):
         agg_name = self.root if agg_name is None else agg_name
         if agg_name in response:
             agg_node = self[agg_name]
-            yielded_child_bucket = False
             for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
-                yielded_child_bucket = True
                 child_name = next((child.agg_name for child in self.children(agg_name)), None)
                 sub_row = copy.deepcopy(row)
                 # aggs generating a single bucket don't require to be listed in grouping keys
@@ -423,7 +421,6 @@ class Agg(Tree):
                             response=raw_bucket,
                             agg_name=child_name,
                             until=until,
-                            yield_incomplete=yield_incomplete,
                             row_as_tuple=row_as_tuple
                     ):
                         yield sub_row, sub_raw_bucket
@@ -432,14 +429,6 @@ class Agg(Tree):
                     if row_as_tuple:
                         sub_row = tuple(sub_row)
                     yield sub_row, raw_bucket
-            if not yielded_child_bucket and yield_incomplete:
-                # in this case, delete last key
-                if agg_name in row:
-                    if row_as_tuple:
-                        row.pop()
-                    else:
-                        del row[agg_name]
-                yield row, None
 
     def _normalize_buckets(self, agg_response, agg_name=None):
         """Recursive function to parse aggregation response as a normalized entities.
