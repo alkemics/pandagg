@@ -8,6 +8,120 @@ from pandagg.mapping.types import NUMERIC_TYPES
 from pandagg.nodes.abstract import ListBucketAgg, UniqueBucketAgg, BucketAggNode
 
 
+class Global(UniqueBucketAgg):
+
+    AGG_TYPE = 'global'
+
+    def __init__(self, agg_name, meta=None, aggs=None):
+        super(Global, self).__init__(
+            agg_name=agg_name,
+            agg_body={},
+            meta=meta,
+            aggs=aggs
+        )
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        return {}
+
+
+class Filter(UniqueBucketAgg):
+
+    AGG_TYPE = 'filter'
+
+    def __init__(self, agg_name, filter_, meta=None, aggs=None):
+        self.filter_ = filter_
+        super(Filter, self).__init__(
+            agg_name=agg_name,
+            agg_body=filter_,
+            meta=meta,
+            aggs=aggs
+        )
+
+    def get_filter(self, key):
+        return self.filter_
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        return {'filter_': agg_body}
+
+
+class MatchAll(Filter):
+
+    def __init__(self, agg_name, meta=None, aggs=None):
+        super(MatchAll, self).__init__(
+            agg_name=agg_name,
+            filter_={'match_all': {}},
+            meta=meta,
+            aggs=aggs
+        )
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        return agg_body
+
+
+class Nested(UniqueBucketAgg):
+
+    AGG_TYPE = 'nested'
+    WHITELISTED_MAPPING_TYPES = ['nested']
+
+    def __init__(self, agg_name, path, meta=None, aggs=None):
+        self.path = path
+        super(Nested, self).__init__(
+            agg_name=agg_name,
+            agg_body={"path": path},
+            meta=meta,
+            aggs=aggs
+        )
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        assert isinstance(agg_body, dict)
+        assert 'path' in agg_body
+        return {'path': agg_body['path']}
+
+
+class ReverseNested(UniqueBucketAgg):
+
+    AGG_TYPE = 'reverse_nested'
+    WHITELISTED_MAPPING_TYPES = ['nested']
+
+    def __init__(self, agg_name, path=None, meta=None, aggs=None):
+        self.path = path
+        super(ReverseNested, self).__init__(
+            agg_name=agg_name,
+            agg_body={"path": path} if path else {},
+            meta=meta,
+            aggs=aggs
+        )
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        assert isinstance(agg_body, dict)
+        if 'path' in agg_body:
+            return {'path': agg_body['path']}
+        return {}
+
+
+class Missing(UniqueBucketAgg):
+    AGG_TYPE = 'missing'
+    VALUE_ATTRS = ['doc_count']
+    BLACKLISTED_MAPPING_TYPES = []
+
+    def __init__(self, agg_name, field, meta=None):
+        agg_body = {'field': field}
+        super(UniqueBucketAgg, self).__init__(agg_name=agg_name, agg_body=agg_body, meta=meta)
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        assert 'field' in agg_body
+        return agg_body
+
+    def get_filter(self, key):
+        return {'bool': {'must_not': {'exists': {'field': self.field}}}}
+
+
 class Terms(ListBucketAgg):
     """Terms aggregation.
     """
@@ -241,102 +355,6 @@ class DateRange(Range):
         super(DateRange).__init__(agg_name=agg_name, field=field, agg_body=kwargs, meta=meta, aggs=aggs)
 
 
-class Global(UniqueBucketAgg):
-
-    AGG_TYPE = 'global'
-
-    def __init__(self, agg_name, meta=None, aggs=None):
-        super(Global, self).__init__(
-            agg_name=agg_name,
-            agg_body={},
-            meta=meta,
-            aggs=aggs
-        )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return {}
-
-
-class Filter(UniqueBucketAgg):
-
-    AGG_TYPE = 'filter'
-
-    def __init__(self, agg_name, filter_, meta=None, aggs=None):
-        self.filter_ = filter_
-        super(Filter, self).__init__(
-            agg_name=agg_name,
-            agg_body=filter_,
-            meta=meta,
-            aggs=aggs
-        )
-
-    def get_filter(self, key):
-        return self.filter_
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return {'filter_': agg_body}
-
-
-class MatchAll(Filter):
-
-    def __init__(self, agg_name, meta=None, aggs=None):
-        super(MatchAll, self).__init__(
-            agg_name=agg_name,
-            filter_={'match_all': {}},
-            meta=meta,
-            aggs=aggs
-        )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return agg_body
-
-
-class Nested(UniqueBucketAgg):
-
-    AGG_TYPE = 'nested'
-    WHITELISTED_MAPPING_TYPES = ['nested']
-
-    def __init__(self, agg_name, path, meta=None, aggs=None):
-        self.path = path
-        super(Nested, self).__init__(
-            agg_name=agg_name,
-            agg_body={"path": path},
-            meta=meta,
-            aggs=aggs
-        )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        assert 'path' in agg_body
-        return {'path': agg_body['path']}
-
-
-class ReverseNested(UniqueBucketAgg):
-
-    AGG_TYPE = 'reverse_nested'
-    WHITELISTED_MAPPING_TYPES = ['nested']
-
-    def __init__(self, agg_name, path=None, meta=None, aggs=None):
-        self.path = path
-        super(ReverseNested, self).__init__(
-            agg_name=agg_name,
-            agg_body={"path": path} if path else {},
-            meta=meta,
-            aggs=aggs
-        )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        if 'path' in agg_body:
-            return {'path': agg_body['path']}
-        return {}
-
-
 BUCKET_AGGS = {
     agg.AGG_TYPE: agg
     for agg in [
@@ -348,5 +366,8 @@ BUCKET_AGGS = {
         Filter,
         Nested,
         ReverseNested,
+        Range,
+        DateRange,
+        Missing
     ]
 }
