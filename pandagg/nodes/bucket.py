@@ -297,14 +297,15 @@ class Range(BucketAggNode):
     KEY_SUFFIX = None
     KEY_SEP = '-'
 
-    def __init__(self, agg_name, field, meta=None, keyed=False, aggs=None, **kwargs):
+    def __init__(self, agg_name, field, ranges, meta=None, keyed=False, aggs=None, **kwargs):
         self.keyed = keyed
         agg_body = kwargs
         agg_body['field'] = field
+        agg_body['ranges'] = ranges
         if keyed:
             agg_body['keyed'] = keyed
         self.field = field
-        super(Range).__init__(agg_name=agg_name, agg_body=kwargs, meta=meta, aggs=aggs)
+        super(Range, self).__init__(agg_name=agg_name, agg_body=kwargs, meta=meta, aggs=aggs)
 
     @property
     def from_key(self):
@@ -360,7 +361,7 @@ class DateRange(Range):
         self.key_as_string = key_as_string
         if key_as_string:
             self.KEY_SUFFIX = '_as_string'
-        super(DateRange).__init__(agg_name=agg_name, field=field, agg_body=kwargs, meta=meta, aggs=aggs)
+        super(DateRange, self).__init__(agg_name=agg_name, field=field, agg_body=kwargs, meta=meta, aggs=aggs)
 
 
 BUCKET_AGGS = {
