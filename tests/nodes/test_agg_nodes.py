@@ -1,7 +1,7 @@
 
 from __future__ import unicode_literals
 
-from pandagg.nodes.agg_nodes import AggNode, Terms, Filters, Avg
+from pandagg.nodes.agg_nodes import AggNode, Terms, Filters, Avg, DateHistogram
 from unittest import TestCase
 
 
@@ -86,7 +86,7 @@ class AggNodesTestCase(TestCase):
             ]
         }
         # test extract_buckets
-        buckets_iterator = Terms.extract_buckets(es_raw_response)
+        buckets_iterator = Terms('name', 'field').extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, '__iter__'))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -100,9 +100,9 @@ class AggNodesTestCase(TestCase):
         )
 
         # test extract bucket value
-        self.assertEqual(Terms.extract_bucket_value({'doc_count': 6, 'key': 'electronic'}), 6)
-        self.assertEqual(Terms.extract_bucket_value({'doc_count': 3, 'key': 'rock'}), 3)
-        self.assertEqual(Terms.extract_bucket_value({'doc_count': 2, 'key': 'jazz'}), 2)
+        self.assertEqual(Terms('name', 'field').extract_bucket_value({'doc_count': 6, 'key': 'electronic'}), 6)
+        self.assertEqual(Terms('name', 'field').extract_bucket_value({'doc_count': 3, 'key': 'rock'}), 3)
+        self.assertEqual(Terms('name', 'field').extract_bucket_value({'doc_count': 2, 'key': 'jazz'}), 2)
 
     def test_filters(self):
         es_raw_response = {
@@ -116,7 +116,7 @@ class AggNodesTestCase(TestCase):
             }
         }
         # test extract_buckets
-        buckets_iterator = Filters.extract_buckets(es_raw_response)
+        buckets_iterator = Filters('name', None).extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, '__iter__'))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -129,8 +129,8 @@ class AggNodesTestCase(TestCase):
         )
 
         # test extract bucket value
-        self.assertEqual(Filters.extract_bucket_value({'doc_count': 1}), 1)
-        self.assertEqual(Filters.extract_bucket_value({'doc_count': 2}), 2)
+        self.assertEqual(Filters('name', None).extract_bucket_value({'doc_count': 1}), 1)
+        self.assertEqual(Filters('name', None).extract_bucket_value({'doc_count': 2}), 2)
 
     def test_metric_aggs(self):
         # example for Average metric aggregation
@@ -138,7 +138,7 @@ class AggNodesTestCase(TestCase):
             "value": 75.0
         }
         # test extract_buckets
-        buckets_iterator = Avg.extract_buckets(es_raw_response)
+        buckets_iterator = Avg('name', 'field').extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, '__iter__'))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -153,4 +153,60 @@ class AggNodesTestCase(TestCase):
         self.assertEqual(Avg.extract_bucket_value({"value": 75.0}), 75.0)
 
     def test_all_agg_body_to_init_kwargs(self):
+        # TODO
         pass
+
+    def test_date_histogram_key_as_string(self):
+        es_raw_response = {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {
+                    "key_as_string": "2018-01-01",
+                    "key": 1514764800000,
+                    "doc_count": 6
+                },
+                {
+                    'key_as_string': '2018-01-08',
+                    "key": 1515369600000,
+                    "doc_count": 3
+                }
+            ]
+        }
+
+        buckets_iterator = DateHistogram(
+            agg_name='name',
+            field='field',
+            interval='1w',
+            use_key_as_string=True
+        ).extract_buckets(es_raw_response)
+
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key_as_string -> bucket
+                ('2018-01-01', {'doc_count': 6, 'key': 1514764800000, 'key_as_string': '2018-01-01'}),
+                ('2018-01-08', {'doc_count': 3, 'key': 1515369600000, 'key_as_string': '2018-01-08'})
+            ]
+        )
+
+        # not using key as string (regular key)
+        buckets_iterator = DateHistogram(
+            agg_name='name',
+            field='field',
+            interval='1w',
+            use_key_as_string=False
+        ).extract_buckets(es_raw_response)
+
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                (1514764800000, {'doc_count': 6, 'key': 1514764800000, 'key_as_string': '2018-01-01'}),
+                (1515369600000, {'doc_count': 3, 'key': 1515369600000, 'key_as_string': '2018-01-08'})
+            ]
+        )

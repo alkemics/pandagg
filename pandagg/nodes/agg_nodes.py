@@ -93,8 +93,7 @@ class MetricAgg(AggNode):
     VALUE_ATTRS = NotImplementedError()
     SINGLE_BUCKET = True
 
-    @classmethod
-    def extract_buckets(cls, response_value):
+    def extract_buckets(self, response_value):
         yield (None, response_value)
 
     def get_filter(self, key):
@@ -140,8 +139,7 @@ class BucketAggNode(AggNode):
             assert isinstance(child, AggNode)
         self.aggs = aggs
 
-    @classmethod
-    def extract_buckets(cls, response_value):
+    def extract_buckets(self, response_value):
         raise NotImplementedError()
 
     def get_filter(self, key):
@@ -159,10 +157,9 @@ class ListBucketAgg(BucketAggNode):
     KEY_PATH = 'key'
     SINGLE_BUCKET = False
 
-    @classmethod
-    def extract_buckets(cls, response_value):
+    def extract_buckets(self, response_value):
         for bucket in response_value['buckets']:
-            yield (bucket[cls.KEY_PATH], bucket)
+            yield (bucket[self.KEY_PATH], bucket)
 
     def get_filter(self, key):
         raise NotImplementedError()
@@ -245,8 +242,7 @@ class Filters(BucketAggNode):
             aggs=aggs
         )
 
-    @classmethod
-    def extract_buckets(cls, response_value):
+    def extract_buckets(self, response_value):
         buckets = response_value['buckets']
         for key in sorted(buckets.keys()):
             yield (key, buckets[key])
@@ -306,8 +302,6 @@ class DateHistogram(Histogram):
     def __init__(self,
                  agg_name, field, interval, meta=None, date_format="yyyy-MM-dd", use_key_as_string=True, aggs=None):
         self._validate_interval(interval)
-        if use_key_as_string:
-            self.KEY_PATH = 'key_as_string'
         super(DateHistogram, self).__init__(
             agg_name=agg_name,
             field=field,
@@ -316,6 +310,8 @@ class DateHistogram(Histogram):
             meta=meta,
             aggs=aggs
         )
+        if use_key_as_string:
+            self.KEY_PATH = 'key_as_string'
 
     @classmethod
     def _validate_interval(cls, interval):
