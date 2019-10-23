@@ -257,7 +257,7 @@ class Agg(Tree):
                 applied_nested_path = node.path
         return applied_nested_path
 
-    def paste(self, nid, new_tree, deep=False, auto_reverse_nest=False):
+    def paste(self, nid, new_tree, deep=False):
         """Pastes a tree handling nested implications if mapping is provided.
         The provided tree should be validated beforehands.
         """
@@ -288,10 +288,6 @@ class Agg(Tree):
         if current_nested_level == required_nested_level:
             return super(Agg, self).paste(nid, new_tree, deep)
         if current_nested_level and (required_nested_level or '' in current_nested_level):
-            # might require reverse-nested
-            if not auto_reverse_nest:
-                warnings.warn('The tree pasted under <Node %s> might require to be reverse nested.' % nid)
-                return super(Agg, self).paste(nid, new_tree, deep)
             # check if already exists in direct children, else create it
             child_reverse_nested = next(
                 (n for n in self.children(nid) if isinstance(n, ReverseNested) and n.path == required_nested_level),
