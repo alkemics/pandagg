@@ -467,7 +467,8 @@ class Agg(Tree):
             raise ImportError('Using dataframe output format requires to install pandas. Please install "pandas" or '
                               'use another output format.')
         grouping_agg_name = self.deepest_linear_bucket_agg
-        index_values = list(self._serialize_as_dict_rows(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
+        index_values = list(
+            self._serialize_as_dict_rows(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
         if not index_values:
             return None
         index, values = zip(*index_values)
