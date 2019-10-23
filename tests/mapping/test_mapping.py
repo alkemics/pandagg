@@ -5,7 +5,7 @@ from unittest import TestCase
 from mock import Mock
 
 from pandagg.exceptions import AbsentMappingFieldError
-from pandagg.mapping.types import field_classes_per_name
+from pandagg.mapping.field_agg_factory import field_classes_per_name
 from pandagg.mapping.mapping import Mapping, MappingTree, MappingNode, ClientBoundMapping
 from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
 

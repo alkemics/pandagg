@@ -10,9 +10,8 @@ from builtins import str as text
 from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.mapping import MappingTree, Mapping
-from pandagg.nodes.agg_nodes import (
-    AggNode, PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll, BucketAggNode, UniqueBucketAgg
-)
+from pandagg.nodes import PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll
+from pandagg.nodes.abstract import BucketAggNode, UniqueBucketAgg, AggNode
 from pandagg.tree import Tree
 from pandagg.utils import validate_client
 

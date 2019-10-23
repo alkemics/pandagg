@@ -1,4 +1,6 @@
-from .agg_nodes import (
+from six import iteritems
+
+from .bucket import (
     MatchAll,
     Terms,
     Filters,
@@ -8,10 +10,27 @@ from .agg_nodes import (
     Filter,
     Nested,
     ReverseNested,
+    BUCKET_AGGS
+)
+
+from .metrics import (
     Avg,
     Max,
     Min,
-    ValueCount,
     Cardinality,
-    Stats
+    Stats,
+    ExtendedStats,
+    Percentiles,
+    PercentileRanks,
+    GeoBound,
+    GeoCentroid,
+    TopHits,
+    ValueCount,
+    METRIC_AGGS
 )
+
+PUBLIC_AGGS = {}
+for key, agg in iteritems(BUCKET_AGGS):
+    PUBLIC_AGGS[key] = agg
+for key, agg in iteritems(METRIC_AGGS):
+    PUBLIC_AGGS[key] = agg

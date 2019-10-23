@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from collections import OrderedDict, defaultdict
 
 from pandagg.buckets.buckets import Bucket
-from pandagg.nodes.agg_nodes import UniqueBucketAgg
+from pandagg.nodes.abstract import UniqueBucketAgg
 from pandagg.tree import Tree
 from pandagg.utils import TreeBasedObj, bool_if_required
 

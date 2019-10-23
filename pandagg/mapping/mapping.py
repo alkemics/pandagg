@@ -6,8 +6,9 @@ from __future__ import unicode_literals
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 import json
-from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
-from pandagg.mapping.types import field_classes_per_name
+from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError, MappingError
+from pandagg.mapping.types import MAPPING_TYPES
+from pandagg.mapping.field_agg_factory import field_classes_per_name
 from pandagg.tree import Tree, Node
 from pandagg.utils import PrettyNode, TreeBasedObj, validate_client
 
@@ -21,6 +22,8 @@ class MappingNode(Node):
         self.field_path = field_path
         self.field_name = field_name
         self.type = '' if root else detail.get('type', 'object')
+        if not root and self.type not in MAPPING_TYPES:
+            raise MappingError('Unkown <%s> field type on path <%s>' % (self.type, field_path))
         self.sub_field = sub_field
         self.dynamic = detail.get('dynamic', False)
         self.depth = depth
