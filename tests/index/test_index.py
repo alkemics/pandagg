@@ -122,11 +122,11 @@ class ClientBoundTestCase(TestCase):
         )
         self.assertEqual(not_executed_agg.__str__(), equivalent_agg.__str__())
 
-    @patch.object(Agg, 'parse')
-    def test_client_bound_executed_agg(self, parse_mock):
+    @patch.object(Agg, 'serialize')
+    def test_client_bound_executed_agg(self, serialize_mock):
         # we test the execution, not agg query generation nor the parsing which are tested in test_aggs module
         client_mock, index = self.get_client_bound_index(es_response={"aggregations": "response_mock"})
-        parse_mock.return_value = 'some_parsed_result'
+        serialize_mock.return_value = 'some_parsed_result'
 
         results = index \
             .query({'term': {'workflow': 'some_workflow'}})\
@@ -152,7 +152,7 @@ class ClientBoundTestCase(TestCase):
             index="my_index_name"
         )
 
-        parse_mock.assert_called_once()
-        parse_mock.assert_called_with(aggs="response_mock", output=Agg.DEFAULT_OUTPUT)
+        serialize_mock.assert_called_once()
+        serialize_mock.assert_called_with(aggs="response_mock", output=Agg.DEFAULT_OUTPUT)
 
         self.assertEqual(results, "some_parsed_result")
