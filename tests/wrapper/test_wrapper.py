@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from builtins import str as text
 from unittest import TestCase
 from pandagg import PandAgg
 from mock import Mock
@@ -53,7 +50,7 @@ class WrapperTestCase(TestCase):
         self.assertIsInstance(report_index.mapping, ClientBoundMapping)
         self.assertEqual(
             report_index.mapping.__str__(),
-            text(u"""
+            """
 <ClientBoundMapping>
 classification_report                                       
 ├── classification_type                                     String
@@ -92,5 +89,5 @@ classification_report
 │           ├── precision                                   Float
 │           └── recall                                      Float
 └── workflow                                                String
-""")
+"""
         )

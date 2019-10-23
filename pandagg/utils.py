@@ -4,13 +4,14 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from builtins import str as text
-
+from six import python_2_unicode_compatible
 import re
 from six import string_types
 from pandagg.exceptions import InvalidElasticSearchClientError
 from pandagg.tree import Tree
 
 
+@python_2_unicode_compatible
 class Obj(object):
     """Object class that allows to get items both by attribute `__getattribute__` access: `obj.attribute` or by dict
     `__getitem__` access:
@@ -65,16 +66,17 @@ class Obj(object):
             if k not in ('_REPR_NAME', '_Obj__d')
         ]
 
-    def __repr__(self):
-        return self.__str__()
-
     def __str__(self):
         return '<%s> %s' % (
             text(self.__class__._REPR_NAME or self.__class__.__name__),
             text(sorted(map(text, self.__keys())))
         )
 
+    def __repr__(self):
+        return self.__str__()
 
+
+@python_2_unicode_compatible
 class TreeBasedObj(Obj):
     """
     Recursive Obj whose structure is defined by a treelib.Tree object.
@@ -126,9 +128,6 @@ class TreeBasedObj(Obj):
         if isinstance(r, TreeBasedObj):
             r._expand_attrs(depth=1)
         return r
-
-    def __repr__(self):
-        return self.__str__()
 
     def __str__(self):
         tree_repr = self._tree.show()

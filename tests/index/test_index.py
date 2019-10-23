@@ -35,7 +35,7 @@ class IndexTestCase(TestCase):
             grouped_agg.query_dict(),
             equivalent_agg.query_dict()
         )
-        self.assertEqual(grouped_agg.__repr__(), equivalent_agg.__repr__())
+        self.assertEqual(grouped_agg.__str__(), equivalent_agg.__str__())
 
     def test_index_agg(self):
         index = self.get_index()
@@ -55,7 +55,7 @@ class IndexTestCase(TestCase):
                 Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score')
             ]
         )
-        self.assertEqual(agg.__repr__(), equivalent_agg.__repr__())
+        self.assertEqual(agg.__str__(), equivalent_agg.__str__())
 
 
 class ClientBoundTestCase(TestCase):
@@ -97,7 +97,7 @@ class ClientBoundTestCase(TestCase):
             grouped_agg.query_dict(),
             equivalent_agg.query_dict()
         )
-        self.assertEqual(grouped_agg.__repr__(), equivalent_agg.__repr__())
+        self.assertEqual(grouped_agg.__str__(), equivalent_agg.__str__())
 
     def test_client_bound_not_executed_agg(self):
         client_mock, index = self.get_client_bound_index()
@@ -120,7 +120,7 @@ class ClientBoundTestCase(TestCase):
                 Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score')
             ]
         )
-        self.assertEqual(not_executed_agg.__repr__(), equivalent_agg.__repr__())
+        self.assertEqual(not_executed_agg.__str__(), equivalent_agg.__str__())
 
     @patch.object(Agg, 'parse')
     def test_client_bound_executed_agg(self, parse_mock):

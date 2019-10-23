@@ -3,7 +3,8 @@
 
 from __future__ import unicode_literals
 
-from six import iteritems
+from six import iteritems, python_2_unicode_compatible
+from builtins import str as text
 import json
 from treelib import Node
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
@@ -12,6 +13,7 @@ from pandagg.tree import Tree
 from pandagg.utils import PrettyNode, TreeBasedObj, validate_client
 
 
+@python_2_unicode_compatible
 class MappingNode(Node):
 
     REPR_SIZE = 60
@@ -40,11 +42,11 @@ class MappingNode(Node):
             s += ' ' * pad + '%s' % self.type.capitalize()
         return s
 
-    def __repr__(self):
+    def __str__(self):
         return '<Mapping Field %s> of type %s:\n%s' % (
-            self.field_path,
-            self.type,
-            json.dumps(self.extra, indent=4)
+            text(self.field_path),
+            text(self.type),
+            text(json.dumps(self.extra, indent=4))
         )
 
 

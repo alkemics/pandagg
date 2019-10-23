@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from builtins import str as text
 from unittest import TestCase
 from mock import Mock
 
@@ -27,7 +25,7 @@ class MappingTreeTestCase(TestCase):
             detail={'type': 'boolean'}
         )
         self.assertEqual(
-            node.__repr__(),
+            node.__str__(),
             u"""<Mapping Field path.to.field> of type boolean:
 {
     "type": "boolean"
@@ -39,7 +37,7 @@ class MappingTreeTestCase(TestCase):
 
         self.assertEqual(
             mapping_tree.__str__(),
-            text(u"""<MappingTree>
+            """<MappingTree>
 classification_report                                       
 ├── classification_type                                     String
 ├── date                                                    Date
@@ -77,7 +75,7 @@ classification_report
 │           ├── precision                                   Float
 │           └── recall                                      Float
 └── workflow                                                String
-""")
+"""
         )
 
     def test_nesteds_applied_at_field(self):

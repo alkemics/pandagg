@@ -4,14 +4,13 @@
 """Sample regrouping all representations of a given aggregation, and its expected ES response/pandagg expected parsing
 results.
 """
-from __future__ import unicode_literals
 
 from pandagg.aggs import Agg
 from pandagg.nodes import Avg, Terms
 from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
 
 
-EXPECTED_REPR = u"""<Aggregation>
+EXPECTED_REPR = """<Aggregation>
 classification_type
 └── global_metrics.field.name
     ├── avg_f1_micro
@@ -203,7 +202,7 @@ ES_AGG_RESPONSE = {
     }
 }
 
-EXPECTED_RESPONSE_TREE_REPR = u"""
+EXPECTED_RESPONSE_TREE_REPR = """
 <Response>
 root
 ├── classification_type=multilabel                      1797

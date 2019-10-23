@@ -38,6 +38,6 @@ class Bucket(Node):
             s = s + ' ' * pad + str(value)
         return s
 
-    def __repr__(self):
+    def __str__(self):
         return u'<Bucket, identifier={identifier}>\n{pretty}' \
-            .format(identifier=self.identifier, pretty=self.data.pretty).encode('utf-8')
+            .format(identifier=self.identifier, pretty=self.data.pretty)

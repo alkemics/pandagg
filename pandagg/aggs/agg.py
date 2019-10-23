@@ -6,7 +6,7 @@ import copy
 import collections
 import warnings
 from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
-
+from builtins import str as text
 from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.mapping import MappingTree, Mapping
@@ -540,12 +540,9 @@ class Agg(Tree):
         else:
             NotImplementedError('Unkown %s output format.' % output)
 
-    def __repr__(self):
-        self.show()
-        return (u'<Aggregation>\n%s' % self._reader).encode('utf-8')
-
     def __str__(self):
-        return self.__repr__()
+        self.show()
+        return '<Aggregation>\n%s' % text(self._reader)
 
 
 class ClientBoundAgg(Agg):

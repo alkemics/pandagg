@@ -4,10 +4,8 @@
 # =============================================================================
 #                                   IMPORTS
 # =============================================================================
-from __future__ import unicode_literals
 
 from unittest import TestCase
-from builtins import str as text
 import pandas as pd
 from treelib.exceptions import MultipleRootError
 from pandagg.aggs import Agg
@@ -58,8 +56,8 @@ class AggTestCase(TestCase):
         )
         self.assertEqual(len(with_mapping.nodes.keys()), 3)
         self.assertEqual(
-            with_mapping.__repr__().decode('utf-8'),
-            u"""<Aggregation>
+            with_mapping.__str__(),
+            """<Aggregation>
 workflow
 └── nested_below_workflow
     └── local_f1_score
@@ -76,8 +74,8 @@ workflow
             pid='workflow'
         )
         self.assertEqual(
-            with_mapping.__repr__().decode('utf-8'),
-            u"""<Aggregation>
+            with_mapping.__str__(),
+            """<Aggregation>
 workflow
 └── nested_below_workflow
     ├── local_f1_score
@@ -94,8 +92,8 @@ workflow
         )
         self.assertEqual(len(with_mapping.nodes.keys()), 6)
         self.assertEqual(
-            with_mapping.__repr__().decode('utf-8'),
-            u"""<Aggregation>
+            with_mapping.__str__(),
+            """<Aggregation>
 workflow
 └── nested_below_workflow
     ├── local_f1_score
@@ -151,8 +149,8 @@ workflow
         initial_agg_1.paste('week', pasted_agg_1)
         self.assertEqual(set(initial_agg_1.nodes.keys()), {'week', 'nested_below_week', 'local_metrics.field_class.name'})
         self.assertEqual(
-            initial_agg_1.__repr__().decode("utf-8"),
-            u"""<Aggregation>
+            initial_agg_1.__str__(),
+            """<Aggregation>
 week
 └── nested_below_week
     └── local_metrics.field_class.name
@@ -188,8 +186,8 @@ week
         initial_agg_2.paste("week", pasted_agg_2)
         self.assertEqual(set(initial_agg_2.nodes.keys()), {'week', 'nested_below_week', 'local_metrics.field_class.name'})
         self.assertEqual(
-            initial_agg_2.__repr__().decode("utf-8"),
-            u"""<Aggregation>
+            initial_agg_2.__str__(),
+            """<Aggregation>
 week
 └── nested_below_week
     └── local_metrics.field_class.name
@@ -234,8 +232,8 @@ week
         initial_agg_1.paste('week', pasted_agg_1)
         self.assertEqual(set(initial_agg_1.nodes.keys()), {'week', 'nested_below_week', "local_metrics.field_class.name"})
         self.assertEqual(
-            initial_agg_1.__repr__().decode("utf-8"),
-            u"""<Aggregation>
+            initial_agg_1.__str__(),
+            """<Aggregation>
 week
 └── nested_below_week
     └── local_metrics.field_class.name
@@ -272,8 +270,8 @@ week
         initial_agg_2.paste("week", pasted_agg_2)
         self.assertEqual(set(initial_agg_2.nodes.keys()), {"week", "local_metrics.field_class.name"})
         self.assertEqual(
-            initial_agg_2.__repr__().decode("utf-8"),
-            u"""<Aggregation>
+            initial_agg_2.__str__(),
+            """<Aggregation>
 week
 └── local_metrics.field_class.name
 """
@@ -447,8 +445,8 @@ week
             'root_agg'
         )
         self.assertEqual(
-            agg.__repr__().decode('utf-8'),
-            u"""<Aggregation>
+            agg.__str__(),
+            """<Aggregation>
 root_agg
 ├── avg_some_other_field
 └── other_name
@@ -485,7 +483,7 @@ root_agg
         self.assertIsInstance(response_tree, Response)
         self.assertEqual(
             response_tree.__str__(),
-            text(sample.EXPECTED_RESPONSE_TREE_REPR)
+            sample.EXPECTED_RESPONSE_TREE_REPR
         )
 
     def test_normalize_buckets(self):
@@ -557,14 +555,14 @@ root_agg
     def test_init_from_dict(self):
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
         self.assertEqual(my_agg.query_dict(), sample.EXPECTED_AGG_QUERY)
-        self.assertEqual(my_agg.__repr__().decode('utf-8'), sample.EXPECTED_REPR)
+        self.assertEqual(my_agg.__str__(), sample.EXPECTED_REPR)
 
     def test_init_from_node_hierarchy(self):
         node_hierarchy = sample.get_node_hierarchy()
 
         agg = Agg(from_=node_hierarchy, mapping={MAPPING_NAME: MAPPING_DETAIL})
         self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
-        self.assertEqual(agg.__repr__().decode('utf-8'), sample.EXPECTED_REPR)
+        self.assertEqual(agg.__str__(), sample.EXPECTED_REPR)
 
         # with nested
         node_hierarchy = DateHistogram(
@@ -621,8 +619,8 @@ root_agg
             }
         )
         self.assertEqual(
-            agg.__repr__().decode('utf-8'),
-            u"""<Aggregation>
+            agg.__str__(),
+            """<Aggregation>
 week
 └── nested_below_week
     └── local_metrics.field_class.name
@@ -633,7 +631,7 @@ week
     def test_groupby_and_agg(self):
         agg = sample.get_wrapper_declared_agg()
         self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
-        self.assertEqual(agg.__repr__().decode('utf-8'), sample.EXPECTED_REPR)
+        self.assertEqual(agg.__str__(), sample.EXPECTED_REPR)
 
     def test_applied_nested_path_at_node(self):
         """ Check that correct nested path is detected at node levels:

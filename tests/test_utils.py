@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from builtins import str as text
 from pandagg.tree import Tree
 from pandagg.utils import Obj, TreeBasedObj
 from unittest import TestCase
@@ -151,27 +149,27 @@ class TreeBasedObjTestCase(TestCase):
         # test representations
         self.assertEqual(
             obj.__str__(),
-            text(u"""
+            """
 <TreeBasedObj>
 harry
 ├── bill
 │   └── george
 └── jane
     └── diane
-""")
+"""
         )
         self.assertEqual(
             bill_obj.__str__(),
-            text(u"""
+            """
 <TreeBasedObj subpart: bill>
 bill
 └── george
-""")
+"""
         )
         self.assertEqual(
             bill_obj.george.__str__(),
-            text(u"""
+            """
 <TreeBasedObj subpart: bill.george>
 george
-""")
+"""
         )

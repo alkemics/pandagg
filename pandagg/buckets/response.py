@@ -63,9 +63,9 @@ class ResponseTree(Tree):
     def show(self, data_property='pretty', **kwargs):
         return super(ResponseTree, self).show(data_property=data_property)
 
-    def __repr__(self):
+    def __str__(self):
         self.show()
-        return (u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)).encode('utf-8')
+        return u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)
 
 
 class Response(TreeBasedObj):

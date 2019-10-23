@@ -80,9 +80,6 @@ class AggNode(Node):
             return {attr_: response.get(attr_) for attr_ in attrs}
         return response.get(attrs[0])
 
-    def __repr__(self):
-        return self.__str__()
-
     def __str__(self):
         return "<{class_}, name={name}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
