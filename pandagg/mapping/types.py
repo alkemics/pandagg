@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from operator import itemgetter
 
+import pandas as pd
 from pandagg.nodes.agg_nodes import PUBLIC_AGGS
 
 MAPPING_TYPES = [
@@ -58,7 +60,10 @@ def _operate(self, agg_node, index, execute):
         raw_response = self._client.search(index=index, body=body)['aggregations']
         for nested in nesteds:
             raw_response = raw_response[nested]
-        return list(agg_node.extract_buckets(raw_response[agg_node.agg_name]))
+        result = list(agg_node.extract_buckets(raw_response[agg_node.agg_name]))
+        keys = map(itemgetter(0), result)
+        raw_values = map(agg_node.extract_bucket_value, map(itemgetter(1), result))
+        return pd.DataFrame(index=keys, data=raw_values, columns=[agg_node.VALUE_ATTRS[0]])
     return aggregation
 
 
