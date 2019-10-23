@@ -33,18 +33,18 @@ def field_klass_init(self, mapping_tree, client, field):
 
 
 def aggregator_factory(agg_klass):
-    def aggregator(self, index=None, execute=True, **kwargs):
+    def aggregator(self, index=None, execute=True, output='dataframe', **kwargs):
         node = agg_klass(
             agg_name='%sAgg' % agg_klass.AGG_TYPE.capitalize(),
             field=self._field,
             **kwargs
         )
-        return self._operate(node, index, execute)
+        return self._operate(node, index, execute, output)
     aggregator.__doc__ = agg_klass.__doc__
     return aggregator
 
 
-def _operate(self, agg_node, index, execute):
+def _operate(self, agg_node, index, execute, output):
     aggregation = {agg_node.agg_name: agg_node.query_dict()}
     nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
     for nested in nesteds:
@@ -61,6 +61,8 @@ def _operate(self, agg_node, index, execute):
         for nested in nesteds:
             raw_response = raw_response[nested]
         result = list(agg_node.extract_buckets(raw_response[agg_node.agg_name]))
+        if output != 'dataframe':
+            return result
         keys = map(itemgetter(0), result)
         raw_values = map(agg_node.extract_bucket_value, map(itemgetter(1), result))
         return pd.DataFrame(index=keys, data=raw_values, columns=[agg_node.VALUE_ATTRS[0]])

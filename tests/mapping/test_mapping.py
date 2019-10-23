@@ -166,7 +166,7 @@ class ClientBoundMappingTestCase(TestCase):
         # workflow type is String
         self.assertIsInstance(workflow_field.a, field_classes_per_name['string'])
 
-        response = workflow_field.a.terms()
+        response = workflow_field.a.terms(output=None)
         self.assertEqual(response, [
             (1, {"doc_count": 25, "key": 1}),
             (2, {"doc_count": 50, "key": 2}),
