@@ -168,9 +168,77 @@ class DateHistogram(Histogram):
         return kwargs
 
 
-class DateRange(ListBucketAgg):
+class Range(BucketAggNode):
+    WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
+    AGG_TYPE = 'range'
+    SINGLE_BUCKET = False
+    KEY_SUFFIX = None
+    KEY_SEP = '-'
+
+    def __init__(self, agg_name, field, meta=None, keyed=False, aggs=None, **kwargs):
+        self.keyed = keyed
+        agg_body = kwargs
+        agg_body['field'] = field
+        if keyed:
+            agg_body['keyed'] = keyed
+        self.field = field
+        super(Range).__init__(agg_name=agg_name, agg_body=kwargs, meta=meta, aggs=aggs)
+
+    @property
+    def from_key(self):
+        if self.KEY_SUFFIX:
+            return 'from%s' % self.KEY_SUFFIX
+        return 'from'
+
+    @property
+    def to_key(self):
+        if self.KEY_SUFFIX:
+            return 'to%s' % self.KEY_SUFFIX
+        return 'to'
+
+    def extract_buckets(self, response_value):
+        if self.keyed:
+            buckets = response_value['buckets']
+            for key in sorted(buckets.keys()):
+                yield (key, buckets[key])
+        else:
+            for bucket in response_value['buckets']:
+                if self.from_key in bucket:
+                    key = '%s%s' % (bucket[self.from_key], self.KEY_SEP)
+                else:
+                    key = '*-'
+                if self.to_key in bucket:
+                    key += bucket[self.to_key]
+                else:
+                    key += '*'
+                yield key, bucket
+
+    def get_filter(self, key):
+        from_, to_ = key.split(self.KEY_SEP)
+        inner = {}
+        if from_ != '*':
+            inner['gte'] = from_
+        if to_ != '*':
+            inner['lt'] = to_
+        return {'range': {self.field: inner}}
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        return agg_body
+
+
+class DateRange(Range):
     WHITELISTED_MAPPING_TYPES = ['date']
     AGG_TYPE = 'date_range'
+    SINGLE_BUCKET = False
+    # cannot use range '-' separator since some keys contain it
+    KEY_SEP = '::'
+
+    def __init__(self, agg_name, field, meta=None, key_as_string=True, aggs=None, **kwargs):
+        self.key_as_string = key_as_string
+        if key_as_string:
+            self.KEY_SUFFIX = '_as_string'
+        super(DateRange).__init__(agg_name=agg_name, field=field, agg_body=kwargs, meta=meta, aggs=aggs)
 
 
 class Global(UniqueBucketAgg):

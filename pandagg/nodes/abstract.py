@@ -79,6 +79,13 @@ class AggNode(Node):
             return {attr_: response.get(attr_) for attr_ in attrs}
         return response.get(attrs[0])
 
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        """Method used to reconstruct aggregation classes from json agg_body declaration. All required kwargs except
+        `agg_name` and `meta` must be reconstructed.
+        """
+        raise NotImplementedError()
+
     def __str__(self):
         return "<{class_}, name={name}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
