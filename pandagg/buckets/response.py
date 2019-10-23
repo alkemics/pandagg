@@ -175,5 +175,5 @@ class ClientBoundResponse(Response):
             return response
         return {
             'total': response['total'],
-            'hits': map(lambda x: x['_source'], response['hits'])
+            'hits': list(map(lambda x: x['_source'], response['hits']))
         }
