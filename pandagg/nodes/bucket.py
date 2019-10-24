@@ -19,6 +19,7 @@ from pandagg.nodes.abstract import ListBucketAgg, UniqueBucketAgg, BucketAggNode
 class Global(UniqueBucketAgg):
 
     AGG_TYPE = 'global'
+    VALUE_ATTRS = ['doc_count']
 
     def __init__(self, agg_name, meta=None, aggs=None):
         super(Global, self).__init__(
@@ -36,6 +37,7 @@ class Global(UniqueBucketAgg):
 class Filter(UniqueBucketAgg):
 
     AGG_TYPE = 'filter'
+    VALUE_ATTRS = ['doc_count']
 
     def __init__(self, agg_name, filter_, meta=None, aggs=None):
         self.filter_ = filter_
@@ -72,6 +74,7 @@ class MatchAll(Filter):
 class Nested(UniqueBucketAgg):
 
     AGG_TYPE = 'nested'
+    VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['nested']
 
     def __init__(self, agg_name, path, meta=None, aggs=None):
@@ -93,6 +96,7 @@ class Nested(UniqueBucketAgg):
 class ReverseNested(UniqueBucketAgg):
 
     AGG_TYPE = 'reverse_nested'
+    VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['nested']
 
     def __init__(self, agg_name, path=None, meta=None, aggs=None):
@@ -182,6 +186,8 @@ class Terms(ListBucketAgg):
 class Filters(BucketAggNode):
 
     AGG_TYPE = 'filters'
+    VALUE_ATTRS = ['doc_count']
+    BLACKLISTED_MAPPING_TYPES = []
 
     def __init__(self, agg_name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **kwargs):
         self.filters = filters
@@ -224,6 +230,7 @@ class Filters(BucketAggNode):
 class Histogram(ListBucketAgg):
 
     AGG_TYPE = 'histogram'
+    VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
     def __init__(self, agg_name, field, interval, hist_format=None, meta=None, aggs=None):
@@ -256,8 +263,9 @@ class Histogram(ListBucketAgg):
 
 
 class DateHistogram(Histogram):
-    WHITELISTED_MAPPING_TYPES = ['date']
     AGG_TYPE = 'date_histogram'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = ['date']
     ALLOWED_INTERVAL_UNITS = ('y', 'q', 'M', 'w', 'd')  # not under a day to avoid breaking ES ('h', 'm', 's')
 
     def __init__(self,
@@ -291,8 +299,9 @@ class DateHistogram(Histogram):
 
 
 class Range(BucketAggNode):
-    WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     AGG_TYPE = 'range'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     SINGLE_BUCKET = False
     KEY_SUFFIX = None
     KEY_SEP = '-'
@@ -351,8 +360,9 @@ class Range(BucketAggNode):
 
 
 class DateRange(Range):
-    WHITELISTED_MAPPING_TYPES = ['date']
     AGG_TYPE = 'date_range'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = ['date']
     SINGLE_BUCKET = False
     # cannot use range '-' separator since some keys contain it
     KEY_SEP = '::'

@@ -131,7 +131,7 @@ class BucketAggNode(AggNode):
     Yet, the children attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
     bpointer/fpointer attributes inherited from treelib.Tree class.
     """
-    VALUE_ATTRS = ['doc_count']
+    VALUE_ATTRS = NotImplementedError()
     SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, agg_name, agg_body, meta=None, aggs=None):
@@ -159,6 +159,7 @@ class BucketAggNode(AggNode):
 
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
+    VALUE_ATTRS = NotImplementedError()
     SINGLE_BUCKET = True
 
     def extract_buckets(self, response_value):
@@ -175,6 +176,7 @@ class UniqueBucketAgg(BucketAggNode):
 class ListBucketAgg(BucketAggNode):
 
     # Aggregation that return a list of buckets as a list (terms, histogram, date-histogram).
+    VALUE_ATTRS = NotImplementedError()
     KEY_PATH = 'key'
     SINGLE_BUCKET = False
 
