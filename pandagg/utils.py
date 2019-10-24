@@ -55,7 +55,7 @@ class Obj(object):
             self.__d[key] = value
             return
         assert not key.startswith('__')
-        if re.match(string=key, pattern=r'.*[^a-zA-Z0-9_]'):
+        if not re.match(string=key, pattern=r'^[a-zA-Z_]+[a-zA-Z0-9_]*$'):
             self.__d[key] = value
         else:
             super(Obj, self).__setattr__(key, value)

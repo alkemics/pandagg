@@ -33,6 +33,11 @@ class ObjTestCase(TestCase):
 
         self.assertEqual(obj.__str__(), "<Obj> ['some-key', 'some_key', 'some_key_2']")
 
+        # key beginning with figure cannot be set as attribute
+        obj['2-some-key'] = 'some-value'
+        self.assertEqual(obj['2-some-key'], 'some-value')
+        self.assertNotIn('2-some-key', dir(obj))
+
     def test_obj_init(self):
         obj = Obj(yolo="yolo value", toto="toto value")
         self.assertEqual(obj.yolo, "yolo value")
