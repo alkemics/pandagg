@@ -139,7 +139,6 @@ class Terms(ListBucketAgg):
     """
     AGG_TYPE = 'terms'
     VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
-    # TODO - check list of allowed/blacklisted fields
     BLACKLISTED_MAPPING_TYPES = []
     DEFAULT_SIZE = 20
 
@@ -187,7 +186,6 @@ class Filters(BucketAggNode):
 
     AGG_TYPE = 'filters'
     VALUE_ATTRS = ['doc_count']
-    BLACKLISTED_MAPPING_TYPES = []
 
     def __init__(self, agg_name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **kwargs):
         self.filters = filters

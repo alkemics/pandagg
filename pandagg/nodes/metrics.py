@@ -4,7 +4,20 @@
 from __future__ import unicode_literals
 
 from pandagg.mapping.types import NUMERIC_TYPES
-from pandagg.nodes.abstract import FieldMetricAgg
+from pandagg.nodes.abstract import FieldMetricAgg, MetricAgg
+
+
+class TopHits(MetricAgg):
+    # TODO - test this one
+    VALUE_ATTRS = ['hits']
+    AGG_TYPE = 'top_hits'
+
+    def __init__(self, agg_name, meta=None, **agg_body_kwargs):
+        super(TopHits, self).__init__(agg_name=agg_name, meta=meta, agg_body=agg_body_kwargs)
+
+    @staticmethod
+    def agg_body_to_init_kwargs(agg_body):
+        return agg_body
 
 
 class Avg(FieldMetricAgg):
@@ -85,12 +98,6 @@ class PercentileRanks(FieldMetricAgg):
         if values:
             agg_body['values'] = values
         super(PercentileRanks, self).__init__(agg_name=agg_name, field=field, meta=meta, **agg_body)
-
-
-class TopHits(FieldMetricAgg):
-    BLACKLISTED_MAPPING_TYPES = []
-    VALUE_ATTRS = ['hits']
-    AGG_TYPE = 'top_hits'
 
 
 class ValueCount(FieldMetricAgg):

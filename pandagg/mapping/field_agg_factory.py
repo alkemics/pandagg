@@ -58,7 +58,7 @@ def _operate(self, agg_node, index, execute, output):
             return result
         keys = map(itemgetter(0), result)
         raw_values = map(itemgetter(1), result)
-        return pd.DataFrame(index=keys, data=raw_values, columns=[agg_node.VALUE_ATTRS[0]])
+        return pd.DataFrame(index=keys, data=raw_values)
     return aggregation
 
 
