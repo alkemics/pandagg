@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict, defaultdict
 
+from six import iteritems
 from pandagg.buckets.buckets import Bucket
 from pandagg.nodes.abstract import UniqueBucketAgg
 from pandagg.tree import Tree
@@ -52,7 +53,8 @@ class ResponseTree(Tree):
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
         if properties is None:
             properties = OrderedDict()
-        properties[bucket.level] = bucket.key
+        if bucket.level != Bucket.ROOT_NAME:
+            properties[bucket.level] = bucket.key
         if depth is not None:
             depth -= 1
         parent = self.parent(bucket.identifier)
@@ -128,18 +130,19 @@ class ClientBoundResponse(Response):
         agg_tree = self._initial_tree.agg_tree
         tree_mapping = self._initial_tree.agg_tree.tree_mapping
 
-        aggs_keys = [
+        bucket_properties = self._initial_tree.bucket_properties(current_bucket)
+        agg_node_key_tuples = [
             (agg_tree[level], key) for
-            level, key in self._tree.bucket_properties(current_bucket).items()
+            level, key in iteritems(bucket_properties)
         ]
 
         filters_per_nested_level = defaultdict(list)
 
-        for level_agg, key in aggs_keys:
-            level_agg_filter = level_agg.get_filter(key)
+        for agg_node, key in agg_node_key_tuples:
+            level_agg_filter = agg_node.get_filter(key)
             # remove unnecessary match_all filters
             if level_agg_filter is not None and 'match_all' not in level_agg_filter:
-                current_nested = agg_tree.applied_nested_path_at_node(level_agg.identifier)
+                current_nested = agg_tree.applied_nested_path_at_node(agg_node.identifier)
                 filters_per_nested_level[current_nested].append(level_agg_filter)
 
         nested_with_conditions = [n for n in filters_per_nested_level.keys() if n]

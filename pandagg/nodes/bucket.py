@@ -215,8 +215,12 @@ class Filters(BucketAggNode):
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""
-        filter_ = self.filters[key]
-        return filter_
+        if key in self.filters.keys():
+            return self.filters[key]
+        if self.other_bucket:
+            if key == '_other_' or key == self.other_bucket_key:
+                return {'bool': {'must_not': {'bool': {'should': self.filters.values()}}}}
+        raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.agg_name))
 
     @staticmethod
     def agg_body_to_init_kwargs(agg_body):

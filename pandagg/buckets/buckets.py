@@ -9,11 +9,12 @@ from pandagg.utils import PrettyNode
 class Bucket(Node):
 
     REPR_SIZE = 60
+    ROOT_NAME = 'root'
 
     def __init__(self, depth, value, key=None, aggregation_node=None):
         self.aggregation_node = aggregation_node
         self.value = value
-        self.level = aggregation_node.agg_name if aggregation_node is not None else 'root'
+        self.level = aggregation_node.agg_name if aggregation_node is not None else self.ROOT_NAME
         self.depth = depth
         self.key = key
         if self.key is not None:
