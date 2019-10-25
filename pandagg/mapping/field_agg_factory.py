@@ -26,18 +26,18 @@ def field_klass_init(self, mapping_tree, client, field):
 
 
 def aggregator_factory(agg_klass):
-    def aggregator(self, index=None, execute=True, output='dataframe', **kwargs):
+    def aggregator(self, index=None, execute=True, output='dataframe', query=None, **kwargs):
         node = agg_klass(
-            agg_name='%sAgg' % agg_klass.AGG_TYPE.capitalize(),
+            agg_name='%s_agg' % agg_klass.AGG_TYPE,
             field=self._field,
             **kwargs
         )
-        return self._operate(node, index, execute, output)
-    aggregator.__doc__ = agg_klass.__doc__
+        return self._operate(node, index, execute, output, query)
+    aggregator.__doc__ = agg_klass.__init__.__doc__ or agg_klass.__doc__
     return aggregator
 
 
-def _operate(self, agg_node, index, execute, output):
+def _operate(self, agg_node, index, execute, output, query):
     aggregation = {agg_node.agg_name: agg_node.query_dict()}
     nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
     for nested in nesteds:
@@ -50,6 +50,8 @@ def _operate(self, agg_node, index, execute, output):
 
     if self._client is not None and execute:
         body = {"aggs": aggregation, "size": 0}
+        if query is not None:
+            body['query'] = query
         raw_response = self._client.search(index=index, body=body)['aggregations']
         for nested in nesteds:
             raw_response = raw_response[nested]
