@@ -12,8 +12,14 @@ from pandagg.utils import TreeBasedObj, bool_if_required
 
 
 class ResponseTree(Tree):
+    """Tree representation of an ES response. ES response format is determined by the aggregation query.
+    """
 
     def __init__(self, agg_tree, identifier=None):
+        """
+        :param agg_tree: instance of pandagg.agg.Agg from which this ES response originates
+        :param identifier: optional, tree identifier
+        """
         super(ResponseTree, self).__init__(identifier=identifier)
         self.agg_tree = agg_tree
 
@@ -21,6 +27,13 @@ class ResponseTree(Tree):
         return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
 
     def parse_aggregation(self, raw_response):
+        """Build response tree from ES response
+        :param raw_response: ES aggregation response
+        :return: self
+
+        Note: if the root aggregation node can generate multiple buckets, a response root is crafted to avoid having
+        multiple roots.
+        """
         root_node = self.agg_tree[self.agg_tree.root]
         if not isinstance(root_node, UniqueBucketAgg):
             bucket = Bucket(value=None, depth=0)
@@ -30,27 +43,39 @@ class ResponseTree(Tree):
             self._parse_node_with_children(root_node, raw_response)
         return self
 
-    def _parse_node_with_children(self, agg_node, raw_response, pid=None, lvl=0):
+    def _parse_node_with_children(self, agg_node, raw_response, pid=None, depth=0):
+        """Recursive method to parse ES raw response.
+        :param agg_node: current aggregation, pandagg.nodes.AggNode instance
+        :param raw_response: ES response at current level, dict
+        :param pid: parent node identifier
+        :param depth: depth in tree
+        """
         agg_raw_response = raw_response.get(agg_node.agg_name)
-        if agg_raw_response:
-            # if no data is present, elasticsearch doesn't return any bucket, for instance for TermAggregations
-            for key, raw_value in agg_node.extract_buckets(agg_raw_response):
-                bucket = Bucket(
-                    aggregation_node=agg_node,
-                    key=key,
-                    value=agg_node.extract_bucket_value(raw_value),
-                    depth=lvl + 1
+        for key, raw_value in agg_node.extract_buckets(agg_raw_response):
+            bucket = Bucket(
+                aggregation_node=agg_node,
+                key=key,
+                value=agg_node.extract_bucket_value(raw_value),
+                depth=depth + 1
+            )
+            self.add_node(bucket, pid)
+            for child in self.agg_tree.children(agg_node.agg_name):
+                self._parse_node_with_children(
+                    agg_node=child,
+                    raw_response=raw_value,
+                    depth=depth + 1,
+                    pid=bucket.identifier
                 )
-                self.add_node(bucket, pid)
-                for child in self.agg_tree.children(agg_node.agg_name):
-                    self._parse_node_with_children(
-                        agg_node=child,
-                        raw_response=raw_value,
-                        lvl=lvl + 1,
-                        pid=bucket.identifier
-                    )
 
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
+        """Recursive method returning a bucket properties in the form of an ordered dictionnary.
+        Travel from current bucket to all parents until reaching root.
+        :param bucket: instance of pandagg.buckets.buckets.Bucket
+        :param properties: OrderedDict accumulator of 'level' -> 'key'
+        :param end_level: optional parameter to specify until which level properties are fetched
+        :param depth: optional parameter to specify a limit number of levels which are fetched
+        :return: OrderedDict of structure 'level' -> 'key'
+        """
         if properties is None:
             properties = OrderedDict()
         if bucket.level != Bucket.ROOT_NAME:
@@ -75,6 +100,7 @@ class Response(TreeBasedObj):
     _NODE_PATH_ATTR = 'path'
 
     def list_documents(self, **kwargs):
+        """Return ES aggregation query to list documents belonging to given bucket."""
         initial_tree = self._tree if self._initial_tree is None else self._initial_tree
         return initial_tree.list_documents()
 
@@ -162,6 +188,14 @@ class ClientBoundResponse(Response):
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
     def list_documents(self, size=None, execute=True, _source=None, compact=True, **kwargs):
+        """Return ES aggregation query to list documents belonging to given bucket.
+        :param size: number of returned documents (ES default: 20)
+        :param execute: if set to False, return aggregation query
+        :param _source: list of desired documents attributes
+        :param compact: provide more compact ES response
+        :param kwargs: query arguments passed to aggregation body
+        :return:
+        """
         filter_query = self._documents_query()
         if not execute:
             return filter_query
