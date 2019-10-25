@@ -144,12 +144,13 @@ class TreeBasedObj(Obj):
         if self._root_path is None:
             return '\n<%s>\n%s' % (
                 text(self.__class__._REPR_NAME or self.__class__.__name__),
-                tree_repr
+                text(tree_repr)
             )
         current_path = self._root_path
         return '\n<%s subpart: %s>\n%s' % (
             text(self.__class__._REPR_NAME or self.__class__.__name__),
-            current_path, tree_repr
+            text(current_path),
+            text(tree_repr)
         )
 
 

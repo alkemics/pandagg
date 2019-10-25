@@ -178,3 +178,28 @@ bill
 george
 """
         )
+
+    def test_tree_set_get_attrs(self):
+        obj = TreeBasedObj(tree=self.tree)
+        obj['some_key'] = 'some_value'
+        self.assertEqual(obj.some_key, 'some_value')
+        self.assertEqual(obj['some_key'], 'some_value')
+        self.assertIn('some_key', dir(obj))
+
+        # set by __setattr__
+        obj.some_key_2 = 'some_value_2'
+        self.assertEqual(obj.some_key_2, 'some_value_2')
+        self.assertEqual(obj['some_key_2'], 'some_value_2')
+        self.assertIn('some_key_2', dir(obj))
+
+        # key containing '-' character can not be set as attribute
+        obj['some-key'] = 'some-value'
+        self.assertEqual(obj['some-key'], 'some-value')
+        # internally stored in mangled '__d' attribute -> '_Obj__d'
+        self.assertIn('some-key', obj['_Obj__d'])
+        self.assertEqual(obj['_Obj__d']['some-key'], 'some-value')
+
+        # key beginning with figure cannot be set as attribute
+        obj['2-some-key'] = 'some-value'
+        self.assertEqual(obj['2-some-key'], 'some-value')
+        self.assertNotIn('2-some-key', dir(obj))

@@ -133,7 +133,7 @@ class ClientBoundMappingTestCase(TestCase):
                 "total": 135
             },
             "aggregations": {
-                "TermsAgg": {
+                "terms_agg": {
                     "buckets": [
                         {
                             "doc_count": 25,
