@@ -154,6 +154,7 @@ class PrettyNode(object):
 
 
 def bool_if_required(sub_filters, operator='must'):
+    assert operator in ('must', 'should')
     # wrap conditions in bool only if necessary
     if len(sub_filters) == 1:
         return sub_filters[0]

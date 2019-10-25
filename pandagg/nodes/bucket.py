@@ -12,6 +12,7 @@
 from __future__ import unicode_literals
 import re
 
+from pandagg.utils import bool_if_required
 from pandagg.mapping.types import NUMERIC_TYPES
 from pandagg.nodes.abstract import ListBucketAgg, UniqueBucketAgg, BucketAggNode
 
@@ -186,6 +187,7 @@ class Filters(BucketAggNode):
 
     AGG_TYPE = 'filters'
     VALUE_ATTRS = ['doc_count']
+    DEFAULT_OTHER_KEY = '_other_'
 
     def __init__(self, agg_name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **kwargs):
         self.filters = filters
@@ -218,8 +220,8 @@ class Filters(BucketAggNode):
         if key in self.filters.keys():
             return self.filters[key]
         if self.other_bucket:
-            if key == '_other_' or key == self.other_bucket_key:
-                return {'bool': {'must_not': {'bool': {'should': self.filters.values()}}}}
+            if key == self.DEFAULT_OTHER_KEY or key == self.other_bucket_key:
+                return {'bool': {'must_not': bool_if_required(self.filters.values(), operator='should')}}
         raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.agg_name))
 
     @staticmethod
