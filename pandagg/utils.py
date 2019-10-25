@@ -66,6 +66,9 @@ class Obj(object):
             if k not in ('_REPR_NAME', '_Obj__d')
         ]
 
+    def __contains__(self, item):
+        return item in self.__keys()
+
     def __str__(self):
         return '<%s> %s' % (
             text(self.__class__._REPR_NAME or self.__class__.__name__),
@@ -106,7 +109,7 @@ class TreeBasedObj(Obj):
         if depth:
             for child in self._tree.children(nid=self._tree.root):
                 child_path = getattr(child, self._NODE_PATH_ATTR)
-                if hasattr(self, child_path):
+                if child_path in self:
                     continue
                 if self._root_path is not None:
                     child_root = '%s.%s' % (self._root_path, child_path)
