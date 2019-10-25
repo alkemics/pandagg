@@ -11,6 +11,12 @@ from pandagg.exceptions import InvalidElasticSearchClientError
 from pandagg.tree import Tree
 
 
+def is_valid_attr_name(item):
+    if not isinstance(item, string_types):
+        return False
+    return re.match(string=item, pattern=r'^[a-zA-Z_]+[a-zA-Z0-9_]*$') is not None
+
+
 @python_2_unicode_compatible
 class Obj(object):
     """Object class that allows to get items both by attribute `__getattribute__` access: `obj.attribute` or by dict
@@ -42,9 +48,9 @@ class Obj(object):
 
     def __getitem__(self, item):
         # when calling d[key]
-        try:
+        if is_valid_attr_name(item):
             return self.__getattribute__(item)
-        except (AttributeError, TypeError):
+        else:
             return self.__d[item]
 
     def __setitem__(self, key, value):
@@ -55,7 +61,7 @@ class Obj(object):
             self.__d[key] = value
             return
         assert not key.startswith('__')
-        if not re.match(string=key, pattern=r'^[a-zA-Z_]+[a-zA-Z0-9_]*$'):
+        if not is_valid_attr_name(key):
             self.__d[key] = value
         else:
             super(Obj, self).__setattr__(key, value)
@@ -118,16 +124,17 @@ class TreeBasedObj(Obj):
                 self[child_path] = self._get_instance(child.identifier, root_path=child_root, depth=depth - 1)
 
     def __getattribute__(self, item):
+        # called by __getattribute__ will always refer to valid attribute item
         r = super(TreeBasedObj, self).__getattribute__(item)
         if isinstance(r, TreeBasedObj):
             r._expand_attrs(depth=1)
         return r
 
     def __getitem__(self, item):
-        try:
+        if is_valid_attr_name(item):
             r = super(TreeBasedObj, self).__getattribute__(item)
-        except AttributeError:
-            r = self.__d[item]
+        else:
+            r = super(TreeBasedObj, self).__getitem__(item)
         if isinstance(r, TreeBasedObj):
             r._expand_attrs(depth=1)
         return r
