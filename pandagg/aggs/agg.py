@@ -383,23 +383,6 @@ class Agg(Tree):
     def deepest_linear_bucket_agg(self):
         """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
         neither has siblings, nor has an ancestor with siblings.
-
-        By default, bucket aggregation nodes until this one included will be used to build grouping levels (rows), and
-        its children aggregations nodes as values for each of generated groups (columns).
-
-        Suppose an aggregation of this shape (A & B bucket aggregations)
-        A──> B──> C1
-             ├──> C2
-             └──> C3
-        Deepest linear bucket agg would be B.
-
-        We would breakdown ElasticSearch response (tree structure), into a tabular structure of this shape:
-                              C1     C2    C3
-        A           B
-        wood        blue      10     4     0
-                    red       7      5     2
-        steel       blue      1      9     0
-                    red       23     4     2
         """
         if not self.root or not isinstance(self[self.root], BucketAggNode):
             return None
@@ -482,6 +465,28 @@ class Agg(Tree):
             yield result
 
     def _serialize_as_tabular(self, aggs_response, row_as_tuple=False, grouped_by=None, normalize_children=True):
+        """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
+        reached, and using children aggregations of grouping level as values for each of generated groups (columns).
+
+        Suppose an aggregation of this shape (A & B bucket aggregations)
+        A──> B──> C1
+             ├──> C2
+             └──> C3
+
+        With grouped_by='B', breakdown ElasticSearch response (tree structure), into a tabular structure of this shape:
+                              C1     C2    C3
+        A           B
+        wood        blue      10     4     0
+                    red       7      5     2
+        steel       blue      1      9     0
+                    red       23     4     2
+
+        :param aggs_response: ElasticSearch response
+        :param row_as_tuple: if True, level-key samples are returned as tuples, else in a dictionnary
+        :param grouped_by: name of the aggregation node used as last grouping level
+        :param normalize_children: if True, normalize columns buckets
+        :return: index, index_names, values
+        """
         grouped_by = self.deepest_linear_bucket_agg if grouped_by is None else grouped_by
         if grouped_by not in self:
             raise ValueError('Cannot group by <%s>, agg node does not exist' % grouped_by)
