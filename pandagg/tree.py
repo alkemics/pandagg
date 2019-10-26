@@ -49,7 +49,6 @@ class Node(OriginalNode):
         kwargs = [
             "tag={0}".format(text(self.tag)),
             "identifier={0}".format(text(self.identifier)),
-            "data={0}".format(text(self.data)),
         ]
         return "%s(%s)" % (name, ", ".join(kwargs))
 

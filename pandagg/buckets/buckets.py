@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from builtins import str as text
 from pandagg.tree import Node
 from pandagg.utils import PrettyNode
 
@@ -19,16 +18,18 @@ class Bucket(Node):
         self.key = key
         # level=key
         if self.key is not None:
-            self.name = '%s_%s' % (self.level.replace('.', '_'), self.key)
+            self.attr_name = '%s_%s' % (self.level.replace('.', '_'), self.key)
+            display_name = '%s=%s' % (self.level, self.key)
         else:
-            self.name = self.level.replace('.', '_')
+            self.attr_name = self.level.replace('.', '_')
+            display_name = self.level
         pretty = self._str_current_level(
             level=self.level,
             key=self.key,
             depth=self.depth, sep='=',
             value=self.value
         )
-        super(Bucket, self).__init__(tag=self.name, data=PrettyNode(pretty=pretty))
+        super(Bucket, self).__init__(tag=display_name, data=PrettyNode(pretty=pretty))
 
     @classmethod
     def _str_current_level(cls, level, key, depth, sep=':', value=None):
@@ -39,9 +40,3 @@ class Bucket(Node):
             pad = max(cls.REPR_SIZE - 4 * depth - len(s) - len(str(value)), 4)
             s = s + ' ' * pad + str(value)
         return s
-
-    def __str__(self):
-        return '<Bucket, identifier={identifier}>\n{pretty}'.format(
-            identifier=text(self.identifier),
-            pretty=text(self.data.pretty)
-        )

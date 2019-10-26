@@ -92,30 +92,7 @@ class ResponseTree(Tree):
 
 class Response(TreeBasedObj):
 
-    _NODE_PATH_ATTR = 'name'
-
-    def list_documents(self, **kwargs):
-        """Return ES aggregation query to list documents belonging to given bucket."""
-        initial_tree = self._tree if self._initial_tree is None else self._initial_tree
-        return initial_tree.list_documents()
-
-
-class ClientBoundResponse(Response):
-
-    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None):
-        self._client = client
-        self._index_name = index_name
-        super(Response, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
-
-    def _get_instance(self, nid, root_path, depth, **kwargs):
-        return ClientBoundResponse(
-            client=self._client,
-            index_name=self._index_name,
-            tree=self._tree.subtree(nid),
-            root_path=root_path,
-            depth=depth,
-            initial_tree=self._initial_tree
-        )
+    _NODE_PATH_ATTR = 'attr_name'
 
     @classmethod
     def _build_filter(cls, nid_to_children, filters_per_nested_level, current_nested_path=None):
@@ -181,6 +158,28 @@ class ClientBoundResponse(Response):
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
+
+    def list_documents(self, **kwargs):
+        """Return ES aggregation query to list documents belonging to given bucket."""
+        return self._documents_query()
+
+
+class ClientBoundResponse(Response):
+
+    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None):
+        self._client = client
+        self._index_name = index_name
+        super(Response, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
+
+    def _get_instance(self, nid, root_path, depth, **kwargs):
+        return ClientBoundResponse(
+            client=self._client,
+            index_name=self._index_name,
+            tree=self._tree.subtree(nid),
+            root_path=root_path,
+            depth=depth,
+            initial_tree=self._initial_tree
+        )
 
     def list_documents(self, size=None, execute=True, _source=None, compact=True, **kwargs):
         """Return ES aggregation query to list documents belonging to given bucket.
