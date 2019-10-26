@@ -118,15 +118,33 @@ class ClientBoundMappingTestCase(TestCase):
         client_mock.search = Mock(return_value=es_response_mock)
 
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
-        client_bound_mapping = ClientBoundMapping(client=client_mock, tree=mapping_tree, depth=1)
+        client_bound_mapping = ClientBoundMapping(
+            client=client_mock,
+            tree=mapping_tree,
+            depth=1,
+            index_name='classification_report_index_name'
+        )
 
         workflow_field = client_bound_mapping.workflow
         self.assertTrue(hasattr(workflow_field, 'a'))
         # workflow type is String
         self.assertIsInstance(workflow_field.a, field_classes_per_name['string'])
 
-        response = workflow_field.a.terms(output=None)
+        response = workflow_field.a.terms(
+            size=20,
+            output=None,
+            query={'term': {'classification_type': 'multiclass'}}
+        )
         self.assertEqual(response, [
             (1, {"doc_count": 25, "key": 1}),
             (2, {"doc_count": 50, "key": 2}),
         ])
+        client_mock.search.assert_called_once()
+        client_mock.search.assert_called_with(
+            body={
+                'aggs': {'terms_agg': {'terms': {'field': 'workflow', 'size': 20}}},
+                'size': 0,
+                'query': {'term': {'classification_type': 'multiclass'}}
+            },
+            index='classification_report_index_name'
+        )

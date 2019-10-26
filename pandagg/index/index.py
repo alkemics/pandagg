@@ -55,6 +55,7 @@ class ClientBoundIndex(Index):
         mapping_name, mapping_detail = next(iteritems(mapping))
         self.mapping = ClientBoundMapping(
             client=self.client,
+            index_name=self.name,
             tree=MappingTree(mapping_name, mapping_detail),
             depth=1
         )

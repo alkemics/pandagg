@@ -19,10 +19,11 @@ def list_available_aggs_on_field(field_type):
     ]
 
 
-def field_klass_init(self, mapping_tree, client, field):
+def field_klass_init(self, mapping_tree, client, field, index_name):
     self._mapping_tree = mapping_tree
     self._client = client
     self._field = field
+    self._index_name = index_name
 
 
 def aggregator_factory(agg_klass):
@@ -38,6 +39,7 @@ def aggregator_factory(agg_klass):
 
 
 def _operate(self, agg_node, index, execute, output, query):
+    index = index or self._index_name
     aggregation = {agg_node.agg_name: agg_node.query_dict()}
     nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
     for nested in nesteds:
