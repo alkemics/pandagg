@@ -202,9 +202,7 @@ ES_AGG_RESPONSE = {
     }
 }
 
-EXPECTED_RESPONSE_TREE_REPR = """
-<Response>
-root
+EXPECTED_RESP_REPR = """root
 ├── classification_type=multilabel                      1797
 │   ├── global_metrics.field.name=hazardpictograms       369
 │   │   ├── avg_f1_micro                                0.83
@@ -238,6 +236,8 @@ root
         ├── avg_f1_micro                                0.93
         └── avg_nb_classes                            211.12
 """
+EXPECTED_RESPONSE_REPR = """<Response>\n%s""" % EXPECTED_RESP_REPR
+EXPECTED_RESPONSE_TREE_REPR = """<ResponseTree>\n%s""" % EXPECTED_RESP_REPR
 
 
 EXPECTED_NORMALIZED_RESPONSE = {

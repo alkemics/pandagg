@@ -142,12 +142,12 @@ class TreeBasedObj(Obj):
     def __str__(self):
         tree_repr = self._tree.show()
         if self._root_path is None:
-            return '\n<%s>\n%s' % (
+            return '<%s>\n%s' % (
                 text(self.__class__._REPR_NAME or self.__class__.__name__),
                 text(tree_repr)
             )
         current_path = self._root_path
-        return '\n<%s subpart: %s>\n%s' % (
+        return '<%s subpart: %s>\n%s' % (
             text(self.__class__._REPR_NAME or self.__class__.__name__),
             text(current_path),
             text(tree_repr)
@@ -156,6 +156,8 @@ class TreeBasedObj(Obj):
 
 class PrettyNode(object):
     # class to display pretty nodes while working with trees
+    __slots__ = ['pretty']
+
     def __init__(self, pretty):
         super(PrettyNode, self).__init__()
         self.pretty = pretty

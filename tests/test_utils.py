@@ -154,8 +154,7 @@ class TreeBasedObjTestCase(TestCase):
         # test representations
         self.assertEqual(
             obj.__str__(),
-            """
-<TreeBasedObj>
+            """<TreeBasedObj>
 harry
 ├── bill
 │   └── george
@@ -165,16 +164,14 @@ harry
         )
         self.assertEqual(
             bill_obj.__str__(),
-            """
-<TreeBasedObj subpart: bill>
+            """<TreeBasedObj subpart: bill>
 bill
 └── george
 """
         )
         self.assertEqual(
             bill_obj.george.__str__(),
-            """
-<TreeBasedObj subpart: bill.george>
+            """<TreeBasedObj subpart: bill.george>
 george
 """
         )

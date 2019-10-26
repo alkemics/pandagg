@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
+from builtins import str as text
 from treelib import Node
 from pandagg.utils import PrettyNode
 
@@ -40,5 +40,7 @@ class Bucket(Node):
         return s
 
     def __str__(self):
-        return u'<Bucket, identifier={identifier}>\n{pretty}' \
-            .format(identifier=self.identifier, pretty=self.data.pretty)
+        return '<Bucket, identifier={identifier}>\n{pretty}'.format(
+            identifier=text(self.identifier),
+            pretty=text(self.data.pretty)
+        )

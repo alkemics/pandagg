@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 import json
@@ -23,7 +21,7 @@ class MappingNode(Node):
         self.field_name = field_name
         self.type = '' if root else detail.get('type', 'object')
         if not root and self.type not in MAPPING_TYPES:
-            raise MappingError('Unkown <%s> field type on path <%s>' % (self.type, field_path))
+            raise MappingError(u'Unkown <%s> field type on path <%s>' % (self.type, field_path))
         self.sub_field = sub_field
         self.dynamic = detail.get('dynamic', False)
         self.depth = depth
@@ -104,20 +102,20 @@ class MappingTree(Tree):
         if agg_node.field not in self:
             if not exc:
                 return False
-            raise AbsentMappingFieldError('Agg of type <%s> on non-existing field <%s>.' % (
+            raise AbsentMappingFieldError(u'Agg of type <%s> on non-existing field <%s>.' % (
                 agg_node.AGG_TYPE, agg_node.field))
 
         field_type = self.mapping_type_of_field(agg_node.field)
         if not agg_node.valid_on_field_type(field_type):
             if not exc:
                 return False
-            raise InvalidOperationMappingFieldError('Agg of type <%s> not possible on field of type <%s>.'
+            raise InvalidOperationMappingFieldError(u'Agg of type <%s> not possible on field of type <%s>.'
                                                     % (agg_node.AGG_TYPE, field_type))
         return True
 
     def mapping_type_of_field(self, field_path):
         if field_path not in self:
-            raise AbsentMappingFieldError('<%s field is not present in mapping>' % field_path)
+            raise AbsentMappingFieldError(u'<%s field is not present in mapping>' % field_path)
         return self[field_path].type
 
     def nested_at_field(self, field_path):

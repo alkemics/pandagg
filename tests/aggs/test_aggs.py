@@ -479,12 +479,13 @@ root_agg
 
     def test_parse_as_tree(self):
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
-        response_tree = my_agg._serialize_as_tree(sample.ES_AGG_RESPONSE)
-        self.assertIsInstance(response_tree, Response)
+        response = my_agg._serialize_as_tree(sample.ES_AGG_RESPONSE)
+        self.assertIsInstance(response, Response)
         self.assertEqual(
-            response_tree.__str__(),
-            sample.EXPECTED_RESPONSE_TREE_REPR
+            response.__str__(),
+            sample.EXPECTED_RESPONSE_REPR
         )
+        # check that tree attributes are accessible
 
     def test_normalize_buckets(self):
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)

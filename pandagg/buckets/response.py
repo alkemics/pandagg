@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 from collections import OrderedDict, defaultdict
 
@@ -89,10 +88,6 @@ class ResponseTree(Tree):
 
     def show(self, data_property='pretty', **kwargs):
         return super(ResponseTree, self).show(data_property=data_property)
-
-    def __str__(self):
-        self.show()
-        return u'<{class_}>\n{tree}'.format(class_=self.__class__.__name__, tree=self._reader)
 
 
 class Response(TreeBasedObj):

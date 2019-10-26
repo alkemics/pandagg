@@ -50,8 +50,7 @@ class WrapperTestCase(TestCase):
         self.assertIsInstance(report_index.mapping, ClientBoundMapping)
         self.assertEqual(
             report_index.mapping.__str__(),
-            """
-<ClientBoundMapping>
+            """<ClientBoundMapping>
 classification_report                                       
 ├── classification_type                                     String
 ├── date                                                    Date
