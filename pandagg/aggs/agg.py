@@ -367,6 +367,25 @@ class Agg(Tree):
 
     @property
     def deepest_linear_bucket_agg(self):
+        """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
+        neither has siblings, nor has an ancestor with siblings.
+
+        By default, bucket aggregation nodes until this one included will be used to build grouping levels (rows), and
+        its children aggregations nodes as values for each of generated groups (columns).
+
+        Suppose an aggregation of this shape (A & B bucket aggregations)
+        A──> B──> C1
+             ├──> C2
+             └──> C3
+
+        We would breakdown ElasticSearch response (tree structure), into a tabular structure of this shape:
+                              C1     C2    C3
+        A           B
+        wood        blue      10     4     0
+                    red       7      5     2
+        steel       blue      1      9     0
+                    red       23     4     2
+        """
         if not self.root or not isinstance(self[self.root], BucketAggNode):
             return None
         last_bucket_agg_name = self.root
@@ -380,6 +399,10 @@ class Agg(Tree):
         return last_bucket_agg_name
 
     def validate_tree(self, exc=False):
+        """Validate tree definition against defined mapping.
+        :param exc: if set to True, will raise exception if tree is invalid
+        :return: boolean
+        """
         if self.tree_mapping is None:
             return True
         for agg_node in self.nodes.values():
