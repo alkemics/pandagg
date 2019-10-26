@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from builtins import str as text
-from treelib import Node
+from pandagg.tree import Node
 from pandagg.utils import PrettyNode
 
 
@@ -17,17 +17,18 @@ class Bucket(Node):
         self.level = aggregation_node.agg_name if aggregation_node is not None else self.ROOT_NAME
         self.depth = depth
         self.key = key
+        # level=key
         if self.key is not None:
-            self.path = '%s_%s' % (self.level.replace('.', '_'), self.key)
+            self.name = '%s_%s' % (self.level.replace('.', '_'), self.key)
         else:
-            self.path = self.level.replace('.', '_')
+            self.name = self.level.replace('.', '_')
         pretty = self._str_current_level(
             level=self.level,
             key=self.key,
             depth=self.depth, sep='=',
             value=self.value
         )
-        super(Bucket, self).__init__(data=PrettyNode(pretty=pretty))
+        super(Bucket, self).__init__(tag=self.name, data=PrettyNode(pretty=pretty))
 
     @classmethod
     def _str_current_level(cls, level, key, depth, sep=':', value=None):

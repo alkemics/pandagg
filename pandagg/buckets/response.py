@@ -92,7 +92,7 @@ class ResponseTree(Tree):
 
 class Response(TreeBasedObj):
 
-    _NODE_PATH_ATTR = 'path'
+    _NODE_PATH_ATTR = 'name'
 
     def list_documents(self, **kwargs):
         """Return ES aggregation query to list documents belonging to given bucket."""
