@@ -493,14 +493,14 @@ root_agg
             sample.EXPECTED_NORMALIZED_RESPONSE
         )
 
-    def test_parse_as_dict_rows(self):
+    def test_parse_as_tabular(self):
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
-        rows_iterator = my_agg._serialize_as_dict_rows(sample.ES_AGG_RESPONSE)
-        self.assertTrue(hasattr(rows_iterator, '__iter__'))
-        self.assertEqual(
-            list(rows_iterator),
-            sample.EXPECTED_DICT_ROWS_RESPONSE
-        )
+        index, index_names, values = my_agg._serialize_as_tabular(sample.ES_AGG_RESPONSE)
+        self.assertEqual(index_names, ['classification_type', 'global_metrics.field.name'])
+        self.assertEqual(len(index), len(values))
+        self.assertEqual(len(index), 10)
+        self.assertEqual(index, sample.EXPECTED_TABULAR_INDEX)
+        self.assertEqual(values, sample.EXPECTED_TABULAR_VALUES)
 
     def test_parse_as_dataframe(self):
         my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
@@ -508,7 +508,7 @@ root_agg
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(set(df.index.names), {'classification_type', 'global_metrics.field.name'})
         self.assertEqual(set(df.columns), {'avg_f1_micro', 'avg_nb_classes', 'doc_count'})
-        self.assertEqual(df.shape, (len(sample.EXPECTED_DICT_ROWS_RESPONSE), 3))
+        self.assertEqual(df.shape, (len(sample.EXPECTED_TABULAR_INDEX), 3))
 
     def test_agg_method(self):
         pass

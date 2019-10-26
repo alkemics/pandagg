@@ -365,6 +365,20 @@ class Agg(Tree):
                 pid = nested_node.identifier
         super(Agg, self).add_node(node, pid)
 
+    def validate_tree(self, exc=False):
+        """Validate tree definition against defined mapping.
+        :param exc: if set to True, will raise exception if tree is invalid
+        :return: boolean
+        """
+        if self.tree_mapping is None:
+            return True
+        for agg_node in self.nodes.values():
+            # path for 'nested'/'reverse-nested', field for metric aggregations
+            valid = self.tree_mapping.validate_agg_node(agg_node, exc=exc)
+            if not valid:
+                return False
+        return True
+
     @property
     def deepest_linear_bucket_agg(self):
         """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
@@ -377,6 +391,7 @@ class Agg(Tree):
         A──> B──> C1
              ├──> C2
              └──> C3
+        Deepest linear bucket agg would be B.
 
         We would breakdown ElasticSearch response (tree structure), into a tabular structure of this shape:
                               C1     C2    C3
@@ -397,20 +412,6 @@ class Agg(Tree):
             last_bucket_agg_name = last_agg.agg_name
             children = self.children(last_bucket_agg_name)
         return last_bucket_agg_name
-
-    def validate_tree(self, exc=False):
-        """Validate tree definition against defined mapping.
-        :param exc: if set to True, will raise exception if tree is invalid
-        :return: boolean
-        """
-        if self.tree_mapping is None:
-            return True
-        for agg_node in self.nodes.values():
-            # path for 'nested'/'reverse-nested', field for metric aggregations
-            valid = self.tree_mapping.validate_agg_node(agg_node, exc=exc)
-            if not valid:
-                return False
-        return True
 
     def _parse_group_by(self,
                         response, row=None, agg_name=None, until=None, row_as_tuple=False):
@@ -480,43 +481,63 @@ class Agg(Tree):
                 result['children'] = normalized_children
             yield result
 
-    def _serialize_as_dict_rows(self, aggs_response, row_as_tuple=False, **kwargs):
-        return self._parse_group_by(response=aggs_response, row_as_tuple=row_as_tuple, until=kwargs.get('grouped_by'))
+    def _serialize_as_tabular(self, aggs_response, row_as_tuple=False, grouped_by=None, normalize_children=True):
+        grouped_by = self.deepest_linear_bucket_agg if grouped_by is None else grouped_by
+        if grouped_by not in self:
+            raise ValueError('Cannot group by <%s>, agg node does not exist' % grouped_by)
 
-    def _serialize_as_dataframe(self, aggs, normalize_children=True, **kwargs):
+        index_values = self._parse_group_by(
+            response=aggs_response,
+            row_as_tuple=row_as_tuple,
+            until=grouped_by
+        )
+        if not index_values:
+            return [], [], []
+        index, values = zip(*list(index_values))
+
+        grouping_agg = self[grouped_by]
+        grouping_agg_children = self.children(grouped_by)
+
+        index_names = list(reversed(list(self.rsearch(
+            grouping_agg.agg_name, filter=lambda x: not isinstance(x, UniqueBucketAgg)
+        ))))
+
+        def serialize_columns(row_data):
+            # extract value (usually 'doc_count') of grouping agg node
+            result = {grouping_agg.VALUE_ATTRS[0]: grouping_agg.extract_bucket_value(row_data)}
+            if not grouping_agg_children:
+                return result
+            # extract values of children, one columns per child
+            for child in grouping_agg_children:
+                if not normalize_children:
+                    result[child.agg_name] = row_data[child.agg_name]
+                    continue
+                if child.SINGLE_BUCKET:
+                    result[child.agg_name] = child.extract_bucket_value(row_data[child.agg_name])
+                else:
+                    result[child.agg_name] = next(self._normalize_buckets(row_data, child.agg_name), None)
+            return result
+        serialized_values = list(map(serialize_columns, values))
+        return index, index_names, serialized_values
+
+    def _serialize_as_dataframe(self, aggs, grouped_by=None, normalize_children=True):
         try:
             import pandas as pd
         except ImportError:
             raise ImportError('Using dataframe output format requires to install pandas. Please install "pandas" or '
                               'use another output format.')
-        grouping_agg_name = self.deepest_linear_bucket_agg
-        index_values = list(
-            self._serialize_as_dict_rows(aggs, row_as_tuple=True, grouped_by=grouping_agg_name, **kwargs))
-        if not index_values:
-            return None
-        index, values = zip(*index_values)
-        index_names = reversed(list(self.rsearch(
-            grouping_agg_name, filter=lambda x: not isinstance(x, UniqueBucketAgg)
-        )))
-        index = pd.MultiIndex.from_tuples(index, names=index_names)
-
-        grouping_agg = self[grouping_agg_name]
-        grouping_agg_children = self.children(grouping_agg_name)
-
-        def parse_columns(row_data):
-            result = {grouping_agg.VALUE_ATTRS[0]: grouping_agg.extract_bucket_value(row_data)}
-            if not grouping_agg_children:
-                return result
-            for child in grouping_agg_children:
-                if child.SINGLE_BUCKET:
-                    result[child.agg_name] = child.extract_bucket_value(row_data[child.agg_name])
-                elif normalize_children:
-                    result[child.agg_name] = next(self._normalize_buckets(row_data, child.agg_name), None)
-                else:
-                    result[child.agg_name] = row_data[child.agg_name]
-            return result
-
-        return pd.DataFrame(index=index, data=map(parse_columns, values))
+        index, index_names, values = self._serialize_as_tabular(
+            aggs_response=aggs,
+            row_as_tuple=True,
+            grouped_by=grouped_by,
+            normalize_children=normalize_children
+        )
+        if not index:
+            return pd.DataFrame()
+        return pd.DataFrame(
+            index=pd.MultiIndex.from_tuples(index, names=index_names),
+            data=values
+        )
 
     def _serialize_as_normalized(self, aggs):
         children = []
@@ -542,7 +563,7 @@ class Agg(Tree):
         elif output == 'normalized_tree':
             return self._serialize_as_normalized(aggs)
         elif output == 'dict_rows':
-            return self._serialize_as_dict_rows(aggs, **kwargs)
+            return self._serialize_as_tabular(aggs, **kwargs)
         elif output == 'dataframe':
             return self._serialize_as_dataframe(aggs, **kwargs)
         else:
