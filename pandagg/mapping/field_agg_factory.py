@@ -56,11 +56,14 @@ def _operate(self, agg_node, index, execute, output, query):
         for nested in nesteds:
             raw_response = raw_response[nested]
         result = list(agg_node.extract_buckets(raw_response[agg_node.agg_name]))
-        if output != 'dataframe':
+        if output is None:
             return result
-        keys = map(itemgetter(0), result)
-        raw_values = map(itemgetter(1), result)
-        return pd.DataFrame(index=keys, data=raw_values)
+        elif output == 'dataframe':
+            keys = map(itemgetter(0), result)
+            raw_values = map(itemgetter(1), result)
+            return pd.DataFrame(index=keys, data=raw_values)
+        else:
+            raise NotImplementedError('Unkown <%s> output.' % output)
     return aggregation
 
 

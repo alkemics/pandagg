@@ -151,12 +151,12 @@ class AggNodesTestCase(TestCase):
                         "should": [
                             {
                                 "term": {
-                                    "some_path": 2
+                                    "some_path": 1
                                 }
                             },
                             {
                                 "term": {
-                                    "some_path": 1
+                                    "some_path": 2
                                 }
                             }
                         ]

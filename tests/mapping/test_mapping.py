@@ -7,7 +7,7 @@ from mock import Mock
 from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.mapping.field_agg_factory import field_classes_per_name
 from pandagg.mapping.mapping import Mapping, MappingTree, MappingNode, ClientBoundMapping
-from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
+from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL, EXPECTED_MAPPING_TREE_REPR
 
 
 class MappingTreeTestCase(TestCase):
@@ -35,48 +35,7 @@ class MappingTreeTestCase(TestCase):
     def test_parse_tree_from_dict(self):
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
 
-        self.assertEqual(
-            mapping_tree.__str__(),
-            """<MappingTree>
-classification_report                                       
-├── classification_type                                     String
-├── date                                                    Date
-├── global_metrics                                         {Object}
-│   ├── dataset                                            {Object}
-│   │   ├── nb_classes                                      Integer
-│   │   └── support_train                                   Integer
-│   ├── field                                              {Object}
-│   │   ├── id                                              Integer
-│   │   ├── name                                            String
-│   │   │   └── raw                                       ~ String
-│   │   └── type                                            String
-│   └── performance                                        {Object}
-│       └── test                                           {Object}
-│           ├── macro                                      {Object}
-│           │   ├── f1_score                                Float
-│           │   ├── precision                               Float
-│           │   └── recall                                  Float
-│           └── micro                                      {Object}
-│               ├── f1_score                                Float
-│               ├── precision                               Float
-│               └── recall                                  Float
-├── id                                                      String
-├── language                                                String
-├── local_metrics                                          [Nested]
-│   ├── dataset                                            {Object}
-│   │   ├── support_test                                    Integer
-│   │   └── support_train                                   Integer
-│   ├── field_class                                        {Object}
-│   │   ├── id                                              Integer
-│   │   └── name                                            String
-│   └── performance                                        {Object}
-│       └── test                                           {Object}
-│           ├── f1_score                                    Float
-│           ├── precision                                   Float
-│           └── recall                                      Float
-└── workflow                                                String
-"""
-        )
+        self.assertEqual(mapping_tree.__str__(), EXPECTED_MAPPING_TREE_REPR)
 
     def test_nesteds_applied_at_field(self):
         mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)

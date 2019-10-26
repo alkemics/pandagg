@@ -11,6 +11,9 @@
 
 from __future__ import unicode_literals
 import re
+from operator import itemgetter
+
+from six import iteritems
 
 from pandagg.utils import bool_if_required
 from pandagg.mapping.types import NUMERIC_TYPES
@@ -221,7 +224,14 @@ class Filters(BucketAggNode):
             return self.filters[key]
         if self.other_bucket:
             if key == self.DEFAULT_OTHER_KEY or key == self.other_bucket_key:
-                return {'bool': {'must_not': bool_if_required(self.filters.values(), operator='should')}}
+                # necessary sort for python2/python3 identical output order in tests
+                key_filter_tuples = [(k, filter_) for k, filter_ in iteritems(self.filters)]
+                return {'bool': {
+                    'must_not': bool_if_required(
+                        list(map(itemgetter(1), sorted(key_filter_tuples, key=itemgetter(0)))),
+                        operator='should'
+                    )}
+                }
         raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.agg_name))
 
     @staticmethod

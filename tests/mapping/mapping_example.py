@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 MAPPING_NAME = 'classification_report'
 MAPPING_DETAIL = {
     "dynamic": False,
@@ -148,3 +151,45 @@ MAPPING_DETAIL = {
         }
     }
 }
+
+EXPECTED_MAPPING_REPR = """classification_report                                       
+├── classification_type                                     String
+├── date                                                    Date
+├── global_metrics                                         {Object}
+│   ├── dataset                                            {Object}
+│   │   ├── nb_classes                                      Integer
+│   │   └── support_train                                   Integer
+│   ├── field                                              {Object}
+│   │   ├── id                                              Integer
+│   │   ├── name                                            String
+│   │   │   └── raw                                       ~ String
+│   │   └── type                                            String
+│   └── performance                                        {Object}
+│       └── test                                           {Object}
+│           ├── macro                                      {Object}
+│           │   ├── f1_score                                Float
+│           │   ├── precision                               Float
+│           │   └── recall                                  Float
+│           └── micro                                      {Object}
+│               ├── f1_score                                Float
+│               ├── precision                               Float
+│               └── recall                                  Float
+├── id                                                      String
+├── language                                                String
+├── local_metrics                                          [Nested]
+│   ├── dataset                                            {Object}
+│   │   ├── support_test                                    Integer
+│   │   └── support_train                                   Integer
+│   ├── field_class                                        {Object}
+│   │   ├── id                                              Integer
+│   │   └── name                                            String
+│   └── performance                                        {Object}
+│       └── test                                           {Object}
+│           ├── f1_score                                    Float
+│           ├── precision                                   Float
+│           └── recall                                      Float
+└── workflow                                                String
+"""
+
+EXPECTED_MAPPING_TREE_REPR = """<MappingTree>\n%s""" % EXPECTED_MAPPING_REPR
+EXPECTED_CLIENT_BOUND_MAPPING_REPR = """<ClientBoundMapping>\n%s""" % EXPECTED_MAPPING_REPR
