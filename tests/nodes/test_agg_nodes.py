@@ -133,6 +133,40 @@ class AggNodesTestCase(TestCase):
         self.assertEqual(Filters('name', None).extract_bucket_value({'doc_count': 1}), 1)
         self.assertEqual(Filters('name', None).extract_bucket_value({'doc_count': 2}), 2)
 
+        # test get_filter
+        filters_agg = Filters(
+            agg_name='some_agg',
+            filters={
+                'first_bucket': {'term': {'some_path': 1}},
+                'second_bucket': {'term': {'some_path': 2}}
+            },
+            other_bucket=True,
+            other_bucket_key='neither_one_nor_two'
+        )
+        self.assertEqual(filters_agg.get_filter('first_bucket'), {'term': {'some_path': 1}})
+        expected_others_filter = {
+            "bool": {
+                "must_not": {
+                    "bool": {
+                        "should": [
+                            {
+                                "term": {
+                                    "some_path": 2
+                                }
+                            },
+                            {
+                                "term": {
+                                    "some_path": 1
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        self.assertEqual(filters_agg.get_filter('_other_'), expected_others_filter)
+        self.assertEqual(filters_agg.get_filter('neither_one_nor_two'), expected_others_filter)
+
     def test_metric_aggs(self):
         # example for Average metric aggregation
         es_raw_response = {
