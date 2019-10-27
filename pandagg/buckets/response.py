@@ -52,7 +52,7 @@ class ResponseTree(Tree):
         agg_raw_response = raw_response.get(agg_node.name)
         for key, raw_value in agg_node.extract_buckets(agg_raw_response):
             bucket = Bucket(
-                aggregation_node=agg_node,
+                level=agg_node.name,
                 key=key,
                 value=agg_node.extract_bucket_value(raw_value),
                 depth=depth + 1

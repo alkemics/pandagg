@@ -10,33 +10,40 @@ class Bucket(Node):
     REPR_SIZE = 60
     ROOT_NAME = 'root'
 
-    def __init__(self, depth, value, key=None, aggregation_node=None):
-        self.aggregation_node = aggregation_node
+    def __init__(self, depth, value, key=None, level=None):
         self.value = value
-        self.level = aggregation_node.name if aggregation_node is not None else self.ROOT_NAME
+        self.level = level if level is not None else self.ROOT_NAME
         self.depth = depth
         self.key = key
-        # level=key
-        if self.key is not None:
-            self.attr_name = '%s_%s' % (self.level.replace('.', '_'), self.key)
-            display_name = '%s=%s' % (self.level, self.key)
-        else:
-            self.attr_name = self.level.replace('.', '_')
-            display_name = self.level
-        pretty = self._str_current_level(
-            level=self.level,
-            key=self.key,
-            depth=self.depth, sep='=',
-            value=self.value
-        )
-        super(Bucket, self).__init__(tag=display_name, data=PrettyNode(pretty=pretty))
 
-    @classmethod
-    def _str_current_level(cls, level, key, depth, sep=':', value=None):
-        s = level
-        if key is not None:
-            s = '%s%s%s' % (s, sep, key)
-        if value is not None:
-            pad = max(cls.REPR_SIZE - 4 * depth - len(s) - len(str(value)), 4)
-            s = s + ' ' * pad + str(value)
+        super(Bucket, self).__init__(
+            tag=self.display_name,
+            data=PrettyNode(pretty=self.display_name_with_value)
+        )
+
+    @property
+    def attr_name(self):
+        """Determine under which attribute name the bucket will be available in response tree.
+        Dots are replaced by `_` characters so that they don't prevent from accessing as attribute.
+
+        Resulting attribute unfit for python attribute name syntax is still possible and will be accessible through
+        item access (dict like), see more in 'utils.Obj' for more details.
+        """
+        if self.key is not None:
+            return '%s_%s' % (self.level.replace('.', '_'), self.key)
+        return self.level.replace('.', '_')
+
+    @property
+    def display_name(self):
+        if self.key is not None:
+            return '%s=%s' % (self.level, self.key)
+        return self.level
+
+    @property
+    def display_name_with_value(self):
+        # Determine how this node will be represented in tree representation.
+        s = self.display_name
+        if self.value is not None:
+            pad = max(self.REPR_SIZE - 4 * self.depth - len(s) - len(str(self.value)), 4)
+            s = s + ' ' * pad + str(self.value)
         return s
