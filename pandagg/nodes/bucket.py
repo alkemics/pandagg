@@ -25,17 +25,13 @@ class Global(UniqueBucketAgg):
     AGG_TYPE = 'global'
     VALUE_ATTRS = ['doc_count']
 
-    def __init__(self, agg_name, meta=None, aggs=None):
+    def __init__(self, name, meta=None, aggs=None):
         super(Global, self).__init__(
-            agg_name=agg_name,
+            name=name,
             agg_body={},
             meta=meta,
             aggs=aggs
         )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return {}
 
 
 class Filter(UniqueBucketAgg):
@@ -43,28 +39,35 @@ class Filter(UniqueBucketAgg):
     AGG_TYPE = 'filter'
     VALUE_ATTRS = ['doc_count']
 
-    def __init__(self, agg_name, filter_, meta=None, aggs=None):
-        self.filter_ = filter_
+    def __init__(self, name, filter_, meta=None, aggs=None, **body):
+        self.filter = filter_
         super(Filter, self).__init__(
-            agg_name=agg_name,
-            agg_body=filter_,
+            name=name,
+            filter=filter_,
             meta=meta,
-            aggs=aggs
+            aggs=aggs,
+            **body
         )
 
     def get_filter(self, key):
-        return self.filter_
+        return self.filter
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return {'filter_': agg_body}
+    @classmethod
+    def deserialize(cls, name, **params):
+        # avoid modifying inplace
+        params = params.copy()
+        # special case for filter agg, we don't want to shadow filter keyword, so Filter agg has instead a `filter_`
+        # keyword that differs from ElasticSearch syntax
+        if 'filter' in params:
+            params['filter_'] = params.pop('filter')
+        return cls(name=name, **params)
 
 
 class MatchAll(Filter):
 
-    def __init__(self, agg_name, meta=None, aggs=None):
+    def __init__(self, name, meta=None, aggs=None):
         super(MatchAll, self).__init__(
-            agg_name=agg_name,
+            name=name,
             filter_={'match_all': {}},
             meta=meta,
             aggs=aggs
@@ -81,20 +84,14 @@ class Nested(UniqueBucketAgg):
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['nested']
 
-    def __init__(self, agg_name, path, meta=None, aggs=None):
+    def __init__(self, name, path, meta=None, aggs=None):
         self.path = path
         super(Nested, self).__init__(
-            agg_name=agg_name,
-            agg_body={"path": path},
+            name=name,
+            path=path,
             meta=meta,
             aggs=aggs
         )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        assert 'path' in agg_body
-        return {'path': agg_body['path']}
 
 
 class ReverseNested(UniqueBucketAgg):
@@ -103,21 +100,17 @@ class ReverseNested(UniqueBucketAgg):
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['nested']
 
-    def __init__(self, agg_name, path=None, meta=None, aggs=None):
+    def __init__(self, name, path=None, meta=None, aggs=None, **body):
         self.path = path
+        body_kwargs = dict(body)
+        if path:
+            body_kwargs['path'] = path
         super(ReverseNested, self).__init__(
-            agg_name=agg_name,
-            agg_body={"path": path} if path else {},
+            name=name,
             meta=meta,
-            aggs=aggs
+            aggs=aggs,
+            **body_kwargs
         )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        if 'path' in agg_body:
-            return {'path': agg_body['path']}
-        return {}
 
 
 class Missing(UniqueBucketAgg):
@@ -125,14 +118,14 @@ class Missing(UniqueBucketAgg):
     VALUE_ATTRS = ['doc_count']
     BLACKLISTED_MAPPING_TYPES = []
 
-    def __init__(self, agg_name, field, meta=None):
-        agg_body = {'field': field}
-        super(UniqueBucketAgg, self).__init__(agg_name=agg_name, agg_body=agg_body, meta=meta)
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert 'field' in agg_body
-        return agg_body
+    def __init__(self, name, field, meta=None, aggs=None, **body):
+        super(UniqueBucketAgg, self).__init__(
+            name=name,
+            field=field,
+            meta=meta,
+            aggs=aggs,
+            **body
+        )
 
     def get_filter(self, key):
         return {'bool': {'must_not': {'exists': {'field': self.field}}}}
@@ -144,40 +137,25 @@ class Terms(ListBucketAgg):
     AGG_TYPE = 'terms'
     VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
     BLACKLISTED_MAPPING_TYPES = []
-    DEFAULT_SIZE = 20
 
-    def __init__(self, agg_name, field, meta=None, missing=None, size=None, aggs=None):
+    def __init__(self, name, field, missing=None, size=None, aggs=None, meta=None, **body):
         self.field = field
         self.missing = missing
+        self.size = size
 
-        agg_body = {
-            "field": field,
-            "size": self.DEFAULT_SIZE if size is None else size
-        }
+        body_kwargs = dict(body)
         if missing is not None:
-            agg_body["missing"] = missing
+            body_kwargs["missing"] = missing
+        if size is not None:
+            body_kwargs["size"] = size
 
         super(Terms, self).__init__(
-            agg_name=agg_name,
-            agg_body=agg_body,
+            name=name,
+            field=field,
             meta=meta,
-            aggs=aggs
+            aggs=aggs,
+            **body_kwargs
         )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        assert 'field' in agg_body
-        kwargs = {
-            'field': agg_body['field']
-        }
-        if 'missing' in agg_body:
-            kwargs['missing'] = agg_body['missing']
-        if 'missing' in agg_body:
-            kwargs['missing'] = agg_body['missing']
-        if 'size' in agg_body:
-            kwargs['size'] = agg_body['size']
-        return kwargs
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""
@@ -192,25 +170,22 @@ class Filters(BucketAggNode):
     VALUE_ATTRS = ['doc_count']
     DEFAULT_OTHER_KEY = '_other_'
 
-    def __init__(self, agg_name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **kwargs):
+    def __init__(self, name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **body):
         self.filters = filters
         self.other_bucket = other_bucket
         self.other_bucket_key = other_bucket_key
-        body = {
-            "filters": filters,
-            "other_bucket": other_bucket
-        }
-        if other_bucket_key is not None:
-            body['other_bucket_key'] = other_bucket_key
-
-        if kwargs:
-            body.update(kwargs)
+        body_kwargs = dict(body)
+        if other_bucket:
+            body_kwargs['other_bucket'] = other_bucket
+        if other_bucket_key:
+            body_kwargs['other_bucket_key'] = other_bucket_key
 
         super(Filters, self).__init__(
-            agg_name=agg_name,
-            agg_body=body,
+            name=name,
+            filters=filters,
             meta=meta,
-            aggs=aggs
+            aggs=aggs,
+            **body_kwargs
         )
 
     def extract_buckets(self, response_value):
@@ -232,13 +207,7 @@ class Filters(BucketAggNode):
                         operator='should'
                     )}
                 }
-        raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.agg_name))
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        assert 'filters' in agg_body
-        return {'filters': agg_body['filters']}
+        raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.name))
 
 
 class Histogram(ListBucketAgg):
@@ -247,33 +216,34 @@ class Histogram(ListBucketAgg):
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
-    def __init__(self, agg_name, field, interval, hist_format=None, meta=None, aggs=None):
+    def __init__(self, name, field, interval, format_=None, meta=None, aggs=None, **body):
         self.field = field
         self.interval = interval
-        self.hist_format = hist_format
-        body = {"field": field, "interval": interval}
-        if hist_format:
-            body['format'] = hist_format
+        self.hist_format = format_
+        body_kwargs = dict(body)
+        if format_:
+            body_kwargs['format'] = format_
         super(Histogram, self).__init__(
-            agg_name=agg_name,
-            agg_body=body,
+            name=name,
+            field=field,
+            interval=interval,
             meta=meta,
-            aggs=aggs
+            aggs=aggs,
+            **body_kwargs
         )
 
     def get_filter(self, key):
         # TODO
         return None
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        assert isinstance(agg_body, dict)
-        assert 'field' in agg_body
-        assert 'interval' in agg_body
-        kwargs = {"field": agg_body['field'], "interval": agg_body['interval']}
-        if 'format' in agg_body:
-            kwargs['hist_format'] = agg_body['format']
-        return kwargs
+    @classmethod
+    def deserialize(cls, name, **params):
+        # avoid modifying inplace
+        params = params.copy()
+        # special case for format_ keyword, we don't want to shadow `format` keyword
+        if 'format' in params:
+            params['format_'] = params.pop('format')
+        return cls(name=name, **params)
 
 
 class DateHistogram(Histogram):
@@ -283,18 +253,19 @@ class DateHistogram(Histogram):
     ALLOWED_INTERVAL_UNITS = ('y', 'q', 'M', 'w', 'd')  # not under a day to avoid breaking ES ('h', 'm', 's')
 
     def __init__(self,
-                 agg_name, field, interval, meta=None, date_format="yyyy-MM-dd", use_key_as_string=True, aggs=None):
+                 name, field, interval, meta=None, format_="yyyy-MM-dd", key_as_string=True, aggs=None, **body):
         self._validate_interval(interval)
+        if key_as_string:
+            self.KEY_PATH = 'key_as_string'
         super(DateHistogram, self).__init__(
-            agg_name=agg_name,
+            name=name,
             field=field,
             interval=interval,
-            hist_format=date_format,
+            format_=format_,
             meta=meta,
-            aggs=aggs
+            aggs=aggs,
+            **body
         )
-        if use_key_as_string:
-            self.KEY_PATH = 'key_as_string'
 
     @classmethod
     def _validate_interval(cls, interval):
@@ -304,31 +275,32 @@ class DateHistogram(Histogram):
         if not pattern.match(interval):
             raise ValueError('Wrong interval pattern %s for %s.' % (interval, cls.__name__))
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        kwargs = Histogram.agg_body_to_init_kwargs(agg_body)
-        if 'hist_format' in kwargs:
-            kwargs['date_format'] = kwargs.pop('hist_format')
-        return kwargs
-
 
 class Range(BucketAggNode):
     AGG_TYPE = 'range'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     SINGLE_BUCKET = False
-    KEY_SUFFIX = None
     KEY_SEP = '-'
 
-    def __init__(self, agg_name, field, ranges, meta=None, keyed=False, aggs=None, **kwargs):
-        self.keyed = keyed
-        agg_body = kwargs
-        agg_body['field'] = field
-        agg_body['ranges'] = ranges
-        if keyed:
-            agg_body['keyed'] = keyed
+    def __init__(self, name, field, ranges, keyed=False, meta=None, aggs=None, **body):
         self.field = field
-        super(Range, self).__init__(agg_name=agg_name, agg_body=kwargs, meta=meta, aggs=aggs)
+        self.ranges = ranges
+        self.keyed = keyed
+        body_kwargs = dict(body)
+        if keyed:
+            self.KEY_SUFFIX = '_as_string'
+            body_kwargs['keyed'] = keyed
+        else:
+            self.KEY_SUFFIX = None
+        super(Range, self).__init__(
+            name=name,
+            field=field,
+            ranges=ranges,
+            meta=meta,
+            aggs=aggs,
+            **body_kwargs
+        )
 
     @property
     def from_key(self):
@@ -368,10 +340,6 @@ class Range(BucketAggNode):
             inner['lt'] = to_
         return {'range': {self.field: inner}}
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return agg_body
-
 
 class DateRange(Range):
     AGG_TYPE = 'date_range'
@@ -381,11 +349,16 @@ class DateRange(Range):
     # cannot use range '-' separator since some keys contain it
     KEY_SEP = '::'
 
-    def __init__(self, agg_name, field, meta=None, key_as_string=True, aggs=None, **kwargs):
+    def __init__(self, name, field, key_as_string=True, aggs=None, meta=None, **body):
         self.key_as_string = key_as_string
-        if key_as_string:
-            self.KEY_SUFFIX = '_as_string'
-        super(DateRange, self).__init__(agg_name=agg_name, field=field, agg_body=kwargs, meta=meta, aggs=aggs)
+        super(DateRange, self).__init__(
+            name=name,
+            field=field,
+            keyed=True,
+            meta=meta,
+            aggs=aggs,
+            **body
+        )
 
 
 BUCKET_AGGS = {

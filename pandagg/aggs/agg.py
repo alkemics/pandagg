@@ -88,8 +88,7 @@ class Agg(Tree):
         if agg_type not in PUBLIC_AGGS.keys():
             raise NotImplementedError('Unknown aggregation type <%s>' % agg_type)
         agg_class = PUBLIC_AGGS[agg_type]
-        kwargs = agg_class.agg_body_to_init_kwargs(agg_body)
-        return agg_class(agg_name=agg_name, meta=meta, **kwargs)
+        return agg_class.deserialize(name=agg_name, meta=meta, **agg_body)
 
     def _build_tree_from_node(self, agg_node, pid=None):
         self.add_node(agg_node, pid)
@@ -204,7 +203,7 @@ class Agg(Tree):
 
     def _interpret_agg(self, insert_below, element, **kwargs):
         if isinstance(element, string_types):
-            node = Terms(agg_name=element, field=element, size=kwargs.get('default_size', Terms.DEFAULT_SIZE))
+            node = Terms(name=element, field=element, size=kwargs.get('default_size'))
             self.add_node(node, pid=insert_below)
             return self
         if isinstance(element, dict):
@@ -234,14 +233,14 @@ class Agg(Tree):
         if depth is None or depth > 0:
             if depth is not None:
                 depth -= 1
-            for child_node in self.children(node.agg_name):
-                children_queries[child_node.agg_name] = self.query_dict(
-                    from_=child_node.agg_name, depth=depth, with_name=False)
+            for child_node in self.children(node.name):
+                children_queries[child_node.name] = self.query_dict(
+                    from_=child_node.name, depth=depth, with_name=False)
         node_query_dict = node.query_dict()
         if children_queries:
             node_query_dict['aggs'] = children_queries
         if with_name:
-            return {node.agg_name: node_query_dict}
+            return {node.name: node_query_dict}
         return node_query_dict
 
     def applied_nested_path_at_node(self, nid):
@@ -295,7 +294,7 @@ class Agg(Tree):
             if child_reverse_nested:
                 return super(Agg, self).paste(child_reverse_nested.identifier, new_tree, deep)
             else:
-                rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % nid)
+                rv_node = ReverseNested(name='reverse_nested_below_%s' % nid)
                 super(Agg, self).add_node(rv_node, nid)
                 return super(Agg, self).paste(rv_node.identifier, new_tree, deep)
 
@@ -311,7 +310,7 @@ class Agg(Tree):
                 if child_nested:
                     pid = child_nested.identifier
                     continue
-                nested_node = Nested(agg_name='nested_below_%s' % pid, path=nested_lvl)
+                nested_node = Nested(name='nested_below_%s' % pid, path=nested_lvl)
                 super(Agg, self).add_node(nested_node, pid)
                 pid = nested_node.identifier
         super(Agg, self).paste(pid, new_tree, deep)
@@ -344,7 +343,7 @@ class Agg(Tree):
             if child_reverse_nested:
                 return super(Agg, self).add_node(node, child_reverse_nested.identifier)
             else:
-                rv_node = ReverseNested(agg_name='reverse_nested_below_%s' % pid)
+                rv_node = ReverseNested(name='reverse_nested_below_%s' % pid)
                 super(Agg, self).add_node(rv_node, pid)
                 return super(Agg, self).add_node(node, rv_node.identifier)
 
@@ -360,7 +359,7 @@ class Agg(Tree):
                 if child_nested:
                     pid = child_nested.identifier
                     continue
-                nested_node = Nested(agg_name='nested_below_%s' % pid, path=nested_lvl)
+                nested_node = Nested(name='nested_below_%s' % pid, path=nested_lvl)
                 super(Agg, self).add_node(nested_node, pid)
                 pid = nested_node.identifier
         super(Agg, self).add_node(node, pid)
@@ -392,7 +391,7 @@ class Agg(Tree):
             last_agg = children[0]
             if not isinstance(last_agg, BucketAggNode):
                 break
-            last_bucket_agg_name = last_agg.agg_name
+            last_bucket_agg_name = last_agg.name
             children = self.children(last_bucket_agg_name)
         return last_bucket_agg_name
 
@@ -408,7 +407,7 @@ class Agg(Tree):
         if agg_name in response:
             agg_node = self[agg_name]
             for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
-                child_name = next((child.agg_name for child in self.children(agg_name)), None)
+                child_name = next((child.name for child in self.children(agg_name)), None)
                 sub_row = copy.deepcopy(row)
                 # aggs generating a single bucket don't require to be listed in grouping keys
                 if not isinstance(agg_node, UniqueBucketAgg):
@@ -445,7 +444,7 @@ class Agg(Tree):
         """
         agg_name = agg_name or self.root
         agg_node = self[agg_name]
-        agg_children = self.children(agg_node.agg_name)
+        agg_children = self.children(agg_node.name)
         for key, raw_bucket in agg_node.extract_buckets(agg_response[agg_name]):
             result = {
                 "level": agg_name,
@@ -456,7 +455,7 @@ class Agg(Tree):
                 normalized_child
                 for child in agg_children
                 for normalized_child in self._normalize_buckets(
-                    agg_name=child.agg_name,
+                    agg_name=child.name,
                     agg_response=raw_bucket
                 )
             ]
@@ -504,7 +503,7 @@ class Agg(Tree):
         grouping_agg_children = self.children(grouped_by)
 
         index_names = list(reversed(list(self.rsearch(
-            grouping_agg.agg_name, filter=lambda x: not isinstance(x, UniqueBucketAgg)
+            grouping_agg.name, filter=lambda x: not isinstance(x, UniqueBucketAgg)
         ))))
 
         def serialize_columns(row_data):
@@ -515,12 +514,12 @@ class Agg(Tree):
             # extract values of children, one columns per child
             for child in grouping_agg_children:
                 if not normalize_children:
-                    result[child.agg_name] = row_data[child.agg_name]
+                    result[child.name] = row_data[child.name]
                     continue
                 if child.SINGLE_BUCKET:
-                    result[child.agg_name] = child.extract_bucket_value(row_data[child.agg_name])
+                    result[child.name] = child.extract_bucket_value(row_data[child.name])
                 else:
-                    result[child.agg_name] = next(self._normalize_buckets(row_data, child.agg_name), None)
+                    result[child.name] = next(self._normalize_buckets(row_data, child.name), None)
             return result
         serialized_values = list(map(serialize_columns, values))
         return index, index_names, serialized_values

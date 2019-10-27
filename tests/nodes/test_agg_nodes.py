@@ -28,7 +28,7 @@ class AggNodesTestCase(TestCase):
             def extract_buckets(self, response_value):
                 yield (None, response_value)
 
-        node = CustomAgg(agg_name='custom_agg_name', agg_body={'custom_body': {'stuff': 2}})
+        node = CustomAgg(name='custom_agg_name', custom_body={'stuff': 2})
         self.assertEqual(
             node.query_dict(),
             {
@@ -40,7 +40,7 @@ class AggNodesTestCase(TestCase):
             }
         )
 
-        node = CustomAgg(agg_name='custom_agg_name', agg_body={'custom_body': {'stuff': 2}}, meta='meta_stuff')
+        node = CustomAgg(name='custom_agg_name', custom_body= {'stuff': 2}, meta='meta_stuff')
         self.assertEqual(
             node.query_dict(),
             {
@@ -135,7 +135,7 @@ class AggNodesTestCase(TestCase):
 
         # test get_filter
         filters_agg = Filters(
-            agg_name='some_agg',
+            name='some_agg',
             filters={
                 'first_bucket': {'term': {'some_path': 1}},
                 'second_bucket': {'term': {'some_path': 2}}
@@ -210,10 +210,10 @@ class AggNodesTestCase(TestCase):
         }
 
         buckets_iterator = DateHistogram(
-            agg_name='name',
+            name='name',
             field='field',
             interval='1w',
-            use_key_as_string=True
+            key_as_string=True
         ).extract_buckets(es_raw_response)
 
         self.assertTrue(hasattr(buckets_iterator, '__iter__'))
@@ -229,10 +229,10 @@ class AggNodesTestCase(TestCase):
 
         # not using key as string (regular key)
         buckets_iterator = DateHistogram(
-            agg_name='name',
+            name='name',
             field='field',
             interval='1w',
-            use_key_as_string=False
+            key_as_string=False
         ).extract_buckets(es_raw_response)
 
         self.assertTrue(hasattr(buckets_iterator, '__iter__'))

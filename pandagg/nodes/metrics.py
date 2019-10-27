@@ -12,13 +12,6 @@ class TopHits(MetricAgg):
     VALUE_ATTRS = ['hits']
     AGG_TYPE = 'top_hits'
 
-    def __init__(self, agg_name, meta=None, **agg_body_kwargs):
-        super(TopHits, self).__init__(agg_name=agg_name, meta=meta, agg_body=agg_body_kwargs)
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return agg_body
-
 
 class Avg(FieldMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
@@ -42,14 +35,14 @@ class Cardinality(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'cardinality'
 
-    def __init__(self, agg_name, field, meta=None, precision_threshold=1000):
+    def __init__(self, name, field, meta=None, precision_threshold=1000, **body):
         # precision_threshold: the higher the more accurate but longer to proceed (default ES: 1)
-        body_kwargs = {}
+        body_kwargs = dict(body)
         if precision_threshold is not None:
             body_kwargs['precision_threshold'] = precision_threshold
 
         super(Cardinality, self).__init__(
-            agg_name=agg_name,
+            name=name,
             field=field,
             meta=meta,
             **body_kwargs
@@ -93,11 +86,8 @@ class PercentileRanks(FieldMetricAgg):
     VALUE_ATTRS = ['values']
     AGG_TYPE = 'percentile_ranks'
 
-    def __init__(self, agg_name, field, values=None, meta=None):
-        agg_body = {}
-        if values:
-            agg_body['values'] = values
-        super(PercentileRanks, self).__init__(agg_name=agg_name, field=field, meta=meta, **agg_body)
+    def __init__(self, name, field, values, meta=None, **body):
+        super(PercentileRanks, self).__init__(name=name, field=field, meta=meta, values=values, **body)
 
 
 class ValueCount(FieldMetricAgg):

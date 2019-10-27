@@ -29,7 +29,7 @@ def field_klass_init(self, mapping_tree, client, field, index_name):
 def aggregator_factory(agg_klass):
     def aggregator(self, index=None, execute=True, output='dataframe', query=None, **kwargs):
         node = agg_klass(
-            agg_name='%s_agg' % agg_klass.AGG_TYPE,
+            name='%s_agg' % agg_klass.AGG_TYPE,
             field=self._field,
             **kwargs
         )
@@ -40,7 +40,7 @@ def aggregator_factory(agg_klass):
 
 def _operate(self, agg_node, index, execute, output, query):
     index = index or self._index_name
-    aggregation = {agg_node.agg_name: agg_node.query_dict()}
+    aggregation = {agg_node.name: agg_node.query_dict()}
     nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
     for nested in nesteds:
         aggregation = {
@@ -57,7 +57,7 @@ def _operate(self, agg_node, index, execute, output, query):
         raw_response = self._client.search(index=index, body=body)['aggregations']
         for nested in nesteds:
             raw_response = raw_response[nested]
-        result = list(agg_node.extract_buckets(raw_response[agg_node.agg_name]))
+        result = list(agg_node.extract_buckets(raw_response[agg_node.name]))
         if output is None:
             return result
         elif output == 'dataframe':

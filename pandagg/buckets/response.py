@@ -49,7 +49,7 @@ class ResponseTree(Tree):
         :param pid: parent node identifier
         :param depth: depth in tree
         """
-        agg_raw_response = raw_response.get(agg_node.agg_name)
+        agg_raw_response = raw_response.get(agg_node.name)
         for key, raw_value in agg_node.extract_buckets(agg_raw_response):
             bucket = Bucket(
                 aggregation_node=agg_node,
@@ -58,7 +58,7 @@ class ResponseTree(Tree):
                 depth=depth + 1
             )
             self.add_node(bucket, pid)
-            for child in self.agg_tree.children(agg_node.agg_name):
+            for child in self.agg_tree.children(agg_node.name):
                 self._parse_node_with_children(
                     agg_node=child,
                     raw_response=raw_value,

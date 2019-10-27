@@ -13,7 +13,7 @@ class Bucket(Node):
     def __init__(self, depth, value, key=None, aggregation_node=None):
         self.aggregation_node = aggregation_node
         self.value = value
-        self.level = aggregation_node.agg_name if aggregation_node is not None else self.ROOT_NAME
+        self.level = aggregation_node.name if aggregation_node is not None else self.ROOT_NAME
         self.depth = depth
         self.key = key
         # level=key

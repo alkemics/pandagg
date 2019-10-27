@@ -34,14 +34,12 @@ EXPECTED_AGG_QUERY = {
                     }
                 },
                 "terms": {
-                    "field": "global_metrics.field.name",
-                    "size": 20
+                    "field": "global_metrics.field.name"
                 }
             }
         },
         "terms": {
-            "field": "classification_type",
-            "size": 20
+            "field": "classification_type"
         }
     }
 }
@@ -58,11 +56,11 @@ def get_wrapper_declared_agg():
 
 def get_node_hierarchy():
     return Terms(
-        agg_name='classification_type',
+        name='classification_type',
         field='classification_type',
         aggs=[
             Terms(
-                agg_name='global_metrics.field.name',
+                name='global_metrics.field.name',
                 field='global_metrics.field.name',
                 aggs=[
                     Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),

@@ -6,7 +6,7 @@ from builtins import str as text
 
 import json
 
-from treelib import Node
+from pandagg.tree import Node
 
 
 class AggNode(Node):
@@ -24,10 +24,10 @@ class AggNode(Node):
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None
 
-    def __init__(self, agg_name, agg_body, meta=None):
-        self.agg_name = agg_name
-        super(AggNode, self).__init__(identifier=self.agg_name)
-        self.agg_body = agg_body
+    def __init__(self, name, meta=None, **body):
+        self.name = name
+        super(AggNode, self).__init__(identifier=self.name)
+        self.body = body
         self.meta = meta
 
     @classmethod
@@ -57,7 +57,7 @@ class AggNode(Node):
             [,"meta" : {  [<meta_data_body>] } ]?
         }
         """
-        aggs = {self.AGG_TYPE: self.agg_body}
+        aggs = {self.AGG_TYPE: self.body}
         if self.meta:
             aggs["meta"] = self.meta
         return aggs
@@ -79,19 +79,22 @@ class AggNode(Node):
             return {attr_: response.get(attr_) for attr_ in attrs}
         return response.get(attrs[0])
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        """Method used to reconstruct aggregation classes from json agg_body declaration. All required kwargs except
-        `agg_name` and `meta` must be reconstructed.
-        """
-        raise NotImplementedError()
+    @classmethod
+    def deserialize(cls, name, **params):
+        return cls(name=name, **params)
 
     def __str__(self):
         return "<{class_}, name={name}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
             type=text(self.AGG_TYPE),
-            name=text(self.agg_name), body=json.dumps(self.agg_body)
+            name=text(self.name), body=json.dumps(self.body)
         )
+
+    def __eq__(self, other):
+        if isinstance(other, AggNode):
+            return other.query_dict() == self.query_dict() and other.name == self.name
+        # make sure we still equal to a dict with the same data
+        return other == {self.name: self.query_dict()}
 
 
 class MetricAgg(AggNode):
@@ -104,10 +107,6 @@ class MetricAgg(AggNode):
 
     def get_filter(self, key):
         return None
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        raise NotImplementedError()
 
 
 class BucketAggNode(AggNode):
@@ -122,7 +121,7 @@ class BucketAggNode(AggNode):
     Note: the children attribute's only purpose is for initiation with the following syntax:
     >>> from pandagg.nodes import Terms, Avg
     >>> agg = Terms(
-    >>>     agg_name='term_agg',
+    >>>     name='term_agg',
     >>>     field='some_path',
     >>>     aggs=[
     >>>         Avg(agg_name='avg_agg', field='some_other_path')
@@ -134,11 +133,11 @@ class BucketAggNode(AggNode):
     VALUE_ATTRS = NotImplementedError()
     SINGLE_BUCKET = NotImplementedError()
 
-    def __init__(self, agg_name, agg_body, meta=None, aggs=None):
+    def __init__(self, name, meta=None, aggs=None, **body):
         super(BucketAggNode, self).__init__(
-            agg_name=agg_name,
-            agg_body=agg_body,
+            name=name,
             meta=meta,
+            **body
         )
         aggs = aggs or []
         for child in aggs:
@@ -152,10 +151,6 @@ class BucketAggNode(AggNode):
         """Provide filter to get documents belonging to document of given key."""
         raise NotImplementedError()
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        raise NotImplementedError()
-
 
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
@@ -167,10 +162,6 @@ class UniqueBucketAgg(BucketAggNode):
 
     def get_filter(self, key):
         return None
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        raise NotImplementedError()
 
 
 class ListBucketAgg(BucketAggNode):
@@ -187,25 +178,16 @@ class ListBucketAgg(BucketAggNode):
     def get_filter(self, key):
         raise NotImplementedError()
 
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        raise NotImplementedError()
-
 
 class FieldMetricAgg(MetricAgg):
     """Metric aggregation based on single field."""
     VALUE_ATTRS = NotImplementedError()
 
-    def __init__(self, agg_name, field, meta=None, **agg_body_kwargs):
+    def __init__(self, name, field, meta=None, **body):
         self.field = field
-        agg_body = dict(agg_body_kwargs)
-        agg_body['field'] = field
         super(FieldMetricAgg, self).__init__(
-            agg_name=agg_name,
-            agg_body=agg_body,
-            meta=meta
+            name=name,
+            meta=meta,
+            field=field,
+            **body
         )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return agg_body

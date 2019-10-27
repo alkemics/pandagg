@@ -282,7 +282,7 @@ week
         empty_agg._interpret_agg(insert_below=None, element='some_field')
         self.assertEqual(
             empty_agg.query_dict(),
-            {'some_field': {'terms': {'field': 'some_field', 'size': 20}}}
+            {'some_field': {'terms': {'field': 'some_field'}}}
         )
 
         # with default size
@@ -303,8 +303,7 @@ week
                     "aggs": {
                         "child_field": {
                             "terms": {
-                                "field": "child_field",
-                                "size": 20
+                                "field": "child_field"
                             }
                         }
                     },
@@ -331,8 +330,7 @@ week
                             "aggs": {
                                 "local_metrics.field_class.name": {
                                     "terms": {
-                                        "field": "local_metrics.field_class.name",
-                                        "size": 20
+                                        "field": "local_metrics.field_class.name"
                                     }
                                 }
                             },
@@ -352,7 +350,7 @@ week
     def test_interpret_node(self):
         empty_agg = Agg()
         node = Terms(
-            agg_name='some_name',
+            name='some_name',
             field='some_field',
             size=10
         )
@@ -374,7 +372,7 @@ week
             mapping={MAPPING_NAME: MAPPING_DETAIL}
         )
         node = Avg(
-            agg_name='min_local_f1',
+            name='min_local_f1',
             field='local_metrics.performance.test.f1_score'
         )
         agg._interpret_agg(insert_below='term_workflow', element=node)
@@ -411,7 +409,7 @@ week
         # single node
         agg = Agg()
         node = Terms(
-            agg_name='root_agg',
+            name='root_agg',
             field='some_field',
             size=10
         )
@@ -431,7 +429,7 @@ week
         # hierarchy
         agg.add_node(
             Terms(
-                agg_name='other_name',
+                name='other_name',
                 field='other_field',
                 size=30
             ),
@@ -439,7 +437,7 @@ week
         )
         agg.add_node(
             Avg(
-                agg_name='avg_some_other_field',
+                name='avg_some_other_field',
                 field='some_other_field'
             ),
             'root_agg'
@@ -567,17 +565,17 @@ root_agg
 
         # with nested
         node_hierarchy = DateHistogram(
-            agg_name='week',
+            name='week',
             field='date',
             interval='1w',
             aggs=[
                 Terms(
-                    agg_name="local_metrics.field_class.name",
+                    name="local_metrics.field_class.name",
                     field="local_metrics.field_class.name",
                     size=10,
                     aggs=[
                         Min(
-                            agg_name='min_f1_score',
+                            name='min_f1_score',
                             field='local_metrics.performance.test.f1_score'
                         )
                     ]
@@ -644,17 +642,17 @@ week
                 └── min_f1_score
         """
         node_hierarchy = DateHistogram(
-            agg_name='week',
+            name='week',
             field='date',
             interval='1w',
             aggs=[
                 Terms(
-                    agg_name="local_metrics.field_class.name",
+                    name="local_metrics.field_class.name",
                     field="local_metrics.field_class.name",
                     size=10,
                     aggs=[
                         Min(
-                            agg_name='min_f1_score',
+                            name='min_f1_score',
                             field='local_metrics.performance.test.f1_score'
                         )
                     ]
@@ -676,17 +674,17 @@ week
                 └── avg_f1_score
         """
         node_hierarchy = DateHistogram(
-            agg_name='week',
+            name='week',
             field='date',
             interval='1w',
             aggs=[
                 Terms(
-                    agg_name="local_metrics.field_class.name",
+                    name="local_metrics.field_class.name",
                     field="local_metrics.field_class.name",
                     size=10,
                     aggs=[
                         Min(
-                            agg_name='min_f1_score',
+                            name='min_f1_score',
                             field='local_metrics.performance.test.f1_score'
                         )
                     ]
@@ -698,17 +696,17 @@ week
 
         # week is last bucket linear bucket
         node_hierarchy_2 = DateHistogram(
-            agg_name='week',
+            name='week',
             field='date',
             interval='1w',
             aggs=[
                 Terms(
-                    agg_name="local_metrics.field_class.name",
+                    name="local_metrics.field_class.name",
                     field="local_metrics.field_class.name",
                     size=10
                 ),
                 Filter(
-                    agg_name="f1_score_above_threshold",
+                    name="f1_score_above_threshold",
                     filter_={
                         "range": {
                             "local_metrics.performance.test.f1_score": {
