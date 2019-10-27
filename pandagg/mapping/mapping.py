@@ -16,37 +16,40 @@ class MappingNode(Node):
 
     REPR_SIZE = 60
 
-    def __init__(self, field_path, field_name, detail, depth, root=False, sub_field=False):
-        self.field_path = field_path
-        self.field_name = field_name
-        self.type = '' if root else detail.get('type', 'object')
-        if not root and self.type not in MAPPING_TYPES:
-            raise MappingError(u'Unkown <%s> field type on path <%s>' % (self.type, field_path))
-        self.sub_field = sub_field
-        self.dynamic = detail.get('dynamic', False)
+    def __init__(self, path, body, depth, is_root=False, is_subfield=False):
+        self.is_root = is_root
+        self.path = path
+        # name will be used for dynamic attribute access in tree
+        self.name = path.split('.')[-1]
         self.depth = depth
-        self.extra = detail
-        super(MappingNode, self).__init__(identifier=field_path, data=PrettyNode(pretty=self.pretty))
+        self.body = body
+        self.is_subfield = is_subfield
+        if is_root:
+            self.type = ''
+        else:
+            type_ = body.get('type', 'object')
+            if type_ not in MAPPING_TYPES:
+                raise MappingError(u'Unkown <%s> field type on path <%s>' % (type_, path))
+            self.type = type_
+        super(MappingNode, self).__init__(identifier=path, data=PrettyNode(pretty=self.tree_repr))
 
     @property
-    def pretty(self):
-        pad = max(self.REPR_SIZE - 4 * self.depth - len(self.field_name), 4)
-        s = self.field_name
+    def tree_repr(self):
+        pad = max(self.REPR_SIZE - 4 * self.depth - len(self.name), 4)
+        s = 'root' if self.is_root else self.name
         if self.type == 'object':
-            s += ' ' * (pad - 1) + '{%s}' % self.type.capitalize()
+            return s + ' ' * (pad - 1) + '{%s}' % self.type.capitalize()
         elif self.type == 'nested':
-            s += ' ' * (pad - 1) + '[%s]' % self.type.capitalize()
-        elif self.sub_field:
-            s += ' ' * (pad - 2) + '~ %s' % self.type.capitalize()
-        else:
-            s += ' ' * pad + '%s' % self.type.capitalize()
-        return s
+            return s + ' ' * (pad - 1) + '[%s]' % self.type.capitalize()
+        elif self.is_subfield:
+            return s + ' ' * (pad - 2) + '~ %s' % self.type.capitalize()
+        return s + ' ' * pad + '%s' % self.type.capitalize()
 
     def __str__(self):
         return '<Mapping Field %s> of type %s:\n%s' % (
-            text(self.field_path),
+            text(self.path),
             text(self.type),
-            text(json.dumps(self.extra, indent=4))
+            text(json.dumps(self.body, indent=4))
         )
 
 
@@ -60,22 +63,22 @@ class MappingTree(Tree):
         self.mapping_name = mapping_name
         self.mapping_detail = mapping_detail
         if mapping_detail:
-            self.build_mapping_from_dict(mapping_name, mapping_detail, root=True)
+            self.build_mapping_from_dict(mapping_detail)
 
-    def build_mapping_from_dict(self, name, detail, pid=None, depth=0, path=None, root=False, sub_field=False):
+    def build_mapping_from_dict(self, body, pid=None, depth=0, path=None, is_subfield=False):
         path = path or ''
-        node = MappingNode(field_path=path, field_name=name, detail=detail, depth=depth, root=root, sub_field=sub_field)
+        node = MappingNode(path=path, body=body, depth=depth, is_root=depth == 0, is_subfield=is_subfield)
         self.add_node(node, parent=pid)
-        if not detail:
+        if not body:
             return
         depth += 1
-        for sub_name, sub_detail in iteritems(detail.get('properties') or {}):
+        for sub_name, sub_body in iteritems(body.get('properties') or {}):
             sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-            self.build_mapping_from_dict(sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path)
-        for sub_name, sub_detail in iteritems(detail.get('fields') or {}):
+            self.build_mapping_from_dict(sub_body, pid=node.path, depth=depth, path=sub_path)
+        for sub_name, sub_body in iteritems(body.get('fields') or {}):
             sub_path = '%s.%s' % (path, sub_name) if path else sub_name
             self.build_mapping_from_dict(
-                sub_name, sub_detail, pid=node.identifier, depth=depth, path=sub_path, sub_field=True)
+                sub_body, pid=node.identifier, depth=depth, path=sub_path, is_subfield=True)
 
     def _get_instance(self, identifier, **kwargs):
         return MappingTree(mapping_name=self.mapping_name, identifier=identifier)
@@ -129,7 +132,7 @@ class MappingTree(Tree):
 class Mapping(TreeBasedObj):
     """Wrapper upon mapping tree, enabling interactive navigation in ipython.
     """
-    _NODE_PATH_ATTR = 'field_name'
+    _NODE_PATH_ATTR = 'name'
 
     def __call__(self, *args, **kwargs):
         return self._tree[self._tree.root]
@@ -154,7 +157,7 @@ class ClientBoundMapping(Mapping):
                 self.a = field_classes_per_name[field_node.type](
                     mapping_tree=self._initial_tree,
                     client=self._client,
-                    field=field_node.field_path,
+                    field=field_node.path,
                     index_name=self._index_name
                 )
 

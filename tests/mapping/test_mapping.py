@@ -19,10 +19,9 @@ class MappingTreeTestCase(TestCase):
 
     def test_node_repr(self):
         node = MappingNode(
-            field_path='path.to.field',
-            field_name='field',
+            path='path.to.field',
             depth=3,
-            detail={'type': 'boolean'}
+            body={'type': 'boolean'}
         )
         self.assertEqual(
             node.__str__(),

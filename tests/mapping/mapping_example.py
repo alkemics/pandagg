@@ -152,7 +152,7 @@ MAPPING_DETAIL = {
     }
 }
 
-EXPECTED_MAPPING_REPR = """classification_report                                       
+EXPECTED_MAPPING_REPR = """root                                                            
 ├── classification_type                                     String
 ├── date                                                    Date
 ├── global_metrics                                         {Object}
