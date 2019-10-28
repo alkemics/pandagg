@@ -5,23 +5,30 @@ from __future__ import unicode_literals
 
 from six import iteritems
 from collections import defaultdict
-
+from elasticsearch import Elasticsearch
+from elasticsearch.transport import Transport
 from pandagg.exceptions import VersionIncompatibilityError
-from pandagg.utils import validate_client
 from pandagg.index.index import ClientBoundIndex, Indices, Aliases
 
 
+def pandagg_init(self, hosts=None, transport_class=Transport, **kwargs):
+    self.client = Elasticsearch(hosts=hosts, transport_class=transport_class, **kwargs)
+    self.indices = Indices()
+    self.aliases = Aliases()
+    self._indices = None
+    self._info = None
+
+
+pandagg_init.__doc__ = Elasticsearch.__init__.__doc__
+
+
 class PandAgg:
+    """Wrapper around elasticsearch.Elasticsearch client.
+    """
 
     ES_COMPATIBILITY_VERSIONS = ('2',)
 
-    def __init__(self, client):
-        self.client = client
-        validate_client(self.client)
-        self.indices = Indices()
-        self.aliases = Aliases()
-        self._indices = None
-        self._info = None
+    __init__ = pandagg_init
 
     def fetch_indices(self, index='*'):
         """

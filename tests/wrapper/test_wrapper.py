@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-from pandagg import PandAgg
-from mock import Mock
 
-from pandagg.exceptions import InvalidElasticSearchClientError
+from elasticsearch.client import IndicesClient
+
+from pandagg import PandAgg
+from mock import patch
+
 from pandagg.index.index import ClientBoundIndex
 from pandagg.mapping.mapping import ClientBoundMapping
 from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL, EXPECTED_CLIENT_BOUND_MAPPING_REPR
@@ -26,21 +28,14 @@ indices_mock = {
 
 class WrapperTestCase(TestCase):
 
-    def test_wrong_client(self):
-        wrong_client = Mock(spec=['info', 'not_all_required_methods'])
-        with self.assertRaises(InvalidElasticSearchClientError):
-            PandAgg(wrong_client)
-
-    def test_pandagg_wrapper(self):
-
-        client_mock = Mock(spec=['info', 'search', 'validate', 'indices'])
-        client_mock.indices = Mock(spec=['get'])
-        client_mock.indices.get = Mock(return_value=indices_mock)
+    @patch.object(IndicesClient, 'get')
+    def test_pandagg_wrapper(self, indice_get_mock):
+        indice_get_mock.return_value = indices_mock
 
         # fetch indices
-        p = PandAgg(client=client_mock)
+        p = PandAgg()
         p.fetch_indices(index='*report*')
-        client_mock.indices.get.assert_called_once_with(index="*report*")
+        indice_get_mock.assert_called_once_with(index="*report*")
 
         # ensure indices presence
         self.assertTrue(hasattr(p.indices, 'classification_report_one'))

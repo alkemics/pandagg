@@ -8,7 +8,7 @@ from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingF
 from pandagg.mapping.types import MAPPING_TYPES
 from pandagg.mapping.field_agg_factory import field_classes_per_name
 from pandagg.tree import Tree, Node
-from pandagg.utils import PrettyNode, TreeBasedObj, validate_client
+from pandagg.utils import PrettyNode, TreeBasedObj
 
 
 @python_2_unicode_compatible
@@ -141,7 +141,6 @@ class Mapping(TreeBasedObj):
 class ClientBoundMapping(Mapping):
 
     def __init__(self, client, tree, root_path=None, depth=None, initial_tree=None, index_name=None):
-        validate_client(client)
         self._client = client
         self._index_name = index_name
         super(ClientBoundMapping, self).__init__(

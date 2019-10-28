@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 from six import iteritems
+
+from elasticsearch import Elasticsearch
+
 from pandagg.mapping.mapping import ClientBoundMapping, MappingTree, Mapping
 from pandagg.aggs.agg import Agg, ClientBoundAgg
-from pandagg.utils import Obj, validate_client
+from pandagg.utils import Obj
 
 
 class Index(Obj):
@@ -42,7 +46,7 @@ class ClientBoundIndex(Index):
     def __init__(self, client, name, settings, mapping, aliases, warmers):
         self.client = client
         if client is not None:
-            validate_client(self.client)
+            assert isinstance(client, Elasticsearch)
         super(ClientBoundIndex, self).__init__(
             name=name,
             settings=settings,

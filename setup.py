@@ -23,20 +23,17 @@ tests_require = [
     'mock',
     'flake8',
     'coverage',
-    'elasticsearch==2.3.0',
     'pandas==0.24.2'
 ]
 
 install_requires = [
     # treelib when https://github.com/caesar0301/treelib/pull/120 is approved
+    'elasticsearch==2.3.0',
 ]
 
 extras_require = {
     'test': tests_require,
-    'dev': [
-        'elasticsearch==2.3.0',
-        'pandas==0.24.2'
-    ]
+    'dev': ['pandas==0.24.2']
 }
 
 # =============================================================================

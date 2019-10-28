@@ -7,7 +7,6 @@ from builtins import str as text
 from six import python_2_unicode_compatible
 import re
 from six import string_types
-from pandagg.exceptions import InvalidElasticSearchClientError
 from pandagg.tree import Tree
 
 
@@ -171,9 +170,3 @@ def bool_if_required(sub_filters, operator='must'):
     if len(sub_filters) > 1:
         return {'bool': {operator: sub_filters}}
     return None
-
-
-def validate_client(client):
-    for method_name in ('info', 'search', 'validate', 'indices'):
-        if not hasattr(client, method_name) and callable(client):
-            raise InvalidElasticSearchClientError('You client doesn\'t seem compatible.')

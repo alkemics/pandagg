@@ -5,15 +5,18 @@ from __future__ import unicode_literals
 import copy
 import collections
 import warnings
+
 from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 from builtins import str as text
+
+from elasticsearch import Elasticsearch
+
 from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes import PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll
 from pandagg.nodes.abstract import BucketAggNode, UniqueBucketAgg, AggNode
 from pandagg.tree import Tree
-from pandagg.utils import validate_client
 
 
 @python_2_unicode_compatible
@@ -582,9 +585,9 @@ class ClientBoundAgg(Agg):
 
     def __init__(self, client, index_name, mapping=None, from_=None, query=None, identifier=None):
         self.client = client
-        if client is not None:
-            validate_client(self.client)
         self.index_name = index_name
+        if client is not None:
+            assert isinstance(client, Elasticsearch)
         self._query = query
         super(ClientBoundAgg, self).__init__(
             from_=from_,

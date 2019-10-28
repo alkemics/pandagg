@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from elasticsearch import Elasticsearch
 from mock import Mock, patch
 from unittest import TestCase
 
@@ -62,7 +62,7 @@ class ClientBoundTestCase(TestCase):
 
     @staticmethod
     def get_client_bound_index(es_response=None):
-        client_mock = Mock(spec=['info', 'search', 'validate', 'indices'])
+        client_mock = Elasticsearch()
         client_mock.search = Mock(return_value=es_response)
         return client_mock, ClientBoundIndex(
             client=client_mock,

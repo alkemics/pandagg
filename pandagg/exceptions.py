@@ -20,11 +20,6 @@ class InvalidOperationMappingFieldError(MappingError):
     pass
 
 
-class InvalidElasticSearchClientError(Exception):
-    """Client is not compatible."""
-    pass
-
-
 class VersionIncompatibilityError(Exception):
     """Pandagg is not compatible with this ElasticSearch version.
     """
