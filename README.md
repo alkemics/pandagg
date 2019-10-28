@@ -55,6 +55,31 @@ Only one dependency:
 Parsing of aggregation results as dataframe will require to install as well:
 - [pandas](https://github.com/pandas-dev/pandas/)
 
+## Motivations
+
+A [high level python client](https://github.com/elastic/elasticsearch-dsl-py) already exists for ElasticSearch,
+but despite many qualities, its api was not convenient when dealing with deeply nested aggregations.
+
+The fundamental difference between those libraries is how we deal with the tree structure of aggregation queries
+and their responses.
+
+Suppose we have this aggregation structure: (types of agg don't matter). Let's call all of **A**, **B**, **C**, **D** our aggregation **nodes**, and the whole structure our **tree**.
+```
+A           (Terms agg)
+└── B       (Filters agg)
+    ├── C   (Avg agg)
+    └── D   (Sum agg)
+```
+
+
+Question is who has the charge of storing the **tree structure** (how **nodes** are connected)?
+
+In ***elasticsearch-dsl*** library, each aggregation **node** is responsible of knowing which are its direct children.
+
+In ***pandagg***, all **nodes** are agnostic about which are their parents/children, and a **tree** object is in charge
+of storing this structure. It becomes much easier to add/update/remove aggregation **nodes** or **sub-trees** in
+specific locations of the initial **tree**, thus making it easier to build your aggregation.
+
 ## Contributing
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome.
