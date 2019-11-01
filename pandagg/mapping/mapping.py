@@ -80,8 +80,12 @@ class MappingTree(Tree):
             self.build_mapping_from_dict(
                 sub_body, pid=node.identifier, depth=depth, path=sub_path, is_subfield=True)
 
-    def _get_instance(self, identifier, **kwargs):
-        return MappingTree(mapping_name=self.mapping_name, identifier=identifier)
+    def _clone(self, identifier, with_tree=False, deep=False):
+        return MappingTree(
+            mapping_name=self.mapping_name,
+            identifier=identifier,
+            mapping_detail=self.mapping_detail if with_tree else None
+        )
 
     def show(self, data_property='pretty', **kwargs):
         return super(MappingTree, self).show(data_property=data_property, **kwargs)
@@ -160,7 +164,7 @@ class ClientBoundMapping(Mapping):
                     index_name=self._index_name
                 )
 
-    def _get_instance(self, nid, root_path, depth, **kwargs):
+    def _clone(self, nid, root_path, depth):
         return ClientBoundMapping(
             client=self._client,
             tree=self._tree.subtree(nid),

@@ -22,8 +22,11 @@ class ResponseTree(Tree):
         super(ResponseTree, self).__init__(identifier=identifier)
         self.agg_tree = agg_tree
 
-    def _get_instance(self, identifier, **kwargs):
-        return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
+    def _clone(self, identifier, with_tree=False, deep=False):
+        return ResponseTree(
+            agg_tree=self.agg_tree,
+            identifier=identifier
+        )
 
     def parse_aggregation(self, raw_response):
         """Build response tree from ES response
@@ -171,7 +174,7 @@ class ClientBoundResponse(Response):
         self._index_name = index_name
         super(Response, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
 
-    def _get_instance(self, nid, root_path, depth, **kwargs):
+    def _clone(self, nid, root_path, depth):
         return ClientBoundResponse(
             client=self._client,
             index_name=self._index_name,

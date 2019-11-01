@@ -48,11 +48,12 @@ class Agg(Tree):
         if from_agg_node:
             self._build_tree_from_node(from_agg_node)
 
-    def _get_instance(self, identifier=None, from_=None, **kwargs):
-        return Agg(mapping=self.tree_mapping, identifier=identifier, from_=from_)
-
-    def copy(self, identifier=None, **kwargs):
-        return self._get_instance(identifier=identifier, from_=self, **kwargs)
+    def _clone(self, identifier=None, with_tree=False, deep=False):
+        return Agg(
+            mapping=self.tree_mapping,
+            identifier=identifier,
+            from_=self if with_tree else None
+        )
 
     def set_mapping(self, mapping):
         if mapping is not None:
@@ -139,7 +140,7 @@ class Agg(Tree):
         :param kwargs: arguments to customize dict aggregation parsing TODO - detail this part
         :rtype: pandagg.aggs.agg.Agg
         """
-        new_agg = self.copy()
+        new_agg = self._clone(with_tree=True)
         paths = new_agg.paths_to_leaves()
         assert len(paths) <= 1
         if paths:
@@ -190,7 +191,7 @@ class Agg(Tree):
             if not self.root:
                 raise ValueError('Empty aggregation')
             return self
-        new_agg = self.copy()
+        new_agg = self._clone(with_tree=True)
         if isinstance(arg, collections.Iterable) and not isinstance(arg, string_types) and not isinstance(arg, dict):
             if not new_agg.root:
                 new_agg.add_node(MatchAll(self._crafted_root_name))
@@ -211,7 +212,7 @@ class Agg(Tree):
             return self
         if isinstance(element, dict):
             try:
-                new_agg = self._get_instance(from_=element)
+                new_agg = self._clone(from_=element)
                 if self.root is None:
                     return new_agg
                 self.paste(nid=insert_below, new_tree=new_agg)
@@ -599,23 +600,14 @@ class ClientBoundAgg(Agg):
         response_tree = ResponseTree(self).parse_aggregation(aggs)
         return ClientBoundResponse(client=self.client, index_name=self.index_name, tree=response_tree, depth=1)
 
-    def _get_instance(self, identifier=None, from_=None, **kwargs):
+    def _clone(self, identifier=None, with_tree=False, deep=False):
         return ClientBoundAgg(
             client=self.client,
             index_name=self.index_name,
             mapping=self.tree_mapping,
             identifier=identifier,
-            from_=from_
-        )
-
-    def copy(self, identifier=None, **kwargs):
-        return ClientBoundAgg(
-            index_name=self.index_name,
-            client=self.client,
-            mapping=self.tree_mapping,
-            from_=self,
             query=self._query,
-            identifier=identifier
+            from_=self if with_tree else None
         )
 
     def query(self, query, validate=False):
@@ -623,12 +615,12 @@ class ClientBoundAgg(Agg):
             validity = self.client.indices.validate_query(index=self.index_name, body={"query": query})
             if not validity['valid']:
                 raise ValueError('Wrong query: %s\n%s' % (query, validity))
-        new_agg = self.copy()
+        new_agg = self._clone(with_tree=True)
         new_agg._query = query
         return new_agg
 
     def agg(self, arg=None, execute=True, output=Agg.DEFAULT_OUTPUT, **kwargs):
-        aggregation = super(ClientBoundAgg, self.copy()).agg(arg, **kwargs)
+        aggregation = super(ClientBoundAgg, self._clone(with_tree=True)).agg(arg, **kwargs)
         if not execute:
             return aggregation
         return aggregation.execute(

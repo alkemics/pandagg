@@ -102,7 +102,7 @@ class TreeBasedObj(Obj):
         self._initial_tree = initial_tree if initial_tree is not None else tree
         self._expand_attrs(depth)
 
-    def _get_instance(self, nid, root_path, depth, **kwargs):
+    def _clone(self, nid, root_path, depth):
         return self.__class__(
             tree=self._tree.subtree(nid),
             root_path=root_path,
@@ -120,7 +120,7 @@ class TreeBasedObj(Obj):
                     child_root = '%s.%s' % (self._root_path, child_path)
                 else:
                     child_root = child_path
-                self[child_path] = self._get_instance(child.identifier, root_path=child_root, depth=depth - 1)
+                self[child_path] = self._clone(child.identifier, root_path=child_root, depth=depth - 1)
 
     def __getattribute__(self, item):
         # called by __getattribute__ will always refer to valid attribute item
