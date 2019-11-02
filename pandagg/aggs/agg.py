@@ -102,7 +102,53 @@ class Agg(Tree):
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             agg_node.aggs = None
 
-    def groupby(self, by, **kwargs):
+    @property
+    def deepest_linear_bucket_agg(self):
+        """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
+        neither has siblings, nor has an ancestor with siblings.
+        """
+        if not self.root or not isinstance(self[self.root], BucketAggNode):
+            return None
+        last_bucket_agg_name = self.root
+        children = self.children(last_bucket_agg_name)
+        while len(children) == 1:
+            last_agg = children[0]
+            if not isinstance(last_agg, BucketAggNode):
+                break
+            last_bucket_agg_name = last_agg.name
+            children = self.children(last_bucket_agg_name)
+        return last_bucket_agg_name
+
+    def _validate_aggs_parent_id(self, pid):
+        """If pid is not None, ensure that pid belongs to tree, and that it refers to a bucket aggregation.
+
+        Else, if not provided, return deepest bucket aggregation if there is no ambiguity (linear aggregations).
+        KO: non-ambiguous:
+        A──> B──> C1
+             └──> C2
+        raise error
+
+        OK: non-ambiguous (linear):
+        A──> B──> C1
+        return C1
+        """
+        if pid is not None:
+            if pid not in self:
+                raise ValueError('Node id <%s> is not present in aggregation.' % pid)
+            if not isinstance(self[pid], BucketAggNode):
+                raise ValueError('Node id <%s> is not a bucket aggregation.' % pid)
+            return pid
+        paths = self.paths_to_leaves()
+        # root
+        if len(paths) == 0:
+            return None
+
+        if len(paths) > 1 or not isinstance(self[paths[0][-1]], BucketAggNode):
+            raise ValueError('Declaration is ambiguous, you must declare the node id under which these '
+                             'aggregations should be placed.')
+        return paths[0][-1]
+
+    def groupby(self, by, insert_below=None, **kwargs):
         """Group by is available only if there is a succession of unique childs.
 
         Accepts single occurence or sequence of following formats:
@@ -137,26 +183,22 @@ class Agg(Tree):
         }
 
         :param by: aggregation(s) used to group results
+        :param insert_below: parent node id under which these nodes should be declared
         :param kwargs: arguments to customize dict aggregation parsing TODO - detail this part
         :rtype: pandagg.aggs.agg.Agg
         """
+        insert_below = self._validate_aggs_parent_id(insert_below)
         new_agg = self._clone(with_tree=True)
-        paths = new_agg.paths_to_leaves()
-        assert len(paths) <= 1
-        if paths:
-            sub_aggs_parent_id = paths[0][-1]
-        else:
-            sub_aggs_parent_id = None
 
         if isinstance(by, collections.Iterable) and not isinstance(by, string_types) and not isinstance(by, dict):
             for arg_el in by:
-                new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
-                sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
+                new_agg = new_agg._interpret_agg(insert_below, arg_el, **kwargs)
+                insert_below = new_agg.deepest_linear_bucket_agg
         else:
-            new_agg = new_agg._interpret_agg(sub_aggs_parent_id, by, **kwargs)
+            new_agg = new_agg._interpret_agg(insert_below, by, **kwargs)
         return new_agg
 
-    def agg(self, arg=None, **kwargs):
+    def agg(self, arg, insert_below=None, **kwargs):
         """Horizontally adds aggregation on top of succession of unique children.
 
         Suppose pre-existing aggregations:
@@ -184,26 +226,20 @@ class Agg(Tree):
         └── owner.id
             ├── retailerStatus
             └── validation.status
-
+        :param insert_below: parent node id under which these nodes should be declared
         :rtype: pandagg.aggs.agg.Agg
         """
-        if arg is None:
-            if not self.root:
-                raise ValueError('Empty aggregation')
-            return self
+        insert_below = self._validate_aggs_parent_id(insert_below)
         new_agg = self._clone(with_tree=True)
         if isinstance(arg, collections.Iterable) and not isinstance(arg, string_types) and not isinstance(arg, dict):
-            if not new_agg.root:
-                new_agg.add_node(MatchAll(self._crafted_root_name))
-            sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
+            if len(arg) > 1 and insert_below is None:
+                root = MatchAll(self._crafted_root_name)
+                new_agg.add_node(root)
+                insert_below = root.identifier
             for arg_el in arg:
-                new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg_el, **kwargs)
-        else:
-            paths = new_agg.paths_to_leaves()
-            assert len(paths) <= 1
-            sub_aggs_parent_id = new_agg.deepest_linear_bucket_agg
-            new_agg = new_agg._interpret_agg(sub_aggs_parent_id, arg, **kwargs)
-        return new_agg
+                new_agg = new_agg._interpret_agg(insert_below, arg_el, **kwargs)
+            return new_agg
+        return new_agg._interpret_agg(insert_below, arg, **kwargs)
 
     def _interpret_agg(self, insert_below, element, **kwargs):
         if isinstance(element, string_types):
@@ -226,7 +262,7 @@ class Agg(Tree):
         if isinstance(element, Agg) or isinstance(element, ClientBoundAgg):
             self.paste(nid=insert_below, new_tree=element)
             return self
-        raise NotImplementedError()
+        raise NotImplementedError('Unkown element of type <%s>' % type(element))
 
     def query_dict(self, from_=None, depth=None, with_name=True):
         if self.root is None:
@@ -381,23 +417,6 @@ class Agg(Tree):
             if not valid:
                 return False
         return True
-
-    @property
-    def deepest_linear_bucket_agg(self):
-        """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
-        neither has siblings, nor has an ancestor with siblings.
-        """
-        if not self.root or not isinstance(self[self.root], BucketAggNode):
-            return None
-        last_bucket_agg_name = self.root
-        children = self.children(last_bucket_agg_name)
-        while len(children) == 1:
-            last_agg = children[0]
-            if not isinstance(last_agg, BucketAggNode):
-                break
-            last_bucket_agg_name = last_agg.name
-            children = self.children(last_bucket_agg_name)
-        return last_bucket_agg_name
 
     def _parse_group_by(self,
                         response, row=None, agg_name=None, until=None, row_as_tuple=False):

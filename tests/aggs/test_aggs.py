@@ -509,6 +509,51 @@ root_agg
         self.assertEqual(set(df.columns), {'avg_f1_micro', 'avg_nb_classes', 'doc_count'})
         self.assertEqual(df.shape, (len(sample.EXPECTED_TABULAR_INDEX), 3))
 
+    def test_validate_aggs_parent_id(self):
+        """
+        <Aggregation>
+        classification_type
+        └── global_metrics.field.name
+            ├── avg_f1_micro
+            └── avg_nb_classes
+        """
+        my_agg = Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}, from_=sample.EXPECTED_AGG_QUERY)
+
+        with self.assertRaises(ValueError) as e:
+            my_agg._validate_aggs_parent_id(pid=None)
+        self.assertEqual(e.exception.args, ("Declaration is ambiguous, you must declare the node id under which these "
+                                            "aggregations should be placed.",))
+
+        with self.assertRaises(ValueError) as e:
+            my_agg._validate_aggs_parent_id("avg_f1_micro")
+        self.assertEqual(e.exception.args, ("Node id <avg_f1_micro> is not a bucket aggregation.",))
+
+        self.assertEqual(
+            my_agg._validate_aggs_parent_id("global_metrics.field.name"),
+            "global_metrics.field.name"
+        )
+
+        with self.assertRaises(ValueError) as e:
+            my_agg._validate_aggs_parent_id("non-existing-node")
+        self.assertEqual(e.exception.args, ("Node id <non-existing-node> is not present in aggregation.",))
+
+        # linear agg
+        my_agg.remove_node('avg_f1_micro')
+        my_agg.remove_node('avg_nb_classes')
+        """
+        <Aggregation>
+        classification_type
+        └── global_metrics.field.name
+        """
+        self.assertEqual(
+            my_agg._validate_aggs_parent_id(None),
+            'global_metrics.field.name'
+        )
+
+        # empty agg
+        agg = Agg()
+        self.assertEqual(agg._validate_aggs_parent_id(None), None)
+
     def test_agg_method(self):
         pass
 
