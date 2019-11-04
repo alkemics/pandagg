@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pandagg.tree import Tree
-from pandagg.utils import Obj, TreeBasedObj
+from pandagg.utils import Obj, TreeBasedObj, bool_if_required
 from unittest import TestCase
 
 
@@ -200,3 +200,108 @@ george
         obj['2-some-key'] = 'some-value'
         self.assertEqual(obj['2-some-key'], 'some-value')
         self.assertNotIn('2-some-key', dir(obj))
+
+
+class BoolIfRequiredTestCase(TestCase):
+
+    def test_simple(self):
+        self.assertEqual(
+            bool_if_required(
+                [{'term': {'some_field': 2}}],
+                operator='must'
+            ),
+            {'term': {'some_field': 2}}
+        )
+
+        self.assertEqual(
+            bool_if_required(
+                [
+                    {'term': {'some_field': 2}},
+                    {'range': {'some_field': {'gt': 1}}},
+                ],
+                operator='must'
+            ),
+            {
+                'bool': {'must': [
+                    {'term': {'some_field': 2}},
+                    {'range': {'some_field': {'gt': 1}}},
+                ]}
+            }
+        )
+
+    def test_flatten_sub_condition(self):
+        self.assertEqual(
+            bool_if_required(
+                [
+                    {'term': {'some_field': 2}},
+                    {
+                        'bool': {
+                            'should': [
+                                {'term': {'some_other_field': 3}}
+                            ]
+                        }
+                    }
+                ],
+                operator='should'
+            ),
+            {
+                'bool': {'should': [
+                    {'term': {'some_field': 2}},
+                    {'term': {'some_other_field': 3}}
+                ]}
+            }
+        )
+
+        # with multiple sub-conditions
+        self.assertEqual(
+            bool_if_required(
+                [
+                    {'term': {'some_field': 2}},
+                    {
+                        'bool': {
+                            'should': [
+                                {'term': {'some_other_field': 3}},
+                                {'term': {'some_other_field': 4}}
+                            ]
+                        }
+                    }
+                ],
+                operator='should'
+            ),
+            {
+                'bool': {'should': [
+                    {'term': {'some_field': 2}},
+                    {'term': {'some_other_field': 3}},
+                    {'term': {'some_other_field': 4}}
+                ]}
+            }
+        )
+
+        # not flattened because different conditions
+        self.assertEqual(
+            bool_if_required(
+                [
+                    {'term': {'some_field': 2}},
+                    {
+                        'bool': {
+                            'must': [
+                                {'term': {'some_other_field': 3}},
+                                {'term': {'some_other_field': 4}}
+                            ]
+                        }
+                    }
+                ],
+                operator='should'
+            ),
+            {
+                'bool': {'should': [
+                    {'term': {'some_field': 2}},
+                    {'bool': {
+                        'must': [
+                            {'term': {'some_other_field': 3}},
+                            {'term': {'some_other_field': 4}}
+                        ]
+                    }}
+                ]}
+            }
+        )

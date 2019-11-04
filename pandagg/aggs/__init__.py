@@ -1,1 +1,1 @@
-from .agg import Agg
+from .agg import Agg, ClientBoundAgg

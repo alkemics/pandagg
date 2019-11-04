@@ -17,6 +17,7 @@ from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes import PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll
 from pandagg.nodes.abstract import BucketAggNode, UniqueBucketAgg, AggNode
 from pandagg.tree import Tree
+from pandagg.utils import bool_if_required
 
 
 @python_2_unicode_compatible
@@ -630,12 +631,17 @@ class ClientBoundAgg(Agg):
         )
 
     def query(self, query, validate=False):
+        assert isinstance(query, dict)
         if validate:
             validity = self.client.indices.validate_query(index=self.index_name, body={"query": query})
             if not validity['valid']:
                 raise ValueError('Wrong query: %s\n%s' % (query, validity))
         new_agg = self._clone(with_tree=True)
-        new_agg._query = query
+
+        conditions = [query]
+        if new_agg._query is not None:
+            conditions.append(new_agg._query)
+        new_agg._query = bool_if_required(conditions)
         return new_agg
 
     def agg(self, arg=None, execute=True, output=Agg.DEFAULT_OUTPUT, **kwargs):

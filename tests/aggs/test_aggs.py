@@ -8,7 +8,7 @@
 from unittest import TestCase
 import pandas as pd
 from treelib.exceptions import MultipleRootError
-from pandagg.aggs import Agg
+from pandagg.aggs import Agg, ClientBoundAgg
 from pandagg.buckets.response import Response
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.mapping import MappingTree, Mapping
@@ -764,3 +764,30 @@ week
         )
         agg2 = Agg(from_=node_hierarchy_2, mapping={MAPPING_NAME: MAPPING_DETAIL})
         self.assertEqual(agg2.deepest_linear_bucket_agg, 'week')
+
+
+class ClientBoundAggTestCase(TestCase):
+
+    def test_query(self):
+        agg = ClientBoundAgg(client=None, index_name='some_index')
+
+        new_agg = agg\
+            .query({'term': {'some_field': 1}})\
+            .query({'bool': {'must': [
+                {'range': {'other_field': {'gt': 2}}},
+                {'term': {'another_field': 'hi'}}
+            ]}})
+
+        self.assertIs(agg._query, None)
+        self.assertEqual(
+            new_agg._query,
+            {
+                'bool': {
+                    'must': [
+                        {'range': {'other_field': {'gt': 2}}},
+                        {'term': {'another_field': 'hi'}},
+                        {'term': {'some_field': 1}}
+                    ]
+                }
+            }
+        )
