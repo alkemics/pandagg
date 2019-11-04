@@ -89,7 +89,8 @@ class Agg(Tree):
         for child_name in sorted(children_aggs.keys()):
             self._build_tree_from_dict(child_name, children_aggs[child_name], node.identifier)
 
-    def _node_from_dict(self, agg_type, agg_name, agg_body, meta):
+    @staticmethod
+    def _node_from_dict(agg_type, agg_name, agg_body, meta):
         if agg_type not in PUBLIC_AGGS.keys():
             raise NotImplementedError('Unknown aggregation type <%s>' % agg_type)
         agg_class = PUBLIC_AGGS[agg_type]
