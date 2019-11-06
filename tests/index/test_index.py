@@ -135,7 +135,8 @@ class ClientBoundTestCase(TestCase):
                     Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),
                     Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score')
                 ]
-            )
+            )\
+            .execute()
         equivalent_agg = Agg().agg(
             [
                 Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),

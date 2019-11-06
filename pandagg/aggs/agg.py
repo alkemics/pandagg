@@ -645,16 +645,6 @@ class ClientBoundAgg(Agg):
         new_agg._query = bool_if_required(conditions)
         return new_agg
 
-    def agg(self, arg=None, execute=True, output=Agg.DEFAULT_OUTPUT, **kwargs):
-        aggregation = super(ClientBoundAgg, self._clone(with_tree=True)).agg(arg, **kwargs)
-        if not execute:
-            return aggregation
-        return aggregation.execute(
-            index=kwargs.get('index') or self.index_name,
-            output=output,
-            **kwargs
-        )
-
     def _execute(self, aggregation, index=None, query=None):
         body = {"aggs": aggregation, "size": 0}
         if query:
@@ -664,7 +654,7 @@ class ClientBoundAgg(Agg):
     def execute(self, index=None, output=Agg.DEFAULT_OUTPUT, **kwargs):
         es_response = self._execute(
             aggregation=self.query_dict(),
-            index=index,
+            index=index or self.index_name,
             query=self._query
         )
         return self.serialize(
