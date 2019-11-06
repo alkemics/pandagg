@@ -96,6 +96,7 @@ class ResponseTree(Tree):
 class Response(TreeBasedObj):
 
     _NODE_PATH_ATTR = 'attr_name'
+    _COERCE_ATTR = True
 
     @classmethod
     def _build_filter(cls, nid_to_children, filters_per_nested_level, current_nested_path=None):

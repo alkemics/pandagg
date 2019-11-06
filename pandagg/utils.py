@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from builtins import str as text
 from six import python_2_unicode_compatible
 import re
+import unicodedata
 from six import string_types
 from pandagg.tree import Tree
 
@@ -93,6 +94,7 @@ class TreeBasedObj(Obj):
     useless instances, only direct children of accessed nodes are expanded.
     """
     _NODE_PATH_ATTR = 'tag'
+    _COERCE_ATTR = False
 
     def __init__(self, tree, root_path=None, depth=None, initial_tree=None):
         super(TreeBasedObj, self).__init__()
@@ -110,10 +112,21 @@ class TreeBasedObj(Obj):
             initial_tree=self._initial_tree
         )
 
+    @staticmethod
+    def _coerce_attr(attr):
+        attr = unicodedata.normalize("NFD", attr).encode("ASCII", "ignore").decode()
+        return re.sub(
+            string=attr,
+            pattern=r'[^a-zA-Z_]',
+            repl='_'
+        )
+
     def _expand_attrs(self, depth):
         if depth:
             for child in self._tree.children(nid=self._tree.root):
                 child_path = getattr(child, self._NODE_PATH_ATTR)
+                if self._COERCE_ATTR:
+                    child_path = self._coerce_attr(child_path)
                 if child_path in self:
                     continue
                 if self._root_path is not None:
