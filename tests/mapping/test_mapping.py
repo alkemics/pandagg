@@ -83,7 +83,7 @@ class ClientBoundMappingTestCase(TestCase):
     aggregations on that field type.
     """
     def test_client_bound(self):
-        client_mock = Mock(spec=['info', 'search', 'validate', 'indices'])
+        client_mock = Mock(spec=['search'])
         es_response_mock = {
             "_shards": {
                 "failed": 0,

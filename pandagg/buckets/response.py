@@ -170,9 +170,10 @@ class Response(TreeBasedObj):
 
 class ClientBoundResponse(Response):
 
-    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None):
+    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None, query=None):
         self._client = client
         self._index_name = index_name
+        self._query = query
         super(Response, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
 
     def _clone(self, nid, root_path, depth):
@@ -182,7 +183,8 @@ class ClientBoundResponse(Response):
             tree=self._tree.subtree(nid),
             root_path=root_path,
             depth=depth,
-            initial_tree=self._initial_tree
+            initial_tree=self._initial_tree,
+            query=self._query
         )
 
     def list_documents(self, size=None, execute=True, _source=None, compact=True, **kwargs):
@@ -195,6 +197,8 @@ class ClientBoundResponse(Response):
         :return:
         """
         filter_query = self._documents_query()
+        if self._query is not None:
+            filter_query = bool_if_required([filter_query, self._query])
         if not execute:
             return filter_query
         body = {}

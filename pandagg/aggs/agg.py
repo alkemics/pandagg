@@ -619,7 +619,13 @@ class ClientBoundAgg(Agg):
 
     def _serialize_as_tree(self, aggs):
         response_tree = ResponseTree(self).parse_aggregation(aggs)
-        return ClientBoundResponse(client=self.client, index_name=self.index_name, tree=response_tree, depth=1)
+        return ClientBoundResponse(
+            client=self.client,
+            index_name=self.index_name,
+            tree=response_tree,
+            depth=1,
+            query=self._query
+        )
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return ClientBoundAgg(
