@@ -5,13 +5,10 @@
 
 ## Client mode
 ```
->>> from elasticsearch import Elasticsearch
 >>> from pandagg import PandAgg
 
 >>> uri = '### MY ES URI ###'
->>> es = Elasticsearch(hosts=[uri])
-
->>> p = PandAgg(client=es)
+>>> p = PandAgg(hosts=[uri])
 >>> p.fetch_indices()
 >>> p.indices
 <Indices> ['classification_report', 'other_index']

@@ -1,13 +1,10 @@
 ## Pandagg client wrapper
 
 ```
->>> from elasticsearch import Elasticsearch
 >>> from pandagg import PandAgg
 
 >>> uri = 'localhost:9200/'
->>> es = Elasticsearch(hosts=[uri])
-
->>> p = PandAgg(client=es)
+>>> p = PandAgg(hosts=[uri])
 >>> p.fetch_indices()
 >>> p.indices
 <Indices> ['classification_report', 'other_index']
@@ -28,8 +25,8 @@
         .agg([
             Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),
             Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score'),
-        ], output='dataframe')
-
+        ]).\
+        execute(output='dataframe')
 
 # dataframe
                                                avg_f1_micro  avg_nb_classes  doc_count
