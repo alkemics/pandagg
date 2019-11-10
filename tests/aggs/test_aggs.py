@@ -287,7 +287,7 @@ week
 
         # with default size
         empty_agg = Agg()
-        empty_agg._interpret_agg(insert_below=None, element='some_field', default_size=10)
+        empty_agg._interpret_agg(insert_below=None, element='some_field', size=10)
         self.assertEqual(
             empty_agg.query_dict(),
             {'some_field': {'terms': {'field': 'some_field', 'size': 10}}}

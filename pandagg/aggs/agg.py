@@ -245,7 +245,7 @@ class Agg(Tree):
 
     def _interpret_agg(self, insert_below, element, **kwargs):
         if isinstance(element, string_types):
-            node = Terms(name=element, field=element, size=kwargs.get('default_size'))
+            node = Terms(name=element, field=element, size=kwargs.get('size'))
             self.add_node(node, pid=insert_below)
             return self
         if isinstance(element, dict):

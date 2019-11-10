@@ -3,7 +3,7 @@
 >>> from my_mapping import my_index_mapping
 
 >>> agg = Agg(mapping=my_index_mapping) \
-    .groupby([week, "local_metrics.field_class.name"], default_size=10) \
+    .groupby([week, "local_metrics.field_class.name"], size=10) \
     .agg([
         Min(agg_name='min_f1_score', field='local_metrics.performance.test.f1_score'),
         Max(agg_name='max_f1_score', field='local_metrics.performance.test.f1_score'),
