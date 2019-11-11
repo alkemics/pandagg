@@ -9,7 +9,6 @@
 - significant terms
 """
 
-from __future__ import unicode_literals
 import re
 from operator import itemgetter
 
@@ -41,12 +40,13 @@ class Filter(UniqueBucketAgg):
 
     def __init__(self, name, filter_, meta=None, aggs=None, **body):
         self.filter = filter_
+        body_kwargs = dict(body)
+        body_kwargs.update(filter_)
         super(Filter, self).__init__(
             name=name,
-            filter=filter_,
             meta=meta,
             aggs=aggs,
-            **body
+            **body_kwargs
         )
 
     def get_filter(self, key):
@@ -72,10 +72,6 @@ class MatchAll(Filter):
             meta=meta,
             aggs=aggs
         )
-
-    @staticmethod
-    def agg_body_to_init_kwargs(agg_body):
-        return agg_body
 
 
 class Nested(UniqueBucketAgg):

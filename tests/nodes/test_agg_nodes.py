@@ -1,7 +1,7 @@
 
 from __future__ import unicode_literals
 
-from pandagg.nodes import Terms, Filters, Avg, DateHistogram
+from pandagg.nodes import Terms, Filters, Avg, DateHistogram, Filter
 from pandagg.nodes.abstract import AggNode
 from unittest import TestCase
 
@@ -105,6 +105,42 @@ class AggNodesTestCase(TestCase):
         self.assertEqual(Terms('name', 'field').extract_bucket_value({'doc_count': 3, 'key': 'rock'}), 3)
         self.assertEqual(Terms('name', 'field').extract_bucket_value({'doc_count': 2, 'key': 'jazz'}), 2)
 
+        # test query dict
+        self.assertEqual(
+            Terms('name', field='field', size=10).query_dict(),
+            {"terms": {"field": "field", "size": 10}}
+        )
+
+    def test_filter(self):
+        es_raw_response = {
+            "doc_count": 12,
+            "sub_aggs": {}
+        }
+        # test extract_buckets
+        buckets_iterator = Filter('name', {}).extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                (None, {'doc_count': 12, "sub_aggs": {}}),
+            ]
+        )
+
+        # test extract bucket value
+        self.assertEqual(Filter('name', {}).extract_bucket_value({'doc_count': 12}), 12)
+
+        # test get_filter
+        filter_agg = Filter(
+            name='some_agg',
+            filter_={'term': {'some_path': 1}}
+        )
+        self.assertEqual(filter_agg.get_filter(None), {'term': {'some_path': 1}})
+
+        # test query dict
+        self.assertEqual(filter_agg.query_dict(), {'filter': {'term': {'some_path': 1}}})
+
     def test_filters(self):
         es_raw_response = {
             "buckets": {
@@ -167,6 +203,28 @@ class AggNodesTestCase(TestCase):
         self.assertEqual(filters_agg.get_filter('_other_'), expected_others_filter)
         self.assertEqual(filters_agg.get_filter('neither_one_nor_two'), expected_others_filter)
 
+        self.assertEqual(
+            filters_agg.query_dict(),
+            {
+                "filters": {
+                    "filters": {
+                        "first_bucket": {
+                            "term": {
+                                "some_path": 1
+                            }
+                        },
+                        "second_bucket": {
+                            "term": {
+                                "some_path": 2
+                            }
+                        }
+                    },
+                    "other_bucket": True,
+                    "other_bucket_key": "neither_one_nor_two"
+                }
+            }
+        )
+
     def test_metric_aggs(self):
         # example for Average metric aggregation
         es_raw_response = {
@@ -186,10 +244,6 @@ class AggNodesTestCase(TestCase):
 
         # test extract bucket value
         self.assertEqual(Avg.extract_bucket_value({"value": 75.0}), 75.0)
-
-    def test_all_agg_body_to_init_kwargs(self):
-        # TODO
-        pass
 
     def test_date_histogram_key_as_string(self):
         es_raw_response = {
