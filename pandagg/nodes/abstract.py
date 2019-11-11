@@ -161,7 +161,7 @@ class UniqueBucketAgg(BucketAggNode):
         yield (None, response_value)
 
     def get_filter(self, key):
-        return None
+        raise NotImplementedError()
 
 
 class ListBucketAgg(BucketAggNode):
@@ -189,5 +189,47 @@ class FieldMetricAgg(MetricAgg):
             name=name,
             meta=meta,
             field=field,
+            **body
+        )
+
+
+class Pipeline(UniqueBucketAgg):
+
+    VALUE_ATTRS = NotImplementedError()
+    SINGLE_BUCKET = NotImplementedError()
+
+    def __init__(self, name, buckets_path, gap_policy=None, meta=None, aggs=None, **body):
+        self.buckets_path = buckets_path
+        self.gap_policy = gap_policy
+        body_kwargs = dict(body)
+        if gap_policy is not None:
+            assert gap_policy in ('skip', 'insert_zeros')
+            body_kwargs['gap_policy'] = gap_policy
+
+        super(Pipeline, self).__init__(
+            name=name,
+            meta=meta,
+            aggs=aggs,
+            buckets_path=buckets_path,
+            **body
+        )
+
+    def get_filter(self, key):
+        return None
+
+
+class ScriptPipeline(Pipeline):
+    AGG_TYPE = NotImplementedError()
+    VALUE_ATTRS = 'value'
+
+    def __init__(self, name, script, buckets_path, gap_policy=None, meta=None, aggs=None, **body):
+        super(ScriptPipeline, self).__init__(
+            self,
+            name=name,
+            buckets_path=buckets_path,
+            gap_policy=gap_policy,
+            meta=meta,
+            aggs=aggs,
+            script=script,
             **body
         )

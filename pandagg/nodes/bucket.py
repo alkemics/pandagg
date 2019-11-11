@@ -32,6 +32,9 @@ class Global(UniqueBucketAgg):
             aggs=aggs
         )
 
+    def get_filter(self, key):
+        return None
+
 
 class Filter(UniqueBucketAgg):
 
@@ -89,6 +92,9 @@ class Nested(UniqueBucketAgg):
             aggs=aggs
         )
 
+    def get_filter(self, key):
+        return None
+
 
 class ReverseNested(UniqueBucketAgg):
 
@@ -107,6 +113,9 @@ class ReverseNested(UniqueBucketAgg):
             aggs=aggs,
             **body_kwargs
         )
+
+    def get_filter(self, key):
+        return None
 
 
 class Missing(UniqueBucketAgg):

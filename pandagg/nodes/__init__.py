@@ -29,8 +29,27 @@ from .metrics import (
     METRIC_AGGS
 )
 
+from .pipeline import (
+    AvgBucket,
+    Derivative,
+    MaxBucket,
+    MinBucket,
+    SumBucket,
+    StatsBucket,
+    ExtendedStatsBucket,
+    PercentilesBucket,
+    MovingAvg,
+    CumulativeSum,
+    BucketScript,
+    BucketSelector,
+    SerialDiff,
+    PIPELINE_AGGS
+)
+
 PUBLIC_AGGS = {}
 for key, agg in iteritems(BUCKET_AGGS):
     PUBLIC_AGGS[key] = agg
 for key, agg in iteritems(METRIC_AGGS):
+    PUBLIC_AGGS[key] = agg
+for key, agg in iteritems(PIPELINE_AGGS):
     PUBLIC_AGGS[key] = agg
