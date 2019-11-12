@@ -87,8 +87,6 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 
 ## Roadmap
 
-- examples
-- missing tests: some in pandagg.aggs.agg / pandagg.aggs.response_tree / pandagg.mapping.types
+- documentation
 - more precise doc on pandagg.aggs.agg.ClientBoundAgg/Agg
 - ES 6-7 compatibility
-- nested conditions of Filters aggregation propagated to children Filters aggregations

@@ -124,9 +124,6 @@ class Response(TreeBasedObj):
           |     └── SubNested A2    <- filter on A2
           └── Nested_B              <- filter on B
 
-        Note: on Filter and Filters query, if some filter condition is nested, it might require some propagation in
-        children conditions on that same nested. This feature is not implemented yet. The main difficulty being to
-        disambiguate if OR or AND operator must be applied on conditions of same nested level in some cases.
         """
         current_bucket = self._tree[self._tree.root]
         agg_tree = self._initial_tree.agg_tree
