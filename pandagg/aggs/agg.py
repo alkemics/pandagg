@@ -564,10 +564,11 @@ class Agg(Tree):
         )
         if not index:
             return pd.DataFrame()
-        return pd.DataFrame(
-            index=pd.MultiIndex.from_tuples(index, names=index_names),
-            data=values
-        )
+        if len(index[0]) == 0:
+            index = (None,) * len(index)
+        else:
+            index = pd.MultiIndex.from_tuples(index, names=index_names)
+        return pd.DataFrame(index=index, data=values)
 
     def _serialize_as_normalized(self, aggs):
         children = []
