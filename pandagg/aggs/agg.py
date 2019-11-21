@@ -520,9 +520,10 @@ class Agg(Tree):
             row_as_tuple=row_as_tuple,
             until=grouped_by
         )
-        if not index_values:
+        index_values_l = list(index_values)
+        if not index_values_l:
             return [], [], []
-        index, values = zip(*list(index_values))
+        index, values = zip(*index_values_l)
 
         grouping_agg = self[grouped_by]
         grouping_agg_children = self.children(grouped_by)
