@@ -116,3 +116,91 @@ Provide ability to interpret nested `AND` aggregation conditions inside nested, 
 Requires to handle cases including:
 - multiple levels of aggregations, with Filters, or field specific aggregations (Terms/Histogram/Metric aggregations)
 - `filters` aggregations, containing `should` condition with nested filters in some sub_filters, not in others.
+
+
+## Cases
+
+
+### Must
+```
+Translation:
+A           with garage AND with blue window
+└── B       with round window
+
+- Houses with garage, AND having a blue window, AND having a round window
+        DIFFERENT THAN
+
+A           with garage AND with blue window
+└── B       with [blue AND round] window
+
+- Houses with garage, AND having a [blue AND round] window
+```
+
+ ### Should not
+```
+ Translation:
+ A           with garage AND with blue window
+ └── B       AND WITHOUT [round OR green] window
+
+ - Houses with garage, AND having a blue window, AND NOT a [round AND green] window
+
+        DIFFERENT THAN
+
+ A           with garage AND with blue window
+ └── B       WITH a [blue AND NOT [green AND round]] window
+
+  - Houses with garage, AND having a [blue AND NOT [green AND round]] window
+
+        DIFFERENT THAN
+
+ A           with garage AND with blue window
+ └── B       WITH a [blue AND NOT green AND not round] window
+
+   - Houses with garage, AND having a [blue AND NOT green AND NOT round] window
+
+```
+
+ ### Must not
+ Ambiguous
+ ```
+ Translation:
+ A           with garage AND with blue window
+ └── B       AND WITHOUT [round AND green] window
+
+ - Houses with garage, AND having a blue window, WITHOUT a [round AND green] window
+
+        DIFFERENT THAN
+
+ A           with garage AND with blue window
+ └── B       WITH a [blue AND NOT [green AND round]] window
+
+  - Houses with garage, AND having a [blue AND NOT [green AND round]] window
+
+        DIFFERENT THAN
+
+ A           with garage AND with blue window
+ └── B       WITH a [blue AND NOT green AND not round] window
+
+   - Houses with garage, AND having a [blue AND NOT green AND NOT round] window
+
+```
+
+#### Complex
+
+### Should
+ Warning: not most intuitive
+```
+ A           with garage OR with blue window
+ └── B       with round window
+
+ - Houses [with garage, OR having a blue windows] AND having a round window
+        DIFFERENT THAN
+ - Houses with garage, OR having a [blue AND round] window
+```
+
+```
+A           (Terms agg)
+└── B       (Filters agg)
+    ├── C   (Avg agg)
+    └── D   (Sum agg)
+```
