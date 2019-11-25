@@ -17,11 +17,8 @@ indices_mock = {
     # index name
     "classification_report_one": {
         "aliases": {},
-        "mappings": {
-            MAPPING_NAME: MAPPING_DETAIL
-        },
-        "settings": SETTINGS,
-        "warmers": {}
+        "mappings": MAPPING_DETAIL,
+        "settings": SETTINGS
     }
 }
 
@@ -43,7 +40,7 @@ class WrapperTestCase(TestCase):
         self.assertIsInstance(report_index, ClientBoundIndex)
         self.assertEqual(
             report_index.__str__(),
-            u"<ClientBoundIndex> ['aliases', 'client', 'mapping', 'name', 'settings', 'warmers']"
+            u"<ClientBoundIndex> ['aliases', 'client', 'mapping', 'name', 'settings']"
         )
         self.assertEqual(report_index.name, 'classification_report_one')
 

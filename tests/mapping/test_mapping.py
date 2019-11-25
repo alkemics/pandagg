@@ -32,12 +32,12 @@ class MappingTreeTestCase(TestCase):
         )
 
     def test_parse_tree_from_dict(self):
-        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
 
         self.assertEqual(mapping_tree.__str__(), EXPECTED_MAPPING_TREE_REPR)
 
     def test_nesteds_applied_at_field(self):
-        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
 
         self.assertEqual(mapping_tree.nested_at_field('classification_type'), None)
         self.assertEqual(mapping_tree.list_nesteds_at_field('classification_type'), [])
@@ -52,13 +52,13 @@ class MappingTreeTestCase(TestCase):
         self.assertEqual(mapping_tree.list_nesteds_at_field('local_metrics.dataset.support_test'), ['local_metrics'])
 
     def test_mapping_type_of_field(self):
-        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
         with self.assertRaises(AbsentMappingFieldError):
             self.assertEqual(mapping_tree.mapping_type_of_field('yolo'), False)
 
         self.assertEqual(mapping_tree.mapping_type_of_field('global_metrics'), 'object')
         self.assertEqual(mapping_tree.mapping_type_of_field('local_metrics'), 'nested')
-        self.assertEqual(mapping_tree.mapping_type_of_field('global_metrics.field.name.raw'), 'string')
+        self.assertEqual(mapping_tree.mapping_type_of_field('global_metrics.field.name.raw'), 'keyword')
         self.assertEqual(mapping_tree.mapping_type_of_field('local_metrics.dataset.support_test'), 'integer')
 
 
@@ -67,7 +67,7 @@ class MappingTestCase(TestCase):
     """
 
     def test_mapping_aggregations(self):
-        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
         # check that leaves are expanded, based on 'field_name' attribute of nodes
         mapping = Mapping(tree=mapping_tree, depth=1)
         for field_name in ('classification_type', 'date', 'global_metrics', 'id', 'language', 'local_metrics', 'workflow'):
@@ -116,7 +116,7 @@ class ClientBoundMappingTestCase(TestCase):
         }
         client_mock.search = Mock(return_value=es_response_mock)
 
-        mapping_tree = MappingTree(mapping_name=MAPPING_NAME, mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
         client_bound_mapping = ClientBoundMapping(
             client=client_mock,
             tree=mapping_tree,
@@ -127,7 +127,7 @@ class ClientBoundMappingTestCase(TestCase):
         workflow_field = client_bound_mapping.workflow
         self.assertTrue(hasattr(workflow_field, 'a'))
         # workflow type is String
-        self.assertIsInstance(workflow_field.a, field_classes_per_name['string'])
+        self.assertIsInstance(workflow_field.a, field_classes_per_name['keyword'])
 
         response = workflow_field.a.terms(
             size=20,

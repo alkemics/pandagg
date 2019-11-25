@@ -14,7 +14,7 @@
 >>> report = p.indices.classification_report
 >>> report
 
-<ClientBoundIndex> ['warmers', 'name', 'settings', 'mapping', 'client', 'aliases']
+<ClientBoundIndex> ['name', 'settings', 'mapping', 'client', 'aliases']
 ```
 
 `ClientBound` refers to the fact that you can directly operate on ElasticSearch index through this Index object.

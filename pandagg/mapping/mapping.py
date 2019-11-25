@@ -58,9 +58,8 @@ class MappingTree(Tree):
     """
     node_class = MappingNode
 
-    def __init__(self, mapping_name, mapping_detail=None, identifier=None):
+    def __init__(self, mapping_detail=None, identifier=None):
         super(MappingTree, self).__init__(identifier=identifier)
-        self.mapping_name = mapping_name
         self.mapping_detail = mapping_detail
         if mapping_detail:
             self.build_mapping_from_dict(mapping_detail)
@@ -82,7 +81,6 @@ class MappingTree(Tree):
 
     def _clone(self, identifier, with_tree=False, deep=False):
         return MappingTree(
-            mapping_name=self.mapping_name,
             identifier=identifier,
             mapping_detail=self.mapping_detail if with_tree else None
         )

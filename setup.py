@@ -28,7 +28,7 @@ tests_require = [
 
 install_requires = [
     # treelib when https://github.com/caesar0301/treelib/pull/120 is approved
-    'elasticsearch==2.3.0',
+    'elasticsearch==7.1.0',
 ]
 
 extras_require = {

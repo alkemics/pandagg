@@ -63,8 +63,7 @@ class Agg(Tree):
             elif isinstance(mapping, Mapping):
                 self.tree_mapping = mapping._tree
             elif isinstance(mapping, dict):
-                mapping_name, mapping_detail = next(iteritems(mapping))
-                self.tree_mapping = MappingTree(mapping_name, mapping_detail)
+                self.tree_mapping = MappingTree(mapping)
             else:
                 raise NotImplementedError()
         return self

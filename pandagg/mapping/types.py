@@ -11,5 +11,6 @@ MAPPING_TYPES = [
     'geo_shape',
     'nested',
     'object',
-    'string'
+    'text',
+    'keyword'
 ] + NUMERIC_TYPES

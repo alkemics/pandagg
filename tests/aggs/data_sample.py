@@ -46,7 +46,7 @@ EXPECTED_AGG_QUERY = {
 
 
 def get_wrapper_declared_agg():
-    return Agg(mapping={MAPPING_NAME: MAPPING_DETAIL}) \
+    return Agg(mapping=MAPPING_DETAIL) \
         .groupby(['classification_type', 'global_metrics.field.name']) \
         .agg([
             Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),

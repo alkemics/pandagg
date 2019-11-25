@@ -34,7 +34,7 @@ class PandAgg:
         """
         :param index: Comma-separated list or wildcard expression of index names used to limit the request.
         """
-        # index_name -> {'warmers', 'mappings', 'aliases', 'settings'}
+        # index_name -> {'mappings', 'aliases', 'settings'}
         self._indices = self.client.indices.get(index=index)
 
         alias_to_indices = defaultdict(set)
@@ -44,7 +44,6 @@ class PandAgg:
                 name=index_name,
                 mapping=index_detail['mappings'],
                 settings=index_detail['settings'],
-                warmers=index_detail['warmers'],
                 aliases=index_detail['aliases'],
             )
             for alias in index_detail.get('aliases', {}).keys():

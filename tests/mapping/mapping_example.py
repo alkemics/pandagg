@@ -6,8 +6,7 @@ MAPPING_DETAIL = {
     "dynamic": False,
     "properties": {
         "classification_type": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
         },
         "date": {
             "type": "date",
@@ -23,18 +22,16 @@ MAPPING_DETAIL = {
                             "type": "integer"
                         },
                         "name": {
-                            "type": "string",
+                            "type": "text",
                             "fields": {
                                 # subfield
                                 "raw": {
-                                    "index": "not_analyzed",
-                                    "type": "string"
+                                    "type": "keyword"
                                 }
                             },
                         },
                         "type": {
-                            "type": "string",
-                            "index": "not_analyzed"
+                            "type": "keyword"
                         }
                     }
                 },
@@ -90,12 +87,10 @@ MAPPING_DETAIL = {
             }
         },
         "id": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
         },
         "language": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
         },
         "local_metrics": {
             "type": "nested",
@@ -119,8 +114,7 @@ MAPPING_DETAIL = {
                             "type": "integer"
                         },
                         "name": {
-                            "type": "string",
-                            "index": "not_analyzed"
+                            "type": "keyword"
                         }
                     }
                 },
@@ -146,14 +140,13 @@ MAPPING_DETAIL = {
             }
         },
         "workflow": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
         }
     }
 }
 
 EXPECTED_MAPPING_REPR = """root                                                            
-├── classification_type                                     String
+├── classification_type                                     Keyword
 ├── date                                                    Date
 ├── global_metrics                                         {Object}
 │   ├── dataset                                            {Object}
@@ -161,9 +154,9 @@ EXPECTED_MAPPING_REPR = """root
 │   │   └── support_train                                   Integer
 │   ├── field                                              {Object}
 │   │   ├── id                                              Integer
-│   │   ├── name                                            String
-│   │   │   └── raw                                       ~ String
-│   │   └── type                                            String
+│   │   ├── name                                            Text
+│   │   │   └── raw                                       ~ Keyword
+│   │   └── type                                            Keyword
 │   └── performance                                        {Object}
 │       └── test                                           {Object}
 │           ├── macro                                      {Object}
@@ -174,21 +167,21 @@ EXPECTED_MAPPING_REPR = """root
 │               ├── f1_score                                Float
 │               ├── precision                               Float
 │               └── recall                                  Float
-├── id                                                      String
-├── language                                                String
+├── id                                                      Keyword
+├── language                                                Keyword
 ├── local_metrics                                          [Nested]
 │   ├── dataset                                            {Object}
 │   │   ├── support_test                                    Integer
 │   │   └── support_train                                   Integer
 │   ├── field_class                                        {Object}
 │   │   ├── id                                              Integer
-│   │   └── name                                            String
+│   │   └── name                                            Keyword
 │   └── performance                                        {Object}
 │       └── test                                           {Object}
 │           ├── f1_score                                    Float
 │           ├── precision                                   Float
 │           └── recall                                      Float
-└── workflow                                                String
+└── workflow                                                Keyword
 """
 
 EXPECTED_MAPPING_TREE_REPR = """<MappingTree>\n%s""" % EXPECTED_MAPPING_REPR

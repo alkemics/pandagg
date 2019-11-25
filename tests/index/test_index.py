@@ -18,9 +18,8 @@ class IndexTestCase(TestCase):
         return Index(
             name='my_index_name',
             settings={},
-            mapping={MAPPING_NAME: MAPPING_DETAIL},
-            aliases={},
-            warmers={}
+            mapping=MAPPING_DETAIL,
+            aliases={}
         )
 
     def test_index_groupby(self):
@@ -68,9 +67,8 @@ class ClientBoundTestCase(TestCase):
             client=client_mock,
             name='my_index_name',
             settings={},
-            mapping={MAPPING_NAME: MAPPING_DETAIL},
-            aliases={},
-            warmers={}
+            mapping=MAPPING_DETAIL,
+            aliases={}
         )
 
     def test_client_bound_query(self):

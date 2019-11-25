@@ -13,18 +13,16 @@ from pandagg.utils import Obj
 
 class Index(Obj):
 
-    def __init__(self, name, settings, mapping, aliases, warmers):
+    def __init__(self, name, settings, mapping, aliases):
         super(Index, self).__init__()
         self.name = name
         self.settings = settings
         self.mapping = None
         self.set_mapping(mapping)
         self.aliases = aliases
-        self.warmers = warmers
 
     def set_mapping(self, mapping):
-        mapping_name, mapping_detail = next(iteritems(mapping))
-        self.mapping = Mapping(tree=MappingTree(mapping_name, mapping_detail), depth=1)
+        self.mapping = Mapping(tree=MappingTree(mapping), depth=1)
 
     def groupby(self, by, **kwargs):
         return Agg(mapping=self.mapping).groupby(by, **kwargs)
@@ -43,7 +41,7 @@ class Aliases(Obj):
 
 class ClientBoundIndex(Index):
 
-    def __init__(self, client, name, settings, mapping, aliases, warmers):
+    def __init__(self, client, name, settings, mapping, aliases):
         self.client = client
         if client is not None:
             assert isinstance(client, Elasticsearch)
@@ -51,16 +49,14 @@ class ClientBoundIndex(Index):
             name=name,
             settings=settings,
             mapping=mapping,
-            aliases=aliases,
-            warmers=warmers
+            aliases=aliases
         )
 
     def set_mapping(self, mapping):
-        mapping_name, mapping_detail = next(iteritems(mapping))
         self.mapping = ClientBoundMapping(
             client=self.client,
             index_name=self.name,
-            tree=MappingTree(mapping_name, mapping_detail),
+            tree=MappingTree(mapping),
             depth=1
         )
 
