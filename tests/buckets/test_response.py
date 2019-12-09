@@ -4,14 +4,14 @@ from mock import Mock
 
 from pandagg.aggs import Agg
 from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
-from tests.mapping.mapping_example import MAPPING_DETAIL
+from tests.mapping.mapping_example import MAPPING
 import tests.aggs.data_sample as sample
 
 
 class ResponseTestCase(TestCase):
 
     def test_response_tree(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response_tree = ResponseTree(agg_tree=my_agg)
         response_tree.parse_aggregation(sample.ES_AGG_RESPONSE)
 
@@ -36,7 +36,7 @@ class ResponseTestCase(TestCase):
         )
 
     def test_response(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(sample.ES_AGG_RESPONSE)
 
         response = Response(tree=response_tree, depth=1)
@@ -72,7 +72,7 @@ class ClientBoundResponseTestCase(TestCase):
     def test_client_bound_response(self):
         client_mock = Mock(spec=['search'])
 
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(sample.ES_AGG_RESPONSE)
 
         response = ClientBoundResponse(

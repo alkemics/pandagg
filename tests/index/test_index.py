@@ -8,7 +8,7 @@ from pandagg.aggs.agg import ClientBoundAgg, Agg
 from pandagg.index import Index, ClientBoundIndex
 from pandagg.nodes import Avg
 
-from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL
+from tests.mapping.mapping_example import MAPPING
 
 
 class IndexTestCase(TestCase):
@@ -18,7 +18,7 @@ class IndexTestCase(TestCase):
         return Index(
             name='my_index_name',
             settings={},
-            mapping=MAPPING_DETAIL,
+            mapping=MAPPING,
             aliases={}
         )
 
@@ -67,7 +67,7 @@ class ClientBoundTestCase(TestCase):
             client=client_mock,
             name='my_index_name',
             settings={},
-            mapping=MAPPING_DETAIL,
+            mapping=MAPPING,
             aliases={}
         )
 

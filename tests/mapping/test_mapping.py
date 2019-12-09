@@ -7,7 +7,7 @@ from mock import Mock
 from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.mapping.field_agg_factory import field_classes_per_name
 from pandagg.mapping.mapping import Mapping, MappingTree, MappingNode, ClientBoundMapping
-from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL, EXPECTED_MAPPING_TREE_REPR
+from tests.mapping.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
 
 
 class MappingTreeTestCase(TestCase):
@@ -32,12 +32,12 @@ class MappingTreeTestCase(TestCase):
         )
 
     def test_parse_tree_from_dict(self):
-        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING)
 
         self.assertEqual(mapping_tree.__str__(), EXPECTED_MAPPING_TREE_REPR)
 
     def test_nesteds_applied_at_field(self):
-        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING)
 
         self.assertEqual(mapping_tree.nested_at_field('classification_type'), None)
         self.assertEqual(mapping_tree.list_nesteds_at_field('classification_type'), [])
@@ -52,7 +52,7 @@ class MappingTreeTestCase(TestCase):
         self.assertEqual(mapping_tree.list_nesteds_at_field('local_metrics.dataset.support_test'), ['local_metrics'])
 
     def test_mapping_type_of_field(self):
-        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING)
         with self.assertRaises(AbsentMappingFieldError):
             self.assertEqual(mapping_tree.mapping_type_of_field('yolo'), False)
 
@@ -67,7 +67,7 @@ class MappingTestCase(TestCase):
     """
 
     def test_mapping_aggregations(self):
-        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING)
         # check that leaves are expanded, based on 'field_name' attribute of nodes
         mapping = Mapping(tree=mapping_tree, depth=1)
         for field_name in ('classification_type', 'date', 'global_metrics', 'id', 'language', 'local_metrics', 'workflow'):
@@ -116,7 +116,7 @@ class ClientBoundMappingTestCase(TestCase):
         }
         client_mock.search = Mock(return_value=es_response_mock)
 
-        mapping_tree = MappingTree(mapping_detail=MAPPING_DETAIL)
+        mapping_tree = MappingTree(mapping_detail=MAPPING)
         client_bound_mapping = ClientBoundMapping(
             client=client_mock,
             tree=mapping_tree,

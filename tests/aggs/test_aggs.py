@@ -16,13 +16,13 @@ from pandagg.nodes import Avg, Min, DateHistogram, Terms, Filter
 
 import tests.aggs.data_sample as sample
 
-from tests.mapping.mapping_example import MAPPING_DETAIL
+from tests.mapping.mapping_example import MAPPING
 
 
 class AggTestCase(TestCase):
 
     def test_add_node_with_mapping(self):
-        with_mapping = Agg(mapping=MAPPING_DETAIL)
+        with_mapping = Agg(mapping=MAPPING)
         self.assertEqual(len(with_mapping.nodes.keys()), 0)
 
         # add regular node
@@ -115,7 +115,7 @@ workflow
     def test_paste_tree_with_mapping(self):
         # with explicit nested
         initial_agg_1 = Agg(
-            mapping=MAPPING_DETAIL,
+            mapping=MAPPING,
             from_={
                 "week": {
                     "date_histogram": {
@@ -159,7 +159,7 @@ week
 
         # without explicit nested
         initial_agg_2 = Agg(
-            mapping=MAPPING_DETAIL,
+            mapping=MAPPING,
             from_={
                 "week": {
                     "date_histogram": {
@@ -318,7 +318,7 @@ week
         # with required nested
         agg = Agg(
             from_={'term_workflow': {'terms': {'field': 'workflow', 'size': 5}}},
-            mapping=MAPPING_DETAIL
+            mapping=MAPPING
         )
         agg._interpret_agg(insert_below='term_workflow', element='local_metrics.field_class.name')
         self.assertEqual(
@@ -369,7 +369,7 @@ week
         # with parent with required nested
         agg = Agg(
             from_={'term_workflow': {'terms': {'field': 'workflow', 'size': 5}}},
-            mapping=MAPPING_DETAIL
+            mapping=MAPPING
         )
         node = Avg(
             name='min_local_f1',
@@ -476,7 +476,7 @@ root_agg
         )
 
     def test_parse_as_tree(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response = my_agg._serialize_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response, Response)
         self.assertEqual(
@@ -486,14 +486,14 @@ root_agg
         # check that tree attributes are accessible
 
     def test_normalize_buckets(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         self.assertEqual(
             my_agg._serialize_as_normalized(sample.ES_AGG_RESPONSE),
             sample.EXPECTED_NORMALIZED_RESPONSE
         )
 
     def test_parse_as_tabular(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         index, index_names, values = my_agg._serialize_as_tabular(sample.ES_AGG_RESPONSE)
         self.assertEqual(index_names, ['classification_type', 'global_metrics.field.name'])
         self.assertEqual(len(index), len(values))
@@ -502,7 +502,7 @@ root_agg
         self.assertEqual(values, sample.EXPECTED_TABULAR_VALUES)
 
     def test_parse_as_dataframe(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         df = my_agg._serialize_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(set(df.index.names), {'classification_type', 'global_metrics.field.name'})
@@ -517,7 +517,7 @@ root_agg
             ├── avg_f1_micro
             └── avg_nb_classes
         """
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
 
         with self.assertRaises(ValueError) as e:
             my_agg._validate_aggs_parent_id(pid=None)
@@ -561,9 +561,9 @@ root_agg
         pass
 
     def test_mapping_from_init(self):
-        agg_from_dict_mapping = Agg(mapping=MAPPING_DETAIL)
-        agg_from_tree_mapping = Agg(mapping=MappingTree(mapping_detail=MAPPING_DETAIL))
-        agg_from_obj_mapping = Agg(mapping=Mapping(tree=MappingTree(mapping_detail=MAPPING_DETAIL)))
+        agg_from_dict_mapping = Agg(mapping=MAPPING)
+        agg_from_tree_mapping = Agg(mapping=MappingTree(mapping_detail=MAPPING))
+        agg_from_obj_mapping = Agg(mapping=Mapping(tree=MappingTree(mapping_detail=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()
@@ -578,11 +578,11 @@ root_agg
 
     def test_set_mapping(self):
         agg_from_dict_mapping = Agg() \
-            .set_mapping(mapping=MAPPING_DETAIL)
+            .set_mapping(mapping=MAPPING)
         agg_from_tree_mapping = Agg() \
-            .set_mapping(mapping=MappingTree(mapping_detail=MAPPING_DETAIL))
+            .set_mapping(mapping=MappingTree(mapping_detail=MAPPING))
         agg_from_obj_mapping = Agg() \
-            .set_mapping(mapping=Mapping(tree=MappingTree(mapping_detail=MAPPING_DETAIL)))
+            .set_mapping(mapping=Mapping(tree=MappingTree(mapping_detail=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()
@@ -597,14 +597,14 @@ root_agg
         self.assertIsInstance(agg_from_obj_mapping, Agg)
 
     def test_init_from_dict(self):
-        my_agg = Agg(mapping=MAPPING_DETAIL, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         self.assertEqual(my_agg.query_dict(), sample.EXPECTED_AGG_QUERY)
         self.assertEqual(my_agg.__str__(), sample.EXPECTED_REPR)
 
     def test_init_from_node_hierarchy(self):
         node_hierarchy = sample.get_node_hierarchy()
 
-        agg = Agg(from_=node_hierarchy, mapping=MAPPING_DETAIL)
+        agg = Agg(from_=node_hierarchy, mapping=MAPPING)
         self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
         self.assertEqual(agg.__str__(), sample.EXPECTED_REPR)
 
@@ -627,7 +627,7 @@ root_agg
                 )
             ]
         )
-        agg = Agg(from_=node_hierarchy, mapping=MAPPING_DETAIL)
+        agg = Agg(from_=node_hierarchy, mapping=MAPPING)
         self.assertEqual(
             agg.query_dict(),
             {
@@ -704,7 +704,7 @@ week
                 )
             ]
         )
-        agg = Agg(from_=node_hierarchy, mapping=MAPPING_DETAIL)
+        agg = Agg(from_=node_hierarchy, mapping=MAPPING)
 
         self.assertEqual(agg.applied_nested_path_at_node('week'), None)
         for nid in ('nested_below_week', 'local_metrics.field_class.name', 'min_f1_score'):
@@ -736,7 +736,7 @@ week
                 )
             ]
         )
-        agg = Agg(from_=node_hierarchy, mapping=MAPPING_DETAIL)
+        agg = Agg(from_=node_hierarchy, mapping=MAPPING)
         self.assertEqual(agg.deepest_linear_bucket_agg, 'local_metrics.field_class.name')
 
         # week is last bucket linear bucket
@@ -762,7 +762,7 @@ week
                 )
             ]
         )
-        agg2 = Agg(from_=node_hierarchy_2, mapping=MAPPING_DETAIL)
+        agg2 = Agg(from_=node_hierarchy_2, mapping=MAPPING)
         self.assertEqual(agg2.deepest_linear_bucket_agg, 'week')
 
 

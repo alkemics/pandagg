@@ -16,7 +16,6 @@ class PandAgg(Elasticsearch):
         """
         indices = Indices()
         for index_name, index_detail in iteritems(self.indices.get(index=index)):
-            print(index_name)
             indices[index_name] = ClientBoundIndex(
                 client=self,
                 name=index_name,

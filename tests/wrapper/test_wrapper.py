@@ -10,14 +10,14 @@ from mock import patch
 
 from pandagg.index.index import ClientBoundIndex
 from pandagg.mapping.mapping import ClientBoundMapping
-from tests.mapping.mapping_example import MAPPING_NAME, MAPPING_DETAIL, EXPECTED_CLIENT_BOUND_MAPPING_REPR
+from tests.mapping.mapping_example import MAPPING, EXPECTED_CLIENT_BOUND_MAPPING_REPR
 from tests.wrapper.settings_example import SETTINGS
 
 indices_mock = {
     # index name
     "classification_report_one": {
         "aliases": {},
-        "mappings": MAPPING_DETAIL,
+        "mappings": MAPPING,
         "settings": SETTINGS
     }
 }

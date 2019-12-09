@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-MAPPING_NAME = 'classification_report'
-MAPPING_DETAIL = {
+MAPPING = {
     "dynamic": False,
     "properties": {
         "classification_type": {
