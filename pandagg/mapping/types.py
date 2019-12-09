@@ -1,7 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-NUMERIC_TYPES = ['long', 'integer', 'short', 'byte', 'double', 'float', 'ip', 'token_count']
+NUMERIC_TYPES = [
+    'long',
+    'integer',
+    'short',
+    'byte',
+    'double',
+    'float',
+    'half_float',
+    'scaled_float',
+    'ip',
+    'token_count'
+]
 
 MAPPING_TYPES = [
     'binary',
