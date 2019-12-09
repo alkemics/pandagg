@@ -31,12 +31,12 @@ class WrapperTestCase(TestCase):
 
         # fetch indices
         p = PandAgg()
-        p.fetch_indices(index='*report*')
+        indices = p.fetch_indices(index='*report*')
         indice_get_mock.assert_called_once_with(index="*report*")
 
         # ensure indices presence
-        self.assertTrue(hasattr(p.indices, 'classification_report_one'))
-        report_index = p.indices.classification_report_one
+        self.assertTrue(hasattr(indices, 'classification_report_one'))
+        report_index = indices.classification_report_one
         self.assertIsInstance(report_index, ClientBoundIndex)
         self.assertEqual(
             report_index.__str__(),

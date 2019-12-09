@@ -42,9 +42,8 @@ class Aliases(Obj):
 class ClientBoundIndex(Index):
 
     def __init__(self, client, name, settings, mapping, aliases):
+        assert isinstance(client, Elasticsearch)
         self.client = client
-        if client is not None:
-            assert isinstance(client, Elasticsearch)
         super(ClientBoundIndex, self).__init__(
             name=name,
             settings=settings,
