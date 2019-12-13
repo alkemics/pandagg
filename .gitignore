@@ -21,6 +21,8 @@
 .tags
 .cache/
 .vscode/
+build/
+dist/
 
 # Python files #
 ################
@@ -39,3 +41,4 @@ Icon?
 Thumbs.db
 
 env/
+env3/
