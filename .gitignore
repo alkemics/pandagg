@@ -30,6 +30,7 @@ dist/
 *.egg-info
 *.pyc
 *.ipynb
+.eggs/
 
 # OS generated files #
 ######################
