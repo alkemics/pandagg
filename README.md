@@ -75,10 +75,3 @@ specific locations of the initial **tree**, thus making it easier to build your 
 ## Contributing
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome.
-
-
-## Roadmap
-
-- documentation
-- more precise doc on pandagg.aggs.agg.ClientBoundAgg/Agg
-- ES 6-7 compatibility
