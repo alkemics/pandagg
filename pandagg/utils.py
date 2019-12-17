@@ -117,7 +117,7 @@ class TreeBasedObj(Obj):
         attr = unicodedata.normalize("NFD", attr).encode("ASCII", "ignore").decode()
         return re.sub(
             string=attr,
-            pattern=r'[^a-zA-Z_]',
+            pattern=r'[^a-zA-Z_0-9]',
             repl='_'
         )
 
