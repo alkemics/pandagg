@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from pandagg.mapping.types import NUMERIC_TYPES
-from pandagg.nodes.abstract import FieldMetricAgg, MetricAgg
+from pandagg.nodes.aggs.abstract import FieldMetricAgg, MetricAgg
 
 
 class TopHits(MetricAgg):

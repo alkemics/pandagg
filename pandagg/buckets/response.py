@@ -5,7 +5,7 @@ from collections import OrderedDict, defaultdict
 
 from six import iteritems
 from pandagg.buckets.buckets import Bucket
-from pandagg.nodes.abstract import UniqueBucketAgg
+from pandagg.nodes.aggs.abstract import UniqueBucketAgg
 from pandagg.tree import Tree
 from pandagg.utils import TreeBasedObj, bool_if_required
 

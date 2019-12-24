@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from pandagg.nodes import Terms, Filters, Avg, DateHistogram, Filter
-from pandagg.nodes.abstract import AggNode
+from pandagg.nodes.aggs.abstract import AggNode
 from unittest import TestCase
 
 

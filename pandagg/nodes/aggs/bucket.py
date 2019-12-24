@@ -16,7 +16,7 @@ from six import iteritems
 
 from pandagg.utils import bool_if_required
 from pandagg.mapping.types import NUMERIC_TYPES
-from pandagg.nodes.abstract import ListBucketAgg, UniqueBucketAgg, BucketAggNode
+from pandagg.nodes.aggs.abstract import ListBucketAgg, UniqueBucketAgg, BucketAggNode
 
 
 class Global(UniqueBucketAgg):

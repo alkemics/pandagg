@@ -15,7 +15,7 @@ from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.mapping import MappingTree, Mapping
 from pandagg.nodes import PUBLIC_AGGS, Terms, Nested, ReverseNested, MatchAll
-from pandagg.nodes.abstract import BucketAggNode, UniqueBucketAgg, AggNode
+from pandagg.nodes.aggs.abstract import BucketAggNode, UniqueBucketAgg, AggNode
 from pandagg.tree import Tree
 from pandagg.utils import bool_if_required
 

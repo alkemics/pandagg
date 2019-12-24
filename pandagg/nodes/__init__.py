@@ -1,6 +1,6 @@
 from six import iteritems
 
-from .bucket import (
+from .aggs.bucket import (
     MatchAll,
     Terms,
     Filters,
@@ -13,7 +13,7 @@ from .bucket import (
     BUCKET_AGGS
 )
 
-from .metrics import (
+from .aggs.metrics import (
     Avg,
     Max,
     Min,
@@ -29,7 +29,7 @@ from .metrics import (
     METRIC_AGGS
 )
 
-from .pipeline import (
+from .aggs.pipeline import (
     AvgBucket,
     Derivative,
     MaxBucket,
