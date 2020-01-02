@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.tree import Tree
-from pandagg.utils import Obj, TreeBasedObj, bool_if_required
+from pandagg.base._tree import Tree
+from pandagg.base.utils import bool_if_required
+from pandagg.base.interactive.abstract import TreeBasedObj, Obj
 from unittest import TestCase
 
 

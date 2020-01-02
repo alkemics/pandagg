@@ -2,8 +2,9 @@ from collections import OrderedDict
 from unittest import TestCase
 from mock import Mock
 
-from pandagg.aggs import Agg
-from pandagg.buckets.response import ResponseTree, Response, ClientBoundResponse
+from pandagg.base.tree.agg import Agg
+from pandagg.base.tree.response import ResponseTree
+from pandagg.base.interactive.response import IResponse, ClientBoundResponse
 from tests.mapping.mapping_example import MAPPING
 import tests.aggs.data_sample as sample
 
@@ -39,19 +40,19 @@ class ResponseTestCase(TestCase):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(sample.ES_AGG_RESPONSE)
 
-        response = Response(tree=response_tree, depth=1)
+        response = IResponse(tree=response_tree, depth=1)
 
         # ensure that navigation to attributes works with autocompletion (dir is used in ipython)
         self.assertIn('classification_type_multiclass', dir(response))
         self.assertIn('classification_type_multilabel', dir(response))
 
         multilabel = response.classification_type_multilabel
-        self.assertIsInstance(multilabel, Response)
+        self.assertIsInstance(multilabel, IResponse)
         self.assertIs(multilabel._initial_tree, response._tree)
 
         self.assertIn('global_metrics_field_name_allergentypelist', dir(multilabel))
         allergentypelist = multilabel.global_metrics_field_name_allergentypelist
-        self.assertIsInstance(allergentypelist, Response)
+        self.assertIsInstance(allergentypelist, IResponse)
         self.assertIs(allergentypelist._initial_tree, response._tree)
 
         # test filter query used to list documents belonging to bucket
@@ -88,12 +89,12 @@ class ClientBoundResponseTestCase(TestCase):
         self.assertIn('classification_type_multilabel', dir(response))
 
         multilabel = response.classification_type_multilabel
-        self.assertIsInstance(multilabel, Response)
+        self.assertIsInstance(multilabel, IResponse)
         self.assertIs(multilabel._initial_tree, response._tree)
 
         self.assertIn('global_metrics_field_name_allergentypelist', dir(multilabel))
         allergentypelist = multilabel.global_metrics_field_name_allergentypelist
-        self.assertIsInstance(allergentypelist, Response)
+        self.assertIsInstance(allergentypelist, IResponse)
         self.assertIs(allergentypelist._initial_tree, response._tree)
 
         # test filter query used to list documents belonging to bucket

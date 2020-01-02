@@ -8,11 +8,14 @@
 from unittest import TestCase
 import pandas as pd
 from treelib.exceptions import MultipleRootError
-from pandagg.aggs import Agg, ClientBoundAgg
-from pandagg.buckets.response import Response
-from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
-from pandagg.mapping import MappingTree, Mapping
-from pandagg.nodes import Avg, Min, DateHistogram, Terms, Filter
+from pandagg.base.tree.agg import Agg
+from pandagg.base.interactive.agg import ClientBoundAgg
+from pandagg.base.interactive.response import IResponse
+from pandagg.base.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
+from pandagg.base.tree.mapping import Mapping
+from pandagg.base.interactive.mapping import IMapping
+from pandagg.base.node.agg.bucket import DateHistogram, Terms, Filter
+from pandagg.base.node.agg.metric import Avg, Min
 
 import tests.aggs.data_sample as sample
 
@@ -478,7 +481,7 @@ root_agg
     def test_parse_as_tree(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response = my_agg._serialize_as_tree(sample.ES_AGG_RESPONSE)
-        self.assertIsInstance(response, Response)
+        self.assertIsInstance(response, IResponse)
         self.assertEqual(
             response.__str__(),
             sample.EXPECTED_RESPONSE_REPR
@@ -562,8 +565,8 @@ root_agg
 
     def test_mapping_from_init(self):
         agg_from_dict_mapping = Agg(mapping=MAPPING)
-        agg_from_tree_mapping = Agg(mapping=MappingTree(mapping_detail=MAPPING))
-        agg_from_obj_mapping = Agg(mapping=Mapping(tree=MappingTree(mapping_detail=MAPPING)))
+        agg_from_tree_mapping = Agg(mapping=Mapping(mapping_detail=MAPPING))
+        agg_from_obj_mapping = Agg(mapping=IMapping(tree=Mapping(mapping_detail=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()
@@ -580,9 +583,9 @@ root_agg
         agg_from_dict_mapping = Agg() \
             .set_mapping(mapping=MAPPING)
         agg_from_tree_mapping = Agg() \
-            .set_mapping(mapping=MappingTree(mapping_detail=MAPPING))
+            .set_mapping(mapping=Mapping(mapping_detail=MAPPING))
         agg_from_obj_mapping = Agg() \
-            .set_mapping(mapping=Mapping(tree=MappingTree(mapping_detail=MAPPING)))
+            .set_mapping(mapping=IMapping(tree=Mapping(mapping_detail=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()

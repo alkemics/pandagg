@@ -1,8 +1,9 @@
 
 from __future__ import unicode_literals
 
-from pandagg.nodes import Terms, Filters, Avg, DateHistogram, Filter
-from pandagg.nodes.aggs.abstract import AggNode
+from pandagg.base.node.agg.bucket import Terms, Filters, DateHistogram, Filter
+from pandagg.base.node.agg.metric import Avg
+from pandagg.base.node.agg.abstract import AggNode
 from unittest import TestCase
 
 

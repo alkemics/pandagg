@@ -1,9 +1,7 @@
 
 from __future__ import unicode_literals
 
-from pandagg.nodes.query.compound import Bool
-from pandagg.nodes.query.term_level import Terms
-from pandagg.nodes.query.abstract import QueryClause
+from pandagg.base.node.query import Terms
 from unittest import TestCase
 
 

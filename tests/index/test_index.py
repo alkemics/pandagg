@@ -4,9 +4,10 @@ from elasticsearch import Elasticsearch
 from mock import Mock, patch
 from unittest import TestCase
 
-from pandagg.aggs.agg import ClientBoundAgg, Agg
-from pandagg.index import Index, ClientBoundIndex
-from pandagg.nodes import Avg
+from pandagg.base.tree.agg import Agg
+from pandagg.base.interactive.agg import ClientBoundAgg
+from pandagg.base.interactive.index import Index, ClientBoundIndex
+from pandagg.base.node.agg.metric import Avg
 
 from tests.mapping.mapping_example import MAPPING
 

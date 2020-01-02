@@ -183,5 +183,5 @@ EXPECTED_MAPPING_REPR = """root
 └── workflow                                                Keyword
 """
 
-EXPECTED_MAPPING_TREE_REPR = """<MappingTree>\n%s""" % EXPECTED_MAPPING_REPR
+EXPECTED_MAPPING_TREE_REPR = """<Mapping>\n%s""" % EXPECTED_MAPPING_REPR
 EXPECTED_CLIENT_BOUND_MAPPING_REPR = """<ClientBoundMapping>\n%s""" % EXPECTED_MAPPING_REPR

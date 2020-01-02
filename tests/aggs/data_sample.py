@@ -5,8 +5,9 @@
 results.
 """
 
-from pandagg.aggs import Agg
-from pandagg.nodes import Avg, Terms
+from pandagg.base.tree.agg import Agg
+from pandagg.base.node.agg.metric import Avg
+from pandagg.base.node.agg.bucket import Terms
 from tests.mapping.mapping_example import MAPPING
 
 
@@ -234,7 +235,7 @@ EXPECTED_RESP_REPR = """root
         ├── avg_f1_micro                                 0.8
         └── avg_nb_classes                              9.97
 """
-EXPECTED_RESPONSE_REPR = """<Response>\n%s""" % EXPECTED_RESP_REPR
+EXPECTED_RESPONSE_REPR = """<IResponse>\n%s""" % EXPECTED_RESP_REPR
 EXPECTED_RESPONSE_TREE_REPR = """<ResponseTree>\n%s""" % EXPECTED_RESP_REPR
 
 
