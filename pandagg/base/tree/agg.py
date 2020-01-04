@@ -49,9 +49,9 @@ class Agg(Tree):
         if isinstance(from_, dict):
             from_dict = from_
         if from_dict:
-            self._init_build_tree_from_dict(from_dict)
+            self._init_serialize_from_dict(from_dict)
         if from_agg_node:
-            self._build_tree_from_node(from_agg_node)
+            self._serialize_from_node(from_agg_node)
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Agg(
@@ -64,15 +64,15 @@ class Agg(Tree):
         self.tree_mapping = as_mapping(mapping)
         return self
 
-    def _init_build_tree_from_dict(self, from_dict):
+    def _init_serialize_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)
         from_dict = copy.deepcopy(from_dict)
         if len(from_dict.keys()) > 1:
             self.add_node(MatchAll(self._crafted_root_name))
         agg_name, agg_detail = next(iteritems(from_dict))
-        self._build_tree_from_dict(agg_name, agg_detail, self.root)
+        self._serialize_from_dict(agg_name, agg_detail, self.root)
 
-    def _build_tree_from_dict(self, agg_name, agg_detail, pid=None):
+    def _serialize_from_dict(self, agg_name, agg_detail, pid=None):
         if not isinstance(agg_detail, dict):
             raise InvalidAggregation
         meta = agg_detail.pop('meta', None)
@@ -82,13 +82,13 @@ class Agg(Tree):
         node = deserialize_agg(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
         self.add_node(node, pid)
         for child_name in sorted(children_aggs.keys()):
-            self._build_tree_from_dict(child_name, children_aggs[child_name], node.identifier)
+            self._serialize_from_dict(child_name, children_aggs[child_name], node.identifier)
 
-    def _build_tree_from_node(self, agg_node, pid=None):
+    def _serialize_from_node(self, agg_node, pid=None):
         self.add_node(agg_node, pid)
         if isinstance(agg_node, BucketAggNode):
             for child_agg_node in agg_node.aggs or []:
-                self._build_tree_from_node(child_agg_node, pid=agg_node.identifier)
+                self._serialize_from_node(child_agg_node, pid=agg_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             agg_node.aggs = None
 
@@ -246,7 +246,7 @@ class Agg(Tree):
                 pass
             return self
         if isinstance(element, AggNode):
-            self._build_tree_from_node(element, pid=insert_below)
+            self._serialize_from_node(element, pid=insert_below)
             return self
         if isinstance(element, Agg):
             self.paste(nid=insert_below, new_tree=element)
@@ -475,7 +475,7 @@ class Agg(Tree):
                 result['children'] = normalized_children
             yield result
 
-    def _serialize_as_tabular(self, aggs_response, row_as_tuple=False, grouped_by=None, normalize_children=True):
+    def _serialize_response_as_tabular(self, aggs_response, row_as_tuple=False, grouped_by=None, normalize_children=True):
         """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
         reached, and using children aggregations of grouping level as values for each of generated groups (columns).
 
@@ -537,13 +537,13 @@ class Agg(Tree):
         serialized_values = list(map(serialize_columns, values))
         return index, index_names, serialized_values
 
-    def _serialize_as_dataframe(self, aggs, grouped_by=None, normalize_children=True):
+    def _serialize_response_as_dataframe(self, aggs, grouped_by=None, normalize_children=True):
         try:
             import pandas as pd
         except ImportError:
             raise ImportError('Using dataframe output format requires to install pandas. Please install "pandas" or '
                               'use another output format.')
-        index, index_names, values = self._serialize_as_tabular(
+        index, index_names, values = self._serialize_response_as_tabular(
             aggs_response=aggs,
             row_as_tuple=True,
             grouped_by=grouped_by,
@@ -557,7 +557,7 @@ class Agg(Tree):
             index = pd.MultiIndex.from_tuples(index, names=index_names)
         return pd.DataFrame(index=index, data=values)
 
-    def _serialize_as_normalized(self, aggs):
+    def _serialize_response_as_normalized(self, aggs):
         children = []
         for k in sorted(iterkeys(aggs)):
             for child in self._normalize_buckets(aggs, k):
@@ -569,21 +569,21 @@ class Agg(Tree):
             'children': children
         }
 
-    def _serialize_as_tree(self, aggs):
+    def _serialize_response_as_tree(self, aggs):
         response_tree = ResponseTree(self).parse_aggregation(aggs)
         return IResponse(tree=response_tree, depth=1)
 
-    def serialize(self, aggs, output, **kwargs):
+    def serialize_response(self, aggs, output, **kwargs):
         if output == 'raw':
             return aggs
         elif output == 'tree':
-            return self._serialize_as_tree(aggs)
+            return self._serialize_response_as_tree(aggs)
         elif output == 'normalized_tree':
-            return self._serialize_as_normalized(aggs)
+            return self._serialize_response_as_normalized(aggs)
         elif output == 'dict_rows':
-            return self._serialize_as_tabular(aggs, **kwargs)
+            return self._serialize_response_as_tabular(aggs, **kwargs)
         elif output == 'dataframe':
-            return self._serialize_as_dataframe(aggs, **kwargs)
+            return self._serialize_response_as_dataframe(aggs, **kwargs)
         else:
             raise NotImplementedError('Unkown %s output format.' % output)
 

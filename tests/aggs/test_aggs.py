@@ -480,7 +480,7 @@ root_agg
 
     def test_parse_as_tree(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        response = my_agg._serialize_as_tree(sample.ES_AGG_RESPONSE)
+        response = my_agg._serialize_response_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response, IResponse)
         self.assertEqual(
             response.__str__(),
@@ -491,13 +491,13 @@ root_agg
     def test_normalize_buckets(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         self.assertEqual(
-            my_agg._serialize_as_normalized(sample.ES_AGG_RESPONSE),
+            my_agg._serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
             sample.EXPECTED_NORMALIZED_RESPONSE
         )
 
     def test_parse_as_tabular(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        index, index_names, values = my_agg._serialize_as_tabular(sample.ES_AGG_RESPONSE)
+        index, index_names, values = my_agg._serialize_response_as_tabular(sample.ES_AGG_RESPONSE)
         self.assertEqual(index_names, ['classification_type', 'global_metrics.field.name'])
         self.assertEqual(len(index), len(values))
         self.assertEqual(len(index), 10)
@@ -506,7 +506,7 @@ root_agg
 
     def test_parse_as_dataframe(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        df = my_agg._serialize_as_dataframe(sample.ES_AGG_RESPONSE)
+        df = my_agg._serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(set(df.index.names), {'classification_type', 'global_metrics.field.name'})
         self.assertEqual(set(df.columns), {'avg_f1_micro', 'avg_nb_classes', 'doc_count'})

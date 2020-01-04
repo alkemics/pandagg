@@ -26,7 +26,7 @@ class ClientBoundAgg(Agg):
             return self
         return super(ClientBoundAgg, self)._interpret_agg(insert_below, element, **kwargs)
 
-    def _serialize_as_tree(self, aggs):
+    def _serialize_response_as_tree(self, aggs):
         response_tree = ResponseTree(self).parse_aggregation(aggs)
         return ClientBoundResponse(
             client=self.client,
@@ -72,7 +72,7 @@ class ClientBoundAgg(Agg):
             index=index or self.index_name,
             query=self._query
         )
-        return self.serialize(
+        return self.serialize_response(
             aggs=es_response['aggregations'],
             output=output,
             **kwargs

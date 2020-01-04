@@ -121,7 +121,7 @@ class ClientBoundTestCase(TestCase):
         )
         self.assertEqual(not_executed_agg.__str__(), equivalent_agg.__str__())
 
-    @patch.object(Agg, 'serialize')
+    @patch.object(Agg, 'serialize_response')
     def test_client_bound_executed_agg(self, serialize_mock):
         # we test the execution, not agg query generation nor the parsing which are tested in test_aggs module
         client_mock, index = self.get_client_bound_index(es_response={"aggregations": "response_mock"})
