@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
-from elasticsearch import Elasticsearch
-
 from pandagg.base.interactive.mapping import as_mapping
 from pandagg.base.node.query.abstract import CompoundClause, ParameterClause
 from pandagg.base.node.query.abstract import QueryClause
@@ -106,12 +104,9 @@ class Query(Tree):
 
 class ClientBoundQuery(Query):
 
-    def __init__(self, client, index_name, mapping=None, from_=None, query=None, identifier=None):
+    def __init__(self, client, index_name, mapping=None, from_=None, identifier=None):
         self.client = client
         self.index_name = index_name
-        if client is not None:
-            assert isinstance(client, Elasticsearch)
-        self._query = query
         super(ClientBoundQuery, self).__init__(
             from_=from_,
             mapping=mapping,
@@ -124,18 +119,10 @@ class ClientBoundQuery(Query):
             index_name=self.index_name,
             mapping=self.tree_mapping,
             identifier=identifier,
-            query=self._query,
             from_=self if with_tree else None
         )
 
-    def _execute(self, aggregation, index=None, query=None):
-        body = {"aggs": aggregation, "size": 0}
-        if query:
-            body['query'] = query
-        return self.client.search(index=index, body=body)
-
     def execute(self, index=None, **kwargs):
-        body = {"size": 0}
-        if query:
-            body['query'] = query
+        body = {'query': self.query_dict()}
+        body.update(kwargs)
         return self.client.search(index=index, body=body)

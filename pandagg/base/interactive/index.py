@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from elasticsearch import Elasticsearch
-
 from pandagg.base.tree.mapping import Mapping
 from pandagg.base.interactive.mapping import ClientBoundMapping, IMapping
 from pandagg.base.tree.agg import Agg
@@ -42,7 +40,6 @@ class Aliases(Obj):
 class ClientBoundIndex(Index):
 
     def __init__(self, client, name, settings, mapping, aliases):
-        assert isinstance(client, Elasticsearch)
         self.client = client
         super(ClientBoundIndex, self).__init__(
             name=name,

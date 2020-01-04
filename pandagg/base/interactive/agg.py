@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from elasticsearch import Elasticsearch
-
 from pandagg.base.tree.agg import Agg
 from pandagg.base.tree.response import ResponseTree
 from pandagg.base.interactive.response import ClientBoundResponse
@@ -15,8 +13,6 @@ class ClientBoundAgg(Agg):
     def __init__(self, client, index_name, mapping=None, from_=None, query=None, identifier=None):
         self.client = client
         self.index_name = index_name
-        if client is not None:
-            assert isinstance(client, Elasticsearch)
         self._query = query
         super(ClientBoundAgg, self).__init__(
             from_=from_,

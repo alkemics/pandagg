@@ -58,7 +58,7 @@ class ParameterClause(QueryClause):
 
     def __init__(self, *args, **kwargs):
         if kwargs and kwargs.keys() != ['identifier']:
-                raise ValueError('Invalid keywords arguments: <%s>.' % kwargs.keys())
+            raise ValueError('Invalid keywords arguments: <%s>.' % kwargs.keys())
         if not isinstance(args, (tuple, list)):
             args = (args,)
         if not self.MULTIPLE and len(args) > 1:
