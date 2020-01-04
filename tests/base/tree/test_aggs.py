@@ -17,9 +17,9 @@ from pandagg.base.interactive.mapping import IMapping
 from pandagg.base.node.agg.bucket import DateHistogram, Terms, Filter
 from pandagg.base.node.agg.metric import Avg, Min
 
-import tests.aggs.data_sample as sample
+import tests.base.data_sample as sample
 
-from tests.mapping.mapping_example import MAPPING
+from tests.base.mapping_example import MAPPING
 
 
 class AggTestCase(TestCase):

@@ -8,7 +8,7 @@ results.
 from pandagg.base.tree.agg import Agg
 from pandagg.base.node.agg.metric import Avg
 from pandagg.base.node.agg.bucket import Terms
-from tests.mapping.mapping_example import MAPPING
+from tests.base.mapping_example import MAPPING
 
 
 EXPECTED_REPR = """<Aggregation>

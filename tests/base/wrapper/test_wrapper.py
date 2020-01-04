@@ -10,8 +10,8 @@ from mock import patch
 
 from pandagg.base.interactive.index import ClientBoundIndex
 from pandagg.base.interactive.mapping import ClientBoundMapping
-from tests.mapping.mapping_example import MAPPING, EXPECTED_CLIENT_BOUND_MAPPING_REPR
-from tests.wrapper.settings_example import SETTINGS
+from tests.base.mapping_example import MAPPING, EXPECTED_CLIENT_BOUND_MAPPING_REPR
+from tests.base.settings_example import SETTINGS
 
 indices_mock = {
     # index name

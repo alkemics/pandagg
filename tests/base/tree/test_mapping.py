@@ -8,7 +8,7 @@ from pandagg.base.exceptions import AbsentMappingFieldError
 from pandagg.base.interactive._field_agg_factory import field_classes_per_name
 from pandagg.base.tree.mapping import Mapping, MappingNode
 from pandagg.base.interactive.mapping import IMapping, ClientBoundMapping
-from tests.mapping.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
+from tests.base.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
 
 
 class MappingTreeTestCase(TestCase):

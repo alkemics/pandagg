@@ -5,8 +5,8 @@ from mock import Mock
 from pandagg.base.tree.agg import Agg
 from pandagg.base.tree.response import ResponseTree
 from pandagg.base.interactive.response import IResponse, ClientBoundResponse
-from tests.mapping.mapping_example import MAPPING
-import tests.aggs.data_sample as sample
+from tests.base.mapping_example import MAPPING
+import tests.base.data_sample as sample
 
 
 class ResponseTestCase(TestCase):

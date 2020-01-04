@@ -9,7 +9,7 @@ from pandagg.base.interactive.agg import ClientBoundAgg
 from pandagg.base.interactive.index import Index, ClientBoundIndex
 from pandagg.base.node.agg.metric import Avg
 
-from tests.mapping.mapping_example import MAPPING
+from tests.base.mapping_example import MAPPING
 
 
 class IndexTestCase(TestCase):
