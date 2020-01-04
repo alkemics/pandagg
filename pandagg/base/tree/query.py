@@ -7,8 +7,8 @@ from builtins import str as text
 
 from elasticsearch import Elasticsearch
 
+from pandagg.base.interactive.mapping import as_mapping
 from pandagg.base.node.query.abstract import CompoundClause, ParameterClause
-from pandagg.mapping import Mapping, IMapping
 from pandagg.base.node.query.abstract import QueryClause
 from pandagg.base._tree import Tree
 
@@ -21,21 +21,24 @@ class Query(Tree):
     """
 
     node_class = QueryClause
-    tree_mapping = None
     _crafted_root_name = 'root'
 
     def __init__(self, from_=None, mapping=None, identifier=None):
+        # set mapping
+        self.tree_mapping = None
+        if mapping is not None:
+            self.set_mapping(mapping)
+
         from_tree = None
         from_query_node = None
         from_dict = None
         if isinstance(from_, Query):
             from_tree = from_
+        super(Query, self).__init__(tree=from_tree, identifier=identifier)
         if isinstance(from_, QueryClause):
             from_query_node = from_
         if isinstance(from_, dict):
             from_dict = from_
-        super(Query, self).__init__(tree=from_tree, identifier=identifier)
-        self.set_mapping(mapping)
         if from_dict:
             self._build_tree_from_dict(from_dict)
         if from_query_node:
@@ -49,15 +52,7 @@ class Query(Tree):
         )
 
     def set_mapping(self, mapping):
-        if mapping is not None:
-            if isinstance(mapping, Mapping):
-                self.tree_mapping = mapping
-            elif isinstance(mapping, IMapping):
-                self.tree_mapping = mapping._tree
-            elif isinstance(mapping, dict):
-                self.tree_mapping = Mapping(mapping)
-            else:
-                raise NotImplementedError()
+        self.tree_mapping = as_mapping(mapping)
         return self
 
     def _build_tree_from_dict(self, body, pid=None):

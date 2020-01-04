@@ -13,7 +13,7 @@ from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 from pandagg.base._tree import Tree
 from pandagg.base.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
 from pandagg.base.interactive.response import IResponse
-from pandagg.base.interactive.mapping import IMapping
+from pandagg.base.interactive.mapping import IMapping, as_mapping
 from pandagg.base.node.agg.bucket import Terms, Nested, ReverseNested, MatchAll
 from pandagg.base.node.agg.deserializer import deserialize_agg
 from pandagg.base.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode
@@ -62,19 +62,8 @@ class Agg(Tree):
         )
 
     def set_mapping(self, mapping):
-        self.tree_mapping = self.as_tree_mapping(mapping)
+        self.tree_mapping = as_mapping(mapping)
         return self
-
-    @staticmethod
-    def as_tree_mapping(mapping):
-        if isinstance(mapping, Mapping):
-            return mapping
-        elif isinstance(mapping, IMapping):
-            return mapping._tree
-        elif isinstance(mapping, dict):
-            return Mapping(mapping)
-        else:
-            raise NotImplementedError()
 
     def _init_build_tree_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)

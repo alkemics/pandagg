@@ -3,6 +3,18 @@
 
 from pandagg.base.interactive._field_agg_factory import field_classes_per_name
 from pandagg.base.interactive.abstract import TreeBasedObj
+from pandagg.base.tree.mapping import Mapping
+
+
+def as_mapping(mapping):
+    if isinstance(mapping, Mapping):
+        return mapping
+    elif isinstance(mapping, IMapping):
+        return mapping._tree
+    elif isinstance(mapping, dict):
+        return Mapping(mapping)
+    else:
+        raise NotImplementedError()
 
 
 class IMapping(TreeBasedObj):
