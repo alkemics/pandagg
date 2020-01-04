@@ -6,8 +6,8 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query.abstract import CompoundClause, ParameterClause
-from pandagg.base.node.query.abstract import QueryClause
+from pandagg.base.node.query.abstract import ParameterClause, QueryClause
+from pandagg.base.node.query.compound import CompoundClause
 from pandagg.base._tree import Tree
 
 
@@ -78,7 +78,7 @@ class Query(Tree):
         assert isinstance(node, QueryClause)
         super(Query, self).add_node(node, pid)
 
-    def query_dict(self, from_=None, depth=None, with_name=True):
+    def query_dict(self, from_=None, depth=None):
         if self.root is None:
             return {}
         from_ = self.root if from_ is None else from_
@@ -87,14 +87,12 @@ class Query(Tree):
         if depth is None or depth > 0:
             if depth is not None:
                 depth -= 1
-            for child_node in self.children(node.name):
-                children_queries[child_node.name] = self.query_dict(
-                    from_=child_node.name, depth=depth, with_name=False)
-        node_query_dict = node.query_dict()
+            for child_node in self.children(node.identifier):
+                children_queries[child_node.identifier] = self.query_dict(
+                    from_=child_node.identifier, depth=depth)
+        node_query_dict = node.serialize()
         if children_queries:
             node_query_dict['aggs'] = children_queries
-        if with_name:
-            return {node.name: node_query_dict}
         return node_query_dict
 
     def __str__(self):

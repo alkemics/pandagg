@@ -1,8 +1,9 @@
 
 from six import iteritems
-from .abstract import LeafQueryClause, CompoundClause
+from .abstract import LeafQueryClause
 from .term_level import Exists, Fuzzy, Ids, Prefix, Range, Regexp, Term, Terms, TermsSet, Type, Wildcard
-from .compound import Bool, Boosting, ConstantScore, FunctionScore, DisMax, Filter, MustNot, Must, Should
+from .compound import CompoundClause, Bool, Boosting, ConstantScore, FunctionScore, DisMax
+from ._parameter_clause import Filter, MustNot, Must, Should
 
 QUERIES = {
     q.Q_TYPE: q
@@ -25,16 +26,6 @@ QUERIES = {
         ConstantScore,
         FunctionScore,
         DisMax,
-    ]
-}
-
-COMPOUND_PARAMS = {
-    p.P_TYPE: p
-    for p in [
-        Filter,
-        Must,
-        MustNot,
-        Should
     ]
 }
 

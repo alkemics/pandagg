@@ -18,7 +18,7 @@ class QueryClause(Node):
         self.body = body
 
     @classmethod
-    def deserialize(cls, body):
+    def deserialize(cls, **body):
         return cls(**body)
 
     def serialize(self):
@@ -45,14 +45,14 @@ class LeafQueryClause(QueryClause):
         super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
 
     @classmethod
-    def deserialize(cls, body):
+    def deserialize(cls, **body):
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
         return cls(field=k, **v)
 
 
 class ParameterClause(QueryClause):
-    P_TYPE = NotImplementedError()
+    P_KEY = NotImplementedError()
     HASHABLE = False
     MULTIPLE = False
 
@@ -62,51 +62,6 @@ class ParameterClause(QueryClause):
         if not isinstance(args, (tuple, list)):
             args = (args,)
         if not self.MULTIPLE and len(args) > 1:
-            raise ValueError('%s clause does not accept multiple query clauses.' % self.P_TYPE)
+            raise ValueError('%s clause does not accept multiple query clauses.' % self.P_KEY)
         self.children = args
         super(ParameterClause, self).__init__(identifier=kwargs.get('identifier'))
-
-
-class CompoundClause(QueryClause):
-    """Compound clauses can encapsulate other query clauses.
-
-    Note: the children attribute's only purpose is for initiation with the following syntax:
-    >>> from pandagg.query import Bool
-    >>> agg = Bool(
-    >>>     filter=[
-    >>>         Avg(agg_name='avg_agg', field='some_other_path')
-    >>>     ],
-    >>>     should=[
-    >>>     ],
-    >>>     identifier='term_agg',
-    >>> )
-    Yet, the children attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
-    bpointer/fpointer attributes inherited from treelib.Tree class.
-    """
-
-    """
-    {
-        "<query_type>" : {
-            <query_body>
-            <children_clauses>
-        }
-    }
-    >>>{
-    >>>    "bool" : {
-    >>>         # query body
-    >>>         "minimum_should_match": 1,
-    >>>         # children clauses
-    >>>         "should": [<q1>, <q2>],
-    >>>         "filter": [<q3>]
-    >>>    }
-    >>>}
-    """
-
-    def __init__(self, children=None, identifier=None, **body):
-        super(CompoundClause, self).__init__(
-            identifier=identifier,
-            **body
-        )
-        for child in children or []:
-            assert isinstance(child, QueryClause)
-        self.children = children
