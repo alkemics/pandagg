@@ -6,7 +6,7 @@ from .compound import CompoundClause, Bool, Boosting, ConstantScore, FunctionSco
 from ._parameter_clause import Filter, MustNot, Must, Should
 
 QUERIES = {
-    q.Q_TYPE: q
+    q.KEY: q
     for q in [
         # term level queries
         Exists,

@@ -10,33 +10,32 @@ from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 
 
 class ParameterClause(QueryClause):
-    P_KEY = NotImplementedError()
+    KEY = NotImplementedError()
     SIMPLE = NotImplementedError()
 
 
 class SimpleParameter(ParameterClause):
-    P_KEY = NotImplementedError()
+    KEY = NotImplementedError()
     SIMPLE = True
 
     def __init__(self, value):
-        super(SimpleParameter, self).__init__(value=value)
+        super(SimpleParameter, self).__init__(value=value, tag='%s=%s' % (self.KEY, value))
 
     @classmethod
     def deserialize(cls, value):
         return cls(value)
 
     def serialize(self):
-        return {self.P_KEY: self.body['value']}
+        return {self.KEY: self.body['value']}
 
 
 class Boost(SimpleParameter):
-    P_KEY = 'boost'
+    KEY = 'boost'
 
 
-class ParentClause(QueryClause):
-    P_KEY = NotImplementedError()
+class ParentClause(ParameterClause):
+    KEY = NotImplementedError()
     SIMPLE = False
-    HASHABLE = False
     MULTIPLE = False
 
     def __init__(self, *args, **kwargs):
@@ -50,7 +49,7 @@ class ParentClause(QueryClause):
             else:
                 children.append(args)
         if not self.MULTIPLE and len(children) > 1:
-            raise ValueError('%s clause does not accept multiple query clauses.' % self.P_KEY)
+            raise ValueError('%s clause does not accept multiple query clauses.' % self.KEY)
         serialized_children = []
         for child in children:
             if isinstance(child, LeafQueryClause):
@@ -65,27 +64,27 @@ class ParentClause(QueryClause):
 
 
 class Filter(ParentClause):
-    P_KEY = 'filter'
+    KEY = 'filter'
     MULTIPLE = True
 
 
 class Must(ParentClause):
-    P_KEY = 'must'
+    KEY = 'must'
     MULTIPLE = True
 
 
 class Should(ParentClause):
-    P_KEY = 'should'
+    KEY = 'should'
     MULTIPLE = True
 
 
 class MustNot(ParentClause):
-    P_KEY = 'must_not'
+    KEY = 'must_not'
     MULTIPLE = True
 
 
 PARAMETERS = {
-    p.P_KEY: p for p in [
+    p.KEY: p for p in [
         Boost,
         Filter,
         MustNot,

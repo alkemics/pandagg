@@ -37,21 +37,17 @@ class Agg(Tree):
         if mapping is not None:
             self.set_mapping(mapping)
 
-        # instanciate from existing tree is from_ is set
-        from_tree = None
-        from_agg_node = None
-        from_dict = None
         if isinstance(from_, Agg):
-            from_tree = from_
-        super(Agg, self).__init__(tree=from_tree, identifier=identifier)
-        if isinstance(from_, AggNode):
-            from_agg_node = from_
-        if isinstance(from_, dict):
-            from_dict = from_
-        if from_dict:
-            self._init_serialize_from_dict(from_dict)
-        if from_agg_node:
-            self._serialize_from_node(from_agg_node)
+            super(Agg, self).__init__(tree=from_, identifier=identifier)
+            return
+        super(Agg, self).__init__(identifier=identifier)
+        if from_ is not None:
+            if isinstance(from_, AggNode):
+                self._deserialize_from_node(from_)
+            elif isinstance(from_, dict):
+                self._init_deserialize_from_dict(from_)
+            else:
+                raise ValueError('Unsupported <%s> type.' % type(from_))
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Agg(
@@ -64,15 +60,15 @@ class Agg(Tree):
         self.tree_mapping = as_mapping(mapping)
         return self
 
-    def _init_serialize_from_dict(self, from_dict):
+    def _init_deserialize_from_dict(self, from_dict):
         assert isinstance(from_dict, dict)
         from_dict = copy.deepcopy(from_dict)
         if len(from_dict.keys()) > 1:
             self.add_node(MatchAll(self._crafted_root_name))
         agg_name, agg_detail = next(iteritems(from_dict))
-        self._serialize_from_dict(agg_name, agg_detail, self.root)
+        self._deserialize_from_dict(agg_name, agg_detail, self.root)
 
-    def _serialize_from_dict(self, agg_name, agg_detail, pid=None):
+    def _deserialize_from_dict(self, agg_name, agg_detail, pid=None):
         if not isinstance(agg_detail, dict):
             raise InvalidAggregation
         meta = agg_detail.pop('meta', None)
@@ -82,13 +78,13 @@ class Agg(Tree):
         node = deserialize_agg(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
         self.add_node(node, pid)
         for child_name in sorted(children_aggs.keys()):
-            self._serialize_from_dict(child_name, children_aggs[child_name], node.identifier)
+            self._deserialize_from_dict(child_name, children_aggs[child_name], node.identifier)
 
-    def _serialize_from_node(self, agg_node, pid=None):
+    def _deserialize_from_node(self, agg_node, pid=None):
         self.add_node(agg_node, pid)
         if isinstance(agg_node, BucketAggNode):
             for child_agg_node in agg_node.aggs or []:
-                self._serialize_from_node(child_agg_node, pid=agg_node.identifier)
+                self._deserialize_from_node(child_agg_node, pid=agg_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             agg_node.aggs = None
 
@@ -246,7 +242,7 @@ class Agg(Tree):
                 pass
             return self
         if isinstance(element, AggNode):
-            self._serialize_from_node(element, pid=insert_below)
+            self._deserialize_from_node(element, pid=insert_below)
             return self
         if isinstance(element, Agg):
             self.paste(nid=insert_below, new_tree=element)

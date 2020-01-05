@@ -6,7 +6,8 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query.abstract import ParameterClause, QueryClause
+from pandagg.base.node.query._parameter_clause import SimpleParameter
+from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause
 from pandagg.base._tree import Tree
 
@@ -27,20 +28,17 @@ class Query(Tree):
         if mapping is not None:
             self.set_mapping(mapping)
 
-        from_tree = None
-        from_query_node = None
-        from_dict = None
         if isinstance(from_, Query):
-            from_tree = from_
-        super(Query, self).__init__(tree=from_tree, identifier=identifier)
-        if isinstance(from_, QueryClause):
-            from_query_node = from_
-        if isinstance(from_, dict):
-            from_dict = from_
-        if from_dict:
-            self._build_tree_from_dict(from_dict)
-        if from_query_node:
-            self._build_tree_from_node(from_query_node)
+            super(Query, self).__init__(tree=from_, identifier=identifier)
+            return
+        super(Query, self).__init__(identifier=identifier)
+        if from_ is not None:
+            if isinstance(from_, QueryClause):
+                self._deserialize_from_node(from_)
+            elif isinstance(from_, dict):
+                self._deserialize_tree_from_dict(from_)
+            else:
+                raise ValueError('Unsupported <%s> type.' % type(from_))
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Query(
@@ -53,7 +51,7 @@ class Query(Tree):
         self.tree_mapping = as_mapping(mapping)
         return self
 
-    def _build_tree_from_dict(self, body, pid=None):
+    def _deserialize_tree_from_dict(self, body, pid=None):
         if not isinstance(body, dict):
             raise ValueError()
         assert len(body.keys()) == 1
@@ -62,14 +60,13 @@ class Query(Tree):
         self.add_node(node, pid)
         # extract children
         for child in []:
-            self._build_tree_from_dict(child, node.identifier)
+            self._deserialize_tree_from_dict(child, node.identifier)
 
-    def _build_tree_from_node(self, query_node, pid=None):
-        # TODO accept dict syntax under class node
+    def _deserialize_from_node(self, query_node, pid=None):
         self.add_node(query_node, pid)
-        if isinstance(query_node, (CompoundClause, ParameterClause)):
-            for child_q_node in query_node.children or []:
-                self._build_tree_from_node(child_q_node, pid=query_node.identifier)
+        if hasattr(query_node, 'children'):
+            for child_node in query_node.children or []:
+                self._deserialize_from_node(child_node, pid=query_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             query_node.children = None
 
@@ -78,49 +75,23 @@ class Query(Tree):
         assert isinstance(node, QueryClause)
         super(Query, self).add_node(node, pid)
 
-    def query_dict(self, from_=None, depth=None):
+    def query_dict(self, from_=None):
         if self.root is None:
             return {}
         from_ = self.root if from_ is None else from_
         node = self[from_]
-        children_queries = {}
-        if depth is None or depth > 0:
-            if depth is not None:
-                depth -= 1
-            for child_node in self.children(node.identifier):
-                children_queries[child_node.identifier] = self.query_dict(
-                    from_=child_node.identifier, depth=depth)
-        node_query_dict = node.serialize()
-        if children_queries:
-            node_query_dict['aggs'] = children_queries
-        return node_query_dict
+        if isinstance(node, (LeafQueryClause, SimpleParameter)):
+            return node.serialize()
+        serialized_children = []
+        for child_node in self.children(node.identifier):
+            serialized_children.append(self.query_dict(from_=child_node.identifier))
+        if isinstance(node, CompoundClause):
+            # {bool: {filter: ..., must: ...}
+            return {node.KEY: {k: v for d in serialized_children for k, v in d.items()}}
+        # parameter clause
+        # {filter: [{...}, {...}]}
+        return {node.KEY: serialized_children}
 
     def __str__(self):
         self.show()
-        return '<Aggregation>\n%s' % text(self._reader)
-
-
-class ClientBoundQuery(Query):
-
-    def __init__(self, client, index_name, mapping=None, from_=None, identifier=None):
-        self.client = client
-        self.index_name = index_name
-        super(ClientBoundQuery, self).__init__(
-            from_=from_,
-            mapping=mapping,
-            identifier=identifier
-        )
-
-    def _clone(self, identifier=None, with_tree=False, deep=False):
-        return ClientBoundQuery(
-            client=self.client,
-            index_name=self.index_name,
-            mapping=self.tree_mapping,
-            identifier=identifier,
-            from_=self if with_tree else None
-        )
-
-    def execute(self, index=None, **kwargs):
-        body = {'query': self.query_dict()}
-        body.update(kwargs)
-        return self.client.search(index=index, body=body)
+        return '<Query>\n%s' % text(self._reader)

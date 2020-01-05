@@ -3,7 +3,7 @@ from .term_level import Exists, Fuzzy, Ids, Prefix, Range, Regexp, Term, Terms, 
 
 
 LEAF_CLAUSES = {
-    q.Q_TYPE: q
+    q.KEY: q
     for q in [
         Exists,
         Fuzzy,

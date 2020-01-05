@@ -3,44 +3,44 @@ from .abstract import LeafQueryClause
 
 
 class Exists(LeafQueryClause):
-    Q_TYPE = 'exists'
+    KEY = 'exists'
 
 
 class Fuzzy(LeafQueryClause):
-    Q_TYPE = 'fuzzy'
+    KEY = 'fuzzy'
 
 
 class Ids(LeafQueryClause):
-    Q_TYPE = 'ids'
+    KEY = 'ids'
 
 
 class Prefix(LeafQueryClause):
-    Q_TYPE = 'prefix'
+    KEY = 'prefix'
 
 
 class Range(LeafQueryClause):
-    Q_TYPE = 'range'
+    KEY = 'range'
 
 
 class Regexp(LeafQueryClause):
-    Q_TYPE = 'regexp'
+    KEY = 'regexp'
 
 
 class Term(LeafQueryClause):
-    Q_TYPE = 'term'
+    KEY = 'term'
 
 
 class Terms(LeafQueryClause):
-    Q_TYPE = 'terms'
+    KEY = 'terms'
 
 
 class TermsSet(LeafQueryClause):
-    Q_TYPE = 'terms_set'
+    KEY = 'terms_set'
 
 
 class Type(LeafQueryClause):
-    Q_TYPE = 'type'
+    KEY = 'type'
 
 
 class Wildcard(LeafQueryClause):
-    Q_TYPE = 'wildcard'
+    KEY = 'wildcard'

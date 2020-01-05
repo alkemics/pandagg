@@ -50,20 +50,20 @@ class CompoundClause(QueryClause):
 
 
 class Bool(CompoundClause):
-    Q_TYPE = 'bool'
+    KEY = 'bool'
 
 
 class Boosting(CompoundClause):
-    Q_TYPE = 'boosting'
+    KEY = 'boosting'
 
 
 class ConstantScore(CompoundClause):
-    Q_TYPE = 'constant_score'
+    KEY = 'constant_score'
 
 
 class DisMax(CompoundClause):
-    Q_TYPE = 'dis_max'
+    KEY = 'dis_max'
 
 
 class FunctionScore(CompoundClause):
-    Q_TYPE = 'function_score'
+    KEY = 'function_score'
