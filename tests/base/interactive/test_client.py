@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from elasticsearch.client import IndicesClient
 
-from pandagg import PandAgg
+from pandagg import Elasticsearch
 from mock import patch
 
 from pandagg.base.interactive.index import ClientBoundIndex
@@ -30,7 +30,7 @@ class WrapperTestCase(TestCase):
         indice_get_mock.return_value = indices_mock
 
         # fetch indices
-        p = PandAgg()
+        p = Elasticsearch()
         indices = p.fetch_indices(index='*report*')
         indice_get_mock.assert_called_once_with(index="*report*")
 

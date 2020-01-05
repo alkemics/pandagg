@@ -4,11 +4,11 @@
 from __future__ import unicode_literals
 
 from six import iteritems
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch as OriginalElasticSearch
 from pandagg.base.interactive.index import ClientBoundIndex, Indices
 
 
-class PandAgg(Elasticsearch):
+class Elasticsearch(OriginalElasticSearch):
 
     def fetch_indices(self, index='*'):
         """
