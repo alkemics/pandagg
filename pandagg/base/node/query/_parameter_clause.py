@@ -11,12 +11,10 @@ from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 
 class ParameterClause(QueryClause):
     KEY = NotImplementedError()
-    SIMPLE = NotImplementedError()
 
 
 class SimpleParameter(ParameterClause):
     KEY = NotImplementedError()
-    SIMPLE = True
 
     def __init__(self, value):
         super(SimpleParameter, self).__init__(value=value)
@@ -37,9 +35,56 @@ class Boost(SimpleParameter):
     KEY = 'boost'
 
 
+class MinimumShouldMatch(SimpleParameter):
+    KEY = 'minimum_should_match'
+
+
+class Rewrite(SimpleParameter):
+    KEY = 'rewrite'
+
+
+class TieBreaker(SimpleParameter):
+    KEY = 'tie_breaker'
+
+
+class NegativeBoost(SimpleParameter):
+    KEY = 'negative_boost'
+
+
+class Functions(SimpleParameter):
+    KEY = 'functions'
+
+
+class MaxBoost(SimpleParameter):
+    KEY = 'max_boost'
+
+
+class ScoreMode(SimpleParameter):
+    KEY = 'score_mode'
+
+
+class BoostMode(SimpleParameter):
+    KEY = 'boost_mode'
+
+
+class MinScore(SimpleParameter):
+    KEY = 'min_score'
+
+
+class ScriptScore(SimpleParameter):
+    KEY = 'script_score'
+
+
+class RandomScore(SimpleParameter):
+    KEY = 'random_score'
+
+
+class FieldValueFactor(SimpleParameter):
+    KEY = 'field_value_factor'
+
+
 class ParentClause(ParameterClause):
     KEY = NotImplementedError()
-    SIMPLE = False
     MULTIPLE = False
 
     def __init__(self, *args, **kwargs):
@@ -89,13 +134,52 @@ class MustNot(ParentClause):
     MULTIPLE = True
 
 
+class QueryP(ParentClause):
+    # different name to avoid confusion with Query "tree" class
+    KEY = 'query'
+    MULTIPLE = False
+
+
+class Queries(ParameterClause):
+    KEY = 'queries'
+    MULTIPLE = True
+
+
+class Positive(ParameterClause):
+    KEY = 'positive'
+    MULTIPLE = False
+
+
+class Negative(ParameterClause):
+    KEY = 'negative'
+    MULTIPLE = False
+
+
 PARAMETERS = {
     p.KEY: p for p in [
+        # simple parameters
         Boost,
+        MinimumShouldMatch,
+        TieBreaker,
+        Rewrite,
+        NegativeBoost,
+        Functions,
+        MaxBoost,
+        ScoreMode,
+        BoostMode,
+        MinScore,
+        ScriptScore,
+        RandomScore,
+        FieldValueFactor,
+        # parent parameters
+        QueryP,
+        Queries,
         Filter,
         MustNot,
         Must,
-        Should
+        Should,
+        Positive,
+        Negative,
     ]
 }
 
@@ -104,7 +188,7 @@ def deserialize_parameter(key, body):
     if key not in PARAMETERS.keys():
         raise NotImplementedError('Unknown parameter type <%s>' % key)
     klass = PARAMETERS[key]
-    if klass.SIMPLE:
+    if issubclass(klass, SimpleParameter):
         return klass.deserialize(body)
     if isinstance(body, (tuple, list)) and all((isinstance(b, QueryClause) for b in body)):
         return klass.deserialize(children=body)
