@@ -6,9 +6,9 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause
+from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, Must, Filter
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
-from pandagg.base.node.query.compound import CompoundClause
+from pandagg.base.node.query.compound import CompoundClause, Bool
 from pandagg.base._tree import Tree
 
 
@@ -20,7 +20,6 @@ class Query(Tree):
     """
 
     node_class = QueryClause
-    _crafted_root_name = 'root'
 
     def __init__(self, from_=None, mapping=None, identifier=None):
         # set mapping
@@ -106,3 +105,84 @@ class Query(Tree):
     def __str__(self):
         self.show()
         return '<Query>\n%s' % text(self._reader)
+
+    def query(self, arg, pid=None):
+        new_query = self._clone(with_tree=True)
+        if isinstance(arg, Query):
+            new_query.paste(nid=pid, new_tree=arg)
+        elif isinstance(arg, QueryClause):
+            new_query._deserialize_from_node(pid=pid, query_node=arg)
+        elif isinstance(arg, dict):
+            new_query._deserialize_tree_from_dict(pid=pid, body=arg)
+        else:
+            raise ValueError('Unsupported type <%s>.' % type(arg))
+        return new_query
+
+    def bool(self, *args, **kwargs):
+        pid = kwargs.pop('pid', None)
+        new_query = self._clone(with_tree=True)
+        b = Bool(*args, **kwargs)
+        new_query.add_node(b, pid=pid)
+        return new_query
+
+    def must(self, *args, **kwargs):
+        pid = kwargs.pop('pid', None)
+        must_identifier = kwargs.pop('identifier', None)
+        bool_identifier = kwargs.pop('bool_identifier', None)
+        new_query = self._clone(with_tree=True)
+
+        # not providing a parent is only allowed when tree is empty
+        if pid is None:
+            assert new_query.root is None
+            return Query(Bool(Must(identifier=must_identifier, *args, **kwargs), identifier=bool_identifier))
+
+        pnode = new_query[pid]
+
+        # if pid is a leaf query, wrap it in bool-must
+        if isinstance(pnode, LeafQueryClause):
+            gpid = new_query.parent(pid).identifier
+            new_query.remove_node(pid)
+            new_query._deserialize_from_node(
+                query_node=Bool(
+                    Must(
+                        pnode,
+                        identifier=must_identifier,
+                        *args,
+                        **kwargs
+                    ),
+                    identifier=bool_identifier
+                ),
+                pid=gpid
+            )
+            return new_query
+
+        if isinstance(pnode, Bool):
+            existing_must = next((c for c in new_query.children(pid) if isinstance(c, Must)), None)
+            if existing_must is None:
+                new_must = Must(identifier=must_identifier)
+                new_query.add_node(node=new_must, pid=pid)
+                pnode = new_must
+                pid = new_must.identifier
+            else:
+                pnode = existing_must
+                pid = existing_must.identifier
+
+        if isinstance(pnode, Must):
+            if must_identifier is not None and must_identifier != pnode.identifier:
+                raise ValueError('Must identifier can be provided only if not already existing: provided <%s>, '
+                                 'existing <%s>' % (must_identifier, pnode.identifier))
+            existing_clauses = new_query.children(pid)
+            gp = new_query.parent(pid)
+            new_query.remove_node(pid)
+            assert isinstance(gp, Bool)
+            new_query._deserialize_from_node(
+                query_node=Must(
+                    identifier=must_identifier,
+                    children=existing_clauses,
+                    *args,
+                    **kwargs
+                ),
+                pid=gp.identifier
+            )
+            return new_query
+        raise ValueError('Unsupported type <%s> as parent for must clause.' % type(pnode))

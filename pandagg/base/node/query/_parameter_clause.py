@@ -47,21 +47,23 @@ class ParentClause(ParameterClause):
         identifier = kwargs.pop('identifier', None)
         if kwargs:
             children.append(kwargs)
-        if args:
-            if isinstance(args, (tuple, list)):
-                children.extend(args)
+        for arg in args:
+            if isinstance(arg, (tuple, list)):
+                children.extend(arg)
             else:
-                children.append(args)
+                children.append(arg)
         if not self.MULTIPLE and len(children) > 1:
             raise ValueError('%s clause does not accept multiple query clauses.' % self.KEY)
         serialized_children = []
         for child in children:
-            if isinstance(child, LeafQueryClause):
-                serialized_children.append(child)
-            else:
-                assert isinstance(child, dict)
+            if isinstance(child, dict):
                 k, v = next(iteritems(child))
                 serialized_children.append(deserialize_leaf_clause(k, v))
+            elif isinstance(child, LeafQueryClause):
+                serialized_children.append(child)
+            else:
+                # Compound - will be validated in query tree
+                serialized_children.append(child)
 
         self.children = serialized_children
         super(ParentClause, self).__init__(identifier=identifier)

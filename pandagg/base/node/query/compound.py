@@ -1,6 +1,6 @@
 from six import iteritems
 
-from pandagg.base.node.query._parameter_clause import deserialize_parameter
+from pandagg.base.node.query._parameter_clause import deserialize_parameter, ParameterClause
 from pandagg.base.node.query.abstract import QueryClause
 
 
@@ -38,18 +38,37 @@ class CompoundClause(QueryClause):
 
     def __init__(self, *args, **kwargs):
         identifier = kwargs.pop('identifier', None)
-        self.children = []
-        if args:
-            for arg in args:
-                kwargs.update(arg)
+        children = kwargs.pop('children', None) or []
         for key, value in iteritems(kwargs):
+            children.append({key: value})
+        for arg in args:
+            if isinstance(arg, dict):
+                children.extend([{k: v} for k, v in iteritems(arg)])
+            elif isinstance(arg, (tuple, list)):
+                children.extend(arg)
+            else:
+                children.append(arg)
+        serialized_children = []
+        for child in children:
+            if isinstance(child, dict):
+                assert len(child.keys()) == 1
+                key, value = next(iteritems(child))
+                if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
+                    raise ValueError('Unauthorized parameter <%s>' % key)
+                serialized_child = deserialize_parameter(key, value)
+            else:
+                assert isinstance(child, ParameterClause)
+                key = child.KEY
+                serialized_child = child
             if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
                 raise ValueError('Unauthorized parameter <%s>' % key)
-            self.children.append(deserialize_parameter(key, value))
+            serialized_children.append(serialized_child)
+        self.children = serialized_children
         super(CompoundClause, self).__init__(identifier=identifier)
 
 
 class Bool(CompoundClause):
+    PARAMS_WHITELIST = ['should', 'must', 'must_not', 'filter', 'boost', 'minimum_should_match']
     KEY = 'bool'
 
 

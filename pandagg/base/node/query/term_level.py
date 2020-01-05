@@ -3,6 +3,7 @@ from .abstract import LeafQueryClause
 
 
 class Exists(LeafQueryClause):
+    ALLOW_SIMPLE_VALUE = True
     KEY = 'exists'
 
 
@@ -13,8 +14,20 @@ class Fuzzy(LeafQueryClause):
 class Ids(LeafQueryClause):
     KEY = 'ids'
 
+    def __init__(self, values, identifier=None):
+        self.values = values
+        super(Ids, self).__init__(field='ids', identifier=identifier, values=values)
+
+    def serialize(self):
+        return {self.KEY: {'values': self.values}}
+
+    @property
+    def tag(self):
+        return '%s, values=%s' % (self.KEY, self.values)
+
 
 class Prefix(LeafQueryClause):
+    ALLOW_SIMPLE_VALUE = True
     KEY = 'prefix'
 
 
