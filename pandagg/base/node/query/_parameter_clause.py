@@ -19,7 +19,11 @@ class SimpleParameter(ParameterClause):
     SIMPLE = True
 
     def __init__(self, value):
-        super(SimpleParameter, self).__init__(value=value, tag='%s=%s' % (self.KEY, value))
+        super(SimpleParameter, self).__init__(value=value)
+
+    @property
+    def tag(self):
+        return '%s=%s' % (self.KEY, self.body['value'])
 
     @classmethod
     def deserialize(cls, value):

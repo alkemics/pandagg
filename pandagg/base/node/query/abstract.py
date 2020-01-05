@@ -10,14 +10,21 @@ from pandagg.base._tree import Node
 
 
 class QueryClause(Node):
+    NID_SIZE = 6
     KEY = NotImplementedError()
 
-    def __init__(self, identifier=None, tag=None, **body):
-        if tag is None and identifier is None:
-            tag = self.KEY
-        super(QueryClause, self).__init__(identifier=identifier, tag=tag)
+    def __init__(self, identifier=None, **body):
+        super(QueryClause, self).__init__(identifier=identifier)
         assert isinstance(body, dict)
         self.body = body
+
+    @property
+    def tag(self):
+        return self.KEY
+
+    @property
+    def _identifier_prefix(self):
+        return '%s_' % self.KEY
 
     @classmethod
     def deserialize(cls, **body):
@@ -42,11 +49,15 @@ class QueryClause(Node):
 
 class LeafQueryClause(QueryClause):
 
-    def __init__(self, field, identifier=None, tag=None, **body):
+    ALLOW_SIMPLE_VALUE = False
+
+    def __init__(self, field, identifier=None, **body):
         self.field = field
-        if tag is None and identifier is None:
-            tag = '%s, field=%s' % (self.KEY, field)
-        super(LeafQueryClause, self).__init__(identifier=identifier, tag=tag, **{field: body})
+        super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
+
+    @property
+    def tag(self):
+        return '%s, field=%s' % (self.KEY, self.field)
 
     @classmethod
     def deserialize(cls, **body):
