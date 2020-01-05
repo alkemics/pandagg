@@ -6,7 +6,7 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query._parameter_clause import SimpleParameter
+from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause
 from pandagg.base._tree import Tree
@@ -73,6 +73,17 @@ class Query(Tree):
     def add_node(self, node, pid=None):
         # TODO, validate consistency
         assert isinstance(node, QueryClause)
+        if pid is None:
+            assert not isinstance(node, ParameterClause)
+        else:
+            pnode = self[pid]
+            assert isinstance(pnode, (ParentClause, CompoundClause))
+            if isinstance(pnode, ParentClause):
+                assert not isinstance(node, ParameterClause)
+            if isinstance(pnode, CompoundClause):
+                assert isinstance(node, ParameterClause)
+                if pnode.PARAMS_WHITELIST is not None:
+                    assert node.KEY in (pnode.PARAMS_WHITELIST or [])
         super(Query, self).add_node(node, pid)
 
     def query_dict(self, from_=None):

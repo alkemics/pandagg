@@ -53,18 +53,3 @@ class LeafQueryClause(QueryClause):
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
         return cls(field=k, **v)
-
-
-class ParameterClause(QueryClause):
-    MULTIPLE = False
-
-    def __init__(self, *args, **kwargs):
-        identifier = kwargs.pop('identifier', None)
-        if kwargs:
-            raise ValueError('Invalid keywords arguments: <%s>.' % kwargs.keys())
-        if not isinstance(args, (tuple, list)):
-            args = (args,)
-        if not self.MULTIPLE and len(args) > 1:
-            raise ValueError('%s clause does not accept multiple query clauses.' % self.KEY)
-        self.children = args
-        super(ParameterClause, self).__init__(identifier=identifier)
