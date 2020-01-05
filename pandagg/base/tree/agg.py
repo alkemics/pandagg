@@ -471,7 +471,8 @@ class Agg(Tree):
                 result['children'] = normalized_children
             yield result
 
-    def _serialize_response_as_tabular(self, aggs_response, row_as_tuple=False, grouped_by=None, normalize_children=True):
+    def _serialize_response_as_tabular(self, aggs_response, row_as_tuple=False, grouped_by=None,
+                                       normalize_children=True):
         """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
         reached, and using children aggregations of grouping level as values for each of generated groups (columns).
 

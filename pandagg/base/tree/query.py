@@ -6,7 +6,7 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, Must, Filter
+from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause, Bool
 from pandagg.base._tree import Tree
@@ -125,28 +125,29 @@ class Query(Tree):
         new_query.add_node(b, pid=pid)
         return new_query
 
-    def must(self, *args, **kwargs):
+    def _bool_param(self, param_key, *args, **kwargs):
+        param_klass = PARAMETERS[param_key]
         pid = kwargs.pop('pid', None)
-        must_identifier = kwargs.pop('identifier', None)
+        param_identifier = kwargs.pop('identifier', None)
         bool_identifier = kwargs.pop('bool_identifier', None)
         new_query = self._clone(with_tree=True)
 
         # not providing a parent is only allowed when tree is empty
         if pid is None:
             assert new_query.root is None
-            return Query(Bool(Must(identifier=must_identifier, *args, **kwargs), identifier=bool_identifier))
+            return Query(Bool(param_klass(identifier=param_identifier, *args, **kwargs), identifier=bool_identifier))
 
         pnode = new_query[pid]
 
-        # if pid is a leaf query, wrap it in bool-must
+        # if pid is a leaf query, wrap it in bool-param
         if isinstance(pnode, LeafQueryClause):
             gpid = new_query.parent(pid).identifier
             new_query.remove_node(pid)
             new_query._deserialize_from_node(
                 query_node=Bool(
-                    Must(
+                    param_klass(
                         pnode,
-                        identifier=must_identifier,
+                        identifier=param_identifier,
                         *args,
                         **kwargs
                     ),
@@ -157,27 +158,27 @@ class Query(Tree):
             return new_query
 
         if isinstance(pnode, Bool):
-            existing_must = next((c for c in new_query.children(pid) if isinstance(c, Must)), None)
-            if existing_must is None:
-                new_must = Must(identifier=must_identifier)
-                new_query.add_node(node=new_must, pid=pid)
-                pnode = new_must
-                pid = new_must.identifier
+            existing_param = next((c for c in new_query.children(pid) if isinstance(c, param_klass)), None)
+            if existing_param is None:
+                new_param = param_klass(identifier=param_identifier)
+                new_query.add_node(node=new_param, pid=pid)
+                pnode = new_param
+                pid = new_param.identifier
             else:
-                pnode = existing_must
-                pid = existing_must.identifier
+                pnode = existing_param
+                pid = existing_param.identifier
 
-        if isinstance(pnode, Must):
-            if must_identifier is not None and must_identifier != pnode.identifier:
-                raise ValueError('Must identifier can be provided only if not already existing: provided <%s>, '
-                                 'existing <%s>' % (must_identifier, pnode.identifier))
+        if isinstance(pnode, param_klass):
+            if param_identifier is not None and param_identifier != pnode.identifier:
+                raise ValueError('Param identifier can be provided only if not already existing: provided <%s>, '
+                                 'existing <%s>' % (param_identifier, pnode.identifier))
             existing_clauses = new_query.children(pid)
             gp = new_query.parent(pid)
             new_query.remove_node(pid)
             assert isinstance(gp, Bool)
             new_query._deserialize_from_node(
-                query_node=Must(
-                    identifier=must_identifier,
+                query_node=param_klass(
+                    identifier=param_identifier,
                     children=existing_clauses,
                     *args,
                     **kwargs
@@ -185,4 +186,16 @@ class Query(Tree):
                 pid=gp.identifier
             )
             return new_query
-        raise ValueError('Unsupported type <%s> as parent for must clause.' % type(pnode))
+        raise ValueError('Unsupported type <%s> as parent for <%s> clause.' % (type(pnode), param_key))
+
+    def must(self, *args, **kwargs):
+        return self._bool_param('must', *args, **kwargs)
+
+    def should(self, *args, **kwargs):
+        return self._bool_param('should', *args, **kwargs)
+
+    def must_not(self, *args, **kwargs):
+        return self._bool_param('must_not', *args, **kwargs)
+
+    def filter(self, *args, **kwargs):
+        return self._bool_param('filter', *args, **kwargs)
