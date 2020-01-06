@@ -83,6 +83,10 @@ class FieldValueFactor(SimpleParameter):
     KEY = 'field_value_factor'
 
 
+class Path(SimpleParameter):
+    KEY = 'path'
+
+
 class ParentClause(ParameterClause):
     KEY = NotImplementedError()
     MULTIPLE = False
@@ -171,6 +175,7 @@ PARAMETERS = {
         ScriptScore,
         RandomScore,
         FieldValueFactor,
+        Path,
         # parent parameters
         QueryP,
         Queries,

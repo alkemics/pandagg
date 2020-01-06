@@ -3,6 +3,7 @@ from six import iteritems
 from .abstract import LeafQueryClause
 from .term_level import Exists, Fuzzy, Ids, Prefix, Range, Regexp, Term, Terms, TermsSet, Type, Wildcard
 from .compound import CompoundClause, Bool, Boosting, ConstantScore, FunctionScore, DisMax
+from .joining import Nested, HasChild, HasParent, ParentId
 from ._parameter_clause import Filter, MustNot, Must, Should
 
 QUERIES = {
@@ -26,6 +27,11 @@ QUERIES = {
         ConstantScore,
         FunctionScore,
         DisMax,
+        # joining
+        Nested,
+        HasParent,
+        HasChild,
+        ParentId
     ]
 }
 

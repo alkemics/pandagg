@@ -1,9 +1,17 @@
-
-from .abstract import CompoundClause
+from pandagg.base.node.query import CompoundClause
 
 
 class Nested(CompoundClause):
-    Q_TYPE = 'nested'
+    KEY = 'nested'
 
-    def __init__(self):
-        super(Nested, self).__init__()
+
+class HasChild(CompoundClause):
+    KEY = 'has_child'
+
+
+class HasParent(CompoundClause):
+    KEY = 'has_parent'
+
+
+class ParentId(CompoundClause):
+    KEY = 'parent_id'
