@@ -6,6 +6,7 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
+from pandagg.base.node.query import Nested
 from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause, Bool
@@ -116,6 +117,11 @@ class Query(Tree):
             new_query._deserialize_tree_from_dict(pid=pid, body=arg)
         else:
             raise ValueError('Unsupported type <%s>.' % type(arg))
+        return new_query
+
+    def nested(self, query, path, pid=None, identifier=None):
+        new_query = self._clone(with_tree=True)
+        new_query._deserialize_from_node(Nested(path=path, identifier=identifier, query=query), pid=pid)
         return new_query
 
     def bool(self, *args, **kwargs):

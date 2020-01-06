@@ -138,3 +138,24 @@ bool
     ├── exists, field=field_b
     └── prefix, field=field_c
 ''')
+
+    def test_nested(self):
+        q = Query()
+        q1 = q.nested(
+            query=Term(field='some_nested_field.other', value=2),
+            path='some_nested_path'
+        )
+        self.assertEqual(q1.query_dict(), {
+            "nested": {
+                "u'path'": "some_nested_path",
+                "u'query'": [
+                    {
+                        "term": {
+                            "some_nested_field.other": {
+                                "value": 2
+                            }
+                        }
+                    }
+                ]
+            }
+        })
