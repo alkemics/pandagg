@@ -127,8 +127,7 @@ class Query(Tree):
     def bool(self, *args, **kwargs):
         pid = kwargs.pop('pid', None)
         new_query = self._clone(with_tree=True)
-        b = Bool(*args, **kwargs)
-        new_query.add_node(b, pid=pid)
+        new_query._deserialize_from_node(Bool(*args, **kwargs), pid=pid)
         return new_query
 
     def _bool_param(self, param_key, *args, **kwargs):

@@ -112,7 +112,7 @@ bool
 
     def test_query_method(self):
         q = Query()\
-            .query(Bool(filter=Term(field='field_a', value=2), identifier='root_bool'))\
+            .bool(filter=Term(field='field_a', value=2), identifier='root_bool')\
             .must({'exists': {'field': 'field_b'}}, pid='root_bool')\
             .must(Prefix(field='field_c', value='pre'), pid='root_bool')\
             .must(
@@ -147,8 +147,8 @@ bool
         )
         self.assertEqual(q1.query_dict(), {
             "nested": {
-                "u'path'": "some_nested_path",
-                "u'query'": [
+                "path": "some_nested_path",
+                "query": [
                     {
                         "term": {
                             "some_nested_field.other": {
