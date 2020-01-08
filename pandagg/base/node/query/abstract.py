@@ -48,8 +48,10 @@ class QueryClause(Node):
 
 
 class LeafQueryClause(QueryClause):
+    pass
 
-    ALLOW_SIMPLE_VALUE = False
+
+class FieldQueryClause(LeafQueryClause):
 
     def __init__(self, field, identifier=None, **body):
         self.field = field
@@ -63,7 +65,4 @@ class LeafQueryClause(QueryClause):
     def deserialize(cls, **body):
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
-        if cls.ALLOW_SIMPLE_VALUE and not isinstance(v, dict):
-            assert k == 'field'
-            return cls(field=v)
         return cls(field=k, **v)

@@ -1,38 +1,47 @@
+from six import iteritems
 
-from .abstract import LeafQueryClause
+from .abstract import FieldQueryClause
 
 
-class Intervals(LeafQueryClause):
+class Intervals(FieldQueryClause):
     KEY = 'intervals'
 
 
-class Match(LeafQueryClause):
+class Match(FieldQueryClause):
     KEY = 'match'
 
+    @classmethod
+    def deserialize(cls, **body):
+        assert len(body.keys()) == 1
+        k, v = next(iteritems(body))
+        if isinstance(v, dict):
+            return cls(field=k, **v)
+        return cls(field=k, query=v)
 
-class MatchBoolPrefix(LeafQueryClause):
+
+class MatchBoolPrefix(FieldQueryClause):
     KEY = 'match_bool_prefix'
 
 
-class MatchPhrase(LeafQueryClause):
+class MatchPhrase(FieldQueryClause):
     KEY = 'match_phrase'
 
 
-class MatchPhrasePrefix(LeafQueryClause):
+class MatchPhrasePrefix(FieldQueryClause):
     KEY = 'match_phrase_prefix'
 
 
-class MultiMatch(LeafQueryClause):
+class MultiMatch(FieldQueryClause):
     KEY = 'multi_match'
 
 
-class Common(LeafQueryClause):
+class Common(FieldQueryClause):
     KEY = 'common'
 
 
-class QueryString(LeafQueryClause):
+class QueryString(FieldQueryClause):
     KEY = 'query_string'
 
 
-class SimpleString(LeafQueryClause):
+class SimpleString(FieldQueryClause):
     KEY = 'simple_string'
