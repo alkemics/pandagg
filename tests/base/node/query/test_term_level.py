@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.base.node.query import Terms, Term, Fuzzy, Exists, Ids, Prefix, Range, Regexp, TermsSet, Wildcard
+from pandagg.query import Terms, Term, Fuzzy, Exists, Ids, Prefix, Range, Regexp, TermsSet, Wildcard
 
 
 class TermLevelQueriesTestCase(TestCase):

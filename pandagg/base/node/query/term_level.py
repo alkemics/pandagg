@@ -84,3 +84,18 @@ class Type(FieldQueryClause):
 
 class Wildcard(FieldQueryClause):
     KEY = 'wildcard'
+
+
+TERM_LEVEL_QUERIES = [
+    Exists,
+    Fuzzy,
+    Ids,
+    Prefix,
+    Range,
+    Regexp,
+    Term,
+    Terms,
+    TermsSet,
+    Type,
+    Wildcard
+]

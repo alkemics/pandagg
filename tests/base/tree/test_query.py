@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.base.node.query import Filter, Must, Exists, Range, Prefix, Ids
+from pandagg.query import Query, Exists, Range, Prefix, Ids, Filter, Must, Term, Bool
 from pandagg.base.node.query.full_text import QueryString
-from pandagg.query import Query
-from pandagg.query import Term, Bool
 
 
 from unittest import TestCase

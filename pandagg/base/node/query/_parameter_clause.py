@@ -159,34 +159,35 @@ class Negative(ParameterClause):
     MULTIPLE = False
 
 
-PARAMETERS = {
-    p.KEY: p for p in [
-        # simple parameters
-        Boost,
-        MinimumShouldMatch,
-        TieBreaker,
-        Rewrite,
-        NegativeBoost,
-        Functions,
-        MaxBoost,
-        ScoreMode,
-        BoostMode,
-        MinScore,
-        ScriptScore,
-        RandomScore,
-        FieldValueFactor,
-        Path,
-        # parent parameters
-        QueryP,
-        Queries,
-        Filter,
-        MustNot,
-        Must,
-        Should,
-        Positive,
-        Negative,
-    ]
-}
+PARENT_PARAMETERS = [
+    QueryP,
+    Queries,
+    Filter,
+    MustNot,
+    Must,
+    Should,
+    Positive,
+    Negative
+]
+
+SIMPLE_PARAMETERS = [
+    Boost,
+    MinimumShouldMatch,
+    TieBreaker,
+    Rewrite,
+    NegativeBoost,
+    Functions,
+    MaxBoost,
+    ScoreMode,
+    BoostMode,
+    MinScore,
+    ScriptScore,
+    RandomScore,
+    FieldValueFactor,
+    Path,
+]
+
+PARAMETERS = {p.KEY: p for p in PARENT_PARAMETERS + SIMPLE_PARAMETERS}
 
 
 def deserialize_parameter(key, body):

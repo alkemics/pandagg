@@ -6,10 +6,10 @@ from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query import Nested
 from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause, Bool
+from pandagg.base.node.query.joining import Nested
 from pandagg.base._tree import Tree
 
 

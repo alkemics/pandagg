@@ -86,3 +86,12 @@ class DisMax(CompoundClause):
 
 class FunctionScore(CompoundClause):
     KEY = 'function_score'
+
+
+COMPOUND_QUERIES = [
+    Bool,
+    Boosting,
+    ConstantScore,
+    FunctionScore,
+    DisMax
+]

@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.base.node.query import Bool, Term
-from pandagg.base.node.query._parameter_clause import Boost, Filter
+from pandagg.base.node.query._parameter_clause import Boost
+from pandagg.query import Bool, Term, Filter
 
 
 class CompoundQueriesTestCase(TestCase):

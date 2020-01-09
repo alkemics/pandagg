@@ -57,3 +57,16 @@ class QueryString(LeafQueryClause):
 class SimpleQueryString(LeafQueryClause):
     # improvement: detect fields for validation
     KEY = 'simple_string'
+
+
+FULL_TEXT_QUERIES = [
+    Intervals,
+    Match,
+    MatchBoolPrefix,
+    MatchPhrase,
+    MatchPhrasePrefix,
+    MultiMatch,
+    Common,
+    QueryString,
+    SimpleQueryString
+]

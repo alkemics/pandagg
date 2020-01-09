@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.base.node.query import Intervals, Match, MatchBoolPrefix, MatchPhrase, MatchPhrasePrefix, MultiMatch, \
+from pandagg.query import Intervals, Match, MatchBoolPrefix, MatchPhrase, MatchPhrasePrefix, MultiMatch, \
     QueryString, SimpleQueryString
 
 

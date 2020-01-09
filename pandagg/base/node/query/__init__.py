@@ -1,49 +1,19 @@
 
 from six import iteritems
 from .abstract import LeafQueryClause
-from .term_level import Exists, Fuzzy, Ids, Prefix, Range, Regexp, Term, Terms, TermsSet, Type, Wildcard
-from .full_text import Intervals, Match, MatchBoolPrefix, MatchPhrase, MatchPhrasePrefix, MultiMatch, Common, QueryString, SimpleQueryString
-from .compound import CompoundClause, Bool, Boosting, ConstantScore, FunctionScore, DisMax
-from .joining import Nested, HasChild, HasParent, ParentId
-from ._parameter_clause import Filter, MustNot, Must, Should
+from .term_level import TERM_LEVEL_QUERIES
+from .full_text import FULL_TEXT_QUERIES
+from .compound import COMPOUND_QUERIES, CompoundClause
+from .joining import JOINING_QUERIES
+from ._parameter_clause import PARENT_PARAMETERS
 
 QUERIES = {
-    q.KEY: q
-    for q in [
-        # term level
-        Exists,
-        Fuzzy,
-        Ids,
-        Prefix,
-        Range,
-        Regexp,
-        Term,
-        Terms,
-        TermsSet,
-        Type,
-        Wildcard,
-        # full text
-        Intervals,
-        Match,
-        MatchBoolPrefix,
-        MatchPhrase,
-        MatchPhrasePrefix,
-        MultiMatch,
-        Common,
-        QueryString,
-        SimpleQueryString,
-        # compound
-        Bool,
-        Boosting,
-        ConstantScore,
-        FunctionScore,
-        DisMax,
-        # joining
-        Nested,
-        HasParent,
-        HasChild,
-        ParentId
-    ]
+    q.KEY: q for q in
+    TERM_LEVEL_QUERIES +
+    FULL_TEXT_QUERIES +
+    COMPOUND_QUERIES +
+    JOINING_QUERIES +
+    PARENT_PARAMETERS
 }
 
 
