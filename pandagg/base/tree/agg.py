@@ -12,11 +12,11 @@ from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
 from pandagg.base._tree import Tree
 from pandagg.base.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
-from pandagg.base.interactive.response import IResponse
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.agg.bucket import Terms, Nested, ReverseNested, MatchAll
-from pandagg.base.node.agg.deserializer import deserialize_agg
+from pandagg.base.interactive.response import IResponse
+from pandagg.base.node.agg import deserialize_agg
 from pandagg.base.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode
+from pandagg.base.node.agg.bucket import Terms, Nested, ReverseNested, MatchAll
 from pandagg.base.tree.response import ResponseTree
 
 

@@ -366,19 +366,16 @@ class DateRange(Range):
         )
 
 
-BUCKET_AGGS = {
-    agg.AGG_TYPE: agg
-    for agg in [
-        Terms,
-        Filters,
-        Histogram,
-        DateHistogram,
-        Global,
-        Filter,
-        Nested,
-        ReverseNested,
-        Range,
-        DateRange,
-        Missing
-    ]
-}
+BUCKET_AGGS = [
+    Terms,
+    Filters,
+    Histogram,
+    DateHistogram,
+    Global,
+    Filter,
+    Nested,
+    ReverseNested,
+    Range,
+    DateRange,
+    Missing
+]

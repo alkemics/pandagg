@@ -3,7 +3,7 @@
 from operator import itemgetter
 
 import pandas as pd
-from pandagg.base.node.agg import PUBLIC_AGGS
+from pandagg.base.node.agg import AGGS
 from pandagg.base.node.types import MAPPING_TYPES
 
 
@@ -14,7 +14,7 @@ def list_available_aggs_on_field(field_type):
     """
     return [
         agg_class
-        for agg_class in PUBLIC_AGGS.values()
+        for agg_class in AGGS.values()
         if agg_class.valid_on_field_type(field_type)
     ]
 

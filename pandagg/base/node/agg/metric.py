@@ -96,20 +96,17 @@ class ValueCount(FieldMetricAgg):
     AGG_TYPE = 'value_count'
 
 
-METRIC_AGGS = {
-    agg.AGG_TYPE: agg
-    for agg in [
-        Avg,
-        Max,
-        Min,
-        Cardinality,
-        Stats,
-        ExtendedStats,
-        Percentiles,
-        PercentileRanks,
-        GeoBound,
-        GeoCentroid,
-        TopHits,
-        ValueCount
-    ]
-}
+METRIC_AGGS = [
+    Avg,
+    Max,
+    Min,
+    Cardinality,
+    Stats,
+    ExtendedStats,
+    Percentiles,
+    PercentileRanks,
+    GeoBound,
+    GeoCentroid,
+    TopHits,
+    ValueCount
+]

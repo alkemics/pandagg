@@ -73,21 +73,18 @@ class SerialDiff(Pipeline):
     VALUE_ATTRS = ['value']
 
 
-PIPELINE_AGGS = {
-    agg.AGG_TYPE: agg
-    for agg in [
-        AvgBucket,
-        Derivative,
-        MaxBucket,
-        MinBucket,
-        SumBucket,
-        StatsBucket,
-        ExtendedStatsBucket,
-        PercentilesBucket,
-        MovingAvg,
-        CumulativeSum,
-        BucketScript,
-        BucketSelector,
-        SerialDiff
-    ]
-}
+PIPELINE_AGGS = [
+    AvgBucket,
+    Derivative,
+    MaxBucket,
+    MinBucket,
+    SumBucket,
+    StatsBucket,
+    ExtendedStatsBucket,
+    PercentilesBucket,
+    MovingAvg,
+    CumulativeSum,
+    BucketScript,
+    BucketSelector,
+    SerialDiff
+]
