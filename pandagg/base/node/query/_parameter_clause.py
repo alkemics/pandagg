@@ -144,17 +144,17 @@ class QueryP(ParentClause):
     MULTIPLE = False
 
 
-class Queries(ParameterClause):
+class Queries(ParentClause):
     KEY = 'queries'
     MULTIPLE = True
 
 
-class Positive(ParameterClause):
+class Positive(ParentClause):
     KEY = 'positive'
     MULTIPLE = False
 
 
-class Negative(ParameterClause):
+class Negative(ParentClause):
     KEY = 'negative'
     MULTIPLE = False
 

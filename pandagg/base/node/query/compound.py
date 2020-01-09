@@ -73,18 +73,24 @@ class Bool(CompoundClause):
 
 
 class Boosting(CompoundClause):
+    PARAMS_WHITELIST = ['positive', 'negative', 'negative_boost']
     KEY = 'boosting'
 
 
 class ConstantScore(CompoundClause):
+    PARAMS_WHITELIST = ['filter', 'boost']
     KEY = 'constant_score'
 
 
 class DisMax(CompoundClause):
+    PARAMS_WHITELIST = ['queries', 'tie_breaker']
     KEY = 'dis_max'
 
 
 class FunctionScore(CompoundClause):
+    PARAMS_WHITELIST = [
+        'query', 'boost', 'random_score', 'boost_mode', 'functions', 'max_boost', 'score_mode', 'min_score'
+    ]
     KEY = 'function_score'
 
 
