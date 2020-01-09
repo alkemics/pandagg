@@ -14,13 +14,6 @@ class Exists(LeafQueryClause):
     def tag(self):
         return '%s, field=%s' % (self.KEY, self.field)
 
-    @classmethod
-    def deserialize(cls, **body):
-        assert len(body.keys()) == 1
-        k, v = next(iteritems(body))
-        assert k == 'field'
-        return cls(field=v)
-
 
 class Fuzzy(FieldQueryClause):
     KEY = 'fuzzy'
@@ -55,15 +48,8 @@ class Regexp(FieldQueryClause):
 
 
 class Term(FieldQueryClause):
+    SHORT_TAG = 'value'
     KEY = 'term'
-
-    @classmethod
-    def deserialize(cls, **body):
-        assert len(body.keys()) == 1
-        k, v = next(iteritems(body))
-        if isinstance(v, dict):
-            return cls(field=k, **v)
-        return cls(field=k, value=v)
 
 
 class Terms(LeafQueryClause):

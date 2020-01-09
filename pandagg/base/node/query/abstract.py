@@ -53,6 +53,8 @@ class LeafQueryClause(QueryClause):
 
 class FieldQueryClause(LeafQueryClause):
 
+    SHORT_TAG = None
+
     def __init__(self, field, identifier=None, **body):
         self.field = field
         super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
@@ -65,4 +67,6 @@ class FieldQueryClause(LeafQueryClause):
     def deserialize(cls, **body):
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
+        if cls.SHORT_TAG and not isinstance(v, dict):
+            return cls(field=k, **{cls.SHORT_TAG: v})
         return cls(field=k, **v)
