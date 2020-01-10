@@ -10,11 +10,13 @@ class MoreLikeThis(MultiFieldsQueryClause):
     KEY = 'more_like_this'
 
 
-class Percolate(LeafQueryClause):
+class Percolate(SingleFieldQueryClause):
+    FLAT = True
     KEY = 'percolate'
 
 
 class RankFeature(SingleFieldQueryClause):
+    FLAT = True
     KEY = 'rank_feature'
 
 
@@ -22,11 +24,9 @@ class Script(LeafQueryClause):
     KEY = 'script'
 
 
-class ScriptScore(LeafQueryClause):
-    KEY = 'script_score'
+class Wrapper(LeafQueryClause):
+    KEY = 'wrapper'
 
-
-# TODO wrapper and pinned query (compound queries)
 
 SPECIALIZED_QUERIES = [
     DistanceFeature,
@@ -34,5 +34,5 @@ SPECIALIZED_QUERIES = [
     Percolate,
     RankFeature,
     Script,
-    ScriptScore
+    Wrapper
 ]

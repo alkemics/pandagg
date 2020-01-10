@@ -3,7 +3,10 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.query import DistanceFeature, MoreLikeThis, Percolate, RankFeature, Script, ScriptScore
+from pandagg.base.node.query._parameter_clause import QueryP, ScriptP, Organic, IdsP
+from pandagg.base.node.query.full_text import Match
+from pandagg.base.node.query.specialized import Wrapper
+from pandagg.query import DistanceFeature, MoreLikeThis, Percolate, RankFeature, Script, ScriptScore, PinnedQuery
 
 
 class SpecializedQueriesTestCase(TestCase):
@@ -53,3 +56,151 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(deserialized.tag, 'more_like_this, fields=[\'title\', \'description\']')
+
+    def test_percolate_clause(self):
+        body = {
+            "field": "query",
+            "document": {
+                "message": "A new bonsai tree in the office"
+            }
+        }
+        expected = {'percolate': body}
+
+        q = Percolate(
+            field="query",
+            document={"message": "A new bonsai tree in the office"}
+        )
+        self.assertEqual(q.body, body)
+        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.tag, 'percolate, field=query')
+
+        deserialized = Percolate.deserialize(**body)
+        self.assertEqual(deserialized.body, body)
+        self.assertEqual(deserialized.serialize(), expected)
+        self.assertEqual(deserialized.tag, 'percolate, field=query')
+
+    def test_rank_feature_clause(self):
+        body = {
+            "field": "url_length",
+            "boost": 0.1
+        }
+        expected = {'rank_feature': body}
+
+        q = RankFeature(
+            field="url_length",
+            boost=0.1
+        )
+        self.assertEqual(q.body, body)
+        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.tag, 'rank_feature, field=url_length')
+
+        deserialized = RankFeature.deserialize(**body)
+        self.assertEqual(deserialized.body, body)
+        self.assertEqual(deserialized.serialize(), expected)
+        self.assertEqual(deserialized.tag, 'rank_feature, field=url_length')
+
+    def test_script_clause(self):
+        body = {
+            "script": {
+                "source": "doc['num1'].value > params.param1",
+                "lang": "painless",
+                "params": {
+                    "param1": 5
+                }
+            }
+        }
+        expected = {'script': body}
+
+        q = Script(
+            script={
+                "source": "doc['num1'].value > params.param1",
+                "lang": "painless",
+                "params": {
+                    "param1": 5
+                }
+            }
+        )
+        self.assertEqual(q.body, body)
+        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.tag, 'script')
+
+        deserialized = Script.deserialize(**body)
+        self.assertEqual(deserialized.body, body)
+        self.assertEqual(deserialized.serialize(), expected)
+        self.assertEqual(deserialized.tag, 'script')
+
+    def test_wrapper_clause(self):
+        body = {
+            "query": "eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="
+        }
+        expected = {'wrapper': body}
+
+        q = Wrapper(query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0=")
+        self.assertEqual(q.body, body)
+        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.tag, 'wrapper')
+
+        deserialized = Wrapper.deserialize(**body)
+        self.assertEqual(deserialized.body, body)
+        self.assertEqual(deserialized.serialize(), expected)
+        self.assertEqual(deserialized.tag, 'wrapper')
+
+    def test_script_score_clause(self):
+        b1 = ScriptScore(
+            query=Match(field='message', value='elasticsearch'),
+            script={"source": "doc['likes'].value / 10 "}
+        )
+
+        b2 = ScriptScore(
+            query={'match': {'message': 'elasticsearch'}},
+            script={"source": "doc['likes'].value / 10 "}
+        )
+
+        b3 = ScriptScore({
+            "query": {'match': {'message': 'elasticsearch'}},
+            "script": {"source": "doc['likes'].value / 10 "}
+        })
+        for b in (b1, b2, b3):
+            self.assertEqual(len(b.children), 2)
+            self.assertEqual(b.tag, 'script_score')
+
+            query = next((c for c in b.children if isinstance(c, QueryP)))
+            self.assertEqual(query.tag, 'query')
+            self.assertEqual(query.body, {})
+            self.assertEqual(len(query.children), 1)
+            match = query.children[0]
+            self.assertIsInstance(match, Match)
+            self.assertEqual(match.field, 'message')
+
+            script = next((c for c in b.children if isinstance(c, ScriptP)))
+            self.assertEqual(script.tag, 'script={"source": "doc[\'likes\'].value / 10 "}')
+
+    def test_pinned_query_clause(self):
+        b1 = PinnedQuery(
+            ids=[1, 23],
+            organic=Match(field='description', value='brown shoes')
+        )
+
+        b2 = PinnedQuery(
+            ids=[1, 23],
+            organic={"match": {"description": "brown shoes"}}
+        )
+
+        b3 = PinnedQuery({
+            "ids": [1, 23],
+            "organic": {"match": {"description": "brown shoes"}}
+        })
+        for b in (b1, b2, b3):
+            self.assertEqual(len(b.children), 2)
+            self.assertEqual(b.tag, 'pinned')
+
+            query = next((c for c in b.children if isinstance(c, Organic)))
+            self.assertEqual(query.tag, 'organic')
+            self.assertEqual(query.body, {})
+            self.assertEqual(len(query.children), 1)
+            match = query.children[0]
+            self.assertIsInstance(match, Match)
+            self.assertEqual(match.field, 'description')
+
+            script = next((c for c in b.children if isinstance(c, IdsP)))
+            self.assertEqual(script.tag, 'ids=[1, 23]')

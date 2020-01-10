@@ -1,22 +1,13 @@
 
-from .term_level import Exists, Fuzzy, Ids, Prefix, Range, Regexp, Term, Terms, TermsSet, Type, Wildcard
+from .term_level import TERM_LEVEL_QUERIES
+from .full_text import FULL_TEXT_QUERIES
+from .geo import GEO_QUERIES
+from .specialized import SPECIALIZED_QUERIES
 
 
 LEAF_CLAUSES = {
     q.KEY: q
-    for q in [
-        Exists,
-        Fuzzy,
-        Ids,
-        Prefix,
-        Range,
-        Regexp,
-        Term,
-        Terms,
-        TermsSet,
-        Type,
-        Wildcard
-    ]
+    for q in TERM_LEVEL_QUERIES + FULL_TEXT_QUERIES + GEO_QUERIES + SPECIALIZED_QUERIES
 }
 
 

@@ -1,5 +1,6 @@
 
 from six import iteritems
+
 from .abstract import LeafQueryClause
 from .term_level import TERM_LEVEL_QUERIES
 from .full_text import FULL_TEXT_QUERIES
@@ -7,6 +8,7 @@ from .compound import COMPOUND_QUERIES, CompoundClause
 from .joining import JOINING_QUERIES
 from .geo import GEO_QUERIES
 from .specialized import SPECIALIZED_QUERIES
+from .specialized_compound import SPECIALIZED_COMPOUND_QUERIES
 from ._parameter_clause import PARENT_PARAMETERS
 
 QUERIES = {
@@ -17,6 +19,7 @@ QUERIES = {
     JOINING_QUERIES +
     GEO_QUERIES +
     SPECIALIZED_QUERIES +
+    SPECIALIZED_COMPOUND_QUERIES +
     PARENT_PARAMETERS
 }
 

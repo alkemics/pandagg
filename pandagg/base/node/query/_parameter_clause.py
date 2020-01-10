@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+import json
 from six import iteritems
 
 from pandagg.base.node.query._leaf_clause import deserialize_leaf_clause
@@ -21,7 +22,7 @@ class SimpleParameter(ParameterClause):
 
     @property
     def tag(self):
-        return '%s=%s' % (self.KEY, self.body['value'])
+        return '%s=%s' % (self.KEY, json.dumps(self.body['value']))
 
     @classmethod
     def deserialize(cls, value):
@@ -85,6 +86,14 @@ class FieldValueFactor(SimpleParameter):
 
 class Path(SimpleParameter):
     KEY = 'path'
+
+
+class IdsP(SimpleParameter):
+    KEY = 'ids'
+
+
+class ScriptP(SimpleParameter):
+    KEY = 'script'
 
 
 class ParentClause(ParameterClause):
@@ -159,6 +168,11 @@ class Negative(ParentClause):
     MULTIPLE = False
 
 
+class Organic(ParentClause):
+    KEY = 'organic'
+    MULTIPLE = False
+
+
 PARENT_PARAMETERS = [
     QueryP,
     Queries,
@@ -167,7 +181,8 @@ PARENT_PARAMETERS = [
     Must,
     Should,
     Positive,
-    Negative
+    Negative,
+    Organic,
 ]
 
 SIMPLE_PARAMETERS = [
@@ -185,6 +200,8 @@ SIMPLE_PARAMETERS = [
     RandomScore,
     FieldValueFactor,
     Path,
+    IdsP,
+    ScriptP
 ]
 
 PARAMETERS = {p.KEY: p for p in PARENT_PARAMETERS + SIMPLE_PARAMETERS}
