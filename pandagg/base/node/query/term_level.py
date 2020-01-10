@@ -1,4 +1,3 @@
-from six import iteritems
 
 from .abstract import LeafQueryClause, FieldQueryClause
 
@@ -68,10 +67,12 @@ class Terms(LeafQueryClause):
 
     @classmethod
     def deserialize(cls, **body):
-        boost = body.pop('boost', None)
-        assert len(body.keys()) == 1
-        k, v = next(iteritems(body))
-        return cls(boost=boost, field=k, terms=v)
+        allowed_params = {'boost'}
+        other_keys = set(body.keys()).difference(allowed_params)
+        assert len(other_keys) == 1
+        field_key = other_keys.pop()
+        field_value = body.pop(field_key)
+        return cls(field=field_key, terms=field_value, **body)
 
 
 class TermsSet(FieldQueryClause):
