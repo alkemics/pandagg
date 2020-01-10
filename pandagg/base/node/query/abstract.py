@@ -51,13 +51,16 @@ class LeafQueryClause(QueryClause):
     pass
 
 
-class FieldQueryClause(LeafQueryClause):
-
+class SingleFieldQueryClause(LeafQueryClause):
     SHORT_TAG = None
+    FLAT = False
 
     def __init__(self, field, identifier=None, **body):
         self.field = field
-        super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
+        if self.FLAT:
+            super(LeafQueryClause, self).__init__(identifier=identifier, field=field, **body)
+        else:
+            super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
 
     @property
     def tag(self):
@@ -65,8 +68,20 @@ class FieldQueryClause(LeafQueryClause):
 
     @classmethod
     def deserialize(cls, **body):
+        if cls.FLAT:
+            return cls(**body)
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
         if cls.SHORT_TAG and not isinstance(v, dict):
             return cls(field=k, **{cls.SHORT_TAG: v})
         return cls(field=k, **v)
+
+
+class MultiFieldsQueryClause(LeafQueryClause):
+    def __init__(self, fields, identifier=None, **body):
+        self.fields = fields
+        super(LeafQueryClause, self).__init__(identifier=identifier, fields=fields, **body)
+
+    @property
+    def tag(self):
+        return '%s, fields=%s' % (self.KEY, map(text, self.fields))

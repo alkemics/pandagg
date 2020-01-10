@@ -1,8 +1,8 @@
 
-from .abstract import FieldQueryClause, LeafQueryClause
+from .abstract import SingleFieldQueryClause, LeafQueryClause
 
 
-class GeoBoundingBox(FieldQueryClause):
+class GeoBoundingBox(SingleFieldQueryClause):
     KEY = 'geo_bounding_box'
 
 
@@ -30,11 +30,11 @@ class GeoDistance(LeafQueryClause):
         return cls(field=field_key, location=field_value, **body)
 
 
-class GeoPolygone(FieldQueryClause):
+class GeoPolygone(SingleFieldQueryClause):
     KEY = 'geo_polygon'
 
 
-class GeoShape(FieldQueryClause):
+class GeoShape(SingleFieldQueryClause):
     KEY = 'geo_shape'
 
 

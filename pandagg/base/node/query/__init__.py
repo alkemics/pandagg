@@ -6,6 +6,7 @@ from .full_text import FULL_TEXT_QUERIES
 from .compound import COMPOUND_QUERIES, CompoundClause
 from .joining import JOINING_QUERIES
 from .geo import GEO_QUERIES
+from .specialized import SPECIALIZED_QUERIES
 from ._parameter_clause import PARENT_PARAMETERS
 
 QUERIES = {
@@ -15,6 +16,7 @@ QUERIES = {
     COMPOUND_QUERIES +
     JOINING_QUERIES +
     GEO_QUERIES +
+    SPECIALIZED_QUERIES +
     PARENT_PARAMETERS
 }
 

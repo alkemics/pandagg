@@ -1,51 +1,36 @@
-from builtins import str as text
 
-from .abstract import LeafQueryClause, FieldQueryClause
+from .abstract import LeafQueryClause, SingleFieldQueryClause, MultiFieldsQueryClause
 
 
-class Intervals(FieldQueryClause):
+class Intervals(SingleFieldQueryClause):
     KEY = 'intervals'
 
 
-class Match(FieldQueryClause):
+class Match(SingleFieldQueryClause):
     SHORT_TAG = 'query'
     KEY = 'match'
 
 
-class MatchBoolPrefix(FieldQueryClause):
+class MatchBoolPrefix(SingleFieldQueryClause):
     SHORT_TAG = 'query'
     KEY = 'match_bool_prefix'
 
 
-class MatchPhrase(FieldQueryClause):
+class MatchPhrase(SingleFieldQueryClause):
     SHORT_TAG = 'query'
     KEY = 'match_phrase'
 
 
-class MatchPhrasePrefix(FieldQueryClause):
+class MatchPhrasePrefix(SingleFieldQueryClause):
     SHORT_TAG = 'query'
     KEY = 'match_phrase_prefix'
 
 
-class MultiMatch(LeafQueryClause):
+class MultiMatch(MultiFieldsQueryClause):
     KEY = 'multi_match'
 
-    def __init__(self, fields, query, identifier=None, **body):
-        self.fields = fields
-        b = {'fields': fields, 'query': query}
-        b.update(body)
-        super(MultiMatch, self).__init__(identifier=identifier, **b)
 
-    @property
-    def tag(self):
-        return '%s, fields=%s' % (self.KEY, map(text, self.fields))
-
-    @classmethod
-    def deserialize(cls, **body):
-        return cls(**body)
-
-
-class Common(FieldQueryClause):
+class Common(SingleFieldQueryClause):
     KEY = 'common'
 
 

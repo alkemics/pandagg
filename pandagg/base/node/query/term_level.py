@@ -1,5 +1,5 @@
 
-from .abstract import LeafQueryClause, FieldQueryClause
+from .abstract import LeafQueryClause, SingleFieldQueryClause
 
 
 class Exists(LeafQueryClause):
@@ -14,7 +14,7 @@ class Exists(LeafQueryClause):
         return '%s, field=%s' % (self.KEY, self.field)
 
 
-class Fuzzy(FieldQueryClause):
+class Fuzzy(SingleFieldQueryClause):
     KEY = 'fuzzy'
 
 
@@ -34,19 +34,19 @@ class Ids(LeafQueryClause):
         return '%s, values=%s' % (self.KEY, self.values)
 
 
-class Prefix(FieldQueryClause):
+class Prefix(SingleFieldQueryClause):
     KEY = 'prefix'
 
 
-class Range(FieldQueryClause):
+class Range(SingleFieldQueryClause):
     KEY = 'range'
 
 
-class Regexp(FieldQueryClause):
+class Regexp(SingleFieldQueryClause):
     KEY = 'regexp'
 
 
-class Term(FieldQueryClause):
+class Term(SingleFieldQueryClause):
     SHORT_TAG = 'value'
     KEY = 'term'
 
@@ -75,15 +75,15 @@ class Terms(LeafQueryClause):
         return cls(field=field_key, terms=field_value, **body)
 
 
-class TermsSet(FieldQueryClause):
+class TermsSet(SingleFieldQueryClause):
     KEY = 'terms_set'
 
 
-class Type(FieldQueryClause):
+class Type(SingleFieldQueryClause):
     KEY = 'type'
 
 
-class Wildcard(FieldQueryClause):
+class Wildcard(SingleFieldQueryClause):
     KEY = 'wildcard'
 
 
