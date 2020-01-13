@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from pandagg.base.node.query.joining import Nested
 from pandagg.query import Query, Exists, Range, Prefix, Ids, Filter, Must, Term, Bool
 from pandagg.base.node.query.full_text import QueryString
 
@@ -51,12 +52,58 @@ bool
         with self.assertRaises(AssertionError):
             q.add_node(Term(field='some_field', value=2), pid='bool')
 
-    def test_bool_at_root(self):
-        # at root
-        q = Query()
-        q1 = q.bool(identifier='root_bool')
-        self.assertEqual(q.nodes.keys(), [])
-        self.assertEqual(q1.nodes.keys(), ['root_bool'])
+    def test_filter(self):
+        # ABOVE
+        # empty root
+        initial_q = Query()
+        result_q = initial_q.bool(identifier='root_bool')
+
+    def test_bool(self):
+        # ABOVE
+        # empty root
+        initial_q = Query()
+        result_q = initial_q.bool(identifier='root_bool')
+
+        # above element (in filter? in must? in should?)
+        initial_q = Query(Term(field='some_field', value=2, identifier='term_q'))
+        result_q = initial_q.bool(identifier='root_bool', child='term_q', child_operator='must')
+
+        # above element (without declaring above: default behavior is wrapping at root)
+        initial_q = Query(Term(field='some_field', value=2, identifier='term_q'))
+        result_q = initial_q.bool(identifier='root_bool', child_operator='must')
+
+        # above bool element
+        initial_q = Query(Bool(identifier='init_bool', should=[
+            Term(field='some_field', value='prod', identifier='prod_term'),
+            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        ]))
+        result_q = initial_q.bool(
+            child='init_bool', identifier='top_bool',
+            filter=Range(field='price', gte=12)
+        )
+
+        # above element in existing bool query
+        initial_q = Query(Bool(identifier='init_bool', should=[
+            Term(field='some_field', value='prod', identifier='prod_term'),
+            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        ]))
+        result_q = initial_q.bool(
+            child='init_bool', identifier='top_bool', child_operator='must',
+            filter=Range(field='price', gte=12)
+        )
+
+        # BELOW single child parameter
+        initial_q = Query(Nested(path='some_nested', identifier='nested'))
+        result_q = initial_q.bool(parent='nested', identifier='bool', filter={'term': {'some_nested.id': 2}})
+
+        # INVALID
+        # ABOVE non-existing
+
+        # UNDER non-existing
+
+        # UNDER bool
+
+        # UNDER leaf
 
     def test_must_at_root(self):
         q_i1 = Query()

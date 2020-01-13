@@ -25,7 +25,7 @@ class JoiningQueriesTestCase(TestCase):
         })
         for n in (n1, n2, n3):
             self.assertEqual(len(n.children), 2)
-            self.assertEqual(n.tag, 'nested, path=some_nested_path')
+            self.assertEqual(n.tag, 'nested')
             self.assertEqual(n.path, 'some_nested_path')
 
             q = next((c for c in n.children if isinstance(c, QueryP)))

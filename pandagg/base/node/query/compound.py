@@ -1,6 +1,7 @@
 from six import iteritems
 
-from pandagg.base.node.query._parameter_clause import deserialize_parameter, ParameterClause
+from pandagg.base.node.query._parameter_clause import deserialize_parameter, ParameterClause, PARAMETERS, \
+    SimpleParameter, Must
 from pandagg.base.node.query.abstract import QueryClause
 
 
@@ -34,6 +35,7 @@ class CompoundClause(QueryClause):
     >>>    }
     >>>}
     """
+    DEFAULT_OPERATOR = NotImplementedError()
     PARAMS_WHITELIST = None
 
     def __init__(self, *args, **kwargs):
@@ -66,8 +68,17 @@ class CompoundClause(QueryClause):
         self.children = serialized_children
         super(CompoundClause, self).__init__(identifier=identifier)
 
+    @classmethod
+    def params(cls, parent_only=False):
+        """Return map of key -> params that handle children leaves."""
+        return {
+            p: PARAMETERS[p] for p in cls.PARAMS_WHITELIST or []
+            if not parent_only or not issubclass(PARAMETERS[p], SimpleParameter)
+        }
+
 
 class Bool(CompoundClause):
+    DEFAULT_OPERATOR = Must
     PARAMS_WHITELIST = ['should', 'must', 'must_not', 'filter', 'boost', 'minimum_should_match']
     KEY = 'bool'
 

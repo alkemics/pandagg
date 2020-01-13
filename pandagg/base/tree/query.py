@@ -5,12 +5,12 @@ from __future__ import unicode_literals
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
+from pandagg.base._tree import Tree
 from pandagg.base.interactive.mapping import as_mapping
 from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause, Bool
 from pandagg.base.node.query.joining import Nested
-from pandagg.base._tree import Tree
 
 
 @python_2_unicode_compatible
@@ -66,7 +66,14 @@ class Query(Tree):
         self.add_node(query_node, pid)
         if hasattr(query_node, 'children'):
             for child_node in query_node.children or []:
-                self._deserialize_from_node(child_node, pid=query_node.identifier)
+                if isinstance(child_node, QueryClause):
+                    self._deserialize_from_node(child_node, pid=query_node.identifier)
+                elif isinstance(child_node, Query):
+                    self.paste(nid=pid, new_tree=child_node)
+                elif isinstance(child_node, dict):
+                    self._deserialize_tree_from_dict(body=child_node, pid=pid)
+                else:
+                    raise ValueError('Unsupported type <%s>' % type(child_node))
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             query_node.children = None
 
@@ -94,8 +101,15 @@ class Query(Tree):
         if isinstance(node, (LeafQueryClause, SimpleParameter)):
             return node.serialize()
         serialized_children = []
+        should_yield = False
         for child_node in self.children(node.identifier):
-            serialized_children.append(self.query_dict(from_=child_node.identifier))
+            serialized_child = self.query_dict(from_=child_node.identifier)
+            if serialized_child is not None:
+                serialized_children.append(serialized_child)
+                if not isinstance(child_node, SimpleParameter):
+                    should_yield = True
+        if not should_yield:
+            return None
         if isinstance(node, CompoundClause):
             # {bool: {filter: ..., must: ...}
             return {node.KEY: {k: v for d in serialized_children for k, v in d.items()}}
@@ -125,9 +139,72 @@ class Query(Tree):
         return new_query
 
     def bool(self, *args, **kwargs):
-        pid = kwargs.pop('pid', None)
         new_query = self._clone(with_tree=True)
-        new_query._deserialize_from_node(Bool(*args, **kwargs), pid=pid)
+
+        child = kwargs.pop('child', None)
+        child_operator = kwargs.pop('child_operator', None)
+        if child is not None:
+            assert child in self
+        if child_operator is not None:
+            assert child_operator in Bool.params(parent_only=True).keys()
+            child_operator_klass = Bool.params(parent_only=True)[child_operator]
+        else:
+            child_operator_klass = Bool.DEFAULT_OPERATOR
+
+        # provided parent is compound, real one is parameter
+        parent = kwargs.pop('parent', None)
+        parent_operator = kwargs.pop('parent_operator', None)
+        if parent is not None:
+            assert parent in new_query
+            parent_node = new_query[parent]
+            if parent_operator is not None:
+                assert parent_operator in parent_node.params(parent_only=True).keys()
+                parent_operator_klass = parent_node.params(parent_only=True)[parent_operator]
+            else:
+                parent_operator_klass = parent_node.DEFAULT_OPERATOR
+            parent_operator_id = next((c.identifier for c in new_query.children(parent) if isinstance(c, parent_operator_klass)), None)
+            if parent_operator_id is None:
+                parent_operator = parent_operator_klass()
+                new_query.add_node(parent_operator, pid=parent)
+                parent = parent_operator.identifier
+            else:
+                parent = parent_operator_id
+
+        if parent is not None and child is not None:
+            raise ValueError('Only "child" or "parent" must be declared.')
+        # either parent is declared, either child is declared
+
+        if child is None and parent is None:
+            if self.root is None:
+                new_query = self._clone()
+                new_query._deserialize_from_node(Bool(*args, **kwargs))
+                return new_query
+            # if none is declared, we consider that bool is added on top of existing query
+            child = self.root
+
+        # either child, either parent is declared
+
+        # based on child (parent is None)
+        if parent is None and child is not None:
+            # we insert bool in-between child and its nearest parent (parent is a parameter clause)
+            parent_node = new_query.parent(child)
+            if parent_node is not None:
+                # if child is not already root
+                parent = parent_node.identifier
+
+        # insert bool below parent
+        child_tree = None
+        if child is not None:
+            child_tree = new_query.remove_subtree(child)
+        b_query = Bool(*args, **kwargs)
+        new_query._deserialize_from_node(b_query, pid=parent)
+        if child is not None:
+            operator_id = next((c.identifier for c in new_query.children(b_query.identifier) if isinstance(c, child_operator_klass)), None)
+            if operator_id is None:
+                operator = child_operator_klass()
+                new_query.add_node(operator, pid=b_query.identifier)
+                operator_id = operator.identifier
+            new_query.paste(nid=operator_id, new_tree=child_tree)
         return new_query
 
     def _bool_param(self, param_key, *args, **kwargs):
