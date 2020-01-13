@@ -96,6 +96,10 @@ class ScriptP(SimpleParameter):
     KEY = 'script'
 
 
+class IgnoreUnmapped(SimpleParameter):
+    KEY = 'ignore_unmapped'
+
+
 class ParentClause(ParameterClause):
     KEY = NotImplementedError()
     MULTIPLE = False
