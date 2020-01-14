@@ -13,10 +13,14 @@ class Nested(CompoundClause):
 
 
 class HasChild(CompoundClause):
+    DEFAULT_OPERATOR = QueryP
+    PARAMS_WHITELIST = ['query', 'type', 'max_children', 'min_children', 'score_mode', 'ignore_unmapped']
     KEY = 'has_child'
 
 
 class HasParent(CompoundClause):
+    DEFAULT_OPERATOR = QueryP
+    PARAMS_WHITELIST = ['query', 'parent_type', 'score', 'ignore_unmapped']
     KEY = 'has_parent'
 
 

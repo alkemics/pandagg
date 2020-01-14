@@ -1,7 +1,7 @@
 from six import iteritems
 
 from pandagg.base.node.query._parameter_clause import deserialize_parameter, ParameterClause, PARAMETERS, \
-    SimpleParameter, Must
+    SimpleParameter, Must, Filter, Queries, QueryP, Positive
 from pandagg.base.node.query.abstract import QueryClause
 
 
@@ -84,21 +84,25 @@ class Bool(CompoundClause):
 
 
 class Boosting(CompoundClause):
+    DEFAULT_OPERATOR = Positive
     PARAMS_WHITELIST = ['positive', 'negative', 'negative_boost']
     KEY = 'boosting'
 
 
 class ConstantScore(CompoundClause):
+    DEFAULT_OPERATOR = Filter
     PARAMS_WHITELIST = ['filter', 'boost']
     KEY = 'constant_score'
 
 
 class DisMax(CompoundClause):
+    DEFAULT_OPERATOR = Queries
     PARAMS_WHITELIST = ['queries', 'tie_breaker']
     KEY = 'dis_max'
 
 
 class FunctionScore(CompoundClause):
+    DEFAULT_OPERATOR = QueryP
     PARAMS_WHITELIST = [
         'query', 'boost', 'random_score', 'boost_mode', 'functions', 'max_boost', 'score_mode', 'min_score'
     ]
