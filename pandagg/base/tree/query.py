@@ -139,10 +139,44 @@ class Query(Tree):
         return new_query
 
     def _compound(self, compound_klass, *args, **kwargs):
+        """Insert compound class in query.
+        :param compound_klass:
+        :param args:
+        :param kwargs:
+        :return:
+        """
         identifier = kwargs.pop('identifier', None)
         mode = kwargs.pop('mode', ADD)
         if mode not in (ADD, REPLACE, REPLACE_ALL):
             raise ValueError('Unsupported mode <%s>' % mode)
+        # provided parent is compound, real one is parameter
+        parent = kwargs.pop('parent', None)
+        parent_operator = kwargs.pop('parent_operator', None)
+        child = kwargs.pop('child', None)
+        child_operator = kwargs.pop('child_operator', None)
+
+        if parent is not None and child is not None:
+            raise ValueError('Only "child" or "parent" must be declared.')
+
+        if child is not None:
+            if child not in self:
+                raise ValueError('Child <%s> does not exist in current query.' % child)
+        if parent is not None:
+            if parent not in self:
+                raise ValueError('Parent <%s> does not exist in current query.' % parent)
+            parent_node = self[parent]
+            if not isinstance(parent_node, CompoundClause):
+                raise ValueError('Declared parent <%s> of type <%s> is not a compound query and thus cannot '
+                                 'have children queries.' % (parent, parent_node.KEY))
+        if child_operator is not None:
+            if child_operator not in compound_klass.params(parent_only=True).keys():
+                raise ValueError('Child operator <%s> not permitted for compound query of type <%s>' % (
+                    child_operator, compound_klass.__name__
+                ))
+            child_operator_klass = compound_klass.params(parent_only=True)[child_operator]
+        else:
+            child_operator_klass = compound_klass.DEFAULT_OPERATOR
+
         existing_query = self._clone(with_tree=True)
 
         # on an existing bool: three modes: ADD or REPLACE, REPLACE_ALL
@@ -176,24 +210,13 @@ class Query(Tree):
             return existing_query
 
         # non existing compound clause
-        child = kwargs.pop('child', None)
-        child_operator = kwargs.pop('child_operator', None)
-        if child is not None:
-            assert child in self
-        if child_operator is not None:
-            assert child_operator in compound_klass.params(parent_only=True).keys()
-            child_operator_klass = compound_klass.params(parent_only=True)[child_operator]
-        else:
-            child_operator_klass = compound_klass.DEFAULT_OPERATOR
-
-        # provided parent is compound, real one is parameter
-        parent = kwargs.pop('parent', None)
-        parent_operator = kwargs.pop('parent_operator', None)
         if parent is not None:
-            assert parent in existing_query
             parent_node = existing_query[parent]
             if parent_operator is not None:
-                assert parent_operator in parent_node.params(parent_only=True).keys()
+                if parent_operator not in parent_node.params(parent_only=True).keys():
+                    raise ValueError('Parent operator <%s> not permitted for compound query of type <%s>' % (
+                        parent_operator, compound_klass.__name__
+                    ))
                 parent_operator_klass = parent_node.params(parent_only=True)[parent_operator]
             else:
                 parent_operator_klass = parent_node.DEFAULT_OPERATOR
@@ -205,19 +228,12 @@ class Query(Tree):
             else:
                 parent = parent_operator_id
 
-        if parent is not None and child is not None:
-            raise ValueError('Only "child" or "parent" must be declared.')
-        # either parent is declared, either child is declared
-
         if child is None and parent is None:
-            if self.root is None:
-                existing_query = self._clone()
+            if existing_query.root is None:
                 existing_query._deserialize_from_node(compound_klass(identifier=identifier, *args, **kwargs))
                 return existing_query
             # if none is declared, we consider that compound clause is added on top of existing query
-            child = self.root
-
-        # either child, either parent is declared
+            child = existing_query.root
 
         # based on child (parent is None)
         if parent is None and child is not None:
@@ -246,7 +262,19 @@ class Query(Tree):
         mode = kwargs.pop('mode', ADD)
         param_klass = PARAMETERS[param_key]
         identifier = kwargs.pop('identifier', None)
-        return getattr(self, method_name)(param_klass(*args, **kwargs), mode=mode, identifier=identifier)
+        parent = kwargs.pop('parent', None)
+        parent_operator = kwargs.pop('parent_operator', None)
+        child = kwargs.pop('child', None)
+        child_operator = kwargs.pop('child_operator', None)
+        return getattr(self, method_name)(
+            param_klass(*args, **kwargs),
+            mode=mode,
+            identifier=identifier,
+            parent=parent,
+            parent_operator=parent_operator,
+            child=child,
+            child_operator=child_operator,
+        )
 
     # compound
     def bool(self, *args, **kwargs):
