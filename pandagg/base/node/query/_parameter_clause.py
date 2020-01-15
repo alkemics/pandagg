@@ -146,7 +146,7 @@ class ParentClause(ParameterClause):
     MULTIPLE = False
 
     def __init__(self, *args, **kwargs):
-        children = kwargs.pop('children', [])
+        children = []
         identifier = kwargs.pop('identifier', None)
         if kwargs:
             children.append(kwargs)
@@ -170,6 +170,10 @@ class ParentClause(ParameterClause):
 
         self.children = serialized_children
         super(ParentClause, self).__init__(identifier=identifier)
+
+    @classmethod
+    def deserialize(cls, *args, **body):
+        return cls(*args, **body)
 
 
 class Filter(ParentClause):
@@ -241,7 +245,7 @@ def deserialize_parameter(key, body):
     if issubclass(klass, SimpleParameter):
         return klass.deserialize(body)
     if isinstance(body, (tuple, list)) and all((isinstance(b, QueryClause) for b in body)):
-        return klass.deserialize(children=body)
+        return klass.deserialize(*body)
     if isinstance(body, QueryClause):
-        return klass.deserialize(children=[body])
+        return klass.deserialize(body)
     return klass.deserialize(**body)

@@ -40,7 +40,7 @@ class CompoundClause(QueryClause):
 
     def __init__(self, *args, **kwargs):
         identifier = kwargs.pop('identifier', None)
-        children = kwargs.pop('children', None) or []
+        children = []
         for key, value in iteritems(kwargs):
             children.append({key: value})
         for arg in args:
@@ -75,6 +75,10 @@ class CompoundClause(QueryClause):
             p: PARAMETERS[p] for p in cls.PARAMS_WHITELIST or []
             if not parent_only or not issubclass(PARAMETERS[p], SimpleParameter)
         }
+
+    @classmethod
+    def deserialize(cls, *args, **body):
+        return cls(*args, **body)
 
 
 class Bool(CompoundClause):

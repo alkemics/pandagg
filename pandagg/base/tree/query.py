@@ -13,6 +13,11 @@ from pandagg.base.node.query.compound import CompoundClause, Bool
 from pandagg.base.node.query.joining import Nested
 
 
+ADD = 'add'
+REPLACE = 'replace'
+REPLACE_ALL = 'replace_all'
+
+
 @python_2_unicode_compatible
 class Query(Tree):
     """Tree combination of query nodes.
@@ -78,7 +83,7 @@ class Query(Tree):
             query_node.children = None
 
     def add_node(self, node, pid=None):
-        # TODO, validate consistency
+        # TODO, validate mapping consistency when provided
         assert isinstance(node, QueryClause)
         if pid is None:
             assert not isinstance(node, ParameterClause)
@@ -133,39 +138,69 @@ class Query(Tree):
             raise ValueError('Unsupported type <%s>.' % type(arg))
         return new_query
 
-    def nested(self, query, path, pid=None, identifier=None):
-        new_query = self._clone(with_tree=True)
-        new_query._deserialize_from_node(Nested(path=path, identifier=identifier, query=query), pid=pid)
-        return new_query
+    def _compound(self, compound_klass, *args, **kwargs):
+        identifier = kwargs.pop('identifier', None)
+        mode = kwargs.pop('mode', ADD)
+        if mode not in (ADD, REPLACE, REPLACE_ALL):
+            raise ValueError('Unsupported mode <%s>' % mode)
+        existing_query = self._clone(with_tree=True)
 
-    def bool(self, *args, **kwargs):
-        new_query = self._clone(with_tree=True)
+        # on an existing bool: three modes: ADD or REPLACE, REPLACE_ALL
+        if identifier is not None and identifier in existing_query:
+            parent_node = existing_query.parent(identifier)
+            if parent_node is None:
+                parent = None
+            else:
+                parent = parent_node.identifier
 
+            if mode == REPLACE_ALL:
+                existing_query.remove_subtree(identifier)
+                existing_query._deserialize_from_node(compound_klass(identifier=identifier, *args, **kwargs), pid=parent)
+                return existing_query
+
+            new_compound_tree = Query(compound_klass(identifier=identifier, *args, **kwargs))
+            for param_node in new_compound_tree.children(identifier):
+                # TODO - simple parameters
+                existing_param = next((p for p in existing_query.children(identifier) if p.KEY == param_node.KEY), None)
+                if not existing_param:
+                    existing_query.paste(new_tree=new_compound_tree.subtree(param_node.identifier), nid=identifier)
+                    continue
+                if mode == REPLACE:
+                    existing_query.remove_node(existing_param.identifier)
+                    existing_query.paste(new_tree=new_compound_tree.subtree(param_node.identifier), nid=identifier)
+                    continue
+                if mode == ADD:
+                    for clause_node in new_compound_tree.children(param_node.identifier):
+                        existing_query.paste(new_tree=new_compound_tree.subtree(clause_node.identifier), nid=existing_param.identifier)
+                    continue
+            return existing_query
+
+        # non existing compound clause
         child = kwargs.pop('child', None)
         child_operator = kwargs.pop('child_operator', None)
         if child is not None:
             assert child in self
         if child_operator is not None:
-            assert child_operator in Bool.params(parent_only=True).keys()
-            child_operator_klass = Bool.params(parent_only=True)[child_operator]
+            assert child_operator in compound_klass.params(parent_only=True).keys()
+            child_operator_klass = compound_klass.params(parent_only=True)[child_operator]
         else:
-            child_operator_klass = Bool.DEFAULT_OPERATOR
+            child_operator_klass = compound_klass.DEFAULT_OPERATOR
 
         # provided parent is compound, real one is parameter
         parent = kwargs.pop('parent', None)
         parent_operator = kwargs.pop('parent_operator', None)
         if parent is not None:
-            assert parent in new_query
-            parent_node = new_query[parent]
+            assert parent in existing_query
+            parent_node = existing_query[parent]
             if parent_operator is not None:
                 assert parent_operator in parent_node.params(parent_only=True).keys()
                 parent_operator_klass = parent_node.params(parent_only=True)[parent_operator]
             else:
                 parent_operator_klass = parent_node.DEFAULT_OPERATOR
-            parent_operator_id = next((c.identifier for c in new_query.children(parent) if isinstance(c, parent_operator_klass)), None)
+            parent_operator_id = next((c.identifier for c in existing_query.children(parent) if isinstance(c, parent_operator_klass)), None)
             if parent_operator_id is None:
                 parent_operator = parent_operator_klass()
-                new_query.add_node(parent_operator, pid=parent)
+                existing_query.add_node(parent_operator, pid=parent)
                 parent = parent_operator.identifier
             else:
                 parent = parent_operator_id
@@ -176,108 +211,59 @@ class Query(Tree):
 
         if child is None and parent is None:
             if self.root is None:
-                new_query = self._clone()
-                new_query._deserialize_from_node(Bool(*args, **kwargs))
-                return new_query
-            # if none is declared, we consider that bool is added on top of existing query
+                existing_query = self._clone()
+                existing_query._deserialize_from_node(compound_klass(identifier=identifier, *args, **kwargs))
+                return existing_query
+            # if none is declared, we consider that compound clause is added on top of existing query
             child = self.root
 
         # either child, either parent is declared
 
         # based on child (parent is None)
         if parent is None and child is not None:
-            # we insert bool in-between child and its nearest parent (parent is a parameter clause)
-            parent_node = new_query.parent(child)
+            # we insert compound clause in-between child and its nearest parent (parent is a parameter clause)
+            parent_node = existing_query.parent(child)
             if parent_node is not None:
                 # if child is not already root
                 parent = parent_node.identifier
 
-        # insert bool below parent
+        # insert compound clause below parent
         child_tree = None
         if child is not None:
-            child_tree = new_query.remove_subtree(child)
-        b_query = Bool(*args, **kwargs)
-        new_query._deserialize_from_node(b_query, pid=parent)
+            child_tree = existing_query.remove_subtree(child)
+        b_query = compound_klass(identifier=identifier, *args, **kwargs)
+        existing_query._deserialize_from_node(b_query, pid=parent)
         if child is not None:
-            operator_id = next((c.identifier for c in new_query.children(b_query.identifier) if isinstance(c, child_operator_klass)), None)
+            operator_id = next((c.identifier for c in existing_query.children(b_query.identifier) if isinstance(c, child_operator_klass)), None)
             if operator_id is None:
                 operator = child_operator_klass()
-                new_query.add_node(operator, pid=b_query.identifier)
+                existing_query.add_node(operator, pid=b_query.identifier)
                 operator_id = operator.identifier
-            new_query.paste(nid=operator_id, new_tree=child_tree)
-        return new_query
+            existing_query.paste(nid=operator_id, new_tree=child_tree)
+        return existing_query
 
-    def _bool_param(self, param_key, *args, **kwargs):
+    def _compound_param(self, method_name, param_key, *args, **kwargs):
+        mode = kwargs.pop('mode', ADD)
         param_klass = PARAMETERS[param_key]
-        pid = kwargs.pop('pid', None)
-        param_identifier = kwargs.pop('identifier', None)
-        bool_identifier = kwargs.pop('bool_identifier', None)
-        new_query = self._clone(with_tree=True)
+        identifier = kwargs.pop('identifier', None)
+        return getattr(self, method_name)(param_klass(*args, **kwargs), mode=mode, identifier=identifier)
 
-        # not providing a parent is only allowed when tree is empty
-        if pid is None:
-            assert new_query.root is None
-            return Query(Bool(param_klass(identifier=param_identifier, *args, **kwargs), identifier=bool_identifier))
+    # compound
+    def bool(self, *args, **kwargs):
+        return self._compound(Bool, *args, **kwargs)
 
-        pnode = new_query[pid]
+    def nested(self, *args, **kwargs):
+        return self._compound(Nested, *args, **kwargs)
 
-        # if pid is a leaf query, wrap it in bool-param
-        if isinstance(pnode, LeafQueryClause):
-            gpid = new_query.parent(pid).identifier
-            new_query.remove_node(pid)
-            new_query._deserialize_from_node(
-                query_node=Bool(
-                    param_klass(
-                        pnode,
-                        identifier=param_identifier,
-                        *args,
-                        **kwargs
-                    ),
-                    identifier=bool_identifier
-                ),
-                pid=gpid
-            )
-            return new_query
-
-        if isinstance(pnode, Bool):
-            existing_param = next((c for c in new_query.children(pid) if isinstance(c, param_klass)), None)
-            if existing_param is None:
-                new_param = param_klass(identifier=param_identifier)
-                new_query.add_node(node=new_param, pid=pid)
-                pnode = new_param
-                pid = new_param.identifier
-            else:
-                pnode = existing_param
-                pid = existing_param.identifier
-
-        if isinstance(pnode, param_klass):
-            if param_identifier is not None and param_identifier != pnode.identifier:
-                raise ValueError('Param identifier can be provided only if not already existing: provided <%s>, '
-                                 'existing <%s>' % (param_identifier, pnode.identifier))
-            existing_clauses = new_query.children(pid)
-            gp = new_query.parent(pid)
-            new_query.remove_node(pid)
-            assert isinstance(gp, Bool)
-            new_query._deserialize_from_node(
-                query_node=param_klass(
-                    identifier=param_identifier,
-                    children=existing_clauses,
-                    *args,
-                    **kwargs
-                ),
-                pid=gp.identifier
-            )
-            return new_query
-        raise ValueError('Unsupported type <%s> as parent for <%s> clause.' % (type(pnode), param_key))
-
+    # compound parameters
     def must(self, *args, **kwargs):
-        return self._bool_param('must', *args, **kwargs)
+        return self._compound_param('bool', 'must', *args, **kwargs)
 
     def should(self, *args, **kwargs):
-        return self._bool_param('should', *args, **kwargs)
+        return self._compound_param('bool', 'should', *args, **kwargs)
 
     def must_not(self, *args, **kwargs):
-        return self._bool_param('must_not', *args, **kwargs)
+        return self._compound_param('bool', 'must_not', *args, **kwargs)
 
     def filter(self, *args, **kwargs):
-        return self._bool_param('filter', *args, **kwargs)
+        return self._compound_param('bool', 'filter', *args, **kwargs)
