@@ -1,4 +1,4 @@
-from pandagg.base.node.query import CompoundClause
+from pandagg.base.node.query.compound import CompoundClause
 from pandagg.base.node.query._parameter_clause import Organic, QueryP
 
 
