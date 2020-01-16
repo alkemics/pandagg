@@ -7,11 +7,11 @@ from builtins import str as text
 
 from pandagg.base._tree import Tree
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentClause, PARAMETERS
+from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
-from pandagg.base.node.query.compound import CompoundClause, Bool
-from pandagg.base.node.query.joining import Nested
-
+from pandagg.base.node.query.compound import CompoundClause, Bool, Boosting, ConstantScore, DisMax, FunctionScore
+from pandagg.base.node.query.joining import Nested, HasChild, HasParent, ParentId
+from pandagg.base.node.query.specialized_compound import ScriptScore, PinnedQuery
 
 ADD = 'add'
 REPLACE = 'replace'
@@ -57,9 +57,9 @@ class Query(Tree):
         return self
 
     def _deserialize_tree_from_dict(self, body, pid=None):
-        if not isinstance(body, dict):
-            raise ValueError()
-        assert len(body.keys()) == 1
+        if len(body.keys()) != 1:
+            raise ValueError('Wrong query clause defition: expected one key, got %d: %s' % (
+                len(body.keys()), body.keys()))
         q_type, q_body = next(iteritems(body))
         node = self._node_from_dict(q_type=q_type, q_body=q_body)
         self.add_node(node, pid)
@@ -84,18 +84,22 @@ class Query(Tree):
 
     def add_node(self, node, pid=None):
         # TODO, validate mapping consistency when provided
-        assert isinstance(node, QueryClause)
         if pid is None:
-            assert not isinstance(node, ParameterClause)
-        else:
-            pnode = self[pid]
-            assert isinstance(pnode, (ParentClause, CompoundClause))
-            if isinstance(pnode, ParentClause):
-                assert not isinstance(node, ParameterClause)
-            if isinstance(pnode, CompoundClause):
-                assert isinstance(node, ParameterClause)
-                if pnode.PARAMS_WHITELIST is not None:
-                    assert node.KEY in (pnode.PARAMS_WHITELIST or [])
+            if isinstance(node, ParameterClause):
+                raise ValueError('Cannot add parameter clause (%s) as root.' % node.KEY)
+            return super(Query, self).add_node(node, pid)
+
+        pnode = self[pid]
+        if isinstance(pnode, LeafQueryClause):
+            raise ValueError('Cannot add clause under leaf query clause <%s>' % pnode.KEY)
+        if isinstance(pnode, ParentParameterClause):
+            if isinstance(node, ParameterClause):
+                raise ValueError('Cannot add parameter clause <%s> under another paramter clause <%s>' % (
+                    pnode.KEY, node.KEY))
+        if isinstance(pnode, CompoundClause):
+            if not isinstance(node, ParameterClause) or node.KEY not in pnode.PARAMS_WHITELIST:
+                raise ValueError('Expect a parameter clause of type %s under <%s> compound clause, got <%s>' % (
+                    pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY))
         super(Query, self).add_node(node, pid)
 
     def query_dict(self, from_=None):
@@ -280,8 +284,35 @@ class Query(Tree):
     def bool(self, *args, **kwargs):
         return self._compound(Bool, *args, **kwargs)
 
+    def boost(self, *args, **kwargs):
+        return self._compound(Boosting, *args, **kwargs)
+
+    def constant_score(self, *args, **kwargs):
+        return self._compound(ConstantScore, *args, **kwargs)
+
+    def dis_max(self, *args, **kwargs):
+        return self._compound(DisMax, *args, **kwargs)
+
+    def function_score(self, *args, **kwargs):
+        return self._compound(FunctionScore, *args, **kwargs)
+
     def nested(self, *args, **kwargs):
         return self._compound(Nested, *args, **kwargs)
+
+    def has_child(self, *args, **kwargs):
+        return self._compound(HasChild, *args, **kwargs)
+
+    def has_parent(self, *args, **kwargs):
+        return self._compound(HasParent, *args, **kwargs)
+
+    def parent_id(self, *args, **kwargs):
+        return self._compound(ParentId, *args, **kwargs)
+
+    def script_score(self, *args, **kwargs):
+        return self._compound(ScriptScore, *args, **kwargs)
+
+    def pinned_query(self, *args, **kwargs):
+        return self._compound(PinnedQuery, *args, **kwargs)
 
     # compound parameters
     def must(self, *args, **kwargs):

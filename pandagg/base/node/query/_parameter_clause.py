@@ -141,7 +141,7 @@ SIMPLE_PARAMETERS = [
 ]
 
 
-class ParentClause(ParameterClause):
+class ParentParameterClause(ParameterClause):
     KEY = NotImplementedError()
     MULTIPLE = False
 
@@ -169,55 +169,55 @@ class ParentClause(ParameterClause):
                 serialized_children.append(child)
 
         self.children = serialized_children
-        super(ParentClause, self).__init__(identifier=identifier)
+        super(ParentParameterClause, self).__init__(identifier=identifier)
 
     @classmethod
     def deserialize(cls, *args, **body):
         return cls(*args, **body)
 
 
-class Filter(ParentClause):
+class Filter(ParentParameterClause):
     KEY = 'filter'
     MULTIPLE = True
 
 
-class Must(ParentClause):
+class Must(ParentParameterClause):
     KEY = 'must'
     MULTIPLE = True
 
 
-class MustNot(ParentClause):
+class MustNot(ParentParameterClause):
     KEY = 'must_not'
     MULTIPLE = True
 
 
-class Negative(ParentClause):
+class Negative(ParentParameterClause):
     KEY = 'negative'
     MULTIPLE = False
 
 
-class Organic(ParentClause):
+class Organic(ParentParameterClause):
     KEY = 'organic'
     MULTIPLE = False
 
 
-class Positive(ParentClause):
+class Positive(ParentParameterClause):
     KEY = 'positive'
     MULTIPLE = False
 
 
-class Queries(ParentClause):
+class Queries(ParentParameterClause):
     KEY = 'queries'
     MULTIPLE = True
 
 
-class QueryP(ParentClause):
+class QueryP(ParentParameterClause):
     # different name to avoid confusion with Query "tree" class
     KEY = 'query'
     MULTIPLE = False
 
 
-class Should(ParentClause):
+class Should(ParentParameterClause):
     KEY = 'should'
     MULTIPLE = True
 

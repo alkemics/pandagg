@@ -41,16 +41,18 @@ bool
     def test_add_node(self):
         # under leafclause
         q = Query(Term(identifier='term_id', field='some_field', value=2))
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError) as e:
             q.add_node(Filter(QueryString(field='other_field', value='salut')), pid='term_id')
+        self.assertEqual(e.exception.message, 'Cannot add clause under leaf query clause <term>')
 
         # under compound clause
         q = Query(Bool(identifier='bool'))
         q.add_node(Filter(Term(field='some_field', value=2)), pid='bool')
 
         q = Query(Bool(identifier='bool'))
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             q.add_node(Term(field='some_field', value=2), pid='bool')
+        self.assertEqual(e.exception.message, 'Cannot add clause under leaf query clause <term>')
 
     def test_must_above_node(self):
         initial_q = Query()
@@ -352,7 +354,8 @@ bool
         q = Query()
         q1 = q.nested(
             query=Term(field='some_nested_field.other', value=2),
-            path='some_nested_path'
+            path='some_nested_path',
+            identifier='nested_id'
         )
         self.assertEqual(q1.query_dict(), {
             "nested": {
@@ -368,3 +371,55 @@ bool
                 ]
             }
         })
+        self.assertEqual(q1.root, 'nested_id')
+
+    def test_should(self):
+        q = Query()
+        q1 = q.should(
+            Term(field='some_field', value=2),
+            Term(field='other_field', value=3),
+            identifier='created_bool'
+        )
+        self.assertEqual(q1.query_dict(), {
+            "bool": {
+                "should": [
+                    {'term': {'some_field': {'value': 2}}},
+                    {'term': {'other_field': {'value': 3}}}
+                ]
+            }
+        })
+        self.assertEqual(q1.root, 'created_bool')
+
+    def test_filter(self):
+        q = Query()
+        q1 = q.filter(
+            Term(field='some_field', value=2),
+            Term(field='other_field', value=3),
+            identifier='created_bool'
+        )
+        self.assertEqual(q1.query_dict(), {
+            "bool": {
+                "filter": [
+                    {'term': {'some_field': {'value': 2}}},
+                    {'term': {'other_field': {'value': 3}}}
+                ]
+            }
+        })
+        self.assertEqual(q1.root, 'created_bool')
+
+    def test_must_not(self):
+        q = Query()
+        q1 = q.must_not(
+            Term(field='some_field', value=2),
+            Term(field='other_field', value=3),
+            identifier='created_bool'
+        )
+        self.assertEqual(q1.query_dict(), {
+            "bool": {
+                "must_not": [
+                    {'term': {'some_field': {'value': 2}}},
+                    {'term': {'other_field': {'value': 3}}}
+                ]
+            }
+        })
+        self.assertEqual(q1.root, 'created_bool')
