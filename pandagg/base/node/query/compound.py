@@ -56,17 +56,29 @@ class CompoundClause(QueryClause):
                 assert len(child.keys()) == 1
                 key, value = next(iteritems(child))
                 if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
-                    raise ValueError('Unauthorized parameter <%s>' % key)
+                    raise ValueError('Unauthorized parameter <%s> under <%s> clause' % (key, self.KEY))
                 serialized_child = deserialize_parameter(key, value)
             else:
-                assert isinstance(child, ParameterClause)
+                if not isinstance(child, ParameterClause):
+                    raise ValueError('Unsupported <%s> clause type under compound clause of type <%s>' % (
+                        type(child), self.KEY))
                 key = child.KEY
                 serialized_child = child
             if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
-                raise ValueError('Unauthorized parameter <%s>' % key)
+                raise ValueError('Unauthorized parameter <%s> under <%s> clause' % (key, self.KEY))
             serialized_children.append(serialized_child)
         self.children = serialized_children
         super(CompoundClause, self).__init__(identifier=identifier)
+
+    @classmethod
+    def operator(cls, key):
+        if key is None:
+            return cls.DEFAULT_OPERATOR
+        if key not in cls.PARAMS_WHITELIST:
+            raise ValueError('Child operator <%s> not permitted for compound query of type <%s>' % (
+                key, cls.__name__
+            ))
+        return PARAMETERS[key]
 
     @classmethod
     def params(cls, parent_only=False):
