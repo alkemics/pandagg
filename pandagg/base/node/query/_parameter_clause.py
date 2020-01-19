@@ -161,7 +161,11 @@ class ParentParameterClause(ParameterClause):
         for child in children:
             if isinstance(child, dict):
                 k, v = next(iteritems(child))
-                serialized_children.append(deserialize_leaf_clause(k, v))
+                try:
+                    serialized_children.append(deserialize_leaf_clause(k, v))
+                except:
+                    # until metaclass is implemented
+                    serialized_children.append({k: v})
             elif isinstance(child, LeafQueryClause):
                 serialized_children.append(child)
             else:
@@ -244,7 +248,7 @@ def deserialize_parameter(key, body):
     klass = PARAMETERS[key]
     if issubclass(klass, SimpleParameter):
         return klass.deserialize(body)
-    if isinstance(body, (tuple, list)) and all((isinstance(b, QueryClause) for b in body)):
+    if isinstance(body, (tuple, list)):
         return klass.deserialize(*body)
     if isinstance(body, QueryClause):
         return klass.deserialize(body)

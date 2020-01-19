@@ -585,5 +585,4 @@ class Agg(Tree):
             raise NotImplementedError('Unkown %s output format.' % output)
 
     def __str__(self):
-        self.show()
-        return '<Aggregation>\n%s' % text(self._reader)
+        return '<Aggregation>\n%s' % text(self.show())

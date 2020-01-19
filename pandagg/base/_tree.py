@@ -19,24 +19,16 @@ from treelib.exceptions import NodeIDAbsentError
 class Tree(OriginalTree):
 
     def show(self, nid=None, level=OriginalTree.ROOT, idhidden=True, filter=None,
-             key=None, reverse=False, line_type='ascii-ex', data_property=None):
-        self._reader = ''
-
-        def write(line):
-            self._reader += line.decode('utf-8') + "\n"
-
-        try:
-            self.__print_backend(nid, level, idhidden, filter,
-                                 key, reverse, line_type, data_property, func=write)
-        except NodeIDAbsentError:
-            self._reader = 'Empty'
-        return self._reader
+             key=None, reverse=False, line_type='ascii-ex', data_property=None, stdout=False):
+        return super(Tree, self).show(
+            nid=nid, level=level, idhidden=idhidden, filter=filter,
+            key=key, reverse=reverse, line_type=line_type, data_property=data_property,
+            stdout=stdout)
 
     def __str__(self):
-        self.show()
         return '<{class_}>\n{tree}'.format(
             class_=text(self.__class__.__name__),
-            tree=text(self._reader)
+            tree=text(self.show())
         )
 
     def __repr__(self):
