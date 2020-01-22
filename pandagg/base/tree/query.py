@@ -12,6 +12,7 @@ from pandagg.base.node.query._leaf_clause import deserialize_leaf_clause
 from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause, Bool, Boosting, ConstantScore, DisMax, FunctionScore
+from pandagg.base.node.query.deserializer import deserialize_node
 from pandagg.base.node.query.joining import Nested, HasChild, HasParent, ParentId
 from pandagg.base.node.query.specialized_compound import ScriptScore, PinnedQuery
 
@@ -61,13 +62,7 @@ class Query(Tree):
 
     def _deserialize_tree_from_dict(self, body, pid=None):
         q_type, q_body = next(iteritems(body))
-        try:
-            node = deserialize_leaf_clause(q_type, q_body)
-            self._deserialize_from_node(node, pid)
-            return
-        except Exception:
-            pass
-        node = deserialize_compound_clause(q_type, q_body)
+        node = deserialize_node(q_type, q_body, accept_param=False)
         self._deserialize_from_node(node, pid)
 
     def _deserialize_from_node(self, query_node, pid=None):
@@ -138,7 +133,15 @@ class Query(Tree):
     def query(self, q, parent=None, child=None, parent_param=None, child_param=None, mode=ADD):
         """Place query below a given parent.
         """
-        return self._insert_into(q, parent=parent, child=child, mode=mode, child_param=child_param, parent_param=parent_param)
+        # TODO accept query tree
+        if isinstance(q, dict):
+            q_type, q_body = next(iteritems(q))
+            node = deserialize_node(q_type, q_body, accept_param=False)
+        elif isinstance(q, QueryClause):
+            node = q
+        else:
+            raise ValueError('Unsupported type <%s>, must be either dict or QueryClause.' % type(q))
+        return self._insert_into(node, parent=parent, child=child, mode=mode, child_param=child_param, parent_param=parent_param)
 
     def _update_compound(self, new_compound, mode):
         if mode not in (ADD, REPLACE, REPLACE_ALL):

@@ -522,7 +522,9 @@ bool
         # on empty query
         q = Query()
         q1 = q.query(Bool(identifier='root_bool', must=Term(field='some_field', value=2)))
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        q2 = q.query({'bool': {'identifier': 'root_bool', 'must': {'term': {'some_field':  2}}}})
+        for r in (q1, q2):
+            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
     └── term, field=some_field
@@ -531,7 +533,9 @@ bool
         # query WITHOUT defined parent -> must on top (existing bool)
         q = Query(Bool(identifier='root_bool', must=Term(field='some_field', value=2)))
         q1 = q.query(Term(field='other_field', value=3))
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        q2 = q.query({'term': {'other_field':  3}})
+        for r in (q1, q2):
+            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
     ├── term, field=other_field
@@ -541,7 +545,9 @@ bool
         # query WITHOUT defined parent -> must on top (non-existing bool)
         q = Query(Term(field='some_field', value=2))
         q1 = q.query(Term(field='other_field', value=3))
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        q2 = q.query({'term': {'other_field':  3}})
+        for r in (q1, q2):
+            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
     ├── term, field=other_field
@@ -550,8 +556,10 @@ bool
 
         # query WITH defined parent (use default operator)
         q = Query(Nested(identifier='root_nested', path='some_nested_path'))
-        q1 = q.query(Term(field='some_nested_path.id'), parent='root_nested')
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        q1 = q.query(Term(field='some_nested_path.id', value=2), parent='root_nested')
+        q2 = q.query({'term': {'some_nested_path.id': 2}}, parent='root_nested')
+        for r in (q1, q2):
+            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 nested
 ├── path="some_nested_path"
 └── query
@@ -559,8 +567,10 @@ nested
 ''')
 
         q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
-        q1 = q.query(Term(field='some_other_field'), parent='root_bool')
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        q1 = q.query(Term(field='some_other_field', value=2), parent='root_bool')
+        q2 = q.query({'term': {'some_other_field': 2}}, parent='root_bool')
+        for r in (q1, q2):
+            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 ├── filter
 │   └── term, field=some_field
@@ -571,7 +581,9 @@ bool
         # query WITH defined parent and explicit operator
         q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
         q1 = q.query(Range(field='some_other_field', gte=3), parent='root_bool', parent_param='must_not')
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        q2 = q.query({'range': {'some_other_field': {'gte': 3}}}, parent='root_bool', parent_param='must_not')
+        for r in (q1, q2):
+            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 ├── filter
 │   └── term, field=some_field
@@ -585,15 +597,24 @@ bool
         with self.assertRaises(ValueError) as e:
             q.query(Range(field='some_other_field', gte=3), parent='leaf_node')
         self.assertEqual(e.exception.args[0], 'Cannot place clause under non-compound clause <leaf_node> of type <term>.')
+        with self.assertRaises(ValueError) as e:
+            q.query({'range': {'some_other_field': {'gte': 3}}}, parent='leaf_node')
+        self.assertEqual(e.exception.args[0], 'Cannot place clause under non-compound clause <leaf_node> of type <term>.')
 
         # query WITH wrong parent operator
         q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
         with self.assertRaises(ValueError) as e:
             q.query(Range(field='some_other_field', gte=3), parent='root_bool', parent_param='invalid_param')
         self.assertEqual(e.exception.args[0], 'Child operator <invalid_param> not permitted for compound query of type <Bool>')
+        with self.assertRaises(ValueError) as e:
+            q.query({'range': {'some_other_field': {'gte': 3}}}, parent='root_bool', parent_param='invalid_param')
+        self.assertEqual(e.exception.args[0], 'Child operator <invalid_param> not permitted for compound query of type <Bool>')
 
         # query WITH non-existing parent
         q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
         with self.assertRaises(ValueError) as e:
             q.query(Range(field='some_other_field', gte=3), parent='yolo_id')
+        self.assertEqual(e.exception.args[0], 'Parent <yolo_id> does not exist in current query.')
+        with self.assertRaises(ValueError) as e:
+            q.query({'range': {'some_other_field': {'gte': 3}}}, parent='yolo_id')
         self.assertEqual(e.exception.args[0], 'Parent <yolo_id> does not exist in current query.')

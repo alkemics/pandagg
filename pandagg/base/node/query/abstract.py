@@ -70,11 +70,12 @@ class SingleFieldQueryClause(LeafQueryClause):
     def deserialize(cls, **body):
         if cls.FLAT:
             return cls(**body)
+        identifier = body.pop('identifier', None)
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
         if cls.SHORT_TAG and not isinstance(v, dict):
-            return cls(field=k, **{cls.SHORT_TAG: v})
-        return cls(field=k, **v)
+            return cls(field=k, identifier=identifier, **{cls.SHORT_TAG: v})
+        return cls(field=k, identifier=identifier, **v)
 
 
 class MultiFieldsQueryClause(LeafQueryClause):

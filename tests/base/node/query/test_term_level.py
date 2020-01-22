@@ -3,10 +3,19 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
+from pandagg.base.node.query._leaf_clause import deserialize_leaf_clause
 from pandagg.query import Terms, Term, Fuzzy, Exists, Ids, Prefix, Range, Regexp, TermsSet, Wildcard
 
 
 class TermLevelQueriesTestCase(TestCase):
+
+    def test_identifier_deserialization(self):
+        node = deserialize_leaf_clause('term', {'user': {'value': 'Kimchy', 'boost': 1}, 'identifier': 'some_id'})
+        self.assertIsInstance(node, Term)
+
+        self.assertEqual(node.body, {'user': {'value': 'Kimchy', 'boost': 1}})
+        self.assertEqual(node.serialize(), {'term': {'user': {'value': 'Kimchy', 'boost': 1}}})
+        self.assertEqual(node.tag, 'term, field=user')
 
     def test_fuzzy_clause(self):
         body = {'user': {'value': 'ki'}}
