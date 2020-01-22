@@ -12,7 +12,6 @@ from pandagg.base.node.query.joining import Nested, HasChild, HasParent, ParentI
 from pandagg.base.node.query.geo import GeoShape, GeoPolygone, GeoDistance, GeoBoundingBox
 from pandagg.base.node.query.specialized import DistanceFeature, MoreLikeThis, Percolate, RankFeature, Script, Wrapper
 from pandagg.base.node.query.specialized_compound import ScriptScore, PinnedQuery
-from pandagg.base.node.query._parameter_clause import QueryP, Queries, Filter, MustNot, Must, Should, Positive, Negative
 
 __all__ = [
     'Query',
@@ -64,14 +63,5 @@ __all__ = [
     'Script',
     'Wrapper',
     'ScriptScore',
-    'PinnedQuery',
-    # parent parameters
-    'QueryP',
-    'Queries',
-    'Filter',
-    'MustNot',
-    'Must',
-    'Should',
-    'Positive',
-    'Negative'
+    'PinnedQuery'
 ]

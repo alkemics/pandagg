@@ -3,8 +3,9 @@
 
 from __future__ import unicode_literals
 
+from pandagg.base.node.query._parameter_clause import Filter, Must
 from pandagg.base.node.query.joining import Nested
-from pandagg.query import Query, Exists, Range, Prefix, Ids, Filter, Must, Term, Bool
+from pandagg.query import Query, Exists, Range, Prefix, Ids, Term, Bool
 from pandagg.base.node.query.full_text import QueryString
 
 
