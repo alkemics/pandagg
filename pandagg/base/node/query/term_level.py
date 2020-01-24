@@ -51,6 +51,10 @@ class Term(SingleFieldQueryClause):
     SHORT_TAG = 'value'
     KEY = 'term'
 
+    def __init__(self, field, value, identifier=None, **body):
+        # only impact is setting value as required arg
+        super(Term, self).__init__(field=field, value=value, identifier=identifier, **body)
+
 
 class Terms(LeafQueryClause):
     KEY = 'terms'
