@@ -1,72 +1,9 @@
-
-from __future__ import unicode_literals
-
-from pandagg.base.node.agg.bucket import Terms, Filters, DateHistogram, Filter
-from pandagg.base.node.agg.metric import Avg
-from pandagg.base.node.agg.abstract import AggNode
 from unittest import TestCase
 
+from pandagg.base.node.agg.bucket import Terms, Filter, Filters, DateHistogram
 
-class AggNodesTestCase(TestCase):
 
-    def test_abstract_agg_node(self):
-
-        class CustomAgg(AggNode):
-            AGG_TYPE = 'custom_type'
-            VALUE_ATTRS = ['bucket_value_path']
-            # would mean this agg can be applied only on boolean fields
-            WHITELISTED_MAPPING_TYPES = ['boolean']
-            BLACKLISTED_MAPPING_TYPES = None
-            # means it ES response produces a single bucket
-            SINGLE_BUCKET = True
-
-            # depends on ElasticSearch aggregation handling, since this is a fake Aggregation this get_filter method
-            # doesn't really make sense, just wrote one so that all abstract methods are implemented
-            def get_filter(self, key):
-                return {'exists': {'field': key}}
-
-            # example for unique bucket agg
-            def extract_buckets(self, response_value):
-                yield (None, response_value)
-
-        node = CustomAgg(name='custom_agg_name', custom_body={'stuff': 2})
-        self.assertEqual(
-            node.query_dict(),
-            {
-                'custom_type': {
-                    'custom_body': {
-                        'stuff': 2
-                    }
-                }
-            }
-        )
-
-        node = CustomAgg(name='custom_agg_name', custom_body= {'stuff': 2}, meta='meta_stuff')
-        self.assertEqual(
-            node.query_dict(),
-            {
-                'custom_type': {
-                    'custom_body': {
-                        'stuff': 2
-                    }
-                },
-                'meta': 'meta_stuff'
-            }
-        )
-
-        self.assertEqual(
-            node.__str__(),
-            u"<CustomAgg, name=custom_agg_name, type=custom_type, body={\"custom_body\": {\"stuff\": 2}}>"
-        )
-
-        # suppose this aggregation type provide buckets in the following format
-        hypothetic_es_response_bucket = {
-            'bucket_value_path': 43
-        }
-        self.assertEqual(node.extract_bucket_value(hypothetic_es_response_bucket), 43)
-
-        self.assertEqual(node.valid_on_field_type('string'), False)
-        self.assertEqual(node.valid_on_field_type('boolean'), True)
+class BucketAggNodesTestCase(TestCase):
 
     def test_terms(self):
         es_raw_response = {
@@ -225,26 +162,6 @@ class AggNodesTestCase(TestCase):
                 }
             }
         )
-
-    def test_metric_aggs(self):
-        # example for Average metric aggregation
-        es_raw_response = {
-            "value": 75.0
-        }
-        # test extract_buckets
-        buckets_iterator = Avg('name', 'field').extract_buckets(es_raw_response)
-        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
-        buckets = list(buckets_iterator)
-        self.assertEqual(
-            buckets,
-            [
-                # key -> bucket
-                (None, {"value": 75.0})
-            ]
-        )
-
-        # test extract bucket value
-        self.assertEqual(Avg.extract_bucket_value({"value": 75.0}), 75.0)
 
     def test_date_histogram_key_as_string(self):
         es_raw_response = {
