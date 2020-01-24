@@ -43,7 +43,7 @@ class CompoundQueriesTestCase(TestCase):
             self.assertEqual(t.field, 'some_field')
             self.assertEqual(t.body, {'some_field': {'value': 2}})
             self.assertEqual(t.serialize(), {'term': {'some_field': {'value': 2}}})
-            self.assertEqual(t.tag, 'term, field=some_field')
+            self.assertEqual(t.tag, 'term, field=some_field, value=2')
 
     def test_boosting(self):
         b1 = Boosting(
@@ -80,7 +80,7 @@ class CompoundQueriesTestCase(TestCase):
             self.assertEqual(positive_term.field, 'text')
             self.assertEqual(positive_term.body, {'text': {'value': 'apple'}})
             self.assertEqual(positive_term.serialize(), {'term': {'text': {'value': 'apple'}}})
-            self.assertEqual(positive_term.tag, 'term, field=text')
+            self.assertEqual(positive_term.tag, 'term, field=text, value="apple"')
 
             negative = next((c for c in b.children if isinstance(c, Negative)))
             self.assertEqual(len(negative.children), 1)
@@ -91,4 +91,4 @@ class CompoundQueriesTestCase(TestCase):
             self.assertEqual(negative_term.field, 'text')
             self.assertEqual(negative_term.body, {'text': {'value': 'pie tart fruit crumble tree'}})
             self.assertEqual(negative_term.serialize(), {'term': {'text': {'value': 'pie tart fruit crumble tree'}}})
-            self.assertEqual(negative_term.tag, 'term, field=text')
+            self.assertEqual(negative_term.tag, 'term, field=text, value="pie tart fruit crumble tree"')

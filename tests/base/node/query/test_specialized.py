@@ -26,12 +26,12 @@ class SpecializedQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'distance_feature, field=production_date')
+        self.assertEqual(q.tag, 'distance_feature, field=production_date, origin="now", pivot="7d"')
 
         deserialized = DistanceFeature.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'distance_feature, field=production_date')
+        self.assertEqual(deserialized.tag, 'distance_feature, field=production_date, origin="now", pivot="7d"')
 
     def test_more_like_this_clause(self):
         body = {
@@ -72,12 +72,12 @@ class SpecializedQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'percolate, field=query')
+        self.assertEqual(q.tag, 'percolate, field=query, document={"message": "A new bonsai tree in the office"}')
 
         deserialized = Percolate.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'percolate, field=query')
+        self.assertEqual(deserialized.tag, 'percolate, field=query, document={"message": "A new bonsai tree in the office"}')
 
     def test_rank_feature_clause(self):
         body = {
@@ -92,12 +92,12 @@ class SpecializedQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'rank_feature, field=url_length')
+        self.assertEqual(q.tag, 'rank_feature, field=url_length, boost=0.1')
 
         deserialized = RankFeature.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'rank_feature, field=url_length')
+        self.assertEqual(deserialized.tag, 'rank_feature, field=url_length, boost=0.1')
 
     def test_script_clause(self):
         body = {

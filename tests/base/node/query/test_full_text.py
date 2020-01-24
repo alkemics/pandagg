@@ -35,14 +35,15 @@ class FullTextQueriesTestCase(TestCase):
             "max_gaps": 0,
             "ordered": True
         })
+        tag = 'intervals, field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, {"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": "big bad"}}]}}, {"match": {"query": "wolf"}}], "ordered": true, "max_gaps": 0}'
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'intervals, field=some_field')
+        self.assertEqual(q.tag, tag)
 
         deserialized = Intervals.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'intervals, field=some_field')
+        self.assertEqual(deserialized.tag, tag)
 
     def test_match_clause(self):
         body = {'message': {
@@ -54,18 +55,18 @@ class FullTextQueriesTestCase(TestCase):
         q = Match(field='message', query='this is a test', operator='and')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match, field=message')
+        self.assertEqual(q.tag, 'match, field=message, operator="and", query="this is a test"')
 
         deserialized = Match.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match, field=message')
+        self.assertEqual(deserialized.tag, 'match, field=message, operator="and", query="this is a test"')
 
         # short syntax
         deserialized = Match.deserialize(**{'message': 'this is a test'})
         self.assertEqual(deserialized.body, {'message': {'query': 'this is a test'}})
         self.assertEqual(deserialized.serialize(), {"match": {"message": {'query': 'this is a test'}}})
-        self.assertEqual(deserialized.tag, 'match, field=message')
+        self.assertEqual(deserialized.tag, 'match, field=message, query="this is a test"')
 
     def test_match_bool_prefix_clause(self):
         body = {'message': {
@@ -77,18 +78,18 @@ class FullTextQueriesTestCase(TestCase):
         q = MatchBoolPrefix(field='message', query='quick brown f', analyzer='keyword')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match_bool_prefix, field=message')
+        self.assertEqual(q.tag, 'match_bool_prefix, field=message, query="quick brown f", analyzer="keyword"')
 
         deserialized = MatchBoolPrefix.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match_bool_prefix, field=message')
+        self.assertEqual(deserialized.tag, 'match_bool_prefix, field=message, query="quick brown f", analyzer="keyword"')
 
         # short syntax
         deserialized = MatchBoolPrefix.deserialize(**{'message': 'quick brown f'})
         self.assertEqual(deserialized.body, {'message': {'query': 'quick brown f'}})
         self.assertEqual(deserialized.serialize(), {"match_bool_prefix": {"message": {'query': 'quick brown f'}}})
-        self.assertEqual(deserialized.tag, 'match_bool_prefix, field=message')
+        self.assertEqual(deserialized.tag, 'match_bool_prefix, field=message, query="quick brown f"')
 
     def test_match_phrase_clause(self):
         body = {'message': {
@@ -100,18 +101,18 @@ class FullTextQueriesTestCase(TestCase):
         q = MatchPhrase(field='message', query='this is a test', analyzer='my_analyzer')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match_phrase, field=message')
+        self.assertEqual(q.tag, 'match_phrase, field=message, query="this is a test", analyzer="my_analyzer"')
 
         deserialized = MatchPhrase.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match_phrase, field=message')
+        self.assertEqual(deserialized.tag, 'match_phrase, field=message, query="this is a test", analyzer="my_analyzer"')
 
         # short syntax
         deserialized = MatchPhrase.deserialize(**{'message': 'this is a test'})
         self.assertEqual(deserialized.body, {'message': {'query': 'this is a test'}})
         self.assertEqual(deserialized.serialize(), {"match_phrase": {"message": {'query': 'this is a test'}}})
-        self.assertEqual(deserialized.tag, 'match_phrase, field=message')
+        self.assertEqual(deserialized.tag, 'match_phrase, field=message, query="this is a test"')
 
     def test_match_phrase_prefix_clause(self):
         body = {'message': {
@@ -123,18 +124,18 @@ class FullTextQueriesTestCase(TestCase):
         q = MatchPhrasePrefix(field='message', query='this is a test', analyzer='my_analyzer')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match_phrase_prefix, field=message')
+        self.assertEqual(q.tag, 'match_phrase_prefix, field=message, query="this is a test", analyzer="my_analyzer"')
 
         deserialized = MatchPhrasePrefix.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match_phrase_prefix, field=message')
+        self.assertEqual(deserialized.tag, 'match_phrase_prefix, field=message, query="this is a test", analyzer="my_analyzer"')
 
         # short syntax
         deserialized = MatchPhrasePrefix.deserialize(**{'message': 'this is a test'})
         self.assertEqual(deserialized.body, {'message': {'query': 'this is a test'}})
         self.assertEqual(deserialized.serialize(), {"match_phrase_prefix": {"message": {'query': 'this is a test'}}})
-        self.assertEqual(deserialized.tag, 'match_phrase_prefix, field=message')
+        self.assertEqual(deserialized.tag, 'match_phrase_prefix, field=message, query="this is a test"')
 
     def test_multi_match_clause(self):
         body = {

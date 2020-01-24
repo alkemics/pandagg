@@ -58,13 +58,21 @@ class SingleFieldQueryClause(LeafQueryClause):
     def __init__(self, field, identifier=None, **body):
         self.field = field
         if self.FLAT:
+            self.inner_body = body
             super(LeafQueryClause, self).__init__(identifier=identifier, field=field, **body)
         else:
+            if isinstance(body, dict):
+                self.inner_body = body
+            else:
+                self.inner_body = {self.SHORT_TAG: body}
             super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
 
     @property
     def tag(self):
-        return '%s, field=%s' % (self.KEY, self.field)
+        base = '%s, field=%s' % (text(self.KEY), text(self.field))
+        if self.inner_body:
+            base += ', %s' % ', '.join('%s=%s' % (text(k), text(json.dumps(v))) for k, v in iteritems(self.inner_body))
+        return base
 
     @classmethod
     def deserialize(cls, **body):

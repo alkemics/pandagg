@@ -1,5 +1,6 @@
 
 from .abstract import LeafQueryClause, SingleFieldQueryClause
+from builtins import str as text
 
 
 class Exists(LeafQueryClause):
@@ -63,7 +64,7 @@ class Terms(LeafQueryClause):
 
     @property
     def tag(self):
-        return '%s, field=%s' % (self.KEY, self.field)
+        return '%s, field=%s, values=%s' % (self.KEY, self.field, map(text, self.terms))
 
     @classmethod
     def deserialize(cls, **body):

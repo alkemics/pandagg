@@ -36,12 +36,12 @@ class GeoQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'geo_bounding_box, field=pin.location')
+        self.assertEqual(q.tag, 'geo_bounding_box, field=pin.location, bottom_right={"lat": 40.01, "lon": -71.12}, top_left={"lat": 40.73, "lon": -74.1}')
 
         deserialized = GeoBoundingBox.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'geo_bounding_box, field=pin.location')
+        self.assertEqual(deserialized.tag, 'geo_bounding_box, field=pin.location, bottom_right={"lat": 40.01, "lon": -71.12}, top_left={"lat": 40.73, "lon": -74.1}')
 
     def test_geo_polygone_clause(self):
         body = {
@@ -65,12 +65,12 @@ class GeoQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'geo_polygon, field=person.location')
+        self.assertEqual(q.tag, "geo_polygon, field=person.location, points=[[-70, 40], [-80, 30], [-90, 20]]")
 
         deserialized = GeoPolygone.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'geo_polygon, field=person.location')
+        self.assertEqual(deserialized.tag, "geo_polygon, field=person.location, points=[[-70, 40], [-80, 30], [-90, 20]]")
 
     def test_geo_distance_clause(self):
         body = {
@@ -115,9 +115,9 @@ class GeoQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'geo_shape, field=location')
+        self.assertEqual(q.tag, 'geo_shape, field=location, shape={"type": "envelope", "coordinates": [[13.0, 53.0], [14.0, 52.0]]}, relation="within"')
 
         deserialized = GeoShape.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'geo_shape, field=location')
+        self.assertEqual(deserialized.tag, 'geo_shape, field=location, shape={"type": "envelope", "coordinates": [[13.0, 53.0], [14.0, 52.0]]}, relation="within"')

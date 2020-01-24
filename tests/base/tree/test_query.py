@@ -37,7 +37,7 @@ class QueryTestCase(TestCase):
 bool
 ├── boost=2
 └── filter
-    └── term, field=yolo
+    └── term, field=yolo, value=2
 '''
         )
 
@@ -292,7 +292,7 @@ bool
         self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
-    └── term, field=some_field
+    └── term, field=some_field, value=2
 ''')
 
         q_i2 = Query()
@@ -304,7 +304,7 @@ bool
         self.assertEqual(q2.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
-    └── term, field=some_field
+    └── term, field=some_field, value=2
 ''')
 
         # with multiple conditions (with different declarations)
@@ -321,7 +321,7 @@ bool
 bool
 └── must
     ├── exists, field=some_field
-    └── term, field=other_field
+    └── term, field=other_field, value=5
 ''')
 
     def test_must_method(self):
@@ -343,14 +343,14 @@ bool
         self.assertEqual(q.__str__().decode('utf-8'), '''<Query>
 bool
 ├── filter
-│   └── term, field=field_a
+│   └── term, field=field_a, value=2
 └── must
     ├── bool
     │   └── should
     │       ├── ids, values=[1, 2, 3]
-    │       └── range, field=field_d
+    │       └── range, field=field_d, gte=3
     ├── exists, field=field_b
-    └── prefix, field=field_c
+    └── prefix, field=field_c, value="pre"
 ''')
 
     def test_nested(self):
@@ -428,7 +428,7 @@ bool
     def test_deserialize_dict_query(self):
         # simple leaf
         q = Query(from_={'term': {'some_field': {'value': 2}}})
-        self.assertEqual(q.show(), '''term, field=some_field
+        self.assertEqual(q.show(), '''term, field=some_field, value=2
 ''')
         self.assertEqual(len(q.nodes.values()), 1)
         n = q[q.root]
@@ -445,7 +445,7 @@ bool
         })
         self.assertEqual(q.show(), '''bool
 └── must_not
-    └── term, field=some_field
+    └── term, field=some_field, value=2
 ''')
         self.assertEqual(len(q.nodes.values()), 3)
         n = q[q.root]
@@ -467,8 +467,8 @@ bool
         })
         self.assertEqual(q.show(), '''bool
 └── must_not
-    ├── term, field=other_field
-    └── term, field=some_field
+    ├── term, field=other_field, value=3
+    └── term, field=some_field, value=2
 ''')
         self.assertEqual(len(q.nodes.values()), 4)
         n = q[q.root]
@@ -499,8 +499,8 @@ bool
 └── query
     └── bool
         └── must_not
-            ├── term, field=other_field
-            └── term, field=some_field
+            ├── term, field=other_field, value=3
+            └── term, field=some_field, value=2
 ''')
         self.assertEqual(len(q.nodes.values()), 7)
         n = q[q.root]
@@ -528,7 +528,7 @@ bool
             self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
-    └── term, field=some_field
+    └── term, field=some_field, value=2
 ''')
 
         # query WITHOUT defined parent -> must on top (existing bool)
@@ -539,8 +539,8 @@ bool
             self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
-    ├── term, field=other_field
-    └── term, field=some_field
+    ├── term, field=other_field, value=3
+    └── term, field=some_field, value=2
 ''')
 
         # query WITHOUT defined parent -> must on top (non-existing bool)
@@ -551,8 +551,8 @@ bool
             self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 └── must
-    ├── term, field=other_field
-    └── term, field=some_field
+    ├── term, field=other_field, value=3
+    └── term, field=some_field, value=2
 ''')
 
         # query WITH defined parent (use default operator)
@@ -564,7 +564,7 @@ bool
 nested
 ├── path="some_nested_path"
 └── query
-    └── term, field=some_nested_path.id
+    └── term, field=some_nested_path.id, value=2
 ''')
 
         q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
@@ -574,9 +574,9 @@ nested
             self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 ├── filter
-│   └── term, field=some_field
+│   └── term, field=some_field, value=2
 └── must
-    └── term, field=some_other_field
+    └── term, field=some_other_field, value=2
 ''')
 
         # query WITH defined parent and explicit operator
@@ -587,9 +587,9 @@ bool
             self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
 ├── filter
-│   └── term, field=some_field
+│   └── term, field=some_field, value=2
 └── must_not
-    └── range, field=some_other_field
+    └── range, field=some_other_field, gte=3
 ''')
 
         # INVALID
