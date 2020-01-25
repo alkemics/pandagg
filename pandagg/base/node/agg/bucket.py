@@ -255,30 +255,27 @@ class DateHistogram(Histogram):
     AGG_TYPE = 'date_histogram'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['date']
-    ALLOWED_INTERVAL_UNITS = ('y', 'q', 'M', 'w', 'd')  # not under a day to avoid breaking ES ('h', 'm', 's')
 
-    def __init__(self,
-                 name, field, interval, meta=None, format_="yyyy-MM-dd", key_as_string=True, aggs=None, **body):
-        self._validate_interval(interval)
+    def __init__(self, name, field, interval=None, calendar_interval=None, fixed_interval=None, meta=None,
+                 key_as_string=True, aggs=None, **body):
+        # interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
+        if not(interval or fixed_interval or calendar_interval):
+            raise ValueError('One of "interval", "calendar_interval" or "fixed_interval" must be provided.')
+        if interval:
+            body['interval'] = interval
+        if calendar_interval:
+            body['calendar_interval'] = calendar_interval
+        if fixed_interval:
+            body['fixed_interval'] = fixed_interval
         if key_as_string:
             self.KEY_PATH = 'key_as_string'
         super(DateHistogram, self).__init__(
             name=name,
             field=field,
-            interval=interval,
-            format_=format_,
             meta=meta,
             aggs=aggs,
             **body
         )
-
-    @classmethod
-    def _validate_interval(cls, interval):
-        units_pattern = '(%s)' % '|'.join(cls.ALLOWED_INTERVAL_UNITS)
-        full_pattern = r'\d*' + units_pattern
-        pattern = re.compile(full_pattern)
-        if not pattern.match(interval):
-            raise ValueError('Wrong interval pattern %s for %s.' % (interval, cls.__name__))
 
 
 class Range(BucketAggNode):

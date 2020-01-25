@@ -659,7 +659,6 @@ root_agg
                     },
                     "date_histogram": {
                         "field": "date",
-                        "format": "yyyy-MM-dd",
                         "interval": "1w"
                     }
                 }

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.base.node.agg.bucket import Terms, Filter, Filters, DateHistogram
+from pandagg.base.node.agg.bucket import Terms, Filter, Filters, DateHistogram, Nested
 
 
 class BucketAggNodesTestCase(TestCase):
@@ -78,6 +78,48 @@ class BucketAggNodesTestCase(TestCase):
 
         # test query dict
         self.assertEqual(filter_agg.query_dict(), {'filter': {'term': {'some_path': 1}}})
+
+        # test deserialize
+        filter_agg = Filter.deserialize('some_agg', filter={'term': {'some_path': 1}})
+        self.assertIsInstance(filter_agg, Filter)
+        self.assertEqual(filter_agg.query_dict(), {'filter': {'term': {'some_path': 1}}})
+
+    def test_nested(self):
+        es_raw_response = {
+            "doc_count": 12,
+            "sub_aggs": {}
+        }
+        # test extract_buckets
+        buckets_iterator = Nested('agg_name', path='some_nested').extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                (None, {'doc_count': 12, "sub_aggs": {}}),
+            ]
+        )
+
+        # test extract bucket value
+        self.assertEqual(Nested.extract_bucket_value({'doc_count': 12}), 12)
+
+        # test get_filter
+        nested_agg = Nested(
+            name='some_agg',
+            path='nested_path',
+            aggs=[Terms('some_terms_agg', field='some_path.id')]
+        )
+        self.assertEqual(nested_agg.get_filter(None), None)
+        self.assertEqual(len(nested_agg.aggs), 1)
+
+        # test query dict
+        self.assertEqual(nested_agg.query_dict(), {'nested': {'path': 'nested_path'}})
+
+        # test deserialize
+        nested_agg = Nested.deserialize('some_nested_agg', path='nested_path', aggs=[])
+        self.assertIsInstance(nested_agg, Nested)
+        self.assertEqual(nested_agg.query_dict(), {'nested': {'path': 'nested_path'}})
 
     def test_filters(self):
         es_raw_response = {
