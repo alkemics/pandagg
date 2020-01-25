@@ -43,7 +43,7 @@ class ClientBoundAgg(Agg):
             mapping=self.tree_mapping,
             identifier=identifier,
             query=self._query,
-            from_=self if with_tree else None
+            from_=self if with_tree and len(self.nodes) else None
         )
 
     def query(self, query, validate=False):

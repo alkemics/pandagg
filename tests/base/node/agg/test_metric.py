@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.base.node.agg.metric import Avg
+from pandagg.agg import Avg
 
 
 class MetricAggNodesTestCase(TestCase):

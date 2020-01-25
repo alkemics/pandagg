@@ -10,7 +10,8 @@ from pandagg.base.node.agg.bucket import (
     Global,
     Filter,
     Nested,
-    ReverseNested
+    ReverseNested,
+    Range
 )
 
 from pandagg.base.node.agg.metric import (
@@ -52,6 +53,7 @@ __all__ = [
     'Filters',
     'Histogram',
     'DateHistogram',
+    'Range',
     'Global',
     'Filter',
     'Nested',

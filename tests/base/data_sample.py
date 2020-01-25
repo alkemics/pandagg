@@ -247,13 +247,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.83
+                            "level": "avg_nb_classes",
+                            "value": 5.2
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 5.2
+                            "level": "avg_f1_micro",
+                            "value": 0.83
                         }
                     ],
                     "key": "hazardpictograms",
@@ -264,13 +264,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.81
+                            "level": "avg_nb_classes",
+                            "value": 88.72
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 88.72
+                            "level": "avg_f1_micro",
+                            "value": 0.81
                         }
                     ],
                     "key": "islabeledby",
@@ -281,13 +281,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.41
+                            "level": "avg_nb_classes",
+                            "value": 27.57
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 27.57
+                            "level": "avg_f1_micro",
+                            "value": 0.41
                         }
                     ],
                     "key": "flavors",
@@ -298,13 +298,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.83
+                            "level": "avg_nb_classes",
+                            "value": 107.82
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 107.82
+                            "level": "avg_f1_micro",
+                            "value": 0.83
                         }
                     ],
                     "key": "hasnotableingredients",
@@ -315,13 +315,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.82
+                            "level": "avg_nb_classes",
+                            "value": 65.59
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 65.59
+                            "level": "avg_f1_micro",
+                            "value": 0.82
                         }
                     ],
                     "key": "allergentypelist",
@@ -332,13 +332,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.72
+                            "level": "avg_nb_classes",
+                            "value": 18.71
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 18.71
+                            "level": "avg_f1_micro",
+                            "value": 0.72
                         }
                     ],
                     "key": "ispracticecompatible",
@@ -349,13 +349,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.95
+                            "level": "avg_nb_classes",
+                            "value": 183.21
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 183.21
+                            "level": "avg_f1_micro",
+                            "value": 0.95
                         }
                     ],
                     "key": "gpc",
@@ -366,13 +366,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.8
+                            "level": "avg_nb_classes",
+                            "value": 9.97
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 9.97
+                            "level": "avg_f1_micro",
+                            "value": 0.8
                         }
                     ],
                     "key": "preservationmethods",
@@ -390,13 +390,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.89
+                            "level": "avg_nb_classes",
+                            "value": 206.5
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 206.5
+                            "level": "avg_f1_micro",
+                            "value": 0.89
                         }
                     ],
                     "key": "kind",
@@ -407,13 +407,13 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "children": [
                         {
                             "key": None,
-                            "level": "avg_f1_micro",
-                            "value": 0.93
+                            "level": "avg_nb_classes",
+                            "value": 211.12
                         },
                         {
                             "key": None,
-                            "level": "avg_nb_classes",
-                            "value": 211.12
+                            "level": "avg_f1_micro",
+                            "value": 0.93
                         }
                     ],
                     "key": "gpc",

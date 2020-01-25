@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.base.node.agg.bucket import Terms, Filter, Filters, DateHistogram, Nested
+from pandagg.agg import Terms, Filter, Filters, DateHistogram, Nested, Range
 
 
 class BucketAggNodesTestCase(TestCase):

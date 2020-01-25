@@ -7,8 +7,6 @@ from builtins import str as text
 
 from pandagg.base._tree import Tree
 from pandagg.base.interactive.mapping import as_mapping
-from pandagg.base.node.query._compound import deserialize_compound_clause
-from pandagg.base.node.query._leaf_clause import deserialize_leaf_clause
 from pandagg.base.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause, PARAMETERS
 from pandagg.base.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.base.node.query.compound import CompoundClause, Bool, Boosting, ConstantScore, DisMax, FunctionScore
@@ -61,6 +59,8 @@ class Query(Tree):
             raise ValueError('Unsupported type <%s>.' % type(from_))
 
     def _deserialize_tree_from_dict(self, body, pid=None):
+        if len(body.keys()) > 1:
+            raise ValueError('Invalid query format, got multiple keys, expected a single one: %s' % (body.keys()))
         q_type, q_body = next(iteritems(body))
         node = deserialize_node(q_type, q_body, accept_param=False)
         self._deserialize_from_node(node, pid)
@@ -70,14 +70,7 @@ class Query(Tree):
         self.add_node(query_node, pid)
         if hasattr(query_node, 'children'):
             for child_node in query_node.children or []:
-                if isinstance(child_node, QueryClause):
-                    self._deserialize_from_node(child_node, pid=query_node.identifier)
-                elif isinstance(child_node, Query):
-                    self.paste(nid=pid, new_tree=child_node)
-                elif isinstance(child_node, dict):
-                    self._deserialize_tree_from_dict(body=child_node, pid=query_node.identifier)
-                else:
-                    raise ValueError('Unsupported type <%s>' % type(child_node))
+                self._deserialize(child_node, pid=query_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             query_node.children = None
 

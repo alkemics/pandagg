@@ -32,59 +32,50 @@ class Agg(Tree):
     _crafted_root_name = 'root'
 
     def __init__(self, from_=None, mapping=None, identifier=None):
-        # set mapping
         self.tree_mapping = None
         if mapping is not None:
             self.set_mapping(mapping)
 
-        if isinstance(from_, Agg):
-            super(Agg, self).__init__(tree=from_, identifier=identifier)
-            return
         super(Agg, self).__init__(identifier=identifier)
         if from_ is not None:
-            if isinstance(from_, AggNode):
-                self._deserialize_from_node(from_)
-            elif isinstance(from_, dict):
-                self._init_deserialize_from_dict(from_)
-            else:
-                raise ValueError('Unsupported <%s> type.' % type(from_))
+            self._deserialize(from_, init=True)
+
+    def _deserialize(self, from_, pid=None, init=False):
+        if isinstance(from_, Agg):
+            self.paste(nid=pid, new_tree=from_, mode='merge' if self.root is None and pid is None else 'below')
+        elif isinstance(from_, AggNode):
+            self._deserialize_from_node(agg_node=from_, pid=pid)
+        elif isinstance(from_, dict):
+            if init:
+                from_ = copy.deepcopy(from_)
+            self._deserialize_from_dict(from_, pid=pid, init=init)
+        else:
+            raise ValueError('Unsupported type <%s>.' % type(from_))
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Agg(
             mapping=self.tree_mapping,
             identifier=identifier,
-            from_=self if with_tree else None
+            from_=self if with_tree and len(self.nodes) else None
         )
 
     def set_mapping(self, mapping):
         self.tree_mapping = as_mapping(mapping)
         return self
 
-    def _init_deserialize_from_dict(self, from_dict):
-        assert isinstance(from_dict, dict)
-        from_dict = copy.deepcopy(from_dict)
-        if len(from_dict.keys()) > 1:
+    def _deserialize_from_dict(self, from_dict, pid=None, init=False):
+        if init and pid is None and len(from_dict.keys()) > 1:
             self.add_node(MatchAll(self._crafted_root_name))
-        agg_name, agg_detail = next(iteritems(from_dict))
-        self._deserialize_from_dict(agg_name, agg_detail, self.root)
-
-    def _deserialize_from_dict(self, agg_name, agg_detail, pid=None):
-        if not isinstance(agg_detail, dict):
-            raise InvalidAggregation
-        meta = agg_detail.pop('meta', None)
-        children_aggs = agg_detail.pop('aggs', None) or agg_detail.pop('aggregations', None) or {}
-        assert len(agg_detail.keys()) == 1
-        agg_type, agg_body = next(iteritems(agg_detail))
-        node = deserialize_agg(agg_type=agg_type, agg_name=agg_name, agg_body=agg_body, meta=meta)
-        self.add_node(node, pid)
-        for child_name in sorted(children_aggs.keys()):
-            self._deserialize_from_dict(child_name, children_aggs[child_name], node.identifier)
+            pid = self._crafted_root_name
+        for k, v in iteritems(from_dict):
+            node = deserialize_agg({k: v})
+            self._deserialize_from_node(node, pid)
 
     def _deserialize_from_node(self, agg_node, pid=None):
         self.add_node(agg_node, pid)
         if isinstance(agg_node, BucketAggNode):
             for child_agg_node in agg_node.aggs or []:
-                self._deserialize_from_node(child_agg_node, pid=agg_node.identifier)
+                self._deserialize(child_agg_node, pid=agg_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             agg_node.aggs = None
 
@@ -280,7 +271,7 @@ class Agg(Tree):
                 applied_nested_path = node.path
         return applied_nested_path
 
-    def paste(self, nid, new_tree, deep=False):
+    def paste(self, nid, new_tree, deep=False, mode='under'):
         """Pastes a tree handling nested implications if mapping is provided.
         The provided tree should be validated beforehands.
         """
@@ -295,13 +286,13 @@ class Agg(Tree):
         pasted_root = new_tree[new_tree.root]
         # if it is a nested or reverse-nested agg, assumes you know what you are doing, validates afterwards
         if isinstance(pasted_root, Nested) or isinstance(pasted_root, ReverseNested):
-            super(Agg, self).paste(nid, new_tree, deep)
+            super(Agg, self).paste(nid, new_tree, deep, mode=mode)
             return self.validate_tree(exc=True)
 
         if not hasattr(pasted_root, 'field'):
             warnings.warn('Paste operation could not validate nested integrity: unknown nested position of pasted root'
                           'node: %s.' % pasted_root)
-            super(Agg, self).paste(nid, new_tree, deep)
+            super(Agg, self).paste(nid, new_tree, deep, mode=mode)
             return self.validate_tree(exc=True)
 
         self.tree_mapping.validate_agg_node(pasted_root)
@@ -309,7 +300,7 @@ class Agg(Tree):
         required_nested_level = self.tree_mapping.nested_at_field(pasted_root.field)
         current_nested_level = self.applied_nested_path_at_node(nid)
         if current_nested_level == required_nested_level:
-            return super(Agg, self).paste(nid, new_tree, deep)
+            return super(Agg, self).paste(nid, new_tree, deep, mode=mode)
         if current_nested_level and (required_nested_level or '' in current_nested_level):
             # check if already exists in direct children, else create it
             child_reverse_nested = next(
@@ -317,11 +308,11 @@ class Agg(Tree):
                 None
             )
             if child_reverse_nested:
-                return super(Agg, self).paste(child_reverse_nested.identifier, new_tree, deep)
+                return super(Agg, self).paste(child_reverse_nested.identifier, new_tree, deep, mode=mode)
             else:
                 rv_node = ReverseNested(name='reverse_nested_below_%s' % nid)
                 super(Agg, self).add_node(rv_node, nid)
-                return super(Agg, self).paste(rv_node.identifier, new_tree, deep)
+                return super(Agg, self).paste(rv_node.identifier, new_tree, deep, mode=mode)
 
         # requires nested - apply all required nested fields
         pid = nid
@@ -338,7 +329,7 @@ class Agg(Tree):
                 nested_node = Nested(name='nested_below_%s' % pid, path=nested_lvl)
                 super(Agg, self).add_node(nested_node, pid)
                 pid = nested_node.identifier
-        super(Agg, self).paste(pid, new_tree, deep)
+        super(Agg, self).paste(pid, new_tree, deep, mode=mode)
 
     def add_node(self, node, pid=None):
         """If mapping is provided, nested and outnested are automatically applied.

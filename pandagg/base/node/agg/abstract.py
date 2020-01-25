@@ -140,8 +140,6 @@ class BucketAggNode(AggNode):
             **body
         )
         aggs = aggs or []
-        for child in aggs:
-            assert isinstance(child, AggNode)
         self.aggs = aggs
 
     def extract_buckets(self, response_value):
