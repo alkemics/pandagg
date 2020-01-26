@@ -255,6 +255,42 @@ bool
         self.assertIn('pizza_term', result_q)
         self.assertIn('new_pizza_term', result_q)
         self.assertIn('price_range', result_q)
+        self.assertEqual(result_q.query_dict(), {
+            "bool": {
+                "filter": [
+                    {
+                        "range": {
+                            "price": {
+                                "gte": 12
+                            }
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "term": {
+                            "some_field": {
+                                "value": "prod"
+                            }
+                        }
+                    },
+                    {
+                        "term": {
+                            "other_field": {
+                                "value": "pizza"
+                            }
+                        }
+                    },
+                    {
+                        "term": {
+                            "other_field": {
+                                "value": "new_pizza"
+                            }
+                        }
+                    }
+                ]
+            }
+        })
 
     def test_replace_existing_bool(self):
         # replace != replace_all
@@ -264,7 +300,8 @@ bool
                 Term(field='some_field', value='prod', identifier='prod_term'),
                 Term(field='other_field', value='pizza', identifier='pizza_term'),
             ],
-            filter=Range(field='price', gte=50, identifier='very_high_price')
+            filter=Range(field='price', gte=50, identifier='very_high_price'),
+            minimum_should_match=2
         ))
         result_q = initial_q.bool(
             identifier='init_bool',
@@ -275,6 +312,36 @@ bool
         self.assertIn('pizza_term', result_q)
         self.assertIn('high_price', result_q)
         self.assertNotIn('very_high_price', result_q)
+        self.assertEqual(result_q.query_dict(), {
+            "bool": {
+                "filter": [
+                    {
+                        "range": {
+                            "price": {
+                                "gte": 20
+                            }
+                        }
+                    }
+                ],
+                "minimum_should_match": 2,
+                "should": [
+                    {
+                        "term": {
+                            "some_field": {
+                                "value": "prod"
+                            }
+                        }
+                    },
+                    {
+                        "term": {
+                            "other_field": {
+                                "value": "pizza"
+                            }
+                        }
+                    }
+                ]
+            }
+        })
 
     def test_must_at_root(self):
         q_i1 = Query()

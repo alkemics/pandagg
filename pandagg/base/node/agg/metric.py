@@ -8,7 +8,6 @@ from pandagg.base.node.agg.abstract import FieldMetricAgg, MetricAgg
 
 
 class TopHits(MetricAgg):
-    # TODO - test this one
     VALUE_ATTRS = ['hits']
     KEY = 'top_hits'
 

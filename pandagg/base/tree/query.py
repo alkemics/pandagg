@@ -155,7 +155,6 @@ class Query(Tree):
 
         new_compound_tree = Query(new_compound)
         for param_node in new_compound_tree.children(new_compound.identifier):
-            # TODO - simple parameters
             existing_param = next((p for p in existing_query.children(new_compound.identifier) if p.KEY == param_node.KEY), None)
             if not existing_param:
                 existing_query.paste(new_tree=new_compound_tree.subtree(param_node.identifier), nid=new_compound.identifier)

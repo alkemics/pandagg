@@ -219,8 +219,12 @@ class Histogram(MultipleBucketAgg):
         )
 
     def get_filter(self, key):
-        # TODO
-        return None
+        try:
+            key = float(key)
+        except (TypeError, ValueError):
+            raise ValueError('Filter key of an histogram aggregation must be numeric, git <%s> of type <%s>' % (
+                key, type(key)))
+        return {'range': {self.field: {'gte': key, 'lt': key + self.interval}}}
 
 
 class DateHistogram(MultipleBucketAgg):
@@ -236,6 +240,7 @@ class DateHistogram(MultipleBucketAgg):
         :param keyed: defines returned buckets format: if True, as dict.
         :param key_as_string: if True extracted key of bucket will be the formatted date (applicable if keyed=False)
         """
+        self.field = field
         if not(interval or fixed_interval or calendar_interval):
             raise ValueError('One of "interval", "calendar_interval" or "fixed_interval" must be provided.')
         if interval:
@@ -244,6 +249,7 @@ class DateHistogram(MultipleBucketAgg):
             body['calendar_interval'] = calendar_interval
         if fixed_interval:
             body['fixed_interval'] = fixed_interval
+        self.interval = interval or calendar_interval or fixed_interval
         super(DateHistogram, self).__init__(
             name=name,
             field=field,
@@ -255,8 +261,8 @@ class DateHistogram(MultipleBucketAgg):
         )
 
     def get_filter(self, key):
-        # TODO
-        return None
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
+        return {'range': {self.field: {'gte': key, 'lt': '%s||+%s' % (key, self.interval)}}}
 
 
 class Range(MultipleBucketAgg):

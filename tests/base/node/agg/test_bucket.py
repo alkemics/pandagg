@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from pandagg.agg import Terms, Filter, Filters, DateHistogram, Nested, Range
+from pandagg.base.node.agg.bucket import Histogram
 
 
 class BucketAggNodesTestCase(TestCase):
@@ -335,6 +336,70 @@ class BucketAggNodesTestCase(TestCase):
         )
         self.assertEqual(range_node_deserialized.query_dict(with_name=True), query)
 
+    def test_histogram(self):
+        query = {
+            "prices": {
+                "histogram": {
+                    "field": "price",
+                    "interval": 50
+                }
+            }
+        }
+        es_raw_response = {
+            "buckets": [
+                {
+                    "key": 0.0,
+                    "doc_count": 1
+                },
+                {
+                    "key": 50.0,
+                    "doc_count": 1
+                },
+                {
+                    "key": 100.0,
+                    "doc_count": 0
+                },
+                {
+                    "key": 150.0,
+                    "doc_count": 2
+                },
+                {
+                    "key": 200.0,
+                    "doc_count": 3
+                }
+            ]
+        }
+
+        hist_agg = Histogram(
+            name='prices',
+            field='price',
+            interval=50
+        )
+        self.assertEqual(hist_agg.query_dict(with_name=True), query)
+        self.assertEqual(hist_agg.get_filter(100), {'range': {'price': {'gte': 100.0, 'lt': 150.0}}})
+
+        buckets_iterator = hist_agg.extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                (0.0, {'doc_count': 1, 'key': 0.0}),
+                (50.0, {'doc_count': 1, 'key': 50.0}),
+                (100.0, {'doc_count': 0, 'key': 100.0}),
+                (150.0, {'doc_count': 2, 'key': 150.0}),
+                (200.0, {'doc_count': 3, 'key': 200.0})
+            ]
+        )
+
+        hist_node_deserialized = Histogram.deserialize(
+            'prices',
+            field='price',
+            interval=50
+        )
+        self.assertEqual(hist_node_deserialized.query_dict(with_name=True), query)
+
     def test_date_histogram_key_as_string(self):
         es_raw_response = {
             "doc_count_error_upper_bound": 0,
@@ -353,12 +418,18 @@ class BucketAggNodesTestCase(TestCase):
             ]
         }
 
-        buckets_iterator = DateHistogram(
+        date_hist_agg = DateHistogram(
             name='name',
             field='field',
             interval='1w',
             key_as_string=True
-        ).extract_buckets(es_raw_response)
+        )
+        self.assertEqual(
+            date_hist_agg.get_filter('2018-01-01'),
+            {'range': {'field': {'gte': '2018-01-01', 'lt': '2018-01-01||+1w'}}}
+        )
+
+        buckets_iterator = date_hist_agg.extract_buckets(es_raw_response)
 
         self.assertTrue(hasattr(buckets_iterator, '__iter__'))
         buckets = list(buckets_iterator)
