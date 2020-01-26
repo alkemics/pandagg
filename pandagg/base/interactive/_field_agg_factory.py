@@ -29,7 +29,7 @@ def field_klass_init(self, mapping_tree, client, field, index_name):
 def aggregator_factory(agg_klass):
     def aggregator(self, index=None, execute=True, output='dataframe', query=None, **kwargs):
         node = agg_klass(
-            name='%s_agg' % agg_klass.AGG_TYPE,
+            name='%s_agg' % agg_klass.KEY,
             field=self._field,
             **kwargs
         )
@@ -75,7 +75,7 @@ def field_type_klass_factory(field_type):
         '_operate': _operate
     }
     for agg_klass in list_available_aggs_on_field(field_type):
-        d[agg_klass.AGG_TYPE] = aggregator_factory(agg_klass)
+        d[agg_klass.KEY] = aggregator_factory(agg_klass)
     klass = type(
         "%sAggs" % field_type.capitalize(),
         (),

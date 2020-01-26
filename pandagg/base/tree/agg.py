@@ -15,7 +15,7 @@ from pandagg.base.exceptions import AbsentMappingFieldError, InvalidAggregation,
 from pandagg.base.interactive.mapping import as_mapping
 from pandagg.base.interactive.response import IResponse
 from pandagg.base.node.agg import deserialize_agg
-from pandagg.base.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode
+from pandagg.base.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode, MetricAgg
 from pandagg.base.node.agg.bucket import Terms, Nested, ReverseNested, MatchAll
 from pandagg.base.tree.response import ResponseTree
 
@@ -517,7 +517,7 @@ class Agg(Tree):
                 if not normalize_children:
                     result[child.name] = row_data[child.name]
                     continue
-                if child.SINGLE_BUCKET:
+                if isinstance(child, (UniqueBucketAgg, MetricAgg)):
                     result[child.name] = child.extract_bucket_value(row_data[child.name])
                 else:
                     result[child.name] = next(self._normalize_buckets(row_data, child.name), None)

@@ -8,68 +8,68 @@ from pandagg.base.node.agg.abstract import Pipeline, ScriptPipeline
 
 
 class AvgBucket(Pipeline):
-    AGG_TYPE = 'avg_bucket'
+    KEY = 'avg_bucket'
     VALUE_ATTRS = ['value']
 
 
 class Derivative(Pipeline):
-    AGG_TYPE = 'derivative'
+    KEY = 'derivative'
     VALUE_ATTRS = ['value']
 
 
 class MaxBucket(Pipeline):
-    AGG_TYPE = 'max_bucket'
+    KEY = 'max_bucket'
     VALUE_ATTRS = ['value']
 
 
 class MinBucket(Pipeline):
-    AGG_TYPE = 'min_bucket'
+    KEY = 'min_bucket'
     VALUE_ATTRS = ['value']
 
 
 class SumBucket(Pipeline):
-    AGG_TYPE = 'sum_bucket'
+    KEY = 'sum_bucket'
     VALUE_ATTRS = ['value']
 
 
 class StatsBucket(Pipeline):
-    AGG_TYPE = 'stats_bucket'
+    KEY = 'stats_bucket'
     VALUE_ATTRS = ['count', 'min', 'max', 'avg', 'sum']
 
 
 class ExtendedStatsBucket(Pipeline):
-    AGG_TYPE = 'extended_stats_bucket'
+    KEY = 'extended_stats_bucket'
     VALUE_ATTRS = ['count', 'min', 'max', 'avg', 'sum', 'sum_of_squares', 'variance', 'std_deviation',
                    'std_deviation_bounds']
 
 
 class PercentilesBucket(Pipeline):
-    AGG_TYPE = 'percentiles_bucket'
+    KEY = 'percentiles_bucket'
     VALUE_ATTRS = ['values']
 
 
 class MovingAvg(Pipeline):
-    AGG_TYPE = 'moving_avg'
+    KEY = 'moving_avg'
     VALUE_ATTRS = ['value']
 
 
 class CumulativeSum(Pipeline):
-    AGG_TYPE = 'cumulative_sum'
+    KEY = 'cumulative_sum'
     VALUE_ATTRS = ['value']
 
 
 class BucketScript(ScriptPipeline):
-    AGG_TYPE = 'bucket_script'
+    KEY = 'bucket_script'
     VALUE_ATTRS = ['value']
 
 
 class BucketSelector(ScriptPipeline):
-    AGG_TYPE = 'bucket_selector'
+    KEY = 'bucket_selector'
     VALUE_ATTRS = ['value']
 
 
 class SerialDiff(Pipeline):
-    AGG_TYPE = 'serial_diff'
+    KEY = 'serial_diff'
     VALUE_ATTRS = ['value']
 
 

@@ -8,7 +8,7 @@ class MetricAggNodesTestCase(TestCase):
 
     def test_abstract_metric_agg(self):
         class MyMetricAgg(FieldMetricAgg):
-            AGG_TYPE = 'custom'
+            KEY = 'custom'
             VALUE_ATTRS = ['some_attr_name']
 
         es_raw_response = {

@@ -68,7 +68,7 @@ workflow
         )
         self.assertIn('nested_below_workflow', with_mapping)
         nested_node = with_mapping['nested_below_workflow']
-        self.assertEqual(nested_node.AGG_TYPE, 'nested')
+        self.assertEqual(nested_node.KEY, 'nested')
         self.assertEqual(nested_node.path, 'local_metrics')
 
         # add other agg requiring nested will reuse nested agg as parent

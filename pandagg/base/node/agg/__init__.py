@@ -5,7 +5,7 @@ from .bucket import BUCKET_AGGS
 from .metric import METRIC_AGGS
 from .pipeline import PIPELINE_AGGS
 
-AGGS = {a.AGG_TYPE: a for a in BUCKET_AGGS + METRIC_AGGS + PIPELINE_AGGS}
+AGGS = {a.KEY: a for a in BUCKET_AGGS + METRIC_AGGS + PIPELINE_AGGS}
 
 
 def deserialize_agg(from_dict):

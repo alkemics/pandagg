@@ -16,12 +16,12 @@ from six import iteritems
 
 from pandagg.base.utils import bool_if_required
 from pandagg.base.node.types import NUMERIC_TYPES
-from pandagg.base.node.agg.abstract import ListBucketAgg, UniqueBucketAgg, BucketAggNode
+from pandagg.base.node.agg.abstract import MultipleBucketAgg, UniqueBucketAgg, BucketAggNode
 
 
 class Global(UniqueBucketAgg):
 
-    AGG_TYPE = 'global'
+    KEY = 'global'
     VALUE_ATTRS = ['doc_count']
 
     def __init__(self, name, meta=None, aggs=None):
@@ -38,7 +38,7 @@ class Global(UniqueBucketAgg):
 
 class Filter(UniqueBucketAgg):
 
-    AGG_TYPE = 'filter'
+    KEY = 'filter'
     VALUE_ATTRS = ['doc_count']
 
     def __init__(self, name, filter, meta=None, aggs=None, **body):
@@ -68,7 +68,7 @@ class MatchAll(Filter):
 
 class Nested(UniqueBucketAgg):
 
-    AGG_TYPE = 'nested'
+    KEY = 'nested'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['nested']
 
@@ -87,7 +87,7 @@ class Nested(UniqueBucketAgg):
 
 class ReverseNested(UniqueBucketAgg):
 
-    AGG_TYPE = 'reverse_nested'
+    KEY = 'reverse_nested'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['nested']
 
@@ -108,7 +108,7 @@ class ReverseNested(UniqueBucketAgg):
 
 
 class Missing(UniqueBucketAgg):
-    AGG_TYPE = 'missing'
+    KEY = 'missing'
     VALUE_ATTRS = ['doc_count']
     BLACKLISTED_MAPPING_TYPES = []
 
@@ -125,10 +125,10 @@ class Missing(UniqueBucketAgg):
         return {'bool': {'must_not': {'exists': {'field': self.field}}}}
 
 
-class Terms(ListBucketAgg):
+class Terms(MultipleBucketAgg):
     """Terms aggregation.
     """
-    AGG_TYPE = 'terms'
+    KEY = 'terms'
     VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
     BLACKLISTED_MAPPING_TYPES = []
 
@@ -160,7 +160,7 @@ class Terms(ListBucketAgg):
 
 class Filters(BucketAggNode):
 
-    AGG_TYPE = 'filters'
+    KEY = 'filters'
     VALUE_ATTRS = ['doc_count']
     DEFAULT_OTHER_KEY = '_other_'
 
@@ -204,50 +204,37 @@ class Filters(BucketAggNode):
         raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.name))
 
 
-class Histogram(ListBucketAgg):
+class Histogram(MultipleBucketAgg):
 
-    AGG_TYPE = 'histogram'
+    KEY = 'histogram'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
-    def __init__(self, name, field, interval, format_=None, meta=None, aggs=None, **body):
+    def __init__(self, name, field, interval, meta=None, aggs=None, **body):
         self.field = field
         self.interval = interval
-        self.hist_format = format_
-        body_kwargs = dict(body)
-        if format_:
-            body_kwargs['format'] = format_
         super(Histogram, self).__init__(
             name=name,
             field=field,
             interval=interval,
             meta=meta,
             aggs=aggs,
-            **body_kwargs
+            **body
         )
 
     def get_filter(self, key):
         # TODO
         return None
 
-    @classmethod
-    def deserialize(cls, name, **params):
-        # avoid modifying inplace
-        params = params.copy()
-        # special case for format_ keyword, we don't want to shadow `format` keyword
-        if 'format' in params:
-            params['format_'] = params.pop('format')
-        return cls(name=name, **params)
-
 
 class DateHistogram(Histogram):
-    AGG_TYPE = 'date_histogram'
+    KEY = 'date_histogram'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['date']
+    # interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
 
     def __init__(self, name, field, interval=None, calendar_interval=None, fixed_interval=None, meta=None,
                  key_as_string=True, aggs=None, **body):
-        # interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
         if not(interval or fixed_interval or calendar_interval):
             raise ValueError('One of "interval", "calendar_interval" or "fixed_interval" must be provided.')
         if interval:
@@ -268,10 +255,9 @@ class DateHistogram(Histogram):
 
 
 class Range(BucketAggNode):
-    AGG_TYPE = 'range'
+    KEY = 'range'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
-    SINGLE_BUCKET = False
     KEY_SEP = '-'
 
     def __init__(self, name, field, ranges, keyed=False, meta=None, aggs=None, **body):
@@ -333,10 +319,9 @@ class Range(BucketAggNode):
 
 
 class DateRange(Range):
-    AGG_TYPE = 'date_range'
+    KEY = 'date_range'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['date']
-    SINGLE_BUCKET = False
     # cannot use range '-' separator since some keys contain it
     KEY_SEP = '::'
 

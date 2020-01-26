@@ -18,9 +18,8 @@ class AggNode(Node):
     Define a method to build aggregation request.
     """
 
-    AGG_TYPE = NotImplementedError()
+    KEY = NotImplementedError()
     VALUE_ATTRS = NotImplementedError()
-    SINGLE_BUCKET = NotImplementedError()
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None
 
@@ -57,7 +56,7 @@ class AggNode(Node):
             [,"meta" : {  [<meta_data_body>] } ]?
         }
         """
-        aggs = {self.AGG_TYPE: self.body}
+        aggs = {self.KEY: self.body}
         if self.meta:
             aggs["meta"] = self.meta
         if with_name:
@@ -88,7 +87,7 @@ class AggNode(Node):
     def __str__(self):
         return "<{class_}, name={name}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
-            type=text(self.AGG_TYPE),
+            type=text(self.KEY),
             name=text(self.name), body=json.dumps(self.body)
         )
 
@@ -102,7 +101,6 @@ class AggNode(Node):
 class MetricAgg(AggNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
     VALUE_ATTRS = NotImplementedError()
-    SINGLE_BUCKET = True
 
     def extract_buckets(self, response_value):
         yield (None, response_value)
@@ -133,7 +131,6 @@ class BucketAggNode(AggNode):
     bpointer/fpointer attributes inherited from treelib.Tree class.
     """
     VALUE_ATTRS = NotImplementedError()
-    SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, name, meta=None, aggs=None, **body):
         super(BucketAggNode, self).__init__(
@@ -155,7 +152,6 @@ class BucketAggNode(AggNode):
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
     VALUE_ATTRS = NotImplementedError()
-    SINGLE_BUCKET = True
 
     def extract_buckets(self, response_value):
         yield (None, response_value)
@@ -164,12 +160,15 @@ class UniqueBucketAgg(BucketAggNode):
         raise NotImplementedError()
 
 
-class ListBucketAgg(BucketAggNode):
+class MultipleBucketAgg(BucketAggNode):
 
-    # Aggregation that return a list of buckets as a list (terms, histogram, date-histogram).
+    # Aggregation that return either a list or a map of buckets.
     VALUE_ATTRS = NotImplementedError()
     KEY_PATH = 'key'
-    SINGLE_BUCKET = False
+
+    def __init__(self, name, keyed=None, meta=None, aggs=None, **body):
+        self.keyed = keyed
+        super(MultipleBucketAgg, self).__init__(name=name, meta=meta, aggs=aggs, **body)
 
     def extract_buckets(self, response_value):
         for bucket in response_value['buckets']:
@@ -196,7 +195,6 @@ class FieldMetricAgg(MetricAgg):
 class Pipeline(UniqueBucketAgg):
 
     VALUE_ATTRS = NotImplementedError()
-    SINGLE_BUCKET = NotImplementedError()
 
     def __init__(self, name, buckets_path, gap_policy=None, meta=None, aggs=None, **body):
         self.buckets_path = buckets_path
@@ -219,7 +217,7 @@ class Pipeline(UniqueBucketAgg):
 
 
 class ScriptPipeline(Pipeline):
-    AGG_TYPE = NotImplementedError()
+    KEY = NotImplementedError()
     VALUE_ATTRS = 'value'
 
     def __init__(self, name, script, buckets_path, gap_policy=None, meta=None, aggs=None, **body):

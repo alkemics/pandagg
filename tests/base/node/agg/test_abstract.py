@@ -8,13 +8,11 @@ class AbstractAggNodesTestCase(TestCase):
     def test_abstract_agg_node(self):
 
         class CustomAgg(AggNode):
-            AGG_TYPE = 'custom_type'
+            KEY = 'custom_type'
             VALUE_ATTRS = ['bucket_value_path']
             # would mean this agg can be applied only on boolean fields
             WHITELISTED_MAPPING_TYPES = ['boolean']
             BLACKLISTED_MAPPING_TYPES = None
-            # means it ES response produces a single bucket
-            SINGLE_BUCKET = True
 
             # depends on ElasticSearch aggregation handling, since this is a fake Aggregation this get_filter method
             # doesn't really make sense, just wrote one so that all abstract methods are implemented

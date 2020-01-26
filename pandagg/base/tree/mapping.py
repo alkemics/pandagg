@@ -62,14 +62,14 @@ class Mapping(Tree):
             if not exc:
                 return False
             raise AbsentMappingFieldError(u'Agg of type <%s> on non-existing field <%s>.' % (
-                agg_node.AGG_TYPE, agg_node.field))
+                agg_node.KEY, agg_node.field))
 
         field_type = self.mapping_type_of_field(agg_node.field)
         if not agg_node.valid_on_field_type(field_type):
             if not exc:
                 return False
             raise InvalidOperationMappingFieldError(u'Agg of type <%s> not possible on field of type <%s>.'
-                                                    % (agg_node.AGG_TYPE, field_type))
+                                                    % (agg_node.KEY, field_type))
         return True
 
     def mapping_type_of_field(self, field_path):
