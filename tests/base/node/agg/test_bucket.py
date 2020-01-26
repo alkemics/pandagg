@@ -205,6 +205,71 @@ class BucketAggNodesTestCase(TestCase):
             }
         )
 
+    def test_range(self):
+        query = {
+            "price_ranges": {
+                "range": {
+                    "field": "price",
+                    "ranges": [
+                        {"to": 100.0},
+                        {"from": 100.0, "to": 200.0},
+                        {"from": 200.0}
+                    ]
+                }
+            }
+        }
+        es_raw_response = {
+            "buckets": [
+                {
+                    "key": "*-100.0",
+                    "to": 100.0,
+                    "doc_count": 2
+                },
+                {
+                    "key": "100.0-200.0",
+                    "from": 100.0,
+                    "to": 200.0,
+                    "doc_count": 2
+                },
+                {
+                    "key": "200.0-*",
+                    "from": 200.0,
+                    "doc_count": 3
+                }
+            ]
+        }
+
+        range_agg = Range(
+            name='price_ranges',
+            field='price',
+            ranges=[
+                {"to": 100.0},
+                {"from": 100.0, "to": 200.0},
+                {"from": 200.0}
+            ]
+        )
+        self.assertEqual(range_agg.query_dict(with_name=True), query)
+
+        buckets_iterator = range_agg.extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                ('*-100.0', {'doc_count': 2, 'key': '*-100.0', 'to': 100.0}),
+                ('100.0-200.0', {'doc_count': 2, 'from': 100.0, 'key': '100.0-200.0', 'to': 200.0}),
+                ('200.0-*', {'doc_count': 3, 'from': 200.0, 'key': '200.0-*'})
+            ]
+        )
+
+        range_node_deserialized = Range.deserialize(
+            'price_ranges',
+            field='price',
+            ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
+        )
+        self.assertEqual(range_node_deserialized.query_dict(with_name=True), query)
+
     def test_date_histogram_key_as_string(self):
         es_raw_response = {
             "doc_count_error_upper_bound": 0,

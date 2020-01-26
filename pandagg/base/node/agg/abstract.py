@@ -38,7 +38,7 @@ class AggNode(Node):
             return field_type not in cls.BLACKLISTED_MAPPING_TYPES
         return False
 
-    def query_dict(self):
+    def query_dict(self, with_name=False):
         """ElasticSearch aggregation queries follow this formatting:
         {
             "<aggregation_name>" : {
@@ -60,6 +60,8 @@ class AggNode(Node):
         aggs = {self.AGG_TYPE: self.body}
         if self.meta:
             aggs["meta"] = self.meta
+        if with_name:
+            return {self.name: aggs}
         return aggs
 
     def get_filter(self, key):

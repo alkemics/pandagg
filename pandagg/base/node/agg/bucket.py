@@ -9,9 +9,9 @@
 - significant terms
 """
 
-import re
-from operator import itemgetter
+from builtins import str as text
 
+from operator import itemgetter
 from six import iteritems
 
 from pandagg.base.utils import bool_if_required
@@ -328,7 +328,7 @@ class Range(BucketAggNode):
                 else:
                     key = '*-'
                 if self.to_key in bucket:
-                    key += bucket[self.to_key]
+                    key += text(bucket[self.to_key])
                 else:
                     key += '*'
                 yield key, bucket
