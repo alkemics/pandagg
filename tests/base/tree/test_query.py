@@ -686,3 +686,52 @@ bool
         with self.assertRaises(ValueError) as e:
             q.query({'range': {'some_other_field': {'gte': 3}}}, parent='yolo_id')
         self.assertEqual(e.exception.args[0], 'Parent <yolo_id> does not exist in current query.')
+
+    def test_nested_query(self):
+        q = Query()\
+            .nested(path='some_nested', identifier='nested_id') \
+            .query(Term(field='some_nested.type', value=2), parent='nested_id')
+
+        self.assertEqual(q.query_dict(), {
+            'nested': {
+                'path': 'some_nested',
+                'query': {'term': {'some_nested.type': {'value': 2}}}
+            }
+        })
+
+    def test_must_below_nested_query(self):
+        q = Query()\
+            .nested(path='some_nested', identifier='nested_id')\
+            .query(Term(field='some_nested.type', value=2), parent='nested_id') \
+            .query(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id')
+
+        self.assertEqual(
+            q.query_dict(),
+            {
+                'nested': {
+                    'path': 'some_nested',
+                    'query': {
+                        "bool": {
+                            "must": [
+                                {
+                                    "term": {
+                                        "some_nested.type": {
+                                            "parent": "nested_id",
+                                            "value": 2
+                                        }
+                                    }
+                                },
+                                {
+                                    "range": {
+                                        "some_nested.creationYear": {
+                                            "gte": "2020",
+                                            "parent": "nested_id"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        )
