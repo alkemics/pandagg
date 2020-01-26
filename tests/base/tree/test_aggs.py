@@ -774,21 +774,21 @@ class ClientBoundAggTestCase(TestCase):
         agg = ClientBoundAgg(client=None, index_name='some_index')
 
         new_agg = agg\
-            .query({'term': {'some_field': 1}})\
+            .query({'term': {'user': {'value': 1}}})\
             .query({'bool': {'must': [
                 {'range': {'other_field': {'gt': 2}}},
-                {'term': {'another_field': 'hi'}}
+                {'term': {'another_field': {'value': 'hi'}}}
             ]}})
 
-        self.assertIs(agg._query, None)
+        self.assertEqual(agg._query.query_dict(), None)
         self.assertEqual(
-            new_agg._query,
+            new_agg._query.query_dict(),
             {
                 'bool': {
                     'must': [
                         {'range': {'other_field': {'gt': 2}}},
-                        {'term': {'another_field': 'hi'}},
-                        {'term': {'some_field': 1}}
+                        {'term': {'another_field': {'value': 'hi'}}},
+                        {'term': {'user': {'value': 1}}}
                     ]
                 }
             }

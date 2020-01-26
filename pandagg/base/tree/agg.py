@@ -11,7 +11,7 @@ from builtins import str as text
 from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
 from pandagg.base._tree import Tree
-from pandagg.base.exceptions import AbsentMappingFieldError, InvalidAggregation, MappingError
+from pandagg.base.exceptions import AbsentMappingFieldError, MappingError
 from pandagg.base.interactive.mapping import as_mapping
 from pandagg.base.interactive.response import IResponse
 from pandagg.base.node.agg import deserialize_agg
@@ -42,7 +42,7 @@ class Agg(Tree):
 
     def _deserialize(self, from_, pid=None, init=False):
         if isinstance(from_, Agg):
-            self.paste(nid=pid, new_tree=from_, mode='merge' if self.root is None and pid is None else 'below')
+            self.paste(nid=pid, new_tree=from_, mode='merge' if self.root is None and pid is None else 'under')
         elif isinstance(from_, AggNode):
             self._deserialize_from_node(agg_node=from_, pid=pid)
         elif isinstance(from_, dict):

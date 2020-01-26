@@ -56,12 +56,12 @@ class ClientBoundIndex(Index):
             depth=1
         )
 
-    def query(self, query, validate=False):
+    def query(self, query, validate=False, **kwargs):
         return ClientBoundAgg(
             client=self.client,
             index_name=self.name,
             mapping=self.mapping
-        ).query(query, validate=validate)
+        ).query(query, validate=validate, **kwargs)
 
     def groupby(self, by, insert_below=None, **kwargs):
         return ClientBoundAgg(

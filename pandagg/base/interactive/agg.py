@@ -3,9 +3,9 @@
 from __future__ import unicode_literals
 
 from pandagg.base.tree.agg import Agg
+from pandagg.base.tree.query import Query
 from pandagg.base.tree.response import ResponseTree
 from pandagg.base.interactive.response import ClientBoundResponse
-from pandagg.base.utils import bool_if_required
 
 
 class ClientBoundAgg(Agg):
@@ -13,7 +13,7 @@ class ClientBoundAgg(Agg):
     def __init__(self, client, index_name, mapping=None, from_=None, query=None, identifier=None):
         self.client = client
         self.index_name = index_name
-        self._query = query
+        self._query = Query(from_=query)
         super(ClientBoundAgg, self).__init__(
             from_=from_,
             mapping=mapping,
@@ -46,22 +46,20 @@ class ClientBoundAgg(Agg):
             from_=self if with_tree and len(self.nodes) else None
         )
 
-    def query(self, query, validate=False):
-        assert isinstance(query, dict)
+    def query(self, query, validate=False, **kwargs):
+        new_query = self._query.query(query, **kwargs)
+        query_dict = new_query.query_dict()
         if validate:
-            validity = self.client.indices.validate_query(index=self.index_name, body={"query": query})
+            validity = self.client.indices.validate_query(index=self.index_name, body={"query": query_dict})
             if not validity['valid']:
                 raise ValueError('Wrong query: %s\n%s' % (query, validity))
         new_agg = self._clone(with_tree=True)
-
-        conditions = [query]
-        if new_agg._query is not None:
-            conditions.append(new_agg._query)
-        new_agg._query = bool_if_required(conditions)
+        new_agg._query = new_query
         return new_agg
 
-    def _execute(self, aggregation, index=None, query=None):
+    def _execute(self, aggregation, index=None):
         body = {"aggs": aggregation, "size": 0}
+        query = self._query.query_dict()
         if query:
             body['query'] = query
         return self.client.search(index=index, body=body)
@@ -69,8 +67,7 @@ class ClientBoundAgg(Agg):
     def execute(self, index=None, output=Agg.DEFAULT_OUTPUT, **kwargs):
         es_response = self._execute(
             aggregation=self.query_dict(),
-            index=index or self.index_name,
-            query=self._query
+            index=index or self.index_name
         )
         return self.serialize_response(
             aggs=es_response['aggregations'],

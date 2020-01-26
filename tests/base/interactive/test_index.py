@@ -76,10 +76,10 @@ class ClientBoundTestCase(TestCase):
         client_mock, index = self.get_client_bound_index()
 
         agg = index\
-            .query({'term': {'workflow': 'some_workflow'}})
+            .query({'term': {'workflow': {'value': 'some_workflow'}}})
         self.assertIsInstance(agg, ClientBoundAgg)
         self.assertIs(agg.client, client_mock)
-        self.assertEqual(agg._query, {'term': {'workflow': 'some_workflow'}})
+        self.assertEqual(agg._query.query_dict(), {'term': {'workflow': {'value': 'some_workflow'}}})
         self.assertEqual(agg.index_name, 'my_index_name')
 
     def test_client_bound_groupby(self):
@@ -128,7 +128,7 @@ class ClientBoundTestCase(TestCase):
         serialize_mock.return_value = 'some_parsed_result'
 
         results = index \
-            .query({'term': {'workflow': 'some_workflow'}})\
+            .query({'term': {'workflow': {'value': 'some_workflow'}}})\
             .agg(
                 [
                     Avg('avg_nb_classes', field='global_metrics.dataset.nb_classes'),
@@ -147,7 +147,7 @@ class ClientBoundTestCase(TestCase):
             body={
                 "aggs": equivalent_agg.query_dict(),
                 "size": 0,
-                "query": {'term': {'workflow': 'some_workflow'}}
+                "query": {'term': {'workflow': {'value': 'some_workflow'}}}
             },
             index="my_index_name"
         )

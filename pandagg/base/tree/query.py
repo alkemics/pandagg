@@ -50,7 +50,7 @@ class Query(Tree):
 
     def _deserialize(self, from_, pid=None):
         if isinstance(from_, Query):
-            self.paste(nid=pid, new_tree=from_, mode='merge' if self.root is None and pid is None else 'below')
+            self.paste(nid=pid, new_tree=from_, mode='merge' if self.root is None and pid is None else 'under')
         elif isinstance(from_, QueryClause):
             self._deserialize_from_node(pid=pid, query_node=from_)
         elif isinstance(from_, dict):
@@ -94,8 +94,10 @@ class Query(Tree):
         super(Query, self).add_node(node, pid)
 
     def query_dict(self, from_=None):
+        """Return None if no query clause.
+        """
         if self.root is None:
-            return {}
+            return None
         from_ = self.root if from_ is None else from_
         node = self[from_]
         if isinstance(node, (LeafQueryClause, SimpleParameter)):
