@@ -158,11 +158,12 @@ class Terms(MultipleBucketAgg):
         return {'term': {self.field: key}}
 
 
-class Filters(BucketAggNode):
+class Filters(MultipleBucketAgg):
 
     KEY = 'filters'
     VALUE_ATTRS = ['doc_count']
     DEFAULT_OTHER_KEY = '_other_'
+    IMPLICIT_KEYED = True
 
     def __init__(self, name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **body):
         self.filters = filters
@@ -181,11 +182,6 @@ class Filters(BucketAggNode):
             aggs=aggs,
             **body_kwargs
         )
-
-    def extract_buckets(self, response_value):
-        buckets = response_value['buckets']
-        for key in sorted(buckets.keys()):
-            yield (key, buckets[key])
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""
@@ -227,14 +223,19 @@ class Histogram(MultipleBucketAgg):
         return None
 
 
-class DateHistogram(Histogram):
+class DateHistogram(MultipleBucketAgg):
     KEY = 'date_histogram'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = ['date']
     # interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
 
     def __init__(self, name, field, interval=None, calendar_interval=None, fixed_interval=None, meta=None,
-                 key_as_string=True, aggs=None, **body):
+                 keyed=False, key_as_string=True, aggs=None, **body):
+        """Date Histogram aggregation.
+        Note: interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
+        :param keyed: defines returned buckets format: if True, as dict.
+        :param key_as_string: if True extracted key of bucket will be the formatted date (applicable if keyed=False)
+        """
         if not(interval or fixed_interval or calendar_interval):
             raise ValueError('One of "interval", "calendar_interval" or "fixed_interval" must be provided.')
         if interval:
@@ -243,18 +244,22 @@ class DateHistogram(Histogram):
             body['calendar_interval'] = calendar_interval
         if fixed_interval:
             body['fixed_interval'] = fixed_interval
-        if key_as_string:
-            self.KEY_PATH = 'key_as_string'
         super(DateHistogram, self).__init__(
             name=name,
             field=field,
             meta=meta,
             aggs=aggs,
+            keyed=keyed,
+            key_path='key_as_string' if key_as_string else 'key',
             **body
         )
 
+    def get_filter(self, key):
+        # TODO
+        return None
 
-class Range(BucketAggNode):
+
+class Range(MultipleBucketAgg):
     KEY = 'range'
     VALUE_ATTRS = ['doc_count']
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
@@ -263,50 +268,43 @@ class Range(BucketAggNode):
     def __init__(self, name, field, ranges, keyed=False, meta=None, aggs=None, **body):
         self.field = field
         self.ranges = ranges
-        self.keyed = keyed
         body_kwargs = dict(body)
         if keyed:
-            self.KEY_SUFFIX = '_as_string'
-            body_kwargs['keyed'] = keyed
+            self.bucket_key_suffix = '_as_string'
         else:
-            self.KEY_SUFFIX = None
+            self.bucket_key_suffix = None
         super(Range, self).__init__(
             name=name,
             field=field,
             ranges=ranges,
             meta=meta,
+            keyed=keyed,
             aggs=aggs,
             **body_kwargs
         )
 
     @property
     def from_key(self):
-        if self.KEY_SUFFIX:
-            return 'from%s' % self.KEY_SUFFIX
+        if self.bucket_key_suffix:
+            return 'from%s' % self.bucket_key_suffix
         return 'from'
 
     @property
     def to_key(self):
-        if self.KEY_SUFFIX:
-            return 'to%s' % self.KEY_SUFFIX
+        if self.bucket_key_suffix:
+            return 'to%s' % self.bucket_key_suffix
         return 'to'
 
-    def extract_buckets(self, response_value):
-        if self.keyed:
-            buckets = response_value['buckets']
-            for key in sorted(buckets.keys()):
-                yield (key, buckets[key])
+    def _extract_bucket_key(self, bucket):
+        if self.from_key in bucket:
+            key = '%s%s' % (bucket[self.from_key], self.KEY_SEP)
         else:
-            for bucket in response_value['buckets']:
-                if self.from_key in bucket:
-                    key = '%s%s' % (bucket[self.from_key], self.KEY_SEP)
-                else:
-                    key = '*-'
-                if self.to_key in bucket:
-                    key += text(bucket[self.to_key])
-                else:
-                    key += '*'
-                yield key, bucket
+            key = '*-'
+        if self.to_key in bucket:
+            key += text(bucket[self.to_key])
+        else:
+            key += '*'
+        return key
 
     def get_filter(self, key):
         from_, to_ = key.split(self.KEY_SEP)

@@ -162,17 +162,37 @@ class UniqueBucketAgg(BucketAggNode):
 
 class MultipleBucketAgg(BucketAggNode):
 
-    # Aggregation that return either a list or a map of buckets.
     VALUE_ATTRS = NotImplementedError()
-    KEY_PATH = 'key'
+    IMPLICIT_KEYED = False
 
-    def __init__(self, name, keyed=None, meta=None, aggs=None, **body):
-        self.keyed = keyed
+    def __init__(self, name, keyed=None, key_path='key', meta=None, aggs=None, **body):
+        """Aggregation that return either a list or a map of buckets.
+
+        If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
+        list item).
+        :param name:
+        :param keyed:
+        :param meta:
+        :param aggs:
+        :param body:
+        """
+        self.keyed = keyed or self.IMPLICIT_KEYED
+        self.key_path = key_path
+        if keyed and not self.IMPLICIT_KEYED:
+            body['keyed'] = keyed
         super(MultipleBucketAgg, self).__init__(name=name, meta=meta, aggs=aggs, **body)
 
     def extract_buckets(self, response_value):
-        for bucket in response_value['buckets']:
-            yield (bucket[self.KEY_PATH], bucket)
+        buckets = response_value['buckets']
+        if self.keyed:
+            for key in sorted(buckets.keys()):
+                yield (key, buckets[key])
+        else:
+            for bucket in buckets:
+                yield (self._extract_bucket_key(bucket), bucket)
+
+    def _extract_bucket_key(self, bucket):
+        return bucket[self.key_path]
 
     def get_filter(self, key):
         raise NotImplementedError()
