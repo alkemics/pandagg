@@ -63,3 +63,6 @@ class AbstractAggNodesTestCase(TestCase):
 
         self.assertEqual(node.valid_on_field_type('string'), False)
         self.assertEqual(node.valid_on_field_type('boolean'), True)
+
+    def test_single_bucket_node(self):
+        pass

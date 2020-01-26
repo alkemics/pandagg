@@ -72,17 +72,17 @@ class BucketAggNodesTestCase(TestCase):
         # test get_filter
         filter_agg = Filter(
             name='some_agg',
-            filter_={'term': {'some_path': 1}}
+            filter={'term': {'some_path': 1}}
         )
         self.assertEqual(filter_agg.get_filter(None), {'term': {'some_path': 1}})
 
         # test query dict
-        self.assertEqual(filter_agg.query_dict(), {'filter': {'term': {'some_path': 1}}})
+        self.assertEqual(filter_agg.query_dict(), {'filter': {'filter': {'term': {'some_path': 1}}}})
 
         # test deserialize
         filter_agg = Filter.deserialize('some_agg', filter={'term': {'some_path': 1}})
         self.assertIsInstance(filter_agg, Filter)
-        self.assertEqual(filter_agg.query_dict(), {'filter': {'term': {'some_path': 1}}})
+        self.assertEqual(filter_agg.query_dict(), {'filter': {'filter': {'term': {'some_path': 1}}}})
 
     def test_nested(self):
         es_raw_response = {
@@ -266,6 +266,71 @@ class BucketAggNodesTestCase(TestCase):
         range_node_deserialized = Range.deserialize(
             'price_ranges',
             field='price',
+            ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
+        )
+        self.assertEqual(range_node_deserialized.query_dict(with_name=True), query)
+
+    def test_range_keyed_response(self):
+        query = {
+            "price_ranges": {
+                "range": {
+                    "field": "price",
+                    "keyed": True,
+                    "ranges": [
+                        {"to": 100.0},
+                        {"from": 100.0, "to": 200.0},
+                        {"from": 200.0}
+                    ]
+                }
+            }
+        }
+        es_raw_response = {
+            "buckets": {
+                "*-100.0": {
+                    "to": 100.0,
+                    "doc_count": 2
+                },
+                "100.0-200.0": {
+                    "from": 100.0,
+                    "to": 200.0,
+                    "doc_count": 2
+                },
+                "200.0-*": {
+                    "from": 200.0,
+                    "doc_count": 3
+                }
+            }
+        }
+
+        range_agg = Range(
+            name='price_ranges',
+            field='price',
+            keyed=True,
+            ranges=[
+                {"to": 100.0},
+                {"from": 100.0, "to": 200.0},
+                {"from": 200.0}
+            ]
+        )
+        self.assertEqual(range_agg.query_dict(with_name=True), query)
+
+        buckets_iterator = range_agg.extract_buckets(es_raw_response)
+        self.assertTrue(hasattr(buckets_iterator, '__iter__'))
+        buckets = list(buckets_iterator)
+        self.assertEqual(
+            buckets,
+            [
+                # key -> bucket
+                ('*-100.0', {'doc_count': 2, 'to': 100.0}),
+                ('100.0-200.0', {'doc_count': 2, 'from': 100.0, 'to': 200.0}),
+                ('200.0-*', {'doc_count': 3, 'from': 200.0})
+            ]
+        )
+
+        range_node_deserialized = Range.deserialize(
+            'price_ranges',
+            field='price',
+            keyed=True,
             ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
         )
         self.assertEqual(range_node_deserialized.query_dict(with_name=True), query)

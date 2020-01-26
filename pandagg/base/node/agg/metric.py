@@ -35,19 +35,6 @@ class Cardinality(FieldMetricAgg):
     VALUE_ATTRS = ['value']
     AGG_TYPE = 'cardinality'
 
-    def __init__(self, name, field, meta=None, precision_threshold=1000, **body):
-        # precision_threshold: the higher the more accurate but longer to proceed (default ES: 1)
-        body_kwargs = dict(body)
-        if precision_threshold is not None:
-            body_kwargs['precision_threshold'] = precision_threshold
-
-        super(Cardinality, self).__init__(
-            name=name,
-            field=field,
-            meta=meta,
-            **body_kwargs
-        )
-
 
 class Stats(FieldMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES

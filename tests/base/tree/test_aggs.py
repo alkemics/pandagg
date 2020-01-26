@@ -754,7 +754,7 @@ week
                 ),
                 Filter(
                     name="f1_score_above_threshold",
-                    filter_={
+                    filter={
                         "range": {
                             "local_metrics.performance.test.f1_score": {
                                 "gte": 0.5

@@ -41,29 +41,18 @@ class Filter(UniqueBucketAgg):
     AGG_TYPE = 'filter'
     VALUE_ATTRS = ['doc_count']
 
-    def __init__(self, name, filter_, meta=None, aggs=None, **body):
-        self.filter = filter_
-        body_kwargs = dict(body)
-        body_kwargs.update(filter_)
+    def __init__(self, name, filter, meta=None, aggs=None, **body):
+        self.filter = filter
         super(Filter, self).__init__(
             name=name,
             meta=meta,
             aggs=aggs,
-            **body_kwargs
+            filter=filter,
+            **body
         )
 
     def get_filter(self, key):
         return self.filter
-
-    @classmethod
-    def deserialize(cls, name, **params):
-        # avoid modifying inplace
-        params = params.copy()
-        # special case for filter agg, we don't want to shadow filter keyword, so Filter agg has instead a `filter_`
-        # keyword that differs from ElasticSearch syntax
-        if 'filter' in params:
-            params['filter_'] = params.pop('filter')
-        return cls(name=name, **params)
 
 
 class MatchAll(Filter):
@@ -71,7 +60,7 @@ class MatchAll(Filter):
     def __init__(self, name, meta=None, aggs=None):
         super(MatchAll, self).__init__(
             name=name,
-            filter_={'match_all': {}},
+            filter={'match_all': {}},
             meta=meta,
             aggs=aggs
         )
