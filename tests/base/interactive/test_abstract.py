@@ -1,13 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 from pandagg.base._tree import Tree
 from pandagg.base.utils import bool_if_required
-from pandagg.base.interactive.abstract import TreeBasedObj, Obj
+from pandagg.base.interactive.abstract import TreeBasedObj, Obj, is_valid_attr_name, _coerce_attr
 from unittest import TestCase
 
 
 class ObjTestCase(TestCase):
+
+    def test_is_valid_attr_name(self):
+        self.assertFalse(is_valid_attr_name('__'))
+        self.assertFalse(is_valid_attr_name('__salut'))
+        self.assertFalse(is_valid_attr_name('.salut'))
+        self.assertFalse(is_valid_attr_name('@salut'))
+        self.assertFalse(is_valid_attr_name('2salut'))
+
+        self.assertTrue(is_valid_attr_name('_salut'))
+        self.assertTrue(is_valid_attr_name('salut_2'))
+        self.assertTrue(is_valid_attr_name('_2_salut'))
+
+    def test_coerce_attr(self):
+        self.assertEqual(_coerce_attr('_salut'), '_salut')
+        self.assertEqual(_coerce_attr('.salut'), '_salut')
+        self.assertEqual(_coerce_attr('2salut'), '_2salut')
+        self.assertEqual(_coerce_attr('salut$'), 'salut_')
+        self.assertEqual(_coerce_attr('salut-2022'), 'salut_2022')
+
+        self.assertEqual(_coerce_attr('__salut'), None)
+        self.assertEqual(_coerce_attr('_'), None)
+        self.assertEqual(_coerce_attr('--'), None)
 
     def test_set_obj_attribute(self):
         obj = Obj()
@@ -39,6 +63,16 @@ class ObjTestCase(TestCase):
         self.assertEqual(obj['2-some-key'], 'some-value')
         self.assertNotIn('2-some-key', dir(obj))
 
+    def test_obj_attr_set_with_coercion(self):
+        class ObjWithAttrCoercion(Obj):
+            _COERCE_ATTR = True
+
+        obj = ObjWithAttrCoercion()
+        obj['.some_key'] = 'some_value'
+        self.assertEqual(obj._some_key, 'some_value')
+        self.assertEqual(obj['.some_key'], 'some_value')
+        self.assertIn('_some_key', dir(obj))
+
     def test_obj_init(self):
         obj = Obj(yolo="yolo value", toto="toto value")
         self.assertEqual(obj.yolo, "yolo value")
@@ -50,28 +84,28 @@ class ObjTestCase(TestCase):
         self.assertEqual(obj2._toto, "toto value")
 
         # unauthorized attributes/keys
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError) as e:
             Obj(__d="trying to mess around")
-        with self.assertRaises(AssertionError):
-            obj = Obj()
-            obj['__d'] = 'yolo'
-        with self.assertRaises(AssertionError):
+        self.assertEqual(e.exception.args[0], 'Attribute <__d> of type <<type \'str\'>> is not valid.')
+
+        with self.assertRaises(ValueError) as e:
             obj = Obj()
             obj[23] = 'yolo'
-        with self.assertRaises(AssertionError):
+        self.assertEqual(e.exception.args[0], 'Key <23> of type <<type \'int\'>> cannot be set as attribute on <Obj> instance.')
+        with self.assertRaises(ValueError) as e:
             obj = Obj()
             obj[None] = 'yolo'
+        self.assertEqual(e.exception.args[0], 'Key <None> of type <<type \'NoneType\'>> cannot be set as attribute on <Obj> instance.')
 
         # if other that string is accepted
         class FlexObj(Obj):
             _STRING_KEY_CONSTRAINT = False
 
         # unauthorized attributes/keys
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError) as e:
             FlexObj(__d="trying to mess around")
-        with self.assertRaises(AssertionError):
-            obj = FlexObj()
-            obj['__d'] = 'yolo'
+        self.assertEqual(e.exception.args[0], 'Attribute <__d> of type <<type \'str\'>> is not valid.')
+
         # authorized:
         obj = FlexObj()
         obj[23] = 'yolo'
@@ -154,7 +188,7 @@ class TreeBasedObjTestCase(TestCase):
 
         # test representations
         self.assertEqual(
-            obj.__str__(),
+            obj.__str__().decode('utf-8'),
             """<TreeBasedObj>
 harry
 ├── bill
@@ -164,14 +198,14 @@ harry
 """
         )
         self.assertEqual(
-            bill_obj.__str__(),
+            bill_obj.__str__().decode('utf-8'),
             """<TreeBasedObj subpart: bill>
 bill
 └── george
 """
         )
         self.assertEqual(
-            bill_obj.george.__str__(),
+            bill_obj.george.__str__().decode('utf-8'),
             """<TreeBasedObj subpart: bill.george>
 george
 """

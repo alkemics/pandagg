@@ -30,11 +30,11 @@ class Index(Obj):
 
 
 class Indices(Obj):
-    pass
+    _COERCE_ATTR = True
 
 
 class Aliases(Obj):
-    pass
+    _COERCE_ATTR = True
 
 
 class ClientBoundIndex(Index):

@@ -23,5 +23,6 @@ MAPPING_TYPES = [
     'nested',
     'object',
     'text',
-    'keyword'
+    'keyword',
+    'flattened'
 ] + NUMERIC_TYPES

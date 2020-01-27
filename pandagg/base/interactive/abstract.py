@@ -14,7 +14,29 @@ from pandagg.base._tree import Tree
 def is_valid_attr_name(item):
     if not isinstance(item, string_types):
         return False
-    return re.match(string=item, pattern=r'^[a-zA-Z_]+[a-zA-Z0-9_]*$') is not None
+    if item.startswith('__'):
+        return False
+    if re.search(string=item, pattern=r'^[a-zA-Z_]+[a-zA-Z0-9_]*$') is None:
+        return False
+    if re.search(string=item, pattern=r'[^_]') is None:
+        return False
+    return True
+
+
+def _coerce_attr(attr):
+    if not len(attr):
+        return None
+    new_attr = unicodedata.normalize("NFD", attr).encode("ASCII", "ignore").decode()
+    new_attr = re.sub(
+        string=new_attr,
+        pattern=r'[^a-zA-Z_0-9]',
+        repl='_'
+    )
+    if new_attr[0].isdigit():
+        new_attr = u'_' + new_attr
+    if is_valid_attr_name(new_attr):
+        return new_attr
+    return None
 
 
 @python_2_unicode_compatible
@@ -38,12 +60,15 @@ class Obj(object):
     """
     _REPR_NAME = None
     _STRING_KEY_CONSTRAINT = True
+    _COERCE_ATTR = False
 
     def __init__(self, **kwargs):
         # will store non-valid names
         self.__d = dict()
         for k, v in kwargs.items():
-            assert isinstance(k, string_types) and k not in ('_REPR_NAME', '_Obj__d') and not k.startswith('__')
+            if not (isinstance(k, string_types) and k not in ('_REPR_NAME', '_Obj__d') and not k.startswith('__')):
+            # if not isinstance(k, string_types) or k in ('_REPR_NAME', '_Obj__d') or k.startswith('__'):
+                raise ValueError('Attribute <%s> of type <%s> is not valid.' % (k, type(k)))
             self[k] = v
 
     def __getitem__(self, item):
@@ -57,12 +82,17 @@ class Obj(object):
         # d[key] = value
         if not isinstance(key, string_types):
             if self._STRING_KEY_CONSTRAINT:
-                raise AssertionError
+                raise ValueError('Key <%s> of type <%s> cannot be set as attribute on <%s> instance.' % (
+                    key, type(key),self.__class__.__name__))
             self.__d[key] = value
             return
-        assert not key.startswith('__')
         if not is_valid_attr_name(key):
             self.__d[key] = value
+            if self._COERCE_ATTR:
+                # if coerc_attr is set to True, try to coerce
+                n_key = _coerce_attr(key)
+                if n_key is not None:
+                    super(Obj, self).__setattr__(n_key, value)
         else:
             super(Obj, self).__setattr__(key, value)
 
@@ -112,21 +142,13 @@ class TreeBasedObj(Obj):
             initial_tree=self._initial_tree
         )
 
-    @staticmethod
-    def _coerce_attr(attr):
-        attr = unicodedata.normalize("NFD", attr).encode("ASCII", "ignore").decode()
-        return re.sub(
-            string=attr,
-            pattern=r'[^a-zA-Z_0-9]',
-            repl='_'
-        )
-
     def _expand_attrs(self, depth):
         if depth:
             for child in self._tree.children(nid=self._tree.root):
                 child_path = getattr(child, self._NODE_PATH_ATTR)
                 if self._COERCE_ATTR:
-                    child_path = self._coerce_attr(child_path)
+                    # if invalid coercion, coerce returns None, in this case we keep inital naming
+                    child_path = _coerce_attr(child_path) or child_path
                 if child_path in self:
                     continue
                 if self._root_path is not None:
