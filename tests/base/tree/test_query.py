@@ -714,18 +714,16 @@ bool
                         "bool": {
                             "must": [
                                 {
-                                    "term": {
-                                        "some_nested.type": {
-                                            "parent": "nested_id",
-                                            "value": 2
+                                    "range": {
+                                        "some_nested.creationYear": {
+                                            "gte": "2020"
                                         }
                                     }
                                 },
                                 {
-                                    "range": {
-                                        "some_nested.creationYear": {
-                                            "gte": "2020",
-                                            "parent": "nested_id"
+                                    "term": {
+                                        "some_nested.type": {
+                                            "value": 2
                                         }
                                     }
                                 }

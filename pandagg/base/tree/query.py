@@ -267,6 +267,9 @@ class Query(Tree):
             raise ValueError('Cannot place clause under non-compound clause <%s> of type <%s>.' % (parent, parent_node.KEY))
         parent_operator = parent_node.operator(parent_param)
         parent_operator_node = next((c for c in clone_query.children(parent) if isinstance(c, parent_operator)), None)
+        if parent_operator_node is not None and not parent_operator_node.MULTIPLE:
+            child = clone_query.children(parent_operator_node.identifier)[0].identifier
+            return clone_query.bool(must=inserted_node, child=child)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
             clone_query.add_node(parent_operator_node, pid=parent)
