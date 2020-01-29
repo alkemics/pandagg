@@ -122,9 +122,6 @@ class Query(Tree):
             return {node.KEY: serialized_children}
         return {node.KEY: serialized_children[0]}
 
-    def __str__(self):
-        return '<Query>\n%s' % text(self.show())
-
     def query(self, q, parent=None, child=None, parent_param=None, child_param=None, mode=ADD):
         """Place query below a given parent.
         """
@@ -340,3 +337,6 @@ class Query(Tree):
 
     def filter(self, *args, **kwargs):
         return self._compound_param('bool', 'filter', *args, **kwargs)
+
+    def __str__(self):
+        return '<Query>\n%s' % text(self.show())

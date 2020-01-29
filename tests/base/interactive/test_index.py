@@ -96,7 +96,6 @@ class ClientBoundTestCase(TestCase):
             grouped_agg.query_dict(),
             equivalent_agg.query_dict()
         )
-        self.assertEqual(grouped_agg.__str__(), equivalent_agg.__str__())
 
     def test_client_bound_not_executed_agg(self):
         client_mock, index = self.get_client_bound_index()
@@ -119,7 +118,7 @@ class ClientBoundTestCase(TestCase):
                 Avg('avg_f1_micro', field='global_metrics.performance.test.micro.f1_score')
             ]
         )
-        self.assertEqual(not_executed_agg.__str__(), equivalent_agg.__str__())
+        self.assertEqual(not_executed_agg.query_dict(), equivalent_agg.query_dict())
 
     @patch.object(Agg, 'serialize_response')
     def test_client_bound_executed_agg(self, serialize_mock):

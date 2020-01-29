@@ -4,6 +4,8 @@
 from collections import defaultdict
 
 from six import iteritems
+
+from pandagg.base.tree.query import Query
 from pandagg.base.utils import bool_if_required
 from pandagg.base.interactive.abstract import TreeBasedObj
 
@@ -88,7 +90,7 @@ class ClientBoundResponse(IResponse):
     def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None, query=None):
         self._client = client
         self._index_name = index_name
-        self._query = query
+        self._query = Query(query)
         super(IResponse, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
 
     def _clone(self, nid, root_path, depth):
@@ -111,14 +113,12 @@ class ClientBoundResponse(IResponse):
         :param kwargs: query arguments passed to aggregation body
         :return:
         """
-        filter_query = self._documents_query()
-        if self._query is not None:
-            filter_query = bool_if_required([filter_query, self._query])
+        filter_query = self._query.query(self._documents_query())
         if not execute:
             return filter_query
         body = {}
         if filter_query:
-            body["query"] = filter_query
+            body["query"] = filter_query.query_dict()
         if size is not None:
             body["size"] = size
         if _source is not None:

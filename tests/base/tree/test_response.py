@@ -110,13 +110,13 @@ class ClientBoundResponseTestCase(TestCase):
             }
         )
         self.assertEqual(
-            allergentypelist.list_documents(execute=False),
+            allergentypelist.list_documents(execute=False).query_dict(),
             {
                 'bool': {
                     'must': [
-                        {'term': {'global_metrics.field.name': 'allergentypelist'}},
-                        {'term': {'classification_type': 'multilabel'}},
-                        {'term': {'some_field': 1}}
+                        {'term': {'global_metrics.field.name': {'value': 'allergentypelist'}}},
+                        {'term': {'classification_type': {'value': 'multilabel'}}},
+                        {'term': {'some_field': {'value': 1}}}
                     ]
                 }
             }

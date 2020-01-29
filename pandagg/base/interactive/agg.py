@@ -2,12 +2,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from builtins import str as text
+from six import python_2_unicode_compatible
+
 from pandagg.base.tree.agg import Agg
 from pandagg.base.tree.query import Query
 from pandagg.base.tree.response import ResponseTree
 from pandagg.base.interactive.response import ClientBoundResponse
 
 
+@python_2_unicode_compatible
 class ClientBoundAgg(Agg):
 
     def __init__(self, client, index_name, mapping=None, from_=None, query=None, identifier=None):
@@ -74,3 +78,9 @@ class ClientBoundAgg(Agg):
             output=output,
             **kwargs
         )
+
+    def __str__(self):
+        base = '<ClientBoundAggregation>\n%s' % text(self.show())
+        if self._query.root:
+            base += '\n\nWith Query:\n%s' % text(self._query.show())
+        return base
