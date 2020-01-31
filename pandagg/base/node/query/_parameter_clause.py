@@ -28,7 +28,7 @@ class SimpleParameter(ParameterClause):
     def deserialize(cls, value):
         return cls(value)
 
-    def serialize(self, with_identifier=False):
+    def serialize(self, named=False):
         return {self.KEY: self.body['value']}
 
 
@@ -147,7 +147,7 @@ class ParentParameterClause(ParameterClause):
 
     def __init__(self, *args, **kwargs):
         children = []
-        identifier = kwargs.pop('identifier', None)
+        _name = kwargs.pop('_name', None)
         if kwargs:
             children.append(kwargs)
         for arg in args:
@@ -173,7 +173,7 @@ class ParentParameterClause(ParameterClause):
                 serialized_children.append(child)
 
         self.children = serialized_children
-        super(ParentParameterClause, self).__init__(identifier=identifier)
+        super(ParentParameterClause, self).__init__(_name=_name)
 
     @classmethod
     def deserialize(cls, *args, **body):

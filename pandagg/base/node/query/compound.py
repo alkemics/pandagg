@@ -12,7 +12,7 @@ class CompoundClause(QueryClause):
     >>> from pandagg.query import Bool, Term
     >>> query = Bool(
     >>>     filter=Term(field='some_path', value=3),
-    >>>     identifier='term_agg',
+    >>>     _name='term_agg',
     >>> )
     Yet, the children attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
     bpointer/fpointer attributes inherited from treelib.Tree class.
@@ -39,7 +39,7 @@ class CompoundClause(QueryClause):
     PARAMS_WHITELIST = None
 
     def __init__(self, *args, **kwargs):
-        identifier = kwargs.pop('identifier', None)
+        _name = kwargs.pop('_name', None)
         children = []
         for key, value in iteritems(kwargs):
             children.append({key: value})
@@ -68,7 +68,7 @@ class CompoundClause(QueryClause):
                 raise ValueError('Unauthorized parameter <%s> under <%s> clause' % (key, self.KEY))
             serialized_children.append(serialized_child)
         self.children = serialized_children
-        super(CompoundClause, self).__init__(identifier=identifier)
+        super(CompoundClause, self).__init__(_name=_name)
 
     @classmethod
     def operator(cls, key):

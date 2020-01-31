@@ -93,7 +93,7 @@ class Query(Tree):
                     pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY))
         super(Query, self).add_node(node, pid)
 
-    def query_dict(self, from_=None, with_identifier=False):
+    def query_dict(self, from_=None, named=False):
         """Return None if no query clause.
         """
         if self.root is None:
@@ -101,11 +101,11 @@ class Query(Tree):
         from_ = self.root if from_ is None else from_
         node = self[from_]
         if isinstance(node, (LeafQueryClause, SimpleParameter)):
-            return node.serialize(with_identifier=with_identifier)
+            return node.serialize(named=named)
         serialized_children = []
         should_yield = False
         for child_node in self.children(node.identifier):
-            serialized_child = self.query_dict(from_=child_node.identifier, with_identifier=with_identifier)
+            serialized_child = self.query_dict(from_=child_node.identifier, named=named)
             if serialized_child is not None:
                 serialized_children.append(serialized_child)
                 if not isinstance(child_node, SimpleParameter):
@@ -115,8 +115,8 @@ class Query(Tree):
         if isinstance(node, CompoundClause):
             # {bool: {filter: ..., must: ...}
             body = {k: v for d in serialized_children for k, v in d.items()}
-            if with_identifier:
-                body['_name'] = node.identifier
+            if named:
+                body['_name'] = node.name
             return {node.KEY: body}
         # parent parameter clause
         # {filter: [{...}, {...}]}
@@ -170,14 +170,14 @@ class Query(Tree):
         return existing_query
 
     def _compound_insert(self, compound_klass, *args, **kwargs):
-        identifier = kwargs.pop('identifier', None)
+        _name = kwargs.pop('_name', None)
         mode = kwargs.pop('mode', ADD)
         # provided parent is compound, real one is parameter
         parent = kwargs.pop('parent', None)
         parent_param = kwargs.pop('parent_param', None)
         child = kwargs.pop('child', None)
         child_param = kwargs.pop('child_param', None)
-        compound_node = compound_klass(identifier=identifier, *args, **kwargs)
+        compound_node = compound_klass(_name=_name, *args, **kwargs)
         return self._insert_into(
             compound_node,
             mode=mode,
@@ -204,12 +204,12 @@ class Query(Tree):
 
         clone_query = self._clone(with_tree=True)
 
-        # If compound query with existing identifier: merge according to mode (place in-between parent and child).
-        if isinstance(inserted_node, CompoundClause) and inserted_node.identifier in clone_query:
+        # If compound query with existing name: merge according to mode (place in-between parent and child).
+        if isinstance(inserted_node, CompoundClause) and inserted_node.name in clone_query:
             if child is not None or parent is not None:
                 raise ValueError('Child or parent cannot be provided when inserting compound clause with existing '
-                                 'identifier <%s> in query. Got child <%s> and parent <%s>.' % (
-                                    inserted_node.identifier, child, parent))
+                                 '_name <%s> in query. Got child <%s> and parent <%s>.' % (
+                                    inserted_node.name, child, parent))
             return clone_query._update_compound(new_compound=inserted_node, mode=mode)
 
         # If no parent nor child is provided, place on top (wrapped in bool-must if necessary).
@@ -220,14 +220,14 @@ class Query(Tree):
             if isinstance(inserted_node, Bool):
                 q = Query(inserted_node)
                 child_operator = inserted_node.operator(child_param)
-                child_operator_node = next((c for c in q.children(inserted_node.identifier) if isinstance(c, child_operator)), None)
+                child_operator_node = next((c for c in q.children(inserted_node.name) if isinstance(c, child_operator)), None)
                 if child_operator_node is None:
                     child_operator_node = child_operator()
-                    q.add_node(child_operator_node, pid=inserted_node.identifier)
-                q.paste(new_tree=clone_query, nid=child_operator_node.identifier)
+                    q.add_node(child_operator_node, pid=inserted_node.name)
+                q.paste(new_tree=clone_query, nid=child_operator_node.name)
                 return q
             if isinstance(clone_query[clone_query.root], Bool):
-                return clone_query.must(inserted_node, identifier=clone_query.root, mode=mode,
+                return clone_query.must(inserted_node, _name=clone_query.root, mode=mode,
                                         parent_param=parent_param, child_param=child_param)
             parent_param_key = Bool.operator(parent_param).KEY
             return clone_query.bool(parent_param=parent_param, child_param=child_param, mode=mode, **{parent_param_key: inserted_node})
@@ -248,15 +248,15 @@ class Query(Tree):
 
             # suppose we are under a nested clause, the parent is the "query" param clause
             existing_parent_param_node = clone_query.parent(child)
-            direct_pid = existing_parent_param_node.identifier if existing_parent_param_node else None
+            direct_pid = existing_parent_param_node.name if existing_parent_param_node else None
             child_tree = clone_query.remove_subtree(child)
 
             clone_query._deserialize_from_node(inserted_node, pid=direct_pid)
-            child_operator_node = next((c for c in clone_query.children(inserted_node.identifier) if isinstance(c, child_operator)), None)
+            child_operator_node = next((c for c in clone_query.children(inserted_node.name) if isinstance(c, child_operator)), None)
             if child_operator_node is None:
                 child_operator_node = child_operator()
-                clone_query.add_node(child_operator_node, pid=inserted_node.identifier)
-            clone_query.paste(new_tree=child_tree, nid=child_operator_node.identifier)
+                clone_query.add_node(child_operator_node, pid=inserted_node.name)
+            clone_query.paste(new_tree=child_tree, nid=child_operator_node.name)
             return clone_query
 
         # If a parent is provided (only under compound query): place under it.
@@ -269,22 +269,22 @@ class Query(Tree):
         parent_operator_node = next((c for c in clone_query.children(parent) if isinstance(c, parent_operator)), None)
         if parent_operator_node is not None and not parent_operator_node.MULTIPLE:
             if isinstance(parent_node, Bool):
-                return clone_query.bool(must=inserted_node, identifier=parent)
-            child_node = clone_query.children(parent_operator_node.identifier)[0]
-            child = child_node.identifier
+                return clone_query.bool(must=inserted_node, _name=parent)
+            child_node = clone_query.children(parent_operator_node.name)[0]
+            child = child_node.name
             if isinstance(child_node, Bool):
-                return clone_query.bool(must=inserted_node, identifier=child)
+                return clone_query.bool(must=inserted_node, _name=child)
             return clone_query.bool(must=inserted_node, child=child)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
             clone_query.add_node(parent_operator_node, pid=parent)
-        clone_query._deserialize_from_node(inserted_node, pid=parent_operator_node.identifier)
+        clone_query._deserialize_from_node(inserted_node, pid=parent_operator_node.name)
         return clone_query
 
     def _compound_param(self, method_name, param_key, *args, **kwargs):
         mode = kwargs.pop('mode', ADD)
         param_klass = PARAMETERS[param_key]
-        identifier = kwargs.pop('identifier', None)
+        _name = kwargs.pop('_name', None)
         parent = kwargs.pop('parent', None)
         parent_param = kwargs.pop('parent_param', None)
         child = kwargs.pop('child', None)
@@ -292,7 +292,7 @@ class Query(Tree):
         return getattr(self, method_name)(
             param_klass(*args, **kwargs),
             mode=mode,
-            identifier=identifier,
+            _name=_name,
             parent=parent,
             parent_param=parent_param,
             child=child,

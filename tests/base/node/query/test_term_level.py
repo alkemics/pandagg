@@ -10,7 +10,7 @@ from pandagg.query import Terms, Term, Fuzzy, Exists, Ids, Prefix, Range, Regexp
 class TermLevelQueriesTestCase(TestCase):
 
     def test_identifier_deserialization(self):
-        node = deserialize_leaf_clause('term', {'user': {'value': 'Kimchy', 'boost': 1}, 'identifier': 'some_id'})
+        node = deserialize_leaf_clause('term', {'user': {'value': 'Kimchy', 'boost': 1}, '_name': 'some_id'})
         self.assertIsInstance(node, Term)
 
         self.assertEqual(node.body, {'user': {'value': 'Kimchy', 'boost': 1}})

@@ -22,9 +22,9 @@ def deserialize_node(k, body, accept_leaf=True, accept_compound=True, accept_par
             return deserialize_parameter(k, body)
         except Exception as e_p:
             pass
-    if accept_leaf:
-        raise e_l
     if accept_compound:
         raise e_c
+    if accept_leaf:
+        raise e_l
     if accept_param:
         raise e_p

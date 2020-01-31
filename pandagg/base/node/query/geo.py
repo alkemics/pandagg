@@ -9,12 +9,12 @@ class GeoBoundingBox(SingleFieldQueryClause):
 class GeoDistance(LeafQueryClause):
     KEY = 'geo_distance'
 
-    def __init__(self, field, location, distance, identifier=None, **body):
+    def __init__(self, field, location, distance, _name=None, **body):
         self.field = field
         self.location = location
         b = {field: location, 'distance': distance}
         b.update(body)
-        super(GeoDistance, self).__init__(identifier=identifier, **b)
+        super(GeoDistance, self).__init__(_name=_name, **b)
 
     @property
     def tag(self):

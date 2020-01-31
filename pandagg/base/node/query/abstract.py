@@ -16,14 +16,17 @@ class QueryClause(Node):
     NID_SIZE = 6
     KEY = NotImplementedError()
 
-    def __init__(self, identifier=None, **body):
-        super(QueryClause, self).__init__(identifier=identifier)
-        assert isinstance(body, dict)
+    def __init__(self, _name=None, **body):
+        super(QueryClause, self).__init__(identifier=_name)
         self.body = body
 
     @property
     def tag(self):
         return self.KEY
+
+    @property
+    def name(self):
+        return self.identifier
 
     @property
     def _identifier_prefix(self):
@@ -33,10 +36,10 @@ class QueryClause(Node):
     def deserialize(cls, **body):
         return cls(**body)
 
-    def serialize(self, with_identifier=False):
+    def serialize(self, named=False):
         b = copy.deepcopy(self.body)
-        if with_identifier:
-            b['_name'] = self.identifier
+        if named:
+            b['_name'] = self.name
         return {self.KEY: b}
 
     def __str__(self):
@@ -61,17 +64,17 @@ class SingleFieldQueryClause(LeafQueryClause):
     SHORT_TAG = None
     FLAT = False
 
-    def __init__(self, field, identifier=None, **body):
+    def __init__(self, field, _name=None, **body):
         self.field = field
         if self.FLAT:
             self.inner_body = body
-            super(LeafQueryClause, self).__init__(identifier=identifier, field=field, **body)
+            super(LeafQueryClause, self).__init__(field=field, _name=_name, **body)
         else:
             if isinstance(body, dict):
                 self.inner_body = body
             else:
                 self.inner_body = {self.SHORT_TAG: body}
-            super(LeafQueryClause, self).__init__(identifier=identifier, **{field: body})
+            super(LeafQueryClause, self).__init__(_name=_name, **{field: body})
 
     @property
     def tag(self):
@@ -84,18 +87,18 @@ class SingleFieldQueryClause(LeafQueryClause):
     def deserialize(cls, **body):
         if cls.FLAT:
             return cls(**body)
-        identifier = body.pop('identifier', None)
+        _name = body.pop('_name', None)
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
         if cls.SHORT_TAG and not isinstance(v, dict):
-            return cls(field=k, identifier=identifier, **{cls.SHORT_TAG: v})
-        return cls(field=k, identifier=identifier, **v)
+            return cls(field=k, _name=_name, **{cls.SHORT_TAG: v})
+        return cls(field=k, _name=_name, **v)
 
 
 class MultiFieldsQueryClause(LeafQueryClause):
-    def __init__(self, fields, identifier=None, **body):
+    def __init__(self, fields, _name=None, **body):
         self.fields = fields
-        super(LeafQueryClause, self).__init__(identifier=identifier, fields=fields, **body)
+        super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
 
     @property
     def tag(self):

@@ -6,9 +6,9 @@ from builtins import str as text
 class Exists(LeafQueryClause):
     KEY = 'exists'
 
-    def __init__(self, field, identifier=None):
+    def __init__(self, field, _name=None):
         self.field = field
-        super(Exists, self).__init__(identifier=identifier, field=field)
+        super(Exists, self).__init__(_name=_name, field=field)
 
     @property
     def tag(self):
@@ -22,15 +22,15 @@ class Fuzzy(SingleFieldQueryClause):
 class Ids(LeafQueryClause):
     KEY = 'ids'
 
-    def __init__(self, values, identifier=None):
+    def __init__(self, values, _name=None):
         self.field = 'id'
         self.values = values
-        super(Ids, self).__init__(identifier=identifier, values=values)
+        super(Ids, self).__init__(_name=_name, values=values)
 
-    def serialize(self, with_identifier=False):
+    def serialize(self, named=False):
         b = {'values': self.values}
-        if with_identifier:
-            b['_name'] = self.identifier
+        if named:
+            b['_name'] = self.name
         return {self.KEY: b}
 
     @property
@@ -54,20 +54,22 @@ class Term(SingleFieldQueryClause):
     SHORT_TAG = 'value'
     KEY = 'term'
 
-    def __init__(self, field, value, identifier=None, **body):
+    def __init__(self, field, value, _name=None, **body):
         # only impact is setting value as required arg
-        super(Term, self).__init__(field=field, value=value, identifier=identifier, **body)
+        if _name is not None:
+            body['_name'] = _name
+        super(Term, self).__init__(field=field, value=value, **body)
 
 
 class Terms(LeafQueryClause):
     KEY = 'terms'
 
-    def __init__(self, field, terms, identifier=None, **body):
+    def __init__(self, field, terms, _name=None, **body):
         self.field = field
         self.terms = terms
         b = {field: terms}
         b.update(body)
-        super(Terms, self).__init__(identifier=identifier, **b)
+        super(Terms, self).__init__(_name=_name, **b)
 
     @property
     def tag(self):

@@ -43,48 +43,48 @@ bool
 
     def test_add_node(self):
         # under leafclause
-        q = Query(Term(identifier='term_id', field='some_field', value=2))
+        q = Query(Term(_name='term_id', field='some_field', value=2))
         with self.assertRaises(ValueError) as e:
             q.add_node(Filter(QueryString(field='other_field', value='salut')), pid='term_id')
         self.assertEqual(e.exception.message, 'Cannot add clause under leaf query clause <term>')
 
         # under compound clause
-        q = Query(Bool(identifier='bool'))
+        q = Query(Bool(_name='bool'))
         q.add_node(Filter(Term(field='some_field', value=2)), pid='bool')
 
-        q = Query(Bool(identifier='bool'))
+        q = Query(Bool(_name='bool'))
         with self.assertRaises(ValueError):
             q.add_node(Term(field='some_field', value=2), pid='bool')
         self.assertEqual(e.exception.message, 'Cannot add clause under leaf query clause <term>')
 
     def test_new_bool_must_above_node(self):
         initial_q = Query()
-        result_q = initial_q.filter(identifier='root_bool')
+        result_q = initial_q.filter(_name='root_bool')
         self.assertEqual(result_q.query_dict(), None)
 
         # above element (in filter? in must? in should?)
-        initial_q = Query(Term(field='some_field', value=2, identifier='term_q'))
-        result_q = initial_q.bool(identifier='root_bool', child='term_q', child_param='must')
+        initial_q = Query(Term(field='some_field', value=2, _name='term_q'))
+        result_q = initial_q.bool(_name='root_bool', child='term_q', child_param='must')
         self.assertEqual(
             result_q.query_dict(),
             {'bool': {'must': [{'term': {'some_field': {'value': 2}}}]}}
         )
 
         # above element (without declaring above: default behavior is wrapping at root)
-        initial_q = Query(Term(field='some_field', value=2, identifier='term_q'))
-        result_q = initial_q.bool(identifier='root_bool', child_param='must')
+        initial_q = Query(Term(field='some_field', value=2, _name='term_q'))
+        result_q = initial_q.bool(_name='root_bool', child_param='must')
         self.assertEqual(
             result_q.query_dict(),
             {'bool': {'must': [{'term': {'some_field': {'value': 2}}}]}}
         )
 
         # above bool element
-        initial_q = Query(Bool(identifier='init_bool', should=[
-            Term(field='some_field', value='prod', identifier='prod_term'),
-            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        initial_q = Query(Bool(_name='init_bool', should=[
+            Term(field='some_field', value='prod', _name='prod_term'),
+            Term(field='other_field', value='pizza', _name='pizza_term'),
         ]))
         result_q = initial_q.bool(
-            child='init_bool', identifier='top_bool',
+            child='init_bool', _name='top_bool',
             filter=Range(field='price', gte=12)
         )
         self.assertEqual(
@@ -103,12 +103,12 @@ bool
         )
 
         # above element in existing bool query
-        initial_q = Query(Bool(identifier='init_bool', should=[
-            Term(field='some_field', value='prod', identifier='prod_term'),
-            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        initial_q = Query(Bool(_name='init_bool', should=[
+            Term(field='some_field', value='prod', _name='prod_term'),
+            Term(field='other_field', value='pizza', _name='pizza_term'),
         ]))
         result_q = initial_q.bool(
-            child='init_bool', identifier='top_bool', child_param='must',
+            child='init_bool', _name='top_bool', child_param='must',
             filter=Range(field='price', gte=12)
         )
         self.assertEqual(
@@ -128,8 +128,8 @@ bool
 
     def test_new_bool_below_node(self):
         # below single child parameter
-        initial_q = Query(Nested(path='some_nested', identifier='nested'))
-        result_q = initial_q.bool(parent='nested', identifier='bool', filter={'term': {'some_nested.id': 2}})
+        initial_q = Query(Nested(path='some_nested', _name='nested'))
+        result_q = initial_q.bool(parent='nested', _name='bool', filter={'term': {'some_nested.id': 2}})
         self.assertEqual(
             result_q.query_dict(),
             {
@@ -140,14 +140,14 @@ bool
             }
         )
 
-        initial_q = Query(Bool(identifier='init_bool', should=[
-            Term(field='some_field', value='prod', identifier='prod_term'),
-            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        initial_q = Query(Bool(_name='init_bool', should=[
+            Term(field='some_field', value='prod', _name='prod_term'),
+            Term(field='other_field', value='pizza', _name='pizza_term'),
         ]))
         result_q = initial_q.bool(
             parent='init_bool',
             parent_param='filter',
-            identifier='below_bool',
+            _name='below_bool',
             must={'term': {'new_field': 2}}
         )
         self.assertEqual(
@@ -164,9 +164,9 @@ bool
         )
 
     def test_not_possible_parent_child(self):
-        initial_q = Query(Bool(identifier='init_bool', should=[
-            Term(field='some_field', value='prod', identifier='prod_term'),
-            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        initial_q = Query(Bool(_name='init_bool', should=[
+            Term(field='some_field', value='prod', _name='prod_term'),
+            Term(field='other_field', value='pizza', _name='pizza_term'),
         ]))
 
         # UNDER non-existing
@@ -174,7 +174,7 @@ bool
             initial_q.must(
                 {'term': {'new_field': 2}},
                 parent='not_existing_node',
-                identifier='somewhere'
+                _name='somewhere'
             )
         self.assertEqual(e.exception.message, 'Parent <not_existing_node> does not exist in current query.')
 
@@ -182,7 +182,7 @@ bool
             initial_q.must(
                 {'term': {'new_field': 2}},
                 parent='not_existing_node',
-                identifier='somewhere',
+                _name='somewhere',
             )
         self.assertEqual(e.exception.message, 'Parent <not_existing_node> does not exist in current query.')
 
@@ -191,7 +191,7 @@ bool
             initial_q.must(
                 {'term': {'new_field': 2}},
                 child='not_existing_node',
-                identifier='somewhere',
+                _name='somewhere',
             )
         self.assertEqual(e.exception.message, 'Child <not_existing_node> does not exist in current query.')
 
@@ -199,7 +199,7 @@ bool
             initial_q.must(
                 {'term': {'new_field': 2}},
                 child='not_existing_node',
-                identifier='somewhere',
+                _name='somewhere',
             )
         self.assertEqual(e.exception.message, 'Child <not_existing_node> does not exist in current query.')
 
@@ -208,7 +208,7 @@ bool
             initial_q.must(
                 {'term': {'new_field': 2}},
                 parent='pizza_term',
-                identifier='somewhere'
+                _name='somewhere'
             )
         self.assertEqual(
             e.exception.message,
@@ -219,7 +219,7 @@ bool
             initial_q.must(
                 {'term': {'new_field': 2}},
                 parent='pizza_term',
-                identifier='somewhere'
+                _name='somewhere'
             )
         self.assertEqual(
             e.exception.message,
@@ -227,13 +227,13 @@ bool
         )
 
     def test_replace_all_existing_bool(self):
-        initial_q = Query(Bool(identifier='init_bool', should=[
-            Term(field='some_field', value='prod', identifier='prod_term'),
-            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        initial_q = Query(Bool(_name='init_bool', should=[
+            Term(field='some_field', value='prod', _name='prod_term'),
+            Term(field='other_field', value='pizza', _name='pizza_term'),
         ]))
         result_q = initial_q.bool(
-            identifier='init_bool',
-            filter=Range(field='price', gte=12, identifier='price_range'),
+            _name='init_bool',
+            filter=Range(field='price', gte=12, _name='price_range'),
             mode='replace_all'
         )
         self.assertNotIn('prod_term', result_q)
@@ -241,14 +241,14 @@ bool
         self.assertIn('price_range', result_q)
 
     def test_add_existing_bool(self):
-        initial_q = Query(Bool(identifier='init_bool', should=[
-            Term(field='some_field', value='prod', identifier='prod_term'),
-            Term(field='other_field', value='pizza', identifier='pizza_term'),
+        initial_q = Query(Bool(_name='init_bool', should=[
+            Term(field='some_field', value='prod', _name='prod_term'),
+            Term(field='other_field', value='pizza', _name='pizza_term'),
         ]))
         result_q = initial_q.bool(
-            identifier='init_bool',
-            filter=Range(field='price', gte=12, identifier='price_range'),
-            should=Term(field='other_field', value='new_pizza', identifier='new_pizza_term'),
+            _name='init_bool',
+            filter=Range(field='price', gte=12, _name='price_range'),
+            should=Term(field='other_field', value='new_pizza', _name='new_pizza_term'),
             mode='add'
         )
         self.assertIn('prod_term', result_q)
@@ -295,17 +295,17 @@ bool
     def test_replace_existing_bool(self):
         # replace != replace_all
         initial_q = Query(Bool(
-            identifier='init_bool',
+            _name='init_bool',
             should=[
-                Term(field='some_field', value='prod', identifier='prod_term'),
-                Term(field='other_field', value='pizza', identifier='pizza_term'),
+                Term(field='some_field', value='prod', _name='prod_term'),
+                Term(field='other_field', value='pizza', _name='pizza_term'),
             ],
-            filter=Range(field='price', gte=50, identifier='very_high_price'),
+            filter=Range(field='price', gte=50, _name='very_high_price'),
             minimum_should_match=2
         ))
         result_q = initial_q.bool(
-            identifier='init_bool',
-            filter=Range(field='price', gte=20, identifier='high_price'),
+            _name='init_bool',
+            filter=Range(field='price', gte=20, _name='high_price'),
             mode='replace'
         )
         self.assertIn('prod_term', result_q)
@@ -346,15 +346,15 @@ bool
     def test_must_at_root(self):
         q_i1 = Query()
         q1 = q_i1.must(
-            Term(field='some_field', value=2, identifier='term_nid'),
-            identifier='bool_nid',
+            Term(field='some_field', value=2, _name='term_nid'),
+            _name='bool_nid',
         )
         self.assertEqual(len(q_i1.nodes.values()), 0)
         bool_ = next((c for c in q1.nodes.values() if isinstance(c, Bool)))
-        self.assertEqual(bool_.identifier, 'bool_nid')
+        self.assertEqual(bool_.name, 'bool_nid')
         next((c for c in q1.nodes.values() if isinstance(c, Must)))
         term = next((c for c in q1.nodes.values() if isinstance(c, Term)))
-        self.assertEqual(term.identifier, 'term_nid')
+        self.assertEqual(term.name, 'term_nid')
 
         self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
 bool
@@ -393,18 +393,18 @@ bool
 
     def test_must_method(self):
         q = Query()\
-            .bool(filter=Term(field='field_a', value=2), identifier='root_bool')\
-            .must({'exists': {'field': 'field_b'}}, identifier='root_bool')\
-            .must(Prefix(field='field_c', value='pre'), identifier='root_bool')\
+            .bool(filter=Term(field='field_a', value=2), _name='root_bool')\
+            .must({'exists': {'field': 'field_b'}}, _name='root_bool')\
+            .must(Prefix(field='field_c', value='pre'), _name='root_bool')\
             .must(
                 Bool(
-                    identifier='level_1_bool',
+                    _name='level_1_bool',
                     should=[
                         Range(field='field_d', gte=3),
                         Ids(values=[1, 2, 3])
                     ]
                 ),
-                identifier='root_bool'
+                _name='root_bool'
             )
 
         self.assertEqual(q.__str__().decode('utf-8'), '''<Query>
@@ -425,7 +425,7 @@ bool
         q1 = q.nested(
             query=Term(field='some_nested_field.other', value=2),
             path='some_nested_path',
-            identifier='nested_id'
+            _name='nested_id'
         )
         self.assertEqual(q1.query_dict(), {
             "nested": {
@@ -446,7 +446,7 @@ bool
         q1 = q.should(
             Term(field='some_field', value=2),
             Term(field='other_field', value=3),
-            identifier='created_bool'
+            _name='created_bool'
         )
         self.assertEqual(q1.query_dict(), {
             "bool": {
@@ -463,7 +463,7 @@ bool
         q1 = q.filter(
             Term(field='some_field', value=2),
             Term(field='other_field', value=3),
-            identifier='created_bool'
+            _name='created_bool'
         )
         self.assertEqual(q1.query_dict(), {
             "bool": {
@@ -480,7 +480,7 @@ bool
         q1 = q.must_not(
             Term(field='some_field', value=2),
             Term(field='other_field', value=3),
-            identifier='created_bool'
+            _name='created_bool'
         )
         self.assertEqual(q1.query_dict(), {
             "bool": {
@@ -589,8 +589,8 @@ bool
     def test_query_method(self):
         # on empty query
         q = Query()
-        q1 = q.query(Bool(identifier='root_bool', must=Term(field='some_field', value=2)))
-        q2 = q.query({'bool': {'identifier': 'root_bool', 'must': {'term': {'some_field':  2}}}})
+        q1 = q.query(Bool(_name='root_bool', must=Term(field='some_field', value=2)))
+        q2 = q.query({'bool': {'_name': 'root_bool', 'must': {'term': {'some_field':  2}}}})
         for r in (q1, q2):
             self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
 bool
@@ -599,7 +599,7 @@ bool
 ''')
 
         # query WITHOUT defined parent -> must on top (existing bool)
-        q = Query(Bool(identifier='root_bool', must=Term(field='some_field', value=2)))
+        q = Query(Bool(_name='root_bool', must=Term(field='some_field', value=2)))
         q1 = q.query(Term(field='other_field', value=3))
         q2 = q.query({'term': {'other_field':  3}})
         for r in (q1, q2):
@@ -623,7 +623,7 @@ bool
 ''')
 
         # query WITH defined parent (use default operator)
-        q = Query(Nested(identifier='root_nested', path='some_nested_path'))
+        q = Query(Nested(_name='root_nested', path='some_nested_path'))
         q1 = q.query(Term(field='some_nested_path.id', value=2), parent='root_nested')
         q2 = q.query({'term': {'some_nested_path.id': 2}}, parent='root_nested')
         for r in (q1, q2):
@@ -634,7 +634,7 @@ nested
     └── term, field=some_nested_path.id, value=2
 ''')
 
-        q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
+        q = Query(Bool(_name='root_bool', filter=Term(field='some_field', value=2)))
         q1 = q.query(Term(field='some_other_field', value=2), parent='root_bool')
         q2 = q.query({'term': {'some_other_field': 2}}, parent='root_bool')
         for r in (q1, q2):
@@ -647,7 +647,7 @@ bool
 ''')
 
         # query WITH defined parent and explicit operator
-        q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
+        q = Query(Bool(_name='root_bool', filter=Term(field='some_field', value=2)))
         q1 = q.query(Range(field='some_other_field', gte=3), parent='root_bool', parent_param='must_not')
         q2 = q.query({'range': {'some_other_field': {'gte': 3}}}, parent='root_bool', parent_param='must_not')
         for r in (q1, q2):
@@ -661,7 +661,7 @@ bool
 
         # INVALID
         # query with leaf parent
-        q = Query(Term(field='some_field', value=2, identifier='leaf_node'))
+        q = Query(Term(field='some_field', value=2, _name='leaf_node'))
         with self.assertRaises(ValueError) as e:
             q.query(Range(field='some_other_field', gte=3), parent='leaf_node')
         self.assertEqual(e.exception.args[0], 'Cannot place clause under non-compound clause <leaf_node> of type <term>.')
@@ -670,7 +670,7 @@ bool
         self.assertEqual(e.exception.args[0], 'Cannot place clause under non-compound clause <leaf_node> of type <term>.')
 
         # query WITH wrong parent operator
-        q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
+        q = Query(Bool(_name='root_bool', filter=Term(field='some_field', value=2)))
         with self.assertRaises(ValueError) as e:
             q.query(Range(field='some_other_field', gte=3), parent='root_bool', parent_param='invalid_param')
         self.assertEqual(e.exception.args[0], 'Child operator <invalid_param> not permitted for compound query of type <Bool>')
@@ -679,7 +679,7 @@ bool
         self.assertEqual(e.exception.args[0], 'Child operator <invalid_param> not permitted for compound query of type <Bool>')
 
         # query WITH non-existing parent
-        q = Query(Bool(identifier='root_bool', filter=Term(field='some_field', value=2)))
+        q = Query(Bool(_name='root_bool', filter=Term(field='some_field', value=2)))
         with self.assertRaises(ValueError) as e:
             q.query(Range(field='some_other_field', gte=3), parent='yolo_id')
         self.assertEqual(e.exception.args[0], 'Parent <yolo_id> does not exist in current query.')
@@ -689,7 +689,7 @@ bool
 
     def test_nested_query(self):
         q = Query()\
-            .nested(path='some_nested', identifier='nested_id') \
+            .nested(path='some_nested', _name='nested_id') \
             .query(Term(field='some_nested.type', value=2), parent='nested_id')
 
         self.assertEqual(q.query_dict(), {
@@ -701,7 +701,7 @@ bool
 
     def test_must_below_nested_query(self):
         q = Query()\
-            .nested(path='some_nested', identifier='nested_id')\
+            .nested(path='some_nested', _name='nested_id')\
             .query(Term(field='some_nested.type', value=2), parent='nested_id') \
             .query(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id')
 
@@ -735,17 +735,61 @@ bool
         )
 
     def test_multiple_must_below_nested_query(self):
-        q = Query() \
-            .nested(path='some_nested', identifier='nested_id') \
+        q1 = Query() \
+            .query(Nested(path='some_nested', _name='nested_id')) \
             .query(Range(field='some_nested.price', lte=100), parent='nested_id') \
             .query(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id') \
             .query(Term(field='some_nested.type', value=2), parent='nested_id')
 
         q2 = Query() \
-            .nested(path='some_nested', identifier='nested_id') \
-            .must(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id', identifier='bool_id') \
-            .must(Range(field='some_nested.price', lte=100), identifier='bool_id') \
-            .query(Term(field='some_nested.type', value=2), parent='bool_id')
+            .nested(path='some_nested', _name='nested_id') \
+            .query(Range(field='some_nested.price', lte=100), parent='nested_id') \
+            .query(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id') \
+            .query(Term(field='some_nested.type', value=2), parent='nested_id')
+
+        q3 = Query() \
+            .nested(path='some_nested', _name='nested_id') \
+            .must(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id', _name='bool_id') \
+            .must(Range(field='some_nested.price', lte=100), _name='bool_id') \
+            .must(Term(field='some_nested.type', value=2), _name='bool_id')
+
+        q4 = Query() \
+            .nested(path='some_nested', _name='nested_id') \
+            .bool(parent="nested_id", must=[
+                Range(field='some_nested.creationYear', gte='2020'),
+                Range(field='some_nested.price', lte=100),
+                Term(field='some_nested.type', value=2)
+            ])
+
+        q5 = Query() \
+            .query({'nested': {'path': 'some_nested', '_name': 'nested_id'}})\
+            .query({
+                "bool": {
+                    "must": [
+                        {
+                            "range": {
+                                "some_nested.creationYear": {
+                                    "gte": "2020"
+                                }
+                            }
+                        },
+                        {
+                            'range': {
+                                'some_nested.price': {
+                                    'lte': 100
+                                }
+                            }
+                        },
+                        {
+                            "term": {
+                                "some_nested.type": {
+                                    "value": 2
+                                }
+                            }
+                        }
+                    ]
+                }
+            }, parent='nested_id')
 
         expected = {
             'nested': {
@@ -779,12 +823,9 @@ bool
                 }
             }
         }
-        self.assertEqual(
-            q2.query_dict(),
-            expected
-        )
-
-        self.assertEqual(
-            q.query_dict(),
-            expected
-        )
+        for i, q in enumerate((q1, q2, q3, q4, q5)):
+            self.assertEqual(
+                q.query_dict(),
+                expected,
+                'failed on %d' % (i + 1)
+            )
