@@ -268,7 +268,12 @@ class Query(Tree):
         parent_operator = parent_node.operator(parent_param)
         parent_operator_node = next((c for c in clone_query.children(parent) if isinstance(c, parent_operator)), None)
         if parent_operator_node is not None and not parent_operator_node.MULTIPLE:
-            child = clone_query.children(parent_operator_node.identifier)[0].identifier
+            if isinstance(parent_node, Bool):
+                return clone_query.bool(must=inserted_node, identifier=parent)
+            child_node = clone_query.children(parent_operator_node.identifier)[0]
+            child = child_node.identifier
+            if isinstance(child_node, Bool):
+                return clone_query.bool(must=inserted_node, identifier=child)
             return clone_query.bool(must=inserted_node, child=child)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()

@@ -733,3 +733,58 @@ bool
                 }
             }
         )
+
+    def test_multiple_must_below_nested_query(self):
+        q = Query() \
+            .nested(path='some_nested', identifier='nested_id') \
+            .query(Range(field='some_nested.price', lte=100), parent='nested_id') \
+            .query(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id') \
+            .query(Term(field='some_nested.type', value=2), parent='nested_id')
+
+        q2 = Query() \
+            .nested(path='some_nested', identifier='nested_id') \
+            .must(Range(field='some_nested.creationYear', gte='2020'), parent='nested_id', identifier='bool_id') \
+            .must(Range(field='some_nested.price', lte=100), identifier='bool_id') \
+            .query(Term(field='some_nested.type', value=2), parent='bool_id')
+
+        expected = {
+            'nested': {
+                'path': 'some_nested',
+                'query': {
+                    "bool": {
+                        "must": [
+                            {
+                                "range": {
+                                    "some_nested.creationYear": {
+                                        "gte": "2020"
+                                    }
+                                }
+                            },
+                            {
+                                'range': {
+                                    'some_nested.price': {
+                                        'lte': 100
+                                    }
+                                }
+                            },
+                            {
+                                "term": {
+                                    "some_nested.type": {
+                                        "value": 2
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        self.assertEqual(
+            q2.query_dict(),
+            expected
+        )
+
+        self.assertEqual(
+            q.query_dict(),
+            expected
+        )
