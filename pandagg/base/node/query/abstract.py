@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+
+import copy
+
 from builtins import str as text
 from six import iteritems
 import json
@@ -30,8 +33,11 @@ class QueryClause(Node):
     def deserialize(cls, **body):
         return cls(**body)
 
-    def serialize(self):
-        return {self.KEY: self.body}
+    def serialize(self, with_identifier=False):
+        b = copy.deepcopy(self.body)
+        if with_identifier:
+            b['_name'] = self.identifier
+        return {self.KEY: b}
 
     def __str__(self):
         return "<{class_}, id={id}, type={type}, body={body}>".format(

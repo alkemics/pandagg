@@ -93,7 +93,7 @@ class Query(Tree):
                     pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY))
         super(Query, self).add_node(node, pid)
 
-    def query_dict(self, from_=None):
+    def query_dict(self, from_=None, with_identifier=False):
         """Return None if no query clause.
         """
         if self.root is None:
@@ -101,11 +101,11 @@ class Query(Tree):
         from_ = self.root if from_ is None else from_
         node = self[from_]
         if isinstance(node, (LeafQueryClause, SimpleParameter)):
-            return node.serialize()
+            return node.serialize(with_identifier=with_identifier)
         serialized_children = []
         should_yield = False
         for child_node in self.children(node.identifier):
-            serialized_child = self.query_dict(from_=child_node.identifier)
+            serialized_child = self.query_dict(from_=child_node.identifier, with_identifier=with_identifier)
             if serialized_child is not None:
                 serialized_children.append(serialized_child)
                 if not isinstance(child_node, SimpleParameter):
@@ -114,7 +114,10 @@ class Query(Tree):
             return None
         if isinstance(node, CompoundClause):
             # {bool: {filter: ..., must: ...}
-            return {node.KEY: {k: v for d in serialized_children for k, v in d.items()}}
+            body = {k: v for d in serialized_children for k, v in d.items()}
+            if with_identifier:
+                body['_name'] = node.identifier
+            return {node.KEY: body}
         # parent parameter clause
         # {filter: [{...}, {...}]}
         assert isinstance(node, ParentParameterClause)

@@ -28,7 +28,7 @@ class SimpleParameter(ParameterClause):
     def deserialize(cls, value):
         return cls(value)
 
-    def serialize(self):
+    def serialize(self, with_identifier=False):
         return {self.KEY: self.body['value']}
 
 
