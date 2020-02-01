@@ -734,6 +734,38 @@ bool
             }
         )
 
+    def test_multiple_compound_on_top(self):
+        q = Query()\
+            .nested(path='some_nested_path', query=Term('some_nested_path.id', value=3))\
+            .should([Term(field='type', value=2)], _name='top')
+        self.assertEqual(q.query_dict(), {
+            "bool": {
+                "must": [
+                    {
+                        "nested": {
+                            "path": "some_nested_path",
+                            "query": {
+                                "term": {
+                                    "some_nested_path.id": {
+                                        "value": 3
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "term": {
+                            "type": {
+                                "value": 2
+                            }
+                        }
+                    }
+                ]
+            }
+        })
+
     def test_multiple_must_below_nested_query(self):
         q1 = Query() \
             .query(Nested(path='some_nested', _name='nested_id')) \

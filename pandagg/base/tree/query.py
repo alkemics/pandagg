@@ -273,8 +273,8 @@ class Query(Tree):
             child_node = clone_query.children(parent_operator_node.name)[0]
             child = child_node.name
             if isinstance(child_node, Bool):
-                return clone_query.bool(must=inserted_node, _name=child)
-            return clone_query.bool(must=inserted_node, child=child)
+                return clone_query.bool(must=inserted_node, _name=child, mode=mode)
+            return clone_query.bool(must=inserted_node, child=child, mode=mode)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
             clone_query.add_node(parent_operator_node, pid=parent)
