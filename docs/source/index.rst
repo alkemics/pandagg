@@ -12,7 +12,7 @@ pandagg
 
    user-guide
    advanced-usage
-   reference/index
+   API reference <reference/pandagg>
    contributing
 
 pandagg is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations. It brings
@@ -48,7 +48,7 @@ Usage
 The :doc:`user-guide` is the place to go to learn how to use the library and
 accomplish common tasks. The more in-depth :doc:`advanced-usage` guide is the place to go for deeply nested queries.
 
-The :doc:`reference/index` documentation provides API-level documentation.
+The :doc:`reference/pandagg` documentation provides API-level documentation.
 
 License
 -------

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.base.node.query._parameter_clause import QueryP, Path
+from pandagg.node.query._parameter_clause import QueryP, Path
 from pandagg.query import Nested, Term
 
 

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from pandagg.agg import Terms, Filter, Filters, DateHistogram, Nested, Range
-from pandagg.base.node.agg.bucket import Histogram
+from pandagg.node.agg.bucket import Histogram
 
 
 class BucketAggNodesTestCase(TestCase):

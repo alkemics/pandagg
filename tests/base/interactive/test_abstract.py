@@ -3,9 +3,9 @@
 
 from __future__ import unicode_literals
 
-from pandagg.base._tree import Tree
-from pandagg.base.utils import bool_if_required
-from pandagg.base.interactive.abstract import TreeBasedObj, Obj, is_valid_attr_name, _coerce_attr
+from pandagg._tree import Tree
+from pandagg.utils import bool_if_required
+from pandagg.interactive.abstract import TreeBasedObj, Obj, is_valid_attr_name, _coerce_attr
 from unittest import TestCase
 
 

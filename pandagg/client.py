@@ -1,3 +1,3 @@
-from pandagg.base.interactive.client import Elasticsearch
+from pandagg.interactive.client import Elasticsearch
 
 __all__ = ['Elasticsearch']

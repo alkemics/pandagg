@@ -5,9 +5,9 @@
 results.
 """
 
-from pandagg.base.tree.agg import Agg
-from pandagg.base.node.agg.metric import Avg
-from pandagg.base.node.agg.bucket import Terms
+from pandagg.tree.agg import Agg
+from pandagg.node.agg.metric import Avg
+from pandagg.node.agg.bucket import Terms
 from tests.base.mapping_example import MAPPING
 
 

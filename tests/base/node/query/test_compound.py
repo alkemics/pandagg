@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.base.node.query._parameter_clause import Boost, Positive, Negative, NegativeBoost, Filter
+from pandagg.node.query._parameter_clause import Boost, Positive, Negative, NegativeBoost, Filter
 from pandagg.query import Bool, Term, Boosting
 
 

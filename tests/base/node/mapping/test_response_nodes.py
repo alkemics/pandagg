@@ -1,5 +1,5 @@
 
-from pandagg.base.node.response.bucket import Bucket
+from pandagg.node.response.bucket import Bucket
 from unittest import TestCase
 
 

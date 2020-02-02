@@ -1,0 +1,356 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Not implemented aggregations include:
+- children agg
+- geo-distance
+- geo-hash grid
+- ipv4
+- sampler
+- significant terms
+"""
+
+from builtins import str as text
+
+from operator import itemgetter
+from six import iteritems
+
+from pandagg.utils import bool_if_required
+from pandagg.node.types import NUMERIC_TYPES
+from pandagg.node.agg.abstract import MultipleBucketAgg, UniqueBucketAgg
+
+
+class Global(UniqueBucketAgg):
+
+    KEY = 'global'
+    VALUE_ATTRS = ['doc_count']
+
+    def __init__(self, name, meta=None, aggs=None):
+        super(Global, self).__init__(
+            name=name,
+            agg_body={},
+            meta=meta,
+            aggs=aggs
+        )
+
+    def get_filter(self, key):
+        return None
+
+
+class Filter(UniqueBucketAgg):
+
+    KEY = 'filter'
+    VALUE_ATTRS = ['doc_count']
+
+    def __init__(self, name, filter, meta=None, aggs=None, **body):
+        self.filter = filter
+        super(Filter, self).__init__(
+            name=name,
+            meta=meta,
+            aggs=aggs,
+            filter=filter,
+            **body
+        )
+
+    def get_filter(self, key):
+        return self.filter
+
+
+class MatchAll(Filter):
+
+    def __init__(self, name, meta=None, aggs=None):
+        super(MatchAll, self).__init__(
+            name=name,
+            filter={'match_all': {}},
+            meta=meta,
+            aggs=aggs
+        )
+
+
+class Nested(UniqueBucketAgg):
+
+    KEY = 'nested'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = ['nested']
+
+    def __init__(self, name, path, meta=None, aggs=None):
+        self.path = path
+        super(Nested, self).__init__(
+            name=name,
+            path=path,
+            meta=meta,
+            aggs=aggs
+        )
+
+    def get_filter(self, key):
+        return None
+
+
+class ReverseNested(UniqueBucketAgg):
+
+    KEY = 'reverse_nested'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = ['nested']
+
+    def __init__(self, name, path=None, meta=None, aggs=None, **body):
+        self.path = path
+        body_kwargs = dict(body)
+        if path:
+            body_kwargs['path'] = path
+        super(ReverseNested, self).__init__(
+            name=name,
+            meta=meta,
+            aggs=aggs,
+            **body_kwargs
+        )
+
+    def get_filter(self, key):
+        return None
+
+
+class Missing(UniqueBucketAgg):
+    KEY = 'missing'
+    VALUE_ATTRS = ['doc_count']
+    BLACKLISTED_MAPPING_TYPES = []
+
+    def __init__(self, name, field, meta=None, aggs=None, **body):
+        super(UniqueBucketAgg, self).__init__(
+            name=name,
+            field=field,
+            meta=meta,
+            aggs=aggs,
+            **body
+        )
+
+    def get_filter(self, key):
+        return {'bool': {'must_not': {'exists': {'field': self.field}}}}
+
+
+class Terms(MultipleBucketAgg):
+    """Terms aggregation.
+    """
+    KEY = 'terms'
+    VALUE_ATTRS = ['doc_count', 'doc_count_error_upper_bound', 'sum_other_doc_count']
+    BLACKLISTED_MAPPING_TYPES = []
+
+    def __init__(self, name, field, missing=None, size=None, aggs=None, meta=None, **body):
+        self.field = field
+        self.missing = missing
+        self.size = size
+
+        body_kwargs = dict(body)
+        if missing is not None:
+            body_kwargs["missing"] = missing
+        if size is not None:
+            body_kwargs["size"] = size
+
+        super(Terms, self).__init__(
+            name=name,
+            field=field,
+            meta=meta,
+            aggs=aggs,
+            **body_kwargs
+        )
+
+    def get_filter(self, key):
+        """Provide filter to get documents belonging to document of given key."""
+        if key == 'missing':
+            return {'bool': {'must_not': {'exists': {'field': self.field}}}}
+        return {'term': {self.field: key}}
+
+
+class Filters(MultipleBucketAgg):
+
+    KEY = 'filters'
+    VALUE_ATTRS = ['doc_count']
+    DEFAULT_OTHER_KEY = '_other_'
+    IMPLICIT_KEYED = True
+
+    def __init__(self, name, filters, other_bucket=False, other_bucket_key=None, meta=None, aggs=None, **body):
+        self.filters = filters
+        self.other_bucket = other_bucket
+        self.other_bucket_key = other_bucket_key
+        body_kwargs = dict(body)
+        if other_bucket:
+            body_kwargs['other_bucket'] = other_bucket
+        if other_bucket_key:
+            body_kwargs['other_bucket_key'] = other_bucket_key
+
+        super(Filters, self).__init__(
+            name=name,
+            filters=filters,
+            meta=meta,
+            aggs=aggs,
+            **body_kwargs
+        )
+
+    def get_filter(self, key):
+        """Provide filter to get documents belonging to document of given key."""
+        if key in self.filters.keys():
+            return self.filters[key]
+        if self.other_bucket:
+            if key == self.DEFAULT_OTHER_KEY or key == self.other_bucket_key:
+                # necessary sort for python2/python3 identical output order in tests
+                key_filter_tuples = [(k, filter_) for k, filter_ in iteritems(self.filters)]
+                return {'bool': {
+                    'must_not': bool_if_required(
+                        list(map(itemgetter(1), sorted(key_filter_tuples, key=itemgetter(0)))),
+                        operator='should'
+                    )}
+                }
+        raise ValueError('Unkown <%s> key in <Agg %s>' % (key, self.name))
+
+
+class Histogram(MultipleBucketAgg):
+
+    KEY = 'histogram'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
+
+    def __init__(self, name, field, interval, meta=None, aggs=None, **body):
+        self.field = field
+        self.interval = interval
+        super(Histogram, self).__init__(
+            name=name,
+            field=field,
+            interval=interval,
+            meta=meta,
+            aggs=aggs,
+            **body
+        )
+
+    def get_filter(self, key):
+        try:
+            key = float(key)
+        except (TypeError, ValueError):
+            raise ValueError('Filter key of an histogram aggregation must be numeric, git <%s> of type <%s>' % (
+                key, type(key)))
+        return {'range': {self.field: {'gte': key, 'lt': key + self.interval}}}
+
+
+class DateHistogram(MultipleBucketAgg):
+    KEY = 'date_histogram'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = ['date']
+    # interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
+
+    def __init__(self, name, field, interval=None, calendar_interval=None, fixed_interval=None, meta=None,
+                 keyed=False, key_as_string=True, aggs=None, **body):
+        """Date Histogram aggregation.
+        Note: interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
+        :param keyed: defines returned buckets format: if True, as dict.
+        :param key_as_string: if True extracted key of bucket will be the formatted date (applicable if keyed=False)
+        """
+        self.field = field
+        if not(interval or fixed_interval or calendar_interval):
+            raise ValueError('One of "interval", "calendar_interval" or "fixed_interval" must be provided.')
+        if interval:
+            body['interval'] = interval
+        if calendar_interval:
+            body['calendar_interval'] = calendar_interval
+        if fixed_interval:
+            body['fixed_interval'] = fixed_interval
+        self.interval = interval or calendar_interval or fixed_interval
+        super(DateHistogram, self).__init__(
+            name=name,
+            field=field,
+            meta=meta,
+            aggs=aggs,
+            keyed=keyed,
+            key_path='key_as_string' if key_as_string else 'key',
+            **body
+        )
+
+    def get_filter(self, key):
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
+        return {'range': {self.field: {'gte': key, 'lt': '%s||+%s' % (key, self.interval)}}}
+
+
+class Range(MultipleBucketAgg):
+    KEY = 'range'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
+    KEY_SEP = '-'
+
+    def __init__(self, name, field, ranges, keyed=False, meta=None, aggs=None, **body):
+        self.field = field
+        self.ranges = ranges
+        body_kwargs = dict(body)
+        if keyed:
+            self.bucket_key_suffix = '_as_string'
+        else:
+            self.bucket_key_suffix = None
+        super(Range, self).__init__(
+            name=name,
+            field=field,
+            ranges=ranges,
+            meta=meta,
+            keyed=keyed,
+            aggs=aggs,
+            **body_kwargs
+        )
+
+    @property
+    def from_key(self):
+        if self.bucket_key_suffix:
+            return 'from%s' % self.bucket_key_suffix
+        return 'from'
+
+    @property
+    def to_key(self):
+        if self.bucket_key_suffix:
+            return 'to%s' % self.bucket_key_suffix
+        return 'to'
+
+    def _extract_bucket_key(self, bucket):
+        if self.from_key in bucket:
+            key = '%s%s' % (bucket[self.from_key], self.KEY_SEP)
+        else:
+            key = '*-'
+        if self.to_key in bucket:
+            key += text(bucket[self.to_key])
+        else:
+            key += '*'
+        return key
+
+    def get_filter(self, key):
+        from_, to_ = key.split(self.KEY_SEP)
+        inner = {}
+        if from_ != '*':
+            inner['gte'] = from_
+        if to_ != '*':
+            inner['lt'] = to_
+        return {'range': {self.field: inner}}
+
+
+class DateRange(Range):
+    KEY = 'date_range'
+    VALUE_ATTRS = ['doc_count']
+    WHITELISTED_MAPPING_TYPES = ['date']
+    # cannot use range '-' separator since some keys contain it
+    KEY_SEP = '::'
+
+    def __init__(self, name, field, key_as_string=True, aggs=None, meta=None, **body):
+        self.key_as_string = key_as_string
+        super(DateRange, self).__init__(
+            name=name,
+            field=field,
+            keyed=True,
+            meta=meta,
+            aggs=aggs,
+            **body
+        )
+
+
+BUCKET_AGGS = [
+    Terms,
+    Filters,
+    Histogram,
+    DateHistogram,
+    Global,
+    Filter,
+    Nested,
+    ReverseNested,
+    Range,
+    DateRange,
+    Missing
+]

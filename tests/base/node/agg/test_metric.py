@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.base.node.agg.abstract import FieldMetricAgg
+from pandagg.node.agg.abstract import FieldMetricAgg
 from pandagg.agg import Avg, TopHits
 
 

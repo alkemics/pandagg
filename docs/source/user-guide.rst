@@ -12,7 +12,7 @@ About interactive.
 Build Search query
 ------------------
 
-The :class:`~pandagg.base.tree.query.Query` object provides
+The :class:`~pandagg.tree.query.Query` object provides
 
     >>> q = Query()
     200

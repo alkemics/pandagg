@@ -1,7 +1,7 @@
-from pandagg.base.tree.agg import Agg
-from pandagg.base.interactive.agg import ClientBoundAgg
+from pandagg.tree.agg import Agg
+from pandagg.interactive.agg import ClientBoundAgg
 
-from pandagg.base.node.agg.bucket import (
+from pandagg.node.agg.bucket import (
     MatchAll,
     Terms,
     Filters,
@@ -14,7 +14,7 @@ from pandagg.base.node.agg.bucket import (
     Range
 )
 
-from pandagg.base.node.agg.metric import (
+from pandagg.node.agg.metric import (
     Avg,
     Max,
     Min,
@@ -29,7 +29,7 @@ from pandagg.base.node.agg.metric import (
     ValueCount
 )
 
-from pandagg.base.node.agg.pipeline import (
+from pandagg.node.agg.pipeline import (
     AvgBucket,
     Derivative,
     MaxBucket,

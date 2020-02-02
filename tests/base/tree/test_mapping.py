@@ -4,10 +4,10 @@
 from unittest import TestCase
 from mock import Mock
 
-from pandagg.base.exceptions import AbsentMappingFieldError
-from pandagg.base.interactive._field_agg_factory import field_classes_per_name
-from pandagg.base.tree.mapping import Mapping, MappingNode
-from pandagg.base.interactive.mapping import IMapping, ClientBoundMapping
+from pandagg.exceptions import AbsentMappingFieldError
+from pandagg.interactive._field_agg_factory import field_classes_per_name
+from pandagg.tree.mapping import Mapping, MappingNode
+from pandagg.interactive.mapping import IMapping, ClientBoundMapping
 from tests.base.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
 
 

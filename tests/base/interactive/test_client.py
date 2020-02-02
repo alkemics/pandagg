@@ -8,8 +8,8 @@ from elasticsearch.client import IndicesClient
 from pandagg import Elasticsearch
 from mock import patch
 
-from pandagg.base.interactive.index import ClientBoundIndex
-from pandagg.base.interactive.mapping import ClientBoundMapping
+from pandagg.interactive.index import ClientBoundIndex
+from pandagg.interactive.mapping import ClientBoundMapping
 from tests.base.mapping_example import MAPPING, EXPECTED_CLIENT_BOUND_MAPPING_REPR
 from tests.base.settings_example import SETTINGS
 

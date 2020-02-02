@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.base.node.query._parameter_clause import QueryP, ScriptP, Organic, IdsP
-from pandagg.base.node.query.full_text import Match
-from pandagg.base.node.query.specialized import Wrapper
+from pandagg.node.query._parameter_clause import QueryP, ScriptP, Organic, IdsP
+from pandagg.node.query.full_text import Match
+from pandagg.node.query.specialized import Wrapper
 from pandagg.query import DistanceFeature, MoreLikeThis, Percolate, RankFeature, Script, ScriptScore, PinnedQuery
 
 

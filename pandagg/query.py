@@ -1,17 +1,17 @@
-from pandagg.base.tree.query import Query
-from pandagg.base.node.query.shape import Shape
-from pandagg.base.node.query.term_level import (
+from pandagg.tree.query import Query
+from pandagg.node.query.shape import Shape
+from pandagg.node.query.term_level import (
     Exists, Fuzzy, Ids, Prefix, Range, Regexp, Term, Terms, TermsSet, Type, Wildcard
 )
-from pandagg.base.node.query.full_text import (
+from pandagg.node.query.full_text import (
     Intervals, Match, MatchBoolPrefix, MatchPhrase, MatchPhrasePrefix, MultiMatch, Common, QueryString,
     SimpleQueryString
 )
-from pandagg.base.node.query.compound import Bool, Boosting, ConstantScore, FunctionScore, DisMax
-from pandagg.base.node.query.joining import Nested, HasChild, HasParent, ParentId
-from pandagg.base.node.query.geo import GeoShape, GeoPolygone, GeoDistance, GeoBoundingBox
-from pandagg.base.node.query.specialized import DistanceFeature, MoreLikeThis, Percolate, RankFeature, Script, Wrapper
-from pandagg.base.node.query.specialized_compound import ScriptScore, PinnedQuery
+from pandagg.node.query.compound import Bool, Boosting, ConstantScore, FunctionScore, DisMax
+from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
+from pandagg.node.query.geo import GeoShape, GeoPolygone, GeoDistance, GeoBoundingBox
+from pandagg.node.query.specialized import DistanceFeature, MoreLikeThis, Percolate, RankFeature, Script, Wrapper
+from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
 
 __all__ = [
     'Query',

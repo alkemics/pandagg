@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from unittest import TestCase
 
 from pandagg.query import Term, Range
-from pandagg.base.node.query._parameter_clause import Filter
+from pandagg.node.query._parameter_clause import Filter
 
 
 class ParameterClausesTestCase(TestCase):

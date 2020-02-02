@@ -1,5 +1,4 @@
-from pandagg.base.tree.mapping import Mapping
-from pandagg.base.interactive.mapping import ClientBoundMapping, IMapping
+from pandagg.interactive.mapping import ClientBoundMapping, IMapping
 
 __all__ = [
     'Mapping',

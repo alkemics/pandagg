@@ -8,14 +8,14 @@
 from unittest import TestCase
 import pandas as pd
 from treelib.exceptions import MultipleRootError
-from pandagg.base.tree.agg import Agg
-from pandagg.base.interactive.agg import ClientBoundAgg
-from pandagg.base.interactive.response import IResponse
-from pandagg.base.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
-from pandagg.base.tree.mapping import Mapping
-from pandagg.base.interactive.mapping import IMapping
-from pandagg.base.node.agg.bucket import DateHistogram, Terms, Filter
-from pandagg.base.node.agg.metric import Avg, Min
+from pandagg.tree.agg import Agg
+from pandagg.interactive.agg import ClientBoundAgg
+from pandagg.interactive.response import IResponse
+from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
+from pandagg.tree.mapping import Mapping
+from pandagg.interactive.mapping import IMapping
+from pandagg.node.agg.bucket import DateHistogram, Terms, Filter
+from pandagg.node.agg.metric import Avg, Min
 
 import tests.base.data_sample as sample
 

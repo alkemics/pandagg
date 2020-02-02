@@ -2,9 +2,9 @@ from collections import OrderedDict
 from unittest import TestCase
 from mock import Mock
 
-from pandagg.base.tree.agg import Agg
-from pandagg.base.tree.response import ResponseTree
-from pandagg.base.interactive.response import IResponse, ClientBoundResponse
+from pandagg.tree.agg import Agg
+from pandagg.tree.response import ResponseTree
+from pandagg.interactive.response import IResponse, ClientBoundResponse
 from tests.base.mapping_example import MAPPING
 import tests.base.data_sample as sample
 

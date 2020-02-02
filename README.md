@@ -75,3 +75,14 @@ specific locations of the initial **tree**, thus making it easier to build your 
 ## Contributing
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome.
+
+
+## Generate doc
+```
+# auto doc generation
+rm -r docs/source/reference/*
+sphinx-apidoc -o docs/source/reference pandagg -Te
+# build html
+rm -r docs/build/*
+sphinx-build -b html docs/source docs/build
+```
