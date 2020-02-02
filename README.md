@@ -1,6 +1,6 @@
 ## What is it?
 
-**pandagg** is a Python package providing a simple interface to manipulate ElasticSearch aggregations.
+**pandagg** is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations.
 
 ***Disclaimer*** *:this is a pre-release version*
 ## Features
