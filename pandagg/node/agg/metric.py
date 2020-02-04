@@ -18,6 +18,12 @@ class Avg(FieldMetricAgg):
     KEY = 'avg'
 
 
+class Sum(FieldMetricAgg):
+    WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
+    VALUE_ATTRS = ['value']
+    KEY = 'sum'
+
+
 class Max(FieldMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['value']
@@ -84,6 +90,7 @@ class ValueCount(FieldMetricAgg):
 
 METRIC_AGGS = [
     Avg,
+    Sum,
     Max,
     Min,
     Cardinality,
