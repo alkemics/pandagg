@@ -11,13 +11,13 @@ NUMERIC_TYPES = [
     'half_float',
     'scaled_float',
     'ip',
-    'token_count'
+    'token_count',
+    'date',
+    'boolean'
 ]
 
 MAPPING_TYPES = [
     'binary',
-    'boolean',
-    'date',
     'geo_point',
     'geo_shape',
     'nested',

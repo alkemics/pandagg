@@ -43,6 +43,7 @@ from pandagg.node.agg.pipeline import (
     CumulativeSum,
     BucketScript,
     BucketSelector,
+    BucketSort,
     SerialDiff
 )
 
@@ -84,5 +85,6 @@ __all__ = [
     'CumulativeSum',
     'BucketScript',
     'BucketSelector',
+    'BucketSort',
     'SerialDiff'
 ]

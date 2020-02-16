@@ -242,7 +242,6 @@ class ScriptPipeline(Pipeline):
 
     def __init__(self, name, script, buckets_path, gap_policy=None, meta=None, aggs=None, **body):
         super(ScriptPipeline, self).__init__(
-            self,
             name=name,
             buckets_path=buckets_path,
             gap_policy=gap_policy,

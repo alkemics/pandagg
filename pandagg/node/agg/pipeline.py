@@ -65,7 +65,12 @@ class BucketScript(ScriptPipeline):
 
 class BucketSelector(ScriptPipeline):
     KEY = 'bucket_selector'
-    VALUE_ATTRS = ['value']
+    VALUE_ATTRS = None
+
+
+class BucketSort(ScriptPipeline):
+    KEY = 'bucket_sort'
+    VALUE_ATTRS = None
 
 
 class SerialDiff(Pipeline):
@@ -86,5 +91,6 @@ PIPELINE_AGGS = [
     CumulativeSum,
     BucketScript,
     BucketSelector,
+    BucketSort,
     SerialDiff
 ]

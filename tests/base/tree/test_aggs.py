@@ -7,7 +7,7 @@
 
 from unittest import TestCase
 import pandas as pd
-from treelib.exceptions import MultipleRootError
+from treelib.exceptions import MultipleRootError, NodeIDAbsentError
 from pandagg.tree.agg import Agg
 from pandagg.interactive.agg import ClientBoundAgg
 from pandagg.interactive.response import IResponse
@@ -536,9 +536,9 @@ root_agg
             "global_metrics.field.name"
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(NodeIDAbsentError) as e:
             my_agg._validate_aggs_parent_id("non-existing-node")
-        self.assertEqual(e.exception.args, ("Node id <non-existing-node> is not present in aggregation.",))
+        self.assertEqual(e.exception.args, ("Node 'non-existing-node' is not in the tree",))
 
         # linear agg
         my_agg.remove_node('avg_f1_micro')

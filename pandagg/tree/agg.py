@@ -17,6 +17,7 @@ from pandagg.interactive.response import IResponse
 from pandagg.node.agg import deserialize_agg
 from pandagg.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode, MetricAgg
 from pandagg.node.agg.bucket import Terms, Nested, ReverseNested, MatchAll
+from pandagg.node.agg.pipeline import BucketSelector, BucketSort
 from pandagg.tree.response import ResponseTree
 
 
@@ -79,21 +80,30 @@ class Agg(Tree):
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             agg_node.aggs = None
 
+    def _is_eligible_grouping_node(self, nid):
+        node = self[nid]
+        if not isinstance(node, BucketAggNode):
+            return False
+        # special aggregations not returning anything
+        if isinstance(node, (BucketSelector, BucketSort)):
+            return False
+        return True
+
     @property
     def deepest_linear_bucket_agg(self):
         """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
         neither has siblings, nor has an ancestor with siblings.
         """
-        if not self.root or not isinstance(self[self.root], BucketAggNode):
+        if not self.root or not self._is_eligible_grouping_node(self.root):
             return None
         last_bucket_agg_name = self.root
-        children = self.children(last_bucket_agg_name)
+        children = [c for c in self.children(last_bucket_agg_name) if self._is_eligible_grouping_node(c.identifier)]
         while len(children) == 1:
             last_agg = children[0]
-            if not isinstance(last_agg, BucketAggNode):
+            if not self._is_eligible_grouping_node(last_agg.identifier):
                 break
             last_bucket_agg_name = last_agg.name
-            children = self.children(last_bucket_agg_name)
+            children = [c for c in self.children(last_bucket_agg_name) if self._is_eligible_grouping_node(c.identifier)]
         return last_bucket_agg_name
 
     def _validate_aggs_parent_id(self, pid):
@@ -110,13 +120,12 @@ class Agg(Tree):
         return C1
         """
         if pid is not None:
-            if pid not in self:
-                raise ValueError('Node id <%s> is not present in aggregation.' % pid)
-            if not isinstance(self[pid], BucketAggNode):
+            if not self._is_eligible_grouping_node(pid):
                 raise ValueError('Node id <%s> is not a bucket aggregation.' % pid)
             return pid
         paths = self.paths_to_leaves()
         # root
+        # TODO
         if len(paths) == 0:
             return None
 
