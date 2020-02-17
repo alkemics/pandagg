@@ -149,6 +149,14 @@ class BucketAggNode(AggNode):
         raise NotImplementedError()
 
 
+class ShadowRoot(BucketAggNode):
+    """Not a real aggregation."""
+    KEY = 'shadow_root'
+
+    def __init__(self):
+        super(ShadowRoot, self).__init__('_')
+
+
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
     VALUE_ATTRS = NotImplementedError()

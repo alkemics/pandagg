@@ -24,11 +24,11 @@ class ClientBoundAgg(Agg):
             identifier=identifier
         )
 
-    def _interpret_agg(self, insert_below, element, **kwargs):
+    def _deserialize_extended(self, insert_below, element, **kwargs):
         if isinstance(element, ClientBoundAgg):
             self.paste(nid=insert_below, new_tree=element)
             return self
-        return super(ClientBoundAgg, self)._interpret_agg(insert_below, element, **kwargs)
+        return super(ClientBoundAgg, self)._deserialize_extended(insert_below, element, **kwargs)
 
     def _serialize_response_as_tree(self, aggs):
         response_tree = ResponseTree(self).parse_aggregation(aggs)

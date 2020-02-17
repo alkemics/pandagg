@@ -281,26 +281,26 @@ week
         )
 
     def test_interpret_agg_string(self):
-        empty_agg = Agg()
-        empty_agg._interpret_agg(insert_below=None, element='some_field')
+        some_agg = Agg()
+        some_agg = some_agg.agg('some_field', insert_below=None)
         self.assertEqual(
-            empty_agg.query_dict(),
+            some_agg.query_dict(),
             {'some_field': {'terms': {'field': 'some_field'}}}
         )
 
         # with default size
-        empty_agg = Agg()
-        empty_agg._interpret_agg(insert_below=None, element='some_field', size=10)
+        some_agg = Agg()
+        some_agg = some_agg.agg('some_field', insert_below=None, size=10)
         self.assertEqual(
-            empty_agg.query_dict(),
+            some_agg.query_dict(),
             {'some_field': {'terms': {'field': 'some_field', 'size': 10}}}
         )
 
         # with parent
-        agg = Agg(from_={'root_agg_name': {'terms': {'field': 'some_field', 'size': 5}}})
-        agg._interpret_agg(insert_below='root_agg_name', element='child_field')
+        some_agg = Agg(from_={'root_agg_name': {'terms': {'field': 'some_field', 'size': 5}}})
+        some_agg = some_agg.agg('child_field', insert_below='root_agg_name')
         self.assertEqual(
-            agg.query_dict(),
+            some_agg.query_dict(),
             {
                 "root_agg_name": {
                     "aggs": {
@@ -319,13 +319,13 @@ week
         )
 
         # with required nested
-        agg = Agg(
+        some_agg = Agg(
             from_={'term_workflow': {'terms': {'field': 'workflow', 'size': 5}}},
             mapping=MAPPING
         )
-        agg._interpret_agg(insert_below='term_workflow', element='local_metrics.field_class.name')
+        some_agg = some_agg.agg('local_metrics.field_class.name', insert_below='term_workflow')
         self.assertEqual(
-            agg.query_dict(),
+            some_agg.query_dict(),
             {
                 "term_workflow": {
                     "aggs": {
@@ -351,15 +351,14 @@ week
         )
 
     def test_interpret_node(self):
-        empty_agg = Agg()
         node = Terms(
             name='some_name',
             field='some_field',
             size=10
         )
-        empty_agg._interpret_agg(insert_below=None, element=node)
+        some_agg = Agg().agg(node, insert_below=None)
         self.assertEqual(
-            empty_agg.query_dict(),
+            some_agg.query_dict(),
             {
                 "some_name": {
                     "terms": {
@@ -370,7 +369,7 @@ week
             }
         )
         # with parent with required nested
-        agg = Agg(
+        some_agg = Agg(
             from_={'term_workflow': {'terms': {'field': 'workflow', 'size': 5}}},
             mapping=MAPPING
         )
@@ -378,9 +377,9 @@ week
             name='min_local_f1',
             field='local_metrics.performance.test.f1_score'
         )
-        agg._interpret_agg(insert_below='term_workflow', element=node)
+        some_agg = some_agg.agg(node, insert_below='term_workflow')
         self.assertEqual(
-            agg.query_dict(),
+            some_agg.query_dict(),
             {
                 "term_workflow": {
                     "aggs": {
@@ -556,6 +555,8 @@ root_agg
         # empty agg
         agg = Agg()
         self.assertEqual(agg._validate_aggs_parent_id(None), None)
+
+        # TODO - pipeline aggregation under metric agg
 
     def test_agg_method(self):
         pass

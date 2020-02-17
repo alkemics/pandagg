@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import copy
+
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
@@ -35,7 +37,7 @@ class Query(Tree):
             self.set_mapping(mapping)
         super(Query, self).__init__(identifier=identifier)
         if from_ is not None:
-            self._deserialize(from_)
+            self._insert(from_)
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Query(
@@ -48,36 +50,48 @@ class Query(Tree):
         self.tree_mapping = as_mapping(mapping)
         return self
 
-    def _deserialize(self, from_, pid=None):
+    @classmethod
+    def deserialize(cls, from_):
         if isinstance(from_, Query):
-            self.paste(nid=pid, new_tree=from_, mode='merge' if self.root is None and pid is None else 'under')
-        elif isinstance(from_, QueryClause):
-            self._deserialize_from_node(pid=pid, query_node=from_)
-        elif isinstance(from_, dict):
-            self._deserialize_tree_from_dict(pid=pid, body=from_)
+            return from_
+        if isinstance(from_, QueryClause):
+            new = cls()
+            new._insert_from_node(query_node=from_)
+            return new
+        if isinstance(from_, dict):
+            from_ = copy.deepcopy(from_)
+            new = cls()
+            new._insert_from_dict(from_)
+            return new
         else:
             raise ValueError('Unsupported type <%s>.' % type(from_))
 
-    def _deserialize_tree_from_dict(self, body, pid=None):
+    def _insert(self, from_, pid=None):
+        inserted_tree = self.deserialize(from_=from_)
+        if self.root is None:
+            self.merge(nid=pid, new_tree=inserted_tree)
+            return self
+        self.paste(nid=pid, new_tree=inserted_tree)
+        return self
+
+    def _insert_from_dict(self, body, pid=None):
         if len(body.keys()) > 1:
             raise ValueError('Invalid query format, got multiple keys, expected a single one: %s' % (body.keys()))
         q_type, q_body = next(iteritems(body))
         node = deserialize_node(q_type, q_body, accept_param=False)
-        self._deserialize_from_node(node, pid)
+        self._insert_from_node(node, pid)
 
-    def _deserialize_from_node(self, query_node, pid=None):
+    def _insert_from_node(self, query_node, pid=None):
         """Insert in tree a node and all of its potential children (stored in .children)."""
         self.add_node(query_node, pid)
         if hasattr(query_node, 'children'):
             for child_node in query_node.children or []:
-                self._deserialize(child_node, pid=query_node.identifier)
+                self._insert(child_node, pid=query_node.identifier)
             # reset children to None to avoid confusion since this serves only __init__ syntax.
             query_node.children = None
 
     def add_node(self, node, pid=None):
         if pid is None:
-            if isinstance(node, ParameterClause):
-                raise ValueError('Cannot add parameter clause (%s) as root.' % node.KEY)
             return super(Query, self).add_node(node, pid)
 
         pnode = self[pid]
@@ -150,7 +164,7 @@ class Query(Tree):
 
         if mode == REPLACE_ALL:
             existing_query.remove_subtree(new_compound.identifier)
-            existing_query._deserialize_from_node(new_compound, pid=parent)
+            existing_query._insert_from_node(new_compound, pid=parent)
             return existing_query
 
         new_compound_tree = Query(new_compound)
@@ -215,7 +229,7 @@ class Query(Tree):
         # If no parent nor child is provided, place on top (wrapped in bool-must if necessary).
         if parent is None and child is None:
             if clone_query.root is None:
-                clone_query._deserialize_from_node(inserted_node)
+                clone_query._insert_from_node(inserted_node)
                 return clone_query
             if isinstance(inserted_node, Bool):
                 q = Query(inserted_node)
@@ -251,7 +265,7 @@ class Query(Tree):
             direct_pid = existing_parent_param_node.name if existing_parent_param_node else None
             child_tree = clone_query.remove_subtree(child)
 
-            clone_query._deserialize_from_node(inserted_node, pid=direct_pid)
+            clone_query._insert_from_node(inserted_node, pid=direct_pid)
             child_operator_node = next((c for c in clone_query.children(inserted_node.name) if isinstance(c, child_operator)), None)
             if child_operator_node is None:
                 child_operator_node = child_operator()
@@ -278,7 +292,7 @@ class Query(Tree):
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
             clone_query.add_node(parent_operator_node, pid=parent)
-        clone_query._deserialize_from_node(inserted_node, pid=parent_operator_node.name)
+        clone_query._insert_from_node(inserted_node, pid=parent_operator_node.name)
         return clone_query
 
     def _compound_param(self, method_name, param_key, *args, **kwargs):
