@@ -8,7 +8,7 @@ from six import python_2_unicode_compatible
 import re
 import unicodedata
 from six import string_types
-from pandagg._tree import Tree
+from pandagg.tree._tree import Tree
 
 
 def is_valid_attr_name(item):

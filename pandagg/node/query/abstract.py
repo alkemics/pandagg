@@ -9,7 +9,7 @@ from builtins import str as text
 from six import iteritems
 import json
 
-from pandagg._tree import Node
+from pandagg.node._node import Node
 
 
 class QueryClause(Node):

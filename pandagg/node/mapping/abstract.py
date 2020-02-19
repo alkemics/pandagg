@@ -5,7 +5,7 @@ import copy
 import json
 from six import python_2_unicode_compatible
 from builtins import str as text
-from pandagg._tree import Node
+from pandagg.node._node import Node
 from pandagg.utils import PrettyNode
 
 

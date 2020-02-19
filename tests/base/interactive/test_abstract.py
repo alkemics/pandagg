@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from pandagg._tree import Tree
+from pandagg.tree._tree import Tree
 from pandagg.utils import bool_if_required
 from pandagg.interactive.abstract import TreeBasedObj, Obj, is_valid_attr_name, _coerce_attr
 from unittest import TestCase

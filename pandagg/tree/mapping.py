@@ -6,7 +6,7 @@ from six import iteritems
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.deserializer import deserialize_field
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
-from pandagg._tree import Tree
+from pandagg.tree._tree import Tree
 
 
 class Mapping(Tree):

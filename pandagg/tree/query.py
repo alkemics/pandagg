@@ -7,7 +7,7 @@ import copy
 from six import iteritems, python_2_unicode_compatible
 from builtins import str as text
 
-from pandagg._tree import Tree
+from pandagg.tree._tree import Tree
 from pandagg.interactive.mapping import as_mapping
 from pandagg.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause, PARAMETERS
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause

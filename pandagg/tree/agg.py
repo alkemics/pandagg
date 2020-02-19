@@ -10,7 +10,7 @@ import warnings
 from builtins import str as text
 from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
-from pandagg._tree import Tree
+from pandagg.tree._tree import Tree
 from pandagg.exceptions import MappingError
 from pandagg.interactive.mapping import as_mapping
 from pandagg.interactive.response import IResponse

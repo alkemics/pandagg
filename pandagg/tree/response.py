@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from pandagg.node.response.bucket import Bucket
 from pandagg.node.agg.abstract import UniqueBucketAgg
-from pandagg._tree import Tree
+from pandagg.tree._tree import Tree
 
 
 class ResponseTree(Tree):

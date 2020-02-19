@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from pandagg._tree import Node
+from pandagg.node._node import Node
 from pandagg.utils import PrettyNode
 
 
