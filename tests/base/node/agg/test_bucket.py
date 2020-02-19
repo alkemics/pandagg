@@ -81,7 +81,7 @@ class BucketAggNodesTestCase(TestCase):
         self.assertEqual(filter_agg.query_dict(), {'filter': {'filter': {'term': {'some_path': 1}}}})
 
         # test deserialize
-        filter_agg = Filter.deserialize('some_agg', filter={'term': {'some_path': 1}})
+        filter_agg = Filter.deserialize('some_agg', {'filter': {'term': {'some_path': 1}}})
         self.assertIsInstance(filter_agg, Filter)
         self.assertEqual(filter_agg.query_dict(), {'filter': {'filter': {'term': {'some_path': 1}}}})
 
@@ -118,7 +118,7 @@ class BucketAggNodesTestCase(TestCase):
         self.assertEqual(nested_agg.query_dict(), {'nested': {'path': 'nested_path'}})
 
         # test deserialize
-        nested_agg = Nested.deserialize('some_nested_agg', path='nested_path', aggs=[])
+        nested_agg = Nested.deserialize('some_nested_agg', {'path': 'nested_path'})
         self.assertIsInstance(nested_agg, Nested)
         self.assertEqual(nested_agg.query_dict(), {'nested': {'path': 'nested_path'}})
 
@@ -266,8 +266,10 @@ class BucketAggNodesTestCase(TestCase):
 
         range_node_deserialized = Range.deserialize(
             'price_ranges',
-            field='price',
-            ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
+            {
+                'field': 'price',
+                'ranges': [{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
+            }
         )
         self.assertEqual(range_node_deserialized.query_dict(with_name=True), query)
 
@@ -330,9 +332,11 @@ class BucketAggNodesTestCase(TestCase):
 
         range_node_deserialized = Range.deserialize(
             'price_ranges',
-            field='price',
-            keyed=True,
-            ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
+            {
+                'field': 'price',
+                'keyed': True,
+                'ranges': [{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}]
+            }
         )
         self.assertEqual(range_node_deserialized.query_dict(with_name=True), query)
 
@@ -395,8 +399,10 @@ class BucketAggNodesTestCase(TestCase):
 
         hist_node_deserialized = Histogram.deserialize(
             'prices',
-            field='price',
-            interval=50
+            {
+                'field': 'price',
+                'interval': 50
+            }
         )
         self.assertEqual(hist_node_deserialized.query_dict(with_name=True), query)
 

@@ -81,8 +81,8 @@ class AggNode(Node):
         return response.get(attrs[0])
 
     @classmethod
-    def deserialize(cls, name, **params):
-        return cls(name=name, **params)
+    def deserialize(cls, name, body, meta=None):
+        return cls(name=name, meta=meta, **body)
 
     def __str__(self):
         return "<{class_}, name={name}, type={type}, body={body}>".format(

@@ -25,4 +25,4 @@ def deserialize_agg(d):
             agg_class.__name__, children_aggs))
     if children_aggs:
         agg_body['aggs'] = [{k: v for k, v in iteritems(children_aggs)}]
-    return agg_class.deserialize(name=agg_name, meta=meta, **agg_body)
+    return agg_class.deserialize(name=agg_name, meta=meta, body=agg_body)
