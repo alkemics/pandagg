@@ -3,7 +3,7 @@
 from operator import itemgetter
 
 import pandas as pd
-from pandagg.node.agg import AGGS
+from pandagg.node.agg.deserializer import AGGS
 from pandagg.node.types import MAPPING_TYPES
 
 

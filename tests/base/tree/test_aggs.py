@@ -566,8 +566,8 @@ root_agg
 
     def test_mapping_from_init(self):
         agg_from_dict_mapping = Agg(mapping=MAPPING)
-        agg_from_tree_mapping = Agg(mapping=Mapping(mapping_detail=MAPPING))
-        agg_from_obj_mapping = Agg(mapping=IMapping(tree=Mapping(mapping_detail=MAPPING)))
+        agg_from_tree_mapping = Agg(mapping=Mapping(body=MAPPING))
+        agg_from_obj_mapping = Agg(mapping=IMapping(tree=Mapping(body=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()
@@ -584,9 +584,9 @@ root_agg
         agg_from_dict_mapping = Agg() \
             .set_mapping(mapping=MAPPING)
         agg_from_tree_mapping = Agg() \
-            .set_mapping(mapping=Mapping(mapping_detail=MAPPING))
+            .set_mapping(mapping=Mapping(body=MAPPING))
         agg_from_obj_mapping = Agg() \
-            .set_mapping(mapping=IMapping(tree=Mapping(mapping_detail=MAPPING)))
+            .set_mapping(mapping=IMapping(tree=Mapping(body=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()

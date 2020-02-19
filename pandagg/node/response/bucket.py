@@ -8,7 +8,6 @@ from pandagg.utils import PrettyNode
 
 class Bucket(Node):
 
-    REPR_SIZE = 60
     ROOT_NAME = 'root'
 
     def __init__(self, depth, value, key=None, level=None):
@@ -42,9 +41,10 @@ class Bucket(Node):
 
     @property
     def display_name_with_value(self):
+        REPR_SIZE = 60
         # Determine how this node will be represented in tree representation.
         s = self.display_name
         if self.value is not None:
-            pad = max(self.REPR_SIZE - 4 * self.depth - len(s) - len(str(self.value)), 4)
+            pad = max(REPR_SIZE - 4 * self.depth - len(s) - len(str(self.value)), 4)
             s = s + ' ' * pad + str(self.value)
         return s

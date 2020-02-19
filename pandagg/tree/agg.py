@@ -14,7 +14,7 @@ from pandagg._tree import Tree
 from pandagg.exceptions import MappingError
 from pandagg.interactive.mapping import as_mapping
 from pandagg.interactive.response import IResponse
-from pandagg.node.agg import deserialize_agg
+from pandagg.node.agg.deserializer import deserialize_agg
 from pandagg.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode, MetricAgg, ShadowRoot
 from pandagg.node.agg.bucket import Terms, Nested, ReverseNested
 from pandagg.node.agg.pipeline import BucketSelector, BucketSort
@@ -295,7 +295,7 @@ class Agg(Tree):
             return super(Agg, self).paste(nid, new_tree, deep)
         # validates that mappings are similar
         if new_tree.tree_mapping is not None:
-            if new_tree.tree_mapping.mapping_detail != self.tree_mapping.mapping_detail:
+            if new_tree.tree_mapping.body != self.tree_mapping.body:
                 raise MappingError('Pasted tree has a different mapping.')
 
         # check root node nested position in mapping

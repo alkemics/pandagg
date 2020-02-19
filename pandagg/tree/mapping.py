@@ -3,40 +3,37 @@
 
 from six import iteritems
 
-from pandagg.node.mapping.field import MappingNode
+from pandagg.node.mapping.abstract import Field
+from pandagg.node.mapping.deserializer import deserialize_field
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg._tree import Tree
 
 
 class Mapping(Tree):
 
-    node_class = MappingNode
+    node_class = Field
 
-    def __init__(self, mapping_detail=None, identifier=None):
+    def __init__(self, body=None, identifier=None):
         super(Mapping, self).__init__(identifier=identifier)
-        self.mapping_detail = mapping_detail
-        if mapping_detail:
-            self.build_mapping_from_dict(mapping_detail)
+        self.body = body
+        if body:
+            self.deserialize(path='', body=body)
 
-    def build_mapping_from_dict(self, body, pid=None, depth=0, path=None, is_subfield=False):
-        path = path or ''
-        node = MappingNode(path=path, body=body, depth=depth, is_root=depth == 0, is_subfield=is_subfield)
+    def deserialize(self, path, body, pid=None, depth=0, is_subfield=False):
+        node = deserialize_field(path=path, depth=depth, is_subfield=is_subfield, body=body)
         self.add_node(node, parent=pid)
-        if not body:
-            return
         depth += 1
-        for sub_name, sub_body in iteritems(body.get('properties') or {}):
+        for sub_name, sub_body in iteritems(node.properties or {}):
             sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-            self.build_mapping_from_dict(sub_body, pid=node.path, depth=depth, path=sub_path)
-        for sub_name, sub_body in iteritems(body.get('fields') or {}):
+            self.deserialize(path=sub_path, body=sub_body, pid=node.path, depth=depth)
+        for sub_name, sub_body in iteritems(node.fields or {}):
             sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-            self.build_mapping_from_dict(
-                sub_body, pid=node.identifier, depth=depth, path=sub_path, is_subfield=True)
+            self.deserialize(path=sub_path, body=sub_body, pid=node.identifier, depth=depth, is_subfield=True)
 
     def _clone(self, identifier, with_tree=False, deep=False):
         return Mapping(
             identifier=identifier,
-            mapping_detail=self.mapping_detail if with_tree else None
+            body=self.body if with_tree else None
         )
 
     def show(self, data_property='pretty', **kwargs):
@@ -58,6 +55,7 @@ class Mapping(Tree):
         if not hasattr(agg_node, 'field'):
             return True
 
+        # TODO take into account flattened data type
         if agg_node.field not in self:
             if not exc:
                 return False
@@ -75,11 +73,11 @@ class Mapping(Tree):
     def mapping_type_of_field(self, field_path):
         if field_path not in self:
             raise AbsentMappingFieldError(u'<%s field is not present in mapping>' % field_path)
-        return self[field_path].type
+        return self[field_path].KEY
 
     def nested_at_field(self, field_path):
         return next(iter(self.list_nesteds_at_field(field_path)), None)
 
     def list_nesteds_at_field(self, field_path):
         # from deepest to highest
-        return list(self.rsearch(field_path, filter=lambda n: n.type == 'nested'))
+        return list(self.rsearch(field_path, filter=lambda n: n.KEY == 'nested'))

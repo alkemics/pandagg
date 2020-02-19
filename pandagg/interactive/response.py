@@ -69,13 +69,13 @@ class IResponse(TreeBasedObj):
         all_nesteds = [
             n.identifier
             for n in tree_mapping.filter_nodes(
-                lambda x: (x.type == 'nested') and any((i in x.identifier or '' for i in nested_with_conditions))
+                lambda x: (x.KEY == 'nested') and any((i in x.identifier or '' for i in nested_with_conditions))
             )
         ]
 
         nid_to_children = defaultdict(set)
         for nested in all_nesteds:
-            nested_with_parents = list(tree_mapping.rsearch(nid=nested, filter=lambda x: x.type == 'nested'))
+            nested_with_parents = list(tree_mapping.rsearch(nid=nested, filter=lambda x: x.KEY == 'nested'))
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)

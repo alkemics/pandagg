@@ -40,8 +40,8 @@ class ClientBoundMapping(IMapping):
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         if not self._tree.children(self._tree.root):
             field_node = self._tree[self._tree.root]
-            if field_node.type in field_classes_per_name:
-                self.a = field_classes_per_name[field_node.type](
+            if field_node.KEY in field_classes_per_name:
+                self.a = field_classes_per_name[field_node.KEY](
                     mapping_tree=self._initial_tree,
                     client=self._client,
                     field=field_node.path,
