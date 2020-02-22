@@ -19,23 +19,24 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
 
 tests_require = [
+    'coverage',
     'nose',
     'mock',
     'flake8',
-    'coverage',
-    'pandas==0.24.2'
+    'pandas>=0.24.2',
 ]
 
 install_requires = [
     'future',
-    'treelib==1.5.6',
-    'elasticsearch==7.1.0',
-    'six==1.13.0'
+    # until treelib v1.6.0 release: https://github.com/caesar0301/treelib/issues/128
+    # 'treelib==1.6.1',
+    'elasticsearch>=7.1.0,<8.0.0',
+    'six>=1.13.0,<2.0.0'
 ]
 
 extras_require = {
     'test': tests_require,
-    'dev': ['pandas==0.24.2']
+    'pandas': ['pandas>=0.24.2']
 }
 
 # =============================================================================
