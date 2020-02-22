@@ -67,7 +67,6 @@ class Obj(object):
         self.__d = dict()
         for k, v in kwargs.items():
             if not (isinstance(k, string_types) and k not in ('_REPR_NAME', '_Obj__d') and not k.startswith('__')):
-            # if not isinstance(k, string_types) or k in ('_REPR_NAME', '_Obj__d') or k.startswith('__'):
                 raise ValueError('Attribute <%s> of type <%s> is not valid.' % (k, type(k)))
             self[k] = v
 
@@ -83,7 +82,7 @@ class Obj(object):
         if not isinstance(key, string_types):
             if self._STRING_KEY_CONSTRAINT:
                 raise ValueError('Key <%s> of type <%s> cannot be set as attribute on <%s> instance.' % (
-                    key, type(key),self.__class__.__name__))
+                    key, type(key), self.__class__.__name__))
             self.__d[key] = value
             return
         if not is_valid_attr_name(key):

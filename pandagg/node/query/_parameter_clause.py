@@ -163,7 +163,7 @@ class ParentParameterClause(ParameterClause):
                 k, v = next(iteritems(child))
                 try:
                     serialized_children.append(deserialize_leaf_clause(k, v))
-                except:
+                except Exception:
                     # until metaclass is implemented
                     serialized_children.append({k: v})
             elif isinstance(child, LeafQueryClause):
