@@ -4,7 +4,7 @@ from mock import Mock
 
 from pandagg.tree.agg import Agg
 from pandagg.tree.response import ResponseTree
-from pandagg.interactive.response import IResponse, ClientBoundResponse
+from pandagg.interactive.response import IResponse
 from tests.base.mapping_example import MAPPING
 import tests.base.data_sample as sample
 
@@ -57,14 +57,26 @@ class ResponseTestCase(TestCase):
 
         # test filter query used to list documents belonging to bucket
         expected_query = {
-            'bool': {
-                'must': [
-                    {'term': {'global_metrics.field.name': 'allergentypelist'}},
-                    {'term': {'classification_type': 'multilabel'}}
+            "bool": {
+                "must": [
+                    {
+                        "term": {
+                            "global_metrics.field.name": {
+                                "value": "allergentypelist"
+                            }
+                        }
+                    },
+                    {
+                        "term": {
+                            "classification_type": {
+                                "value": "multilabel"
+                            }
+                        }
+                    }
                 ]
             }
         }
-        self.assertEqual(allergentypelist.list_documents(), expected_query)
+        self.assertEqual(allergentypelist.list_documents(execute=False), expected_query)
         self.assertEqual(allergentypelist._documents_query(), expected_query)
 
 
@@ -76,7 +88,7 @@ class ClientBoundResponseTestCase(TestCase):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(sample.ES_AGG_RESPONSE)
 
-        response = ClientBoundResponse(
+        response = IResponse(
             client=client_mock,
             tree=response_tree,
             index_name='some_index',
@@ -101,16 +113,28 @@ class ClientBoundResponseTestCase(TestCase):
         self.assertEqual(
             allergentypelist._documents_query(),
             {
-                'bool': {
-                    'must': [
-                        {'term': {'global_metrics.field.name': 'allergentypelist'}},
-                        {'term': {'classification_type': 'multilabel'}}
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "global_metrics.field.name": {
+                                    "value": "allergentypelist"
+                                }
+                            }
+                        },
+                        {
+                            "term": {
+                                "classification_type": {
+                                    "value": "multilabel"
+                                }
+                            }
+                        }
                     ]
                 }
             }
         )
         self.assertEqual(
-            allergentypelist.list_documents(execute=False).query_dict(),
+            allergentypelist.list_documents(execute=False),
             {
                 'bool': {
                     'must': [

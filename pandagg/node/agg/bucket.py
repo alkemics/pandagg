@@ -155,7 +155,7 @@ class Terms(MultipleBucketAgg):
         """Provide filter to get documents belonging to document of given key."""
         if key == 'missing':
             return {'bool': {'must_not': {'exists': {'field': self.field}}}}
-        return {'term': {self.field: key}}
+        return {'term': {self.field: {'value': key}}}
 
 
 class Filters(MultipleBucketAgg):

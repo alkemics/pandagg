@@ -1,5 +1,4 @@
 from pandagg.tree.agg import Agg
-from pandagg.interactive.agg import ClientBoundAgg
 
 from pandagg.node.agg.bucket import (
     MatchAll,
@@ -49,7 +48,6 @@ from pandagg.node.agg.pipeline import (
 
 __all__ = [
     'Agg',
-    'ClientBoundAgg',
     'MatchAll',
     'Terms',
     'Filters',

@@ -8,8 +8,8 @@ from elasticsearch.client import IndicesClient
 from pandagg import Elasticsearch
 from mock import patch
 
-from pandagg.interactive.index import ClientBoundIndex
-from pandagg.interactive.mapping import ClientBoundMapping
+from pandagg.interactive.index import Index
+from pandagg.interactive.mapping import IMapping
 from tests.base.mapping_example import MAPPING, EXPECTED_CLIENT_BOUND_MAPPING_REPR
 from tests.base.settings_example import SETTINGS
 
@@ -37,15 +37,15 @@ class WrapperTestCase(TestCase):
         # ensure indices presence
         self.assertTrue(hasattr(indices, 'classification_report_one'))
         report_index = indices.classification_report_one
-        self.assertIsInstance(report_index, ClientBoundIndex)
+        self.assertIsInstance(report_index, Index)
         self.assertEqual(
             report_index.__str__(),
-            u"<ClientBoundIndex> ['aliases', 'client', 'mapping', 'name', 'settings']"
+            u"<Index> ['aliases', 'client', 'mapping', 'name', 'settings']"
         )
         self.assertEqual(report_index.name, 'classification_report_one')
 
         # ensure mapping presence
         report_mapping = report_index.mapping
-        self.assertIsInstance(report_mapping, ClientBoundMapping)
+        self.assertIsInstance(report_mapping, IMapping)
         self.assertEqual(report_mapping.__str__(), EXPECTED_CLIENT_BOUND_MAPPING_REPR)
         self.assertEqual(report_mapping._index_name, 'classification_report_one')

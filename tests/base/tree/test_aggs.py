@@ -9,7 +9,6 @@ from unittest import TestCase
 import pandas as pd
 from treelib.exceptions import MultipleRootError, NodeIDAbsentError
 from pandagg.tree.agg import Agg
-from pandagg.interactive.agg import ClientBoundAgg
 from pandagg.interactive.response import IResponse
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
 from pandagg.tree.mapping import Mapping
@@ -586,7 +585,7 @@ root_agg
         agg_from_tree_mapping = Agg() \
             .set_mapping(mapping=Mapping(body=MAPPING))
         agg_from_obj_mapping = Agg() \
-            .set_mapping(mapping=IMapping(tree=Mapping(body=MAPPING)))
+            .set_mapping(mapping=IMapping(tree=Mapping(body=MAPPING), client=None))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.to_dict(),
             agg_from_tree_mapping.tree_mapping.to_dict()
@@ -772,7 +771,7 @@ week
 class ClientBoundAggTestCase(TestCase):
 
     def test_query(self):
-        agg = ClientBoundAgg(client=None, index_name='some_index')
+        agg = Agg(client=None, index_name='some_index')
 
         new_agg = agg\
             .query({'term': {'user': {'value': 1}}})\

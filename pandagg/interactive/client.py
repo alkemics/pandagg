@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from six import iteritems
 from elasticsearch import Elasticsearch as OriginalElasticSearch
-from pandagg.interactive.index import ClientBoundIndex, Indices
+from pandagg.interactive.index import Index, Indices
 
 
 class Elasticsearch(OriginalElasticSearch):
@@ -16,7 +16,7 @@ class Elasticsearch(OriginalElasticSearch):
         """
         indices = Indices()
         for index_name, index_detail in iteritems(self.indices.get(index=index)):
-            indices[index_name] = ClientBoundIndex(
+            indices[index_name] = Index(
                 client=self,
                 name=index_name,
                 mapping=index_detail['mappings'],

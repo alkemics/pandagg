@@ -184,4 +184,4 @@ EXPECTED_MAPPING_REPR = """                                                     
 """
 
 EXPECTED_MAPPING_TREE_REPR = """<Mapping>\n%s""" % EXPECTED_MAPPING_REPR
-EXPECTED_CLIENT_BOUND_MAPPING_REPR = """<ClientBoundMapping>\n%s""" % EXPECTED_MAPPING_REPR
+EXPECTED_CLIENT_BOUND_MAPPING_REPR = """<IMapping>\n%s""" % EXPECTED_MAPPING_REPR

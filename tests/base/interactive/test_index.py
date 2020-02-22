@@ -5,8 +5,7 @@ from mock import Mock, patch
 from unittest import TestCase
 
 from pandagg.tree.agg import Agg
-from pandagg.interactive.agg import ClientBoundAgg
-from pandagg.interactive.index import Index, ClientBoundIndex
+from pandagg.interactive.index import Index
 from pandagg.node.agg.metric import Avg
 
 from tests.base.mapping_example import MAPPING
@@ -64,7 +63,7 @@ class ClientBoundTestCase(TestCase):
     def get_client_bound_index(es_response=None):
         client_mock = Elasticsearch()
         client_mock.search = Mock(return_value=es_response)
-        return client_mock, ClientBoundIndex(
+        return client_mock, Index(
             client=client_mock,
             name='my_index_name',
             settings={},
@@ -77,7 +76,7 @@ class ClientBoundTestCase(TestCase):
 
         agg = index\
             .query({'term': {'workflow': {'value': 'some_workflow'}}})
-        self.assertIsInstance(agg, ClientBoundAgg)
+        self.assertIsInstance(agg, Agg)
         self.assertIs(agg.client, client_mock)
         self.assertEqual(agg._query.query_dict(), {'term': {'workflow': {'value': 'some_workflow'}}})
         self.assertEqual(agg.index_name, 'my_index_name')
@@ -87,7 +86,7 @@ class ClientBoundTestCase(TestCase):
 
         grouped_agg = index\
             .groupby(['classification_type', 'global_metrics.field.name'])
-        self.assertIsInstance(grouped_agg, ClientBoundAgg)
+        self.assertIsInstance(grouped_agg, Agg)
         self.assertIs(grouped_agg.client, client_mock)
         self.assertEqual(grouped_agg.index_name, 'my_index_name')
 
@@ -108,7 +107,7 @@ class ClientBoundTestCase(TestCase):
                 ],
                 execute=False
             )
-        self.assertIsInstance(not_executed_agg, ClientBoundAgg)
+        self.assertIsInstance(not_executed_agg, Agg)
         self.assertIs(not_executed_agg.client, client_mock)
         self.assertEqual(not_executed_agg.index_name, 'my_index_name')
 

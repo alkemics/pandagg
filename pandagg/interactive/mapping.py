@@ -22,23 +22,17 @@ class IMapping(TreeBasedObj):
     """
     _NODE_PATH_ATTR = 'name'
 
-    def __call__(self, *args, **kwargs):
-        return self._tree[self._tree.root]
-
-
-class ClientBoundMapping(IMapping):
-
-    def __init__(self, client, tree, root_path=None, depth=None, initial_tree=None, index_name=None):
+    def __init__(self, tree, client=None, root_path=None, depth=None, initial_tree=None, index_name=None):
         self._client = client
         self._index_name = index_name
-        super(ClientBoundMapping, self).__init__(
+        super(IMapping, self).__init__(
             tree=tree,
             root_path=root_path,
             depth=depth,
             initial_tree=initial_tree,
         )
         # if we reached a leave, add aggregation capabilities based on reached mapping type
-        if not self._tree.children(self._tree.root):
+        if self._client is not None and not self._tree.children(self._tree.root):
             field_node = self._tree[self._tree.root]
             if field_node.KEY in field_classes_per_name:
                 self.a = field_classes_per_name[field_node.KEY](
@@ -49,7 +43,7 @@ class ClientBoundMapping(IMapping):
                 )
 
     def _clone(self, nid, root_path, depth):
-        return ClientBoundMapping(
+        return IMapping(
             client=self._client,
             tree=self._tree.subtree(nid),
             root_path=root_path,
@@ -57,3 +51,6 @@ class ClientBoundMapping(IMapping):
             initial_tree=self._initial_tree,
             index_name=self._index_name
         )
+
+    def __call__(self, *args, **kwargs):
+        return self._tree[self._tree.root]

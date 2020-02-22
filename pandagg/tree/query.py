@@ -30,8 +30,9 @@ class Query(Tree):
 
     node_class = QueryClause
 
-    def __init__(self, from_=None, mapping=None, identifier=None):
-        # set mapping
+    def __init__(self, from_=None, mapping=None, identifier=None, client=None, index_name=None):
+        self.index_name = index_name
+        self.client = client
         self.tree_mapping = None
         if mapping is not None:
             self.set_mapping(mapping)
@@ -41,6 +42,8 @@ class Query(Tree):
 
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Query(
+            client=self.client,
+            index_name=self.index_name,
             mapping=self.tree_mapping,
             identifier=identifier,
             from_=self if with_tree else None
@@ -362,3 +365,10 @@ class Query(Tree):
 
     def __str__(self):
         return '<Query>\n%s' % text(self.show())
+
+    def execute(self, index=None, **kwargs):
+        if self.client is None:
+            raise ValueError('Execution requires to specify "client" at __init__.')
+        body = {'query': self.query_dict()}
+        body.update(kwargs)
+        return self.client.search(index=index or self.index_name, body=body)

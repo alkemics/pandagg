@@ -9,7 +9,7 @@ from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.field_datatypes import Keyword
 from pandagg.tree.mapping import Mapping
-from pandagg.interactive.mapping import IMapping, ClientBoundMapping
+from pandagg.interactive.mapping import IMapping
 from tests.base.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
 
 
@@ -125,7 +125,7 @@ class ClientBoundMappingTestCase(TestCase):
         client_mock.search = Mock(return_value=es_response_mock)
 
         mapping_tree = Mapping(body=MAPPING)
-        client_bound_mapping = ClientBoundMapping(
+        client_bound_mapping = IMapping(
             client=client_mock,
             tree=mapping_tree,
             depth=1,

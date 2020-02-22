@@ -8,6 +8,7 @@ import collections
 import warnings
 
 from builtins import str as text
+from elasticsearch import Elasticsearch
 from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
 from pandagg.tree._tree import Tree
@@ -18,6 +19,7 @@ from pandagg.node.agg.deserializer import deserialize_agg
 from pandagg.node.agg.abstract import BucketAggNode, UniqueBucketAgg, AggNode, MetricAgg, ShadowRoot
 from pandagg.node.agg.bucket import Terms, Nested, ReverseNested
 from pandagg.node.agg.pipeline import BucketSelector, BucketSort
+from pandagg.tree.query import Query
 from pandagg.tree.response import ResponseTree
 
 
@@ -32,8 +34,13 @@ class Agg(Tree):
     DEFAULT_OUTPUT = 'dataframe'
     _crafted_root_name = 'root'
 
-    def __init__(self, from_=None, mapping=None, identifier=None):
+    def __init__(self, from_=None, mapping=None, identifier=None, client=None, query=None, index_name=None):
+        self.index_name = index_name
+        self._query = Query(from_=query)
         self.tree_mapping = None
+        if client is not None and not isinstance(client, Elasticsearch):
+            raise ValueError('Unsupported client type <%s>' % type(client))
+        self.client = client
         if mapping is not None:
             self.set_mapping(mapping)
 
@@ -85,8 +92,11 @@ class Agg(Tree):
     def _clone(self, identifier=None, with_tree=False, deep=False):
         return Agg(
             mapping=self.tree_mapping,
+            index_name=self.index_name,
             identifier=identifier,
-            from_=self if with_tree and len(self.nodes) else None
+            from_=self if with_tree and len(self.nodes) else None,
+            client=self.client,
+            query=self._query,
         )
 
     def set_mapping(self, mapping):
@@ -575,7 +585,13 @@ class Agg(Tree):
 
     def _serialize_response_as_tree(self, aggs):
         response_tree = ResponseTree(self).parse_aggregation(aggs)
-        return IResponse(tree=response_tree, depth=1)
+        return IResponse(
+            tree=response_tree,
+            depth=1,
+            client=self.client,
+            index_name=self.index_name,
+            query=self._query
+        )
 
     def serialize_response(self, aggs, output, **kwargs):
         if output == 'raw':
@@ -590,6 +606,37 @@ class Agg(Tree):
             return self._serialize_response_as_dataframe(aggs, **kwargs)
         else:
             raise NotImplementedError('Unkown %s output format.' % output)
+
+    def query(self, query, validate=False, **kwargs):
+        new_query = self._query.query(query, **kwargs)
+        query_dict = new_query.query_dict()
+        if validate:
+            validity = self.client.indices.validate_query(index=self.index_name, body={"query": query_dict})
+            if not validity['valid']:
+                raise ValueError('Wrong query: %s\n%s' % (query, validity))
+        new_agg = self._clone(with_tree=True)
+        new_agg._query = new_query
+        return new_agg
+
+    def _execute(self, aggregation, index=None):
+        body = {"aggs": aggregation, "size": 0}
+        query = self._query.query_dict()
+        if query:
+            body['query'] = query
+        return self.client.search(index=index, body=body)
+
+    def execute(self, index=None, output=DEFAULT_OUTPUT, **kwargs):
+        if self.client is None:
+            raise ValueError('Execution requires to specify "client" at __init__.')
+        es_response = self._execute(
+            aggregation=self.query_dict(),
+            index=index or self.index_name
+        )
+        return self.serialize_response(
+            aggs=es_response['aggregations'],
+            output=output,
+            **kwargs
+        )
 
     def __str__(self):
         return '<Aggregation>\n%s' % text(self.show())

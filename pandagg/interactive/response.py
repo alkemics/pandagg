@@ -18,6 +18,23 @@ class IResponse(TreeBasedObj):
     _NODE_PATH_ATTR = 'attr_name'
     _COERCE_ATTR = True
 
+    def __init__(self, tree, client=None, index_name=None, root_path=None, depth=None, initial_tree=None, query=None):
+        self._client = client
+        self._index_name = index_name
+        self._query = Query(query)
+        super(IResponse, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
+
+    def _clone(self, nid, root_path, depth):
+        return IResponse(
+            client=self._client,
+            index_name=self._index_name,
+            tree=self._tree.subtree(nid),
+            root_path=root_path,
+            depth=depth,
+            initial_tree=self._initial_tree,
+            query=self._query
+        )
+
     @classmethod
     def _build_filter(cls, nid_to_children, filters_per_nested_level, current_nested_path=None):
         """Recursive function to build bucket filters from highest to deepest nested conditions.
@@ -80,30 +97,6 @@ class IResponse(TreeBasedObj):
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
-    def list_documents(self, **kwargs):
-        """Return ES aggregation query to list documents belonging to given bucket."""
-        return self._documents_query()
-
-
-class ClientBoundResponse(IResponse):
-
-    def __init__(self, client, index_name, tree, root_path=None, depth=None, initial_tree=None, query=None):
-        self._client = client
-        self._index_name = index_name
-        self._query = Query(query)
-        super(IResponse, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
-
-    def _clone(self, nid, root_path, depth):
-        return ClientBoundResponse(
-            client=self._client,
-            index_name=self._index_name,
-            tree=self._tree.subtree(nid),
-            root_path=root_path,
-            depth=depth,
-            initial_tree=self._initial_tree,
-            query=self._query
-        )
-
     def list_documents(self, size=None, execute=True, _source=None, compact=True, **kwargs):
         """Return ES aggregation query to list documents belonging to given bucket.
         :param size: number of returned documents (ES default: 20)
@@ -115,7 +108,7 @@ class ClientBoundResponse(IResponse):
         """
         filter_query = self._query.query(self._documents_query())
         if not execute:
-            return filter_query
+            return filter_query.query_dict()
         body = {}
         if filter_query:
             body["query"] = filter_query.query_dict()
