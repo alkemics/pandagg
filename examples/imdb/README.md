@@ -23,7 +23,7 @@ The index should provide good performances trying to answer these kind question 
 ## Data source
 I exported following SQL tables from MariaDB as described in https://relational.fit.cvut.cz/dataset/IMDb:
 
-![imdb tables](ressources/imdb_ijs.svg)
+![imdb tables](ressources/imdb_ijs.svg) 
 
 ## Index mapping
 
@@ -91,7 +91,10 @@ https://www.elastic.co/fr/blog/strings-are-dead-long-live-strings)
 ```
 
 
-## Steps to build your index
+## Steps to start playing with your index
+
+Note to Elastic, if you have a spare cluster to prepare demo indices on which you could let your community perform read
+operations we could skip this step ;)
 
 #### Dump tables
 Follow instruction on bottom of https://relational.fit.cvut.cz/dataset/IMDb page and dump following tables in a 
@@ -111,7 +114,7 @@ cd pandagg
 
 virtualenv env
 python setup.py develop
-pip install pandas simplejson
+pip install pandas simplejson jupyter seaborn
 ```
 Then edit `conf.py` file:
 ```
@@ -127,8 +130,15 @@ OUTPUT_FILE_NAME = 'serialized.json'
 
 ```
 # generate serialized movies documents, ready to be inserted in ES
+# can take a while
 python examples/imdb/serialize.py
 
 # create index with mapping if necessary, bulk insert documents in ES
 python examples/imdb/load.py
+```
+
+
+#### Explore pandagg notebooks
+```
+jupyter notebook
 ```
