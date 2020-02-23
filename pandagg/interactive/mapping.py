@@ -22,9 +22,11 @@ class IMapping(TreeBasedObj):
     """
     _NODE_PATH_ATTR = 'name'
 
-    def __init__(self, tree, client=None, root_path=None, depth=None, initial_tree=None, index_name=None):
+    def __init__(self, tree, client=None, root_path=None, depth=1, initial_tree=None, index_name=None):
         self._client = client
         self._index_name = index_name
+        if isinstance(tree, dict):
+            tree = Mapping(tree)
         super(IMapping, self).__init__(
             tree=tree,
             root_path=root_path,

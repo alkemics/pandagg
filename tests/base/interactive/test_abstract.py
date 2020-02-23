@@ -164,8 +164,8 @@ class TreeBasedObjTestCase(TestCase):
         lots of nodes, we want to check that nodes are never copied. Instead their reference is passed to different
         trees.
         """
-        # if no depth is passed, the tree does not expand
-        no_expand_obj = TreeBasedObj(tree=self.tree)
+        # if None depth is passed, the tree does not expand
+        no_expand_obj = TreeBasedObj(tree=self.tree, depth=None)
         for child in ('bill', 'jane'):
             self.assertFalse(hasattr(no_expand_obj, child))
 

@@ -1,4 +1,4 @@
-from pandagg.interactive.mapping import Mapping, ClientBoundMapping, IMapping
+from pandagg.interactive.mapping import Mapping, IMapping
 from pandagg.node.mapping.field_datatypes import (
     Text,
     Keyword,
@@ -54,7 +54,6 @@ from pandagg.node.mapping.meta_fields import (
 
 __all__ = [
     'Mapping',
-    'ClientBoundMapping',
     'IMapping',
     'Text',
     'Keyword',

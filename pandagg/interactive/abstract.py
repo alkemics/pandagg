@@ -125,7 +125,7 @@ class TreeBasedObj(Obj):
     _NODE_PATH_ATTR = 'tag'
     _COERCE_ATTR = False
 
-    def __init__(self, tree, root_path=None, depth=None, initial_tree=None):
+    def __init__(self, tree, root_path=None, depth=1, initial_tree=None):
         super(TreeBasedObj, self).__init__()
         assert isinstance(tree, Tree)
         self._tree = tree
