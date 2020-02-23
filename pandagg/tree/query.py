@@ -49,6 +49,11 @@ class Query(Tree):
             from_=self if with_tree else None
         )
 
+    def bind(self, client, index_name=None):
+        self.client = client
+        if index_name is not None:
+            self.index_name = index_name
+
     def set_mapping(self, mapping):
         self.tree_mapping = as_mapping(mapping)
         return self

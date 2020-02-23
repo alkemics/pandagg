@@ -99,6 +99,11 @@ class Agg(Tree):
             query=self._query,
         )
 
+    def bind(self, client, index_name=None):
+        self.client = client
+        if index_name is not None:
+            self.index_name = index_name
+
     def set_mapping(self, mapping):
         self.tree_mapping = as_mapping(mapping)
         return self
