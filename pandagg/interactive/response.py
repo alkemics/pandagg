@@ -97,7 +97,7 @@ class IResponse(TreeBasedObj):
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
-    def list_documents(self, size=None, execute=True, _source=None, compact=True, **kwargs):
+    def list_documents(self, size=None, execute=True, _source=None, compact=False, **kwargs):
         """Return ES aggregation query to list documents belonging to given bucket.
         :param size: number of returned documents (ES default: 20)
         :param execute: if set to False, return aggregation query
