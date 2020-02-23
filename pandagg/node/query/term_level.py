@@ -73,7 +73,7 @@ class Terms(LeafQueryClause):
 
     @property
     def tag(self):
-        return '%s, field=%s, values=%s' % (self.KEY, self.field, map(text, self.terms))
+        return '%s, field=%s, values=%s' % (self.KEY, self.field, list(map(text, self.terms)))
 
     @classmethod
     def deserialize(cls, **body):

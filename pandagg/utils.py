@@ -13,6 +13,21 @@ class PrettyNode(object):
         self.pretty = pretty
 
 
+def ordered(obj):
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj
+
+
+def equal_queries(d1, d2):
+    """Compares if two queries are equivalent (do not consider nested list orders).
+    """
+    return ordered(d1) == ordered(d2)
+
+
 def bool_if_required(conditions, operator='must'):
     assert operator in ('must', 'should')
     # wrap conditions in bool only if necessary

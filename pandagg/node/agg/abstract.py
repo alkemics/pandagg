@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+from future.utils import iteritems
 from builtins import str as text
 
 import json
@@ -28,6 +29,10 @@ class AggNode(Node):
         super(AggNode, self).__init__(identifier=self.name)
         self.body = body
         self.meta = meta
+
+    @property
+    def tag(self):
+        return '[%s] %s' % (text(self.name), text(self.KEY))
 
     @classmethod
     def valid_on_field_type(cls, field_type):
@@ -212,6 +217,7 @@ class FieldMetricAgg(MetricAgg):
 
     def __init__(self, name, field, meta=None, **body):
         self.field = field
+        self.inner_body = body
         super(FieldMetricAgg, self).__init__(
             name=name,
             meta=meta,

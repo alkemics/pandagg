@@ -34,7 +34,7 @@ class MappingTreeTestCase(TestCase):
         "searchable": {
             "type": "text"
         }
-    }, 
+    },
     "type": "keyword"
 }"""
         )

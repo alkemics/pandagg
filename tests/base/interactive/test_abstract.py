@@ -3,6 +3,8 @@
 
 from __future__ import unicode_literals
 
+import sys
+
 from pandagg.tree._tree import Tree
 from pandagg.utils import bool_if_required
 from pandagg.interactive.abstract import TreeBasedObj, Obj, is_valid_attr_name, _coerce_attr
@@ -74,6 +76,8 @@ class ObjTestCase(TestCase):
         self.assertIn('_some_key', dir(obj))
 
     def test_obj_init(self):
+        t = 'type' if sys.version_info[0] == 2 else 'class'
+
         obj = Obj(yolo="yolo value", toto="toto value")
         self.assertEqual(obj.yolo, "yolo value")
         self.assertEqual(obj.toto, "toto value")
@@ -86,16 +90,16 @@ class ObjTestCase(TestCase):
         # unauthorized attributes/keys
         with self.assertRaises(ValueError) as e:
             Obj(__d="trying to mess around")
-        self.assertEqual(e.exception.args[0], 'Attribute <__d> of type <<type \'str\'>> is not valid.')
+        self.assertEqual(e.exception.args[0], 'Attribute <__d> of type <<%s \'str\'>> is not valid.' % t)
 
         with self.assertRaises(ValueError) as e:
             obj = Obj()
             obj[23] = 'yolo'
-        self.assertEqual(e.exception.args[0], 'Key <23> of type <<type \'int\'>> cannot be set as attribute on <Obj> instance.')
+        self.assertEqual(e.exception.args[0], 'Key <23> of type <<%s \'int\'>> cannot be set as attribute on <Obj> instance.' % t)
         with self.assertRaises(ValueError) as e:
             obj = Obj()
             obj[None] = 'yolo'
-        self.assertEqual(e.exception.args[0], 'Key <None> of type <<type \'NoneType\'>> cannot be set as attribute on <Obj> instance.')
+        self.assertEqual(e.exception.args[0], 'Key <None> of type <<%s \'NoneType\'>> cannot be set as attribute on <Obj> instance.' % t)
 
         # if other that string is accepted
         class FlexObj(Obj):
@@ -104,7 +108,7 @@ class ObjTestCase(TestCase):
         # unauthorized attributes/keys
         with self.assertRaises(ValueError) as e:
             FlexObj(__d="trying to mess around")
-        self.assertEqual(e.exception.args[0], 'Attribute <__d> of type <<type \'str\'>> is not valid.')
+        self.assertEqual(e.exception.args[0], 'Attribute <__d> of type <<%s \'str\'>> is not valid.' % t)
 
         # authorized:
         obj = FlexObj()
@@ -188,7 +192,7 @@ class TreeBasedObjTestCase(TestCase):
 
         # test representations
         self.assertEqual(
-            obj.__str__().decode('utf-8'),
+            obj.__str__(),
             """<TreeBasedObj>
 harry
 ├── bill
@@ -198,14 +202,14 @@ harry
 """
         )
         self.assertEqual(
-            bill_obj.__str__().decode('utf-8'),
+            bill_obj.__str__(),
             """<TreeBasedObj subpart: bill>
 bill
 └── george
 """
         )
         self.assertEqual(
-            bill_obj.george.__str__().decode('utf-8'),
+            bill_obj.george.__str__(),
             """<TreeBasedObj subpart: bill.george>
 george
 """

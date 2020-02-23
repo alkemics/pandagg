@@ -115,9 +115,9 @@ class GeoQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'geo_shape, field=location, shape={"type": "envelope", "coordinates": [[13.0, 53.0], [14.0, 52.0]]}, relation="within"')
+        self.assertEqual(q.tag, 'geo_shape, field=location, relation="within", shape={"coordinates": [[13.0, 53.0], [14.0, 52.0]], "type": "envelope"}')
 
         deserialized = GeoShape.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'geo_shape, field=location, shape={"type": "envelope", "coordinates": [[13.0, 53.0], [14.0, 52.0]]}, relation="within"')
+        self.assertEqual(deserialized.tag, 'geo_shape, field=location, relation="within", shape={"coordinates": [[13.0, 53.0], [14.0, 52.0]], "type": "envelope"}')

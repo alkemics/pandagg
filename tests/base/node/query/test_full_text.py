@@ -35,7 +35,7 @@ class FullTextQueriesTestCase(TestCase):
             "max_gaps": 0,
             "ordered": True
         })
-        tag = 'intervals, field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, {"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": "big bad"}}]}}, {"match": {"query": "wolf"}}], "ordered": true, "max_gaps": 0}'
+        tag = 'intervals, field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, {"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": "big bad"}}]}}, {"match": {"query": "wolf"}}], "max_gaps": 0, "ordered": true}'
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(q.tag, tag)
@@ -78,12 +78,12 @@ class FullTextQueriesTestCase(TestCase):
         q = MatchBoolPrefix(field='message', query='quick brown f', analyzer='keyword')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match_bool_prefix, field=message, query="quick brown f", analyzer="keyword"')
+        self.assertEqual(q.tag, 'match_bool_prefix, field=message, analyzer="keyword", query="quick brown f"')
 
         deserialized = MatchBoolPrefix.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match_bool_prefix, field=message, query="quick brown f", analyzer="keyword"')
+        self.assertEqual(deserialized.tag, 'match_bool_prefix, field=message, analyzer="keyword", query="quick brown f"')
 
         # short syntax
         deserialized = MatchBoolPrefix.deserialize(**{'message': 'quick brown f'})
@@ -101,12 +101,12 @@ class FullTextQueriesTestCase(TestCase):
         q = MatchPhrase(field='message', query='this is a test', analyzer='my_analyzer')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match_phrase, field=message, query="this is a test", analyzer="my_analyzer"')
+        self.assertEqual(q.tag, 'match_phrase, field=message, analyzer="my_analyzer", query="this is a test"')
 
         deserialized = MatchPhrase.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match_phrase, field=message, query="this is a test", analyzer="my_analyzer"')
+        self.assertEqual(deserialized.tag, 'match_phrase, field=message, analyzer="my_analyzer", query="this is a test"')
 
         # short syntax
         deserialized = MatchPhrase.deserialize(**{'message': 'this is a test'})
@@ -124,12 +124,12 @@ class FullTextQueriesTestCase(TestCase):
         q = MatchPhrasePrefix(field='message', query='this is a test', analyzer='my_analyzer')
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'match_phrase_prefix, field=message, query="this is a test", analyzer="my_analyzer"')
+        self.assertEqual(q.tag, 'match_phrase_prefix, field=message, analyzer="my_analyzer", query="this is a test"')
 
         deserialized = MatchPhrasePrefix.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'match_phrase_prefix, field=message, query="this is a test", analyzer="my_analyzer"')
+        self.assertEqual(deserialized.tag, 'match_phrase_prefix, field=message, analyzer="my_analyzer", query="this is a test"')
 
         # short syntax
         deserialized = MatchPhrasePrefix.deserialize(**{'message': 'this is a test'})

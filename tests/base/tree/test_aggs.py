@@ -17,6 +17,7 @@ from pandagg.node.agg.bucket import DateHistogram, Terms, Filter
 from pandagg.node.agg.metric import Avg, Min
 
 import tests.base.data_sample as sample
+from pandagg.utils import equal_queries
 
 from tests.base.mapping_example import MAPPING
 
@@ -60,9 +61,9 @@ class AggTestCase(TestCase):
         self.assertEqual(
             with_mapping.__str__(),
             """<Aggregation>
-workflow
-└── nested_below_workflow
-    └── local_f1_score
+[workflow] terms
+└── [nested_below_workflow] nested
+    └── [local_f1_score] avg
 """
         )
         self.assertIn('nested_below_workflow', with_mapping)
@@ -78,10 +79,10 @@ workflow
         self.assertEqual(
             with_mapping.__str__(),
             """<Aggregation>
-workflow
-└── nested_below_workflow
-    ├── local_f1_score
-    └── local_precision
+[workflow] terms
+└── [nested_below_workflow] nested
+    ├── [local_f1_score] avg
+    └── [local_precision] avg
 """
         )
         self.assertEqual(len(with_mapping.nodes.keys()), 4)
@@ -96,12 +97,12 @@ workflow
         self.assertEqual(
             with_mapping.__str__(),
             """<Aggregation>
-workflow
-└── nested_below_workflow
-    ├── local_f1_score
-    ├── local_precision
-    └── reverse_nested_below_nested_below_workflow
-        └── language_terms
+[workflow] terms
+└── [nested_below_workflow] nested
+    ├── [local_f1_score] avg
+    ├── [local_precision] avg
+    └── [reverse_nested_below_nested_below_workflow] reverse_nested
+        └── [language_terms] terms
 """
         )
 
@@ -153,9 +154,9 @@ workflow
         self.assertEqual(
             initial_agg_1.__str__(),
             """<Aggregation>
-week
-└── nested_below_week
-    └── local_metrics.field_class.name
+[week] date_histogram
+└── [nested_below_week] nested
+    └── [local_metrics.field_class.name] terms
 """
         )
 
@@ -190,9 +191,9 @@ week
         self.assertEqual(
             initial_agg_2.__str__(),
             """<Aggregation>
-week
-└── nested_below_week
-    └── local_metrics.field_class.name
+[week] date_histogram
+└── [nested_below_week] nested
+    └── [local_metrics.field_class.name] terms
 """
         )
 
@@ -236,9 +237,9 @@ week
         self.assertEqual(
             initial_agg_1.__str__(),
             """<Aggregation>
-week
-└── nested_below_week
-    └── local_metrics.field_class.name
+[week] date_histogram
+└── [nested_below_week] nested
+    └── [local_metrics.field_class.name] terms
 """
         )
 
@@ -274,8 +275,8 @@ week
         self.assertEqual(
             initial_agg_2.__str__(),
             """<Aggregation>
-week
-└── local_metrics.field_class.name
+[week] date_histogram
+└── [local_metrics.field_class.name] terms
 """
         )
 
@@ -446,9 +447,9 @@ week
         self.assertEqual(
             agg.__str__(),
             """<Aggregation>
-root_agg
-├── avg_some_other_field
-└── other_name
+[root_agg] terms
+├── [avg_some_other_field] avg
+└── [other_name] terms
 """
         )
         self.assertEqual(
@@ -488,10 +489,10 @@ root_agg
 
     def test_normalize_buckets(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        self.assertEqual(
+        self.assertTrue(equal_queries(
             my_agg._serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
             sample.EXPECTED_NORMALIZED_RESPONSE
-        )
+        ))
 
     def test_parse_as_tabular(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
@@ -667,10 +668,10 @@ root_agg
         self.assertEqual(
             agg.__str__(),
             """<Aggregation>
-week
-└── nested_below_week
-    └── local_metrics.field_class.name
-        └── min_f1_score
+[week] date_histogram
+└── [nested_below_week] nested
+    └── [local_metrics.field_class.name] terms
+        └── [min_f1_score] min
 """
         )
 

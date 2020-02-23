@@ -95,7 +95,7 @@ class TermLevelQueriesTestCase(TestCase):
             "rewrite": "constant_score"
         }}
         expected = {'regexp': body}
-        tag = 'regexp, field=user, flags="ALL", max_determinized_states=10000, value="k.*y", rewrite="constant_score"'
+        tag = 'regexp, field=user, flags="ALL", max_determinized_states=10000, rewrite="constant_score", value="k.*y"'
 
         q = Regexp(field="user", value="k.*y", flags="ALL", max_determinized_states=10000, rewrite="constant_score")
         self.assertEqual(q.body, body)
@@ -178,9 +178,9 @@ class TermLevelQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'wildcard, field=user, boost=1.0, value="ki*y", rewrite="constant_score"')
+        self.assertEqual(q.tag, 'wildcard, field=user, boost=1.0, rewrite="constant_score", value="ki*y"')
 
         deserialized = q.deserialize(**body)
         self.assertEqual(deserialized, expected)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'wildcard, field=user, boost=1.0, value="ki*y", rewrite="constant_score"')
+        self.assertEqual(deserialized.tag, 'wildcard, field=user, boost=1.0, rewrite="constant_score", value="ki*y"')

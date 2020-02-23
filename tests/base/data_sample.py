@@ -12,10 +12,10 @@ from tests.base.mapping_example import MAPPING
 
 
 EXPECTED_REPR = """<Aggregation>
-classification_type
-└── global_metrics.field.name
-    ├── avg_f1_micro
-    └── avg_nb_classes
+[classification_type] terms
+└── [global_metrics.field.name] terms
+    ├── [avg_f1_micro] avg
+    └── [avg_nb_classes] avg
 """
 
 EXPECTED_AGG_QUERY = {

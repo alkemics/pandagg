@@ -80,7 +80,10 @@ class SingleFieldQueryClause(LeafQueryClause):
     def tag(self):
         base = '%s, field=%s' % (text(self.KEY), text(self.field))
         if self.inner_body:
-            base += ', %s' % ', '.join('%s=%s' % (text(k), text(json.dumps(v))) for k, v in iteritems(self.inner_body))
+            base += ', %s' % ', '.join(
+                '%s=%s' % (text(k), text(json.dumps(self.inner_body[k], sort_keys=True)))
+                for k in sorted(self.inner_body.keys())
+            )
         return base
 
     @classmethod
@@ -102,4 +105,4 @@ class MultiFieldsQueryClause(LeafQueryClause):
 
     @property
     def tag(self):
-        return '%s, fields=%s' % (self.KEY, map(text, self.fields))
+        return '%s, fields=%s' % (self.KEY, list(map(text, self.fields)))

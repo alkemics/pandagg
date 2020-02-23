@@ -32,7 +32,7 @@ class QueryTestCase(TestCase):
             }
         )
         self.assertEqual(
-            q.__str__().decode('utf-8'),
+            q.__str__(),
             '''<Query>
 bool
 ├── boost=2
@@ -46,7 +46,7 @@ bool
         q = Query(Term(_name='term_id', field='some_field', value=2))
         with self.assertRaises(ValueError) as e:
             q.add_node(Filter(QueryString(field='other_field', value='salut')), pid='term_id')
-        self.assertEqual(e.exception.message, 'Cannot add clause under leaf query clause <term>')
+        self.assertEqual(e.exception.args, ('Cannot add clause under leaf query clause <term>',))
 
         # under compound clause
         q = Query(Bool(_name='bool'))
@@ -55,7 +55,7 @@ bool
         q = Query(Bool(_name='bool'))
         with self.assertRaises(ValueError):
             q.add_node(Term(field='some_field', value=2), pid='bool')
-        self.assertEqual(e.exception.message, 'Cannot add clause under leaf query clause <term>')
+        self.assertEqual(e.exception.args, ('Cannot add clause under leaf query clause <term>',))
 
     def test_new_bool_must_above_node(self):
         initial_q = Query()
@@ -176,7 +176,7 @@ bool
                 parent='not_existing_node',
                 _name='somewhere'
             )
-        self.assertEqual(e.exception.message, 'Parent <not_existing_node> does not exist in current query.')
+        self.assertEqual(e.exception.args, ('Parent <not_existing_node> does not exist in current query.',))
 
         with self.assertRaises(ValueError) as e:
             initial_q.must(
@@ -184,7 +184,7 @@ bool
                 parent='not_existing_node',
                 _name='somewhere',
             )
-        self.assertEqual(e.exception.message, 'Parent <not_existing_node> does not exist in current query.')
+        self.assertEqual(e.exception.args, ('Parent <not_existing_node> does not exist in current query.',))
 
         # ABOVE non-existing
         with self.assertRaises(ValueError) as e:
@@ -193,7 +193,7 @@ bool
                 child='not_existing_node',
                 _name='somewhere',
             )
-        self.assertEqual(e.exception.message, 'Child <not_existing_node> does not exist in current query.')
+        self.assertEqual(e.exception.args, ('Child <not_existing_node> does not exist in current query.',))
 
         with self.assertRaises(ValueError) as e:
             initial_q.must(
@@ -201,7 +201,7 @@ bool
                 child='not_existing_node',
                 _name='somewhere',
             )
-        self.assertEqual(e.exception.message, 'Child <not_existing_node> does not exist in current query.')
+        self.assertEqual(e.exception.args, ('Child <not_existing_node> does not exist in current query.',))
 
         # UNDER leaf
         with self.assertRaises(Exception) as e:
@@ -211,8 +211,8 @@ bool
                 _name='somewhere'
             )
         self.assertEqual(
-            e.exception.message,
-            'Cannot place clause under non-compound clause <pizza_term> of type <term>.'
+            e.exception.args,
+            ('Cannot place clause under non-compound clause <pizza_term> of type <term>.',)
         )
 
         with self.assertRaises(Exception) as e:
@@ -222,8 +222,8 @@ bool
                 _name='somewhere'
             )
         self.assertEqual(
-            e.exception.message,
-            'Cannot place clause under non-compound clause <pizza_term> of type <term>.'
+            e.exception.args,
+            ('Cannot place clause under non-compound clause <pizza_term> of type <term>.',)
         )
 
     def test_replace_all_existing_bool(self):
@@ -356,7 +356,7 @@ bool
         term = next((c for c in q1.nodes.values() if isinstance(c, Term)))
         self.assertEqual(term.name, 'term_nid')
 
-        self.assertEqual(q1.__str__().decode('utf-8'), '''<Query>
+        self.assertEqual(q1.__str__(), '''<Query>
 bool
 └── must
     └── term, field=some_field, value=2
@@ -368,7 +368,7 @@ bool
         next((c for c in q2.nodes.values() if isinstance(c, Bool)))
         next((c for c in q2.nodes.values() if isinstance(c, Must)))
         next((c for c in q2.nodes.values() if isinstance(c, Term)))
-        self.assertEqual(q2.__str__().decode('utf-8'), '''<Query>
+        self.assertEqual(q2.__str__(), '''<Query>
 bool
 └── must
     └── term, field=some_field, value=2
@@ -384,7 +384,7 @@ bool
         next((c for c in q3.nodes.values() if isinstance(c, Must)))
         next((c for c in q3.nodes.values() if isinstance(c, Term)))
         next((c for c in q3.nodes.values() if isinstance(c, Exists)))
-        self.assertEqual(q3.__str__().decode('utf-8'), '''<Query>
+        self.assertEqual(q3.__str__(), '''<Query>
 bool
 └── must
     ├── exists, field=some_field
@@ -407,7 +407,7 @@ bool
                 _name='root_bool'
             )
 
-        self.assertEqual(q.__str__().decode('utf-8'), '''<Query>
+        self.assertEqual(q.__str__(), '''<Query>
 bool
 ├── filter
 │   └── term, field=field_a, value=2
@@ -592,7 +592,7 @@ bool
         q1 = q.query(Bool(_name='root_bool', must=Term(field='some_field', value=2)))
         q2 = q.query({'bool': {'_name': 'root_bool', 'must': {'term': {'some_field':  2}}}})
         for r in (q1, q2):
-            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
+            self.assertEqual(r.__str__(), '''<Query>
 bool
 └── must
     └── term, field=some_field, value=2
@@ -603,7 +603,7 @@ bool
         q1 = q.query(Term(field='other_field', value=3))
         q2 = q.query({'term': {'other_field':  3}})
         for r in (q1, q2):
-            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
+            self.assertEqual(r.__str__(), '''<Query>
 bool
 └── must
     ├── term, field=other_field, value=3
@@ -615,7 +615,7 @@ bool
         q1 = q.query(Term(field='other_field', value=3))
         q2 = q.query({'term': {'other_field':  3}})
         for r in (q1, q2):
-            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
+            self.assertEqual(r.__str__(), '''<Query>
 bool
 └── must
     ├── term, field=other_field, value=3
@@ -627,7 +627,7 @@ bool
         q1 = q.query(Term(field='some_nested_path.id', value=2), parent='root_nested')
         q2 = q.query({'term': {'some_nested_path.id': 2}}, parent='root_nested')
         for r in (q1, q2):
-            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
+            self.assertEqual(r.__str__(), '''<Query>
 nested
 ├── path="some_nested_path"
 └── query
@@ -638,7 +638,7 @@ nested
         q1 = q.query(Term(field='some_other_field', value=2), parent='root_bool')
         q2 = q.query({'term': {'some_other_field': 2}}, parent='root_bool')
         for r in (q1, q2):
-            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
+            self.assertEqual(r.__str__(), '''<Query>
 bool
 ├── filter
 │   └── term, field=some_field, value=2
@@ -651,7 +651,7 @@ bool
         q1 = q.query(Range(field='some_other_field', gte=3), parent='root_bool', parent_param='must_not')
         q2 = q.query({'range': {'some_other_field': {'gte': 3}}}, parent='root_bool', parent_param='must_not')
         for r in (q1, q2):
-            self.assertEqual(r.__str__().decode('utf-8'), '''<Query>
+            self.assertEqual(r.__str__(), '''<Query>
 bool
 ├── filter
 │   └── term, field=some_field, value=2
