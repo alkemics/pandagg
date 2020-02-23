@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from future.utils import iteritems
 from builtins import str as text
 
 import json
+from future.utils import iteritems
 
 from pandagg.node._node import Node
 
@@ -144,6 +144,13 @@ class BucketAggNode(AggNode):
             **body
         )
         aggs = aggs or []
+        if aggs is None:
+            aggs = []
+        elif isinstance(aggs, dict):
+            aggs = [{k: v for k, v in iteritems(aggs)}]
+        elif not isinstance(aggs, (list, tuple)):
+            # allow "aggs" syntax with single node
+            aggs = (aggs,)
         self.aggs = aggs
 
     def extract_buckets(self, response_value):

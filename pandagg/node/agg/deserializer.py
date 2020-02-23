@@ -1,6 +1,6 @@
 from six import iteritems
 
-from pandagg.node.agg.abstract import BucketAggNode
+from pandagg.node.agg.abstract import BucketAggNode, AggNode
 from .bucket import BUCKET_AGGS
 from .metric import METRIC_AGGS
 from .pipeline import PIPELINE_AGGS
@@ -24,5 +24,9 @@ def deserialize_agg(d):
         raise ValueError('Aggregation of type %s doesn\'t accept sub-aggregations, got <%s>.' % (
             agg_class.__name__, children_aggs))
     if children_aggs:
-        agg_body['aggs'] = [{k: v for k, v in iteritems(children_aggs)}]
+        if isinstance(children_aggs, dict):
+            children_aggs = [{k: v for k, v in iteritems(children_aggs)}]
+        elif isinstance(children_aggs, AggNode):
+            children_aggs = (children_aggs,)
+        agg_body['aggs'] = children_aggs
     return agg_class.deserialize(name=agg_name, meta=meta, body=agg_body)

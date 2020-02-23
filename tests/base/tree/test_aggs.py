@@ -24,6 +24,57 @@ from tests.base.mapping_example import MAPPING
 
 class AggTestCase(TestCase):
 
+    def test_deserialize_nodes_with_subaggs(self):
+        expected = {
+            'genres': {
+                'terms': {'field': 'genres', 'size': 3},
+                'aggs': {
+                    'movie_decade': {
+                        'date_histogram': {
+                            'field': 'year',
+                            'fixed_interval': '3650d'
+                        }
+                    }
+                }
+            }
+        }
+        agg1 = Agg(expected)
+        agg2 = Agg(
+            Terms(
+                'genres', field='genres', size=3,
+                aggs=DateHistogram(name='movie_decade', field='year', fixed_interval='3650d')
+            )
+        )
+        agg3 = Agg(
+            Terms(
+                'genres', field='genres', size=3,
+                aggs=[
+                    DateHistogram(name='movie_decade', field='year', fixed_interval='3650d')
+                ]
+            )
+        )
+        agg4 = Agg(
+            Terms(
+                'genres', field='genres', size=3,
+                aggs={
+                    'movie_decade': {
+                        'date_histogram': {
+                            'field': 'year',
+                            'fixed_interval': '3650d'
+                        }
+                    }
+                }
+            )
+        )
+        agg5 = Agg({
+            'genres': {
+                'terms': {'field': 'genres', 'size': 3},
+                'aggs': DateHistogram(name='movie_decade', field='year', fixed_interval='3650d')
+            }
+        })
+        for a in (agg1, agg2, agg3, agg4, agg5):
+            self.assertEqual(a.query_dict(), expected)
+
     def test_add_node_with_mapping(self):
         with_mapping = Agg(mapping=MAPPING)
         self.assertEqual(len(with_mapping.nodes.keys()), 0)
