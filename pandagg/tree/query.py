@@ -236,36 +236,42 @@ class Query(Tree):
         If a parent is provided (only under compound query): place under it.
         """
 
-        clone_query = self._clone(with_tree=True)
+        q = self._clone(with_tree=True)
 
         # If compound query with existing name: merge according to mode (place in-between parent and child).
-        if isinstance(inserted_node, CompoundClause) and inserted_node.name in clone_query:
+        if isinstance(inserted_node, CompoundClause) and inserted_node.name in q:
             if child is not None or parent is not None:
                 raise ValueError(
                     'Child or parent cannot be provided when inserting compound clause with existing '
                     '_name <%s> in query. Got child <%s> and parent <%s>.' % (inserted_node.name, child, parent))
-            return clone_query._update_compound(new_compound=inserted_node, mode=mode)
+            return q._update_compound(new_compound=inserted_node, mode=mode)
 
         # If no parent nor child is provided, place on top (wrapped in bool-must if necessary).
         if parent is None and child is None:
-            if clone_query.root is None:
-                clone_query._insert_from_node(inserted_node)
-                return clone_query
+            # if inital query is empty, just insert new one
+            if q.root is None:
+                q._insert_from_node(inserted_node)
+                return q
+            # if both initial root query and inserted one are bool, merge
+            if isinstance(q[q.root], Bool) and isinstance(inserted_node, Bool):
+                inserted_node.identifier = q.root
+                return q._insert_into(inserted_node, mode=mode)
+            # if only inserted node is bool, insert initial query in it
             if isinstance(inserted_node, Bool):
-                q = Query(inserted_node)
+                inserted_q = Query(inserted_node)
                 child_operator = inserted_node.operator(child_param)
                 child_operator_node = next((
-                    c for c in q.children(inserted_node.name) if isinstance(c, child_operator)), None)
+                    c for c in inserted_q.children(inserted_node.name) if isinstance(c, child_operator)), None)
                 if child_operator_node is None:
                     child_operator_node = child_operator()
-                    q.add_node(child_operator_node, pid=inserted_node.name)
-                q.paste(new_tree=clone_query, nid=child_operator_node.name)
-                return q
-            if isinstance(clone_query[clone_query.root], Bool):
-                return clone_query.must(inserted_node, _name=clone_query.root, mode=mode,
-                                        parent_param=parent_param, child_param=child_param)
+                    inserted_q.add_node(child_operator_node, pid=inserted_node.name)
+                inserted_q.paste(new_tree=q, nid=child_operator_node.name)
+                return inserted_q
+            if isinstance(q[q.root], Bool):
+                return q.must(inserted_node, _name=q.root, mode=mode,
+                              parent_param=parent_param, child_param=child_param)
             parent_param_key = Bool.operator(parent_param).KEY
-            return clone_query.bool(
+            return q.bool(
                 parent_param=parent_param,
                 child_param=child_param,
                 mode=mode,
@@ -278,7 +284,7 @@ class Query(Tree):
                 raise ValueError('Cannot place non-compound clause <%s> above other clause <%s>.' % (
                     inserted_node.KEY, child
                 ))
-            if child not in clone_query:
+            if child not in q:
                 raise ValueError('Child <%s> does not exist in current query.' % child)
             child_operator = inserted_node.operator(child_param)
             if parent is not None:
@@ -287,41 +293,41 @@ class Query(Tree):
                 ))
 
             # suppose we are under a nested clause, the parent is the "query" param clause
-            existing_parent_param_node = clone_query.parent(child)
+            existing_parent_param_node = q.parent(child)
             direct_pid = existing_parent_param_node.name if existing_parent_param_node else None
-            child_tree = clone_query.remove_subtree(child)
+            child_tree = q.remove_subtree(child)
 
-            clone_query._insert_from_node(inserted_node, pid=direct_pid)
+            q._insert_from_node(inserted_node, pid=direct_pid)
             child_operator_node = next((
-                c for c in clone_query.children(inserted_node.name) if isinstance(c, child_operator)), None)
+                c for c in q.children(inserted_node.name) if isinstance(c, child_operator)), None)
             if child_operator_node is None:
                 child_operator_node = child_operator()
-                clone_query.add_node(child_operator_node, pid=inserted_node.name)
-            clone_query.paste(new_tree=child_tree, nid=child_operator_node.name)
-            return clone_query
+                q.add_node(child_operator_node, pid=inserted_node.name)
+            q.paste(new_tree=child_tree, nid=child_operator_node.name)
+            return q
 
         # If a parent is provided (only under compound query): place under it.
-        if parent not in clone_query:
+        if parent not in q:
             raise ValueError('Parent <%s> does not exist in current query.' % parent)
-        parent_node = clone_query[parent]
+        parent_node = q[parent]
         if not isinstance(parent_node, CompoundClause):
             raise ValueError(
                 'Cannot place clause under non-compound clause <%s> of type <%s>.' % (parent, parent_node.KEY))
         parent_operator = parent_node.operator(parent_param)
-        parent_operator_node = next((c for c in clone_query.children(parent) if isinstance(c, parent_operator)), None)
+        parent_operator_node = next((c for c in q.children(parent) if isinstance(c, parent_operator)), None)
         if parent_operator_node is not None and not parent_operator_node.MULTIPLE:
             if isinstance(parent_node, Bool):
-                return clone_query.bool(must=inserted_node, _name=parent)
-            child_node = clone_query.children(parent_operator_node.name)[0]
+                return q.bool(must=inserted_node, _name=parent)
+            child_node = q.children(parent_operator_node.name)[0]
             child = child_node.name
             if isinstance(child_node, Bool):
-                return clone_query.bool(must=inserted_node, _name=child, mode=mode)
-            return clone_query.bool(must=inserted_node, child=child, mode=mode)
+                return q.bool(must=inserted_node, _name=child, mode=mode)
+            return q.bool(must=inserted_node, child=child, mode=mode)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
-            clone_query.add_node(parent_operator_node, pid=parent)
-        clone_query._insert_from_node(inserted_node, pid=parent_operator_node.name)
-        return clone_query
+            q.add_node(parent_operator_node, pid=parent)
+        q._insert_from_node(inserted_node, pid=parent_operator_node.name)
+        return q
 
     def _compound_param(self, method_name, param_key, *args, **kwargs):
         mode = kwargs.pop('mode', ADD)
