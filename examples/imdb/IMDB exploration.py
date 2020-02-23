@@ -1,21 +1,31 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Pandagg overview
+# # IMDB exploration with Pandagg
+
+# This tutorial will guide you in some of pandagg functionalities, exploring IMDB data.
+# 
+# 1. Cluster indices discovery
+# 2. Mapping exploration
+# 3. Aggregations
+# 4. Queries
+#     
 
 # In[1]:
 
 
-import seaborn
+# requires to be declared on top
 import matplotlib.pyplot as plt
-from pandagg import Elasticsearch
+import seaborn
 
 
-# ## Explore cluster indices
+# ## 1. Cluster indices discovery
 
 # In[2]:
 
 
+# instanciate client just as you would do with regular elastic client
+from pandagg import Elasticsearch
 client = Elasticsearch(hosts=['localhost:9300'])
 
 
@@ -35,9 +45,10 @@ indices
 
 
 movies = indices.movies
+movies
 
 
-# ## Mapping exploration
+# ## 2. Mapping exploration
 
 # In[5]:
 
@@ -62,11 +73,18 @@ m.directors
 # In[7]:
 
 
+# going deeper
+m.directors.full_name
+
+
+# In[8]:
+
+
 # calling instance will display mapping definition
-m.directors.last_name()
+m.directors.full_name()
 
 
-# ## Quick access aggregations from mapping
+# ### Quick access aggregations from mapping
 
 # Mapping leaves (here genres) all have a "a" attribute (for aggregation). 
 # Autocomplete will display all possible aggregations types on this field
@@ -74,20 +92,20 @@ m.directors.last_name()
 # ![autocomplete](ressources/autocomplete_agg.png)
 # 
 
-# In[8]:
+# In[9]:
 
 
 # passed parameters will be added to aggregation body
 m.genres.a.terms(missing='N/A', size=5)
 
 
-# In[9]:
+# In[10]:
 
 
 m.rank.a.stats()
 
 
-# In[10]:
+# In[11]:
 
 
 # query parameter enable to filter on some conditions
@@ -95,28 +113,95 @@ m.rank.a.stats()
 m.rank.a.stats(query={'term': {'genres': 'Documentary'}})
 
 
-# In[11]:
+# ## 3. Aggregations
 
+# Let's compute the number of movies per decade per genre.
+# 
 
-from pandagg.agg import DateHistogram
-
-decade = DateHistogram('movie_decade', field='year', fixed_interval='3650d')
-per_decate_genres = movies.groupby(['genres', decade],size=3).execute()
-
+# ### Regular declaration
 
 # In[12]:
 
 
+regular_syntax = {
+    'genres': {
+        'terms': {'field': 'genres', 'size': 3},
+        'aggs': {
+            'movie_decade': {
+                'date_histogram': {
+                    'field': 'year',
+                    'fixed_interval': '3650d'
+                }
+            }
+        }
+    }
+}
+
+from pandagg.agg import Agg
+agg = Agg(regular_syntax)
+
+assert agg.query_dict() == regular_syntax
+
+agg
+
+
+# ### DSL syntax
+# The following syntaxes are strictly equivalent to the above one:
+
+# In[13]:
+
+
+from pandagg.agg import DateHistogram, Terms
+
+agg_dsl = Agg(
+    Terms(
+        'genres', field='genres', size=3, 
+        aggs=DateHistogram(name='movie_decade', field='year', fixed_interval='3650d')
+    )
+)
+
+# or using groupby method: the listed aggregations will be placed from top to bottom:
+
+agg_variant = Agg()    .groupby([
+        Terms('genres', field='genres', size=3),
+        DateHistogram('movie_decade', field='year', fixed_interval='3650d')
+    ])
+
+
+assert agg_dsl.query_dict() == agg_variant.query_dict()
+assert agg_dsl.query_dict() == regular_syntax
+
+#decade = DateHistogram('movie_decade', field='year', fixed_interval='3650d')
+# per_decate_genres = movies.groupby(['genres', decade],size=3).execute()
+agg_dsl
+
+
+# ### Aggregation execution and parsing
+
+# Aggregation instance can be bound to an Elasticsearch client, either at `__init__`, either using `bind` method. 
+
+# In[14]:
+
+
+agg_dsl.bind(client=client, index_name='movies')
+
+
+# Doing so provides the ability to execute aggregation request, and parse the response in multiple formats.
+
+# In[15]:
+
+
+per_decate_genres = agg_dsl.execute(output='dataframe')
 per_decate_genres.unstack()
 
 
-# In[13]:
+# In[16]:
 
 
 per_decate_genres.unstack().T.plot(figsize=(12,12))
 
 
-# In[14]:
+# In[17]:
 
 
 from datetime import datetime
@@ -131,19 +216,17 @@ r['avg_year'] = r.avg_date.apply(lambda x: datetime.fromtimestamp(x / 1000.).yea
 r
 
 
-# ## Aggregation result navigation
+# #### As raw output
 
-# ### As raw output
-
-# In[15]:
+# In[18]:
 
 
 # agg.execute(output='raw')
 
 
-# ### As interactive tree
+# #### As interactive tree
 
-# In[16]:
+# In[19]:
 
 
 t = agg.execute(output='tree')
@@ -152,7 +235,7 @@ t
 
 # #### Navigation with autocompletion
 
-# In[17]:
+# In[20]:
 
 
 t.roles_full_name_raw_Frank_Welker__506067_
@@ -160,37 +243,19 @@ t.roles_full_name_raw_Frank_Welker__506067_
 
 # #### List documents in given bucket (with autocompletion)
 
-# In[18]:
+# In[21]:
 
 
-frank_welker_family = t    .roles_full_name_raw_Frank_Welker__506067_    .reverse_nested_below_roles_full_name_raw.genres_Family.list_documents(compact=False)
+frank_welker_family = t    .roles_full_name_raw_Frank_Welker__506067_    .reverse_nested_below_roles_full_name_raw.genres_Family.list_documents()
 
 
-# In[19]:
+# In[22]:
 
 
 frank_welker_family.keys()
 
 
-# ## Query declaration
-
-# In[20]:
-
-
-def ordered(obj):
-    if isinstance(obj, dict):
-        return sorted((k, ordered(v)) for k, v in obj.items())
-    if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
-
-def equal_queries(d1, d2):
-    """Compares if two queries are equivalent (do not consider nested list orders).
-    Note: this is greedy.
-    """
-    return ordered(d1) == ordered(d2)
-
+# ## 4. Queries
 
 # Suppose I want: 
 # - actions or thriller movies
@@ -199,7 +264,11 @@ def equal_queries(d1, d2):
 # 
 # I would perform the following request:
 
-# In[21]:
+# ### Regular syntax
+
+# We can use regular syntax.
+
+# In[23]:
 
 
 expected_query = {'bool': {'must': [
@@ -215,9 +284,7 @@ expected_query = {'bool': {'must': [
 ]}}
 
 
-# We can use regular syntax.
-
-# In[22]:
+# In[24]:
 
 
 from pandagg.query import Query
@@ -226,9 +293,11 @@ q = Query(expected_query)
 q
 
 
+# ### DSL syntax
+
 # With pandagg DSL syntax, it could also be declared this way:
 
-# In[23]:
+# In[25]:
 
 
 from pandagg.query import Nested, Bool, Query, Terms, Range, Term
@@ -248,7 +317,7 @@ q = Query(
 )
 
 
-# In[24]:
+# In[26]:
 
 
 # query computation
@@ -258,7 +327,7 @@ q.query_dict() == expected_query
 # Suppose you want to expose a route to your customers with actionable filters, it is easy to add query clauses at specific places in your query by chaining your clauses:
 # 
 
-# In[25]:
+# In[27]:
 
 
 # accepts mix of DSL and dict syntax
@@ -283,8 +352,10 @@ my_query.query_dict() == expected_query
 # 
 # A simple use case could be to expose some filters to a client among which some apply to nested clauses (for instance nested 'roles').
 
-# In[26]:
+# In[28]:
 
+
+from pandagg.utils import equal_queries
 
 # suppose API exposes those filters
 genres_in = ['Action', 'Thriller']
