@@ -5,11 +5,14 @@ from __future__ import unicode_literals
 
 from pandagg.node.query._parameter_clause import Filter, Must
 from pandagg.node.query.joining import Nested
+from pandagg.node.query.term_level import Terms
 from pandagg.query import Query, Exists, Range, Prefix, Ids, Term, Bool
 from pandagg.node.query.full_text import QueryString
 
 
 from unittest import TestCase
+
+from pandagg.utils import equal_queries
 
 
 class QueryTestCase(TestCase):
@@ -861,3 +864,33 @@ bool
                 expected,
                 'failed on %d' % (i + 1)
             )
+
+    def test_query_unnamed_inserts(self):
+
+        q = Query()\
+            .must(Terms('genres', terms=['Action', 'Thriller']))\
+            .must(Range('rank', gte=7))\
+            .query(Nested(_name='nested_roles', path='roles'))
+
+        # we name the nested query that we would potentially use
+        # but a compound clause (bool, nested etc..) without any children clauses is not serialized
+        self.assertEqual(q.query_dict(), {'bool': {'must': [
+            {'terms': {'genres': ['Action', 'Thriller']}},
+            {'range': {'rank': {'gte': 7}}}
+        ]}})
+
+        # we declare that those clauses must be placed below 'nested_roles' condition
+        q = q.query(Term('roles.gender', value='F'), parent='nested_roles')\
+            .query(Term('roles.role', value='Reporter'), parent='nested_roles')
+
+        self.assertTrue(equal_queries(q.query_dict(), {'bool': {'must': [
+            {'terms': {'genres': ['Action', 'Thriller']}},
+            {'range': {'rank': {'gte': 7}}},
+            {'nested': {
+                'path': 'roles',
+                'query': {'bool': {'must': [
+                    {'term': {'roles.gender': {'value': 'F'}}},
+                    {'term': {'roles.role': {'value': 'Reporter'}}}]}
+                }
+            }}
+        ]}}))
