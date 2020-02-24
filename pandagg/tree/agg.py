@@ -357,7 +357,8 @@ class Agg(Tree):
                 if child_nested:
                     pid = child_nested.identifier
                     continue
-                nested_node = Nested(name='nested_below_%s' % pid, path=nested_lvl)
+                nested_node_name = 'nested_below_root' if pid is None else 'nested_below_%s' % pid
+                nested_node = Nested(name=nested_node_name, path=nested_lvl)
                 super(Agg, self).add_node(nested_node, pid)
                 pid = nested_node.identifier
         super(Agg, self).paste(pid, new_tree, deep)
@@ -406,7 +407,8 @@ class Agg(Tree):
                 if child_nested:
                     pid = child_nested.identifier
                     continue
-                nested_node = Nested(name='nested_below_%s' % pid, path=nested_lvl)
+                nested_node_name = 'nested_below_root' if pid is None else 'nested_below_%s' % pid
+                nested_node = Nested(name=nested_node_name, path=nested_lvl)
                 super(Agg, self).add_node(nested_node, pid)
                 pid = nested_node.identifier
         super(Agg, self).add_node(node, pid)
