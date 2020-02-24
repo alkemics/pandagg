@@ -163,43 +163,23 @@ class Agg(Tree):
         return paths[0][-1]
 
     def groupby(self, by, insert_below=None, **kwargs):
-        """Group by is available only if there is a succession of unique childs.
+        """Arrange passed aggregations in `by` arguments "vertically" (nested manner).
 
-        Accepts single occurence or sequence of following formats:
-        - string
-        - dict ES aggregation
-        - dict pandas like aggregation
-        - Aggregation object instance
+        Those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest linear
+        bucket aggregation if there is no ambiguity:
+        OK: A──> B ─> C ─> by
+        KO: A──> B
+            └──> C
 
-        String:
-        Interpreted as a terms aggregation counting number of documents per value occurence:
-        >>> a = Agg().groupby(['owner.type', 'owner.id'])
-        >>> a
-        <Aggregation>
-        owner.type
-        └── owner.id
-        >>> a.agg_dict()
-        {
-            "owner.type": {
-                "aggs": {
-                    "owner.id": {
-                        "terms": {
-                            "field": "owner.id",
-                            "size": 20
-                        }
-                    }
-                },
-                "terms": {
-                    "field": "owner.type",
-                    "size": 20
-                }
-            }
-        }
+        `by` argument accepts single occurrence or sequence of following formats:
+        - string (for terms agg concise declaration)
+        - regular Elasticsearch dict syntax
+        - AggNode instance (for instance Terms, Filters etc)
 
-        :param by: aggregation(s) used to group results
-        :param insert_below: parent node id under which these nodes should be declared
-        :param kwargs: arguments to customize dict aggregation parsing TODO - detail this part
-        :rtype: pandagg.aggs.agg.Agg
+        :param by: aggregation(s) clauses to insert "vertically"
+        :param insert_below: parent aggregation id under which these aggregations should be placed
+        :param kwargs: agg body arguments when using "string" syntax for terms aggregation
+        :rtype: pandagg.agg.Agg
         """
         insert_below = self._validate_aggs_parent_id(insert_below)
         new_agg = self._clone(with_tree=True)
@@ -215,35 +195,24 @@ class Agg(Tree):
         return new_agg
 
     def agg(self, arg, insert_below=None, **kwargs):
-        """Horizontally adds aggregation on top of succession of unique children.
+        """Arrange passed aggregations in `arg` arguments "horizontally".
 
-        Suppose pre-existing aggregations:
-        OK: A──> B ─> C ─> NEW_AGGS
-
+        Those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest linear
+        bucket aggregation if there is no ambiguity:
+        OK: A──> B ─> C ─> arg
         KO: A──> B
             └──> C
 
-        Accepts single occurence or sequence of following formats:
-        - string
-        - dict ES aggregation
-        - dict pandas like aggregation
-        - Aggregation object instance
+        `arg` argument accepts single occurrence or sequence of following formats:
+        - string (for terms agg concise declaration)
+        - regular Elasticsearch dict syntax
+        - AggNode instance (for instance Terms, Filters etc)
 
-        String:
-        Interpreted as a terms aggregation counting number of documents per value occurence:
-        >>> a = Agg().groupby(['owner.type', 'owner.id'])
-        >>> a
-        <Aggregation>
-        owner.type
-        └── owner.id
-        >>> a.agg(['validation.status', 'retailerStatus'])
-        <Aggregation>
-        owner.type
-        └── owner.id
-            ├── retailerStatus
-            └── validation.status
-        :param insert_below: parent node id under which these nodes should be declared
-        :rtype: pandagg.aggs.agg.Agg
+
+        :param by: aggregation(s) clauses to insert "vertically"
+        :param insert_below: parent aggregation id under which these aggregations should be placed
+        :param kwargs: agg body arguments when using "string" syntax for terms aggregation
+        :rtype: pandagg.agg.Agg
         """
         insert_below = self._validate_aggs_parent_id(insert_below)
         new_agg = self._clone(with_tree=True)
