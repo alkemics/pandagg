@@ -168,6 +168,10 @@ class ShadowRoot(BucketAggNode):
     def __init__(self):
         super(ShadowRoot, self).__init__('_')
 
+    @property
+    def tag(self):
+        return '[%s]' % text(self.name)
+
 
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
