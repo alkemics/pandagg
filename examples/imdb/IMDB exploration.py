@@ -202,24 +202,33 @@ Agg()    .agg([
     ])
 
 
-# Both `groupby` and `agg` will place provided aggregations under the `insert_below` (parent id) aggregation clause if `insert_below` is provided, else under the last .
+# Both `groupby` and `agg` will place provided aggregations under the `insert_below` (parent id) aggregation clause if `insert_below` is provided, else under the deepest bucket aggregation if there is no ambiguity:
+# ```
+# OK: A──> B ─> C ─> NEW_AGGS
+# 
+# KO: A──> B
+#     └──> C
+# ```
 
-# In[34]:
+# In[16]:
 
 
+# taking again this example
 example_agg = Agg(regular_syntax)
 example_agg
 
 
-# In[35]:
+# In[17]:
 
 
+# groupby behaviour
 example_agg.groupby(['roles.role', 'roles.gender'], insert_below='genres')
 
 
-# In[36]:
+# In[18]:
 
 
+# agg behaviour
 example_agg.agg(['roles.role', 'roles.gender'], insert_below='genres')
 
 
@@ -227,7 +236,7 @@ example_agg.agg(['roles.role', 'roles.gender'], insert_below='genres')
 
 # Aggregation instance can be bound to an Elasticsearch client, either at `__init__`, either using `bind` method. 
 
-# In[16]:
+# In[19]:
 
 
 agg_dsl.bind(client=client, index_name='movies')
@@ -237,14 +246,14 @@ agg_dsl.bind(client=client, index_name='movies')
 # 
 # *Note: requires to install **pandas** dependency*
 
-# In[17]:
+# In[20]:
 
 
 per_decate_genres = agg_dsl.execute(output='dataframe')
 per_decate_genres.unstack()
 
 
-# In[18]:
+# In[21]:
 
 
 per_decate_genres.unstack().T.plot(figsize=(12,12))
@@ -254,7 +263,7 @@ per_decate_genres.unstack().T.plot(figsize=(12,12))
 # who are the actors who have played in the highest number of movies between 1990 and 2000, and what was the average ranking of the movies they played in per genre?
 # 
 
-# In[19]:
+# In[22]:
 
 
 from datetime import datetime
@@ -273,7 +282,7 @@ r
 
 # #### As raw output
 
-# In[20]:
+# In[23]:
 
 
 # agg.execute(output='raw')
@@ -281,7 +290,7 @@ r
 
 # #### As interactive tree
 
-# In[21]:
+# In[24]:
 
 
 t = agg.execute(output='tree')
@@ -290,7 +299,7 @@ t
 
 # #### Navigation with autocompletion
 
-# In[22]:
+# In[25]:
 
 
 t.roles_full_name_raw_Frank_Welker__506067_
@@ -298,13 +307,13 @@ t.roles_full_name_raw_Frank_Welker__506067_
 
 # #### List documents in given bucket (with autocompletion)
 
-# In[23]:
+# In[26]:
 
 
 frank_welker_family = t    .roles_full_name_raw_Frank_Welker__506067_    .reverse_nested_below_roles_full_name_raw    .genres_Family    .list_documents(_source=['id', 'genres', 'name'], size=2)
 
 
-# In[24]:
+# In[27]:
 
 
 frank_welker_family
@@ -323,7 +332,7 @@ frank_welker_family
 
 # We can use regular syntax.
 
-# In[25]:
+# In[28]:
 
 
 expected_query = {'bool': {'must': [
@@ -339,7 +348,7 @@ expected_query = {'bool': {'must': [
 ]}}
 
 
-# In[26]:
+# In[29]:
 
 
 from pandagg.query import Query
@@ -352,7 +361,7 @@ q
 
 # With pandagg DSL syntax, it could also be declared this way:
 
-# In[27]:
+# In[30]:
 
 
 from pandagg.query import Nested, Bool, Query, Range, Term, Terms as TermsFilter
@@ -373,7 +382,7 @@ q = Query(
 )
 
 
-# In[28]:
+# In[31]:
 
 
 # query computation
@@ -383,7 +392,7 @@ q.query_dict() == expected_query
 # Suppose you want to expose a route to your customers with actionable filters, it is easy to add query clauses at specific places in your query by chaining your clauses:
 # 
 
-# In[29]:
+# In[32]:
 
 
 # accepts mix of DSL and dict syntax
@@ -408,7 +417,7 @@ my_query.query_dict() == expected_query
 # 
 # A simple use case could be to expose some filters to a client among which some apply to nested clauses (for instance nested 'roles').
 
-# In[30]:
+# In[33]:
 
 
 from pandagg.utils import equal_queries
