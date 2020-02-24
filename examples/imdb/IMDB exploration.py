@@ -60,7 +60,10 @@ m = movies.mapping
 from examples.imdb.load import mapping as imdb_mapping
 from pandagg.mapping import IMapping
 
-m2 = IMapping(imdb_mapping, client=client)
+m = IMapping(imdb_mapping, client=client)
+
+# Note: client argument is optional, but doing so provides the ability to 
+# compute "quick-access" aggregations on fields (will be detailed below)
 
 
 # In[6]:
@@ -176,40 +179,92 @@ assert agg_dsl.query_dict() == regular_syntax
 agg_dsl
 
 
+# #### About groupby and agg methods
+# 
+# - `groupby` method will arrange passed aggregations clauses "vertically" (nested manner), 
+# - `agg` method will arrange them "horizontally"
+
+# In[14]:
+
+
+Agg()    .groupby([
+        Terms('genres', field='genres', size=3),
+        DateHistogram('movie_decade', field='year', fixed_interval='3650d')
+    ])
+
+
+# In[15]:
+
+
+Agg()    .agg([
+        Terms('genres', field='genres', size=3),
+        DateHistogram('movie_decade', field='year', fixed_interval='3650d')
+    ])
+
+
+# Both `groupby` and `agg` will place provided aggregations under the `insert_below` (parent id) aggregation clause if `insert_below` is provided, else under the last .
+
+# In[34]:
+
+
+example_agg = Agg(regular_syntax)
+example_agg
+
+
+# In[35]:
+
+
+example_agg.groupby(['roles.role', 'roles.gender'], insert_below='genres')
+
+
+# In[36]:
+
+
+example_agg.agg(['roles.role', 'roles.gender'], insert_below='genres')
+
+
 # ### Aggregation execution and parsing
 
 # Aggregation instance can be bound to an Elasticsearch client, either at `__init__`, either using `bind` method. 
 
-# In[14]:
+# In[16]:
 
 
 agg_dsl.bind(client=client, index_name='movies')
 
 
-# Doing so provides the ability to execute aggregation request, and parse the response in multiple formats.
+# Doing so provides the ability to execute aggregation request, and parse the response in multiple formats. Formats will be detailed in next example, here we use the dataframe format:
+# 
+# *Note: requires to install **pandas** dependency*
 
-# In[15]:
+# In[17]:
 
 
 per_decate_genres = agg_dsl.execute(output='dataframe')
 per_decate_genres.unstack()
 
 
-# In[16]:
+# In[18]:
 
 
 per_decate_genres.unstack().T.plot(figsize=(12,12))
 
 
-# In[17]:
+# **Another example:**
+# who are the actors who have played in the highest number of movies between 1990 and 2000, and what was the average ranking of the movies they played in per genre?
+# 
+
+# In[19]:
 
 
 from datetime import datetime
 from pandagg.agg import Avg
 from pandagg.query import Range
 
-agg = movies    .groupby(['roles.full_name.raw', 'genres'], size=3)    .agg([Avg('avg_rank', field='rank'), Avg('avg_date', field='year')])    .query(Range(field='year', gte='1990', lt='2000'))
+# in groupby and agg methods, 
+agg = movies    .groupby(['roles.full_name.raw', 'genres'], size=2)    .agg([Avg('avg_rank', field='rank'), Avg('avg_date', field='year')])    .query(Range(field='year', gte='1990', lt='2000'))
 
+print(agg)
 r = agg.execute()
         
 r['avg_year'] = r.avg_date.apply(lambda x: datetime.fromtimestamp(x / 1000.).year)
@@ -218,7 +273,7 @@ r
 
 # #### As raw output
 
-# In[18]:
+# In[20]:
 
 
 # agg.execute(output='raw')
@@ -226,7 +281,7 @@ r
 
 # #### As interactive tree
 
-# In[19]:
+# In[21]:
 
 
 t = agg.execute(output='tree')
@@ -235,7 +290,7 @@ t
 
 # #### Navigation with autocompletion
 
-# In[20]:
+# In[22]:
 
 
 t.roles_full_name_raw_Frank_Welker__506067_
@@ -243,16 +298,16 @@ t.roles_full_name_raw_Frank_Welker__506067_
 
 # #### List documents in given bucket (with autocompletion)
 
-# In[21]:
+# In[23]:
 
 
-frank_welker_family = t    .roles_full_name_raw_Frank_Welker__506067_    .reverse_nested_below_roles_full_name_raw.genres_Family.list_documents()
+frank_welker_family = t    .roles_full_name_raw_Frank_Welker__506067_    .reverse_nested_below_roles_full_name_raw    .genres_Family    .list_documents(_source=['id', 'genres', 'name'], size=2)
 
 
-# In[22]:
+# In[24]:
 
 
-frank_welker_family.keys()
+frank_welker_family
 
 
 # ## 4. Queries
@@ -268,7 +323,7 @@ frank_welker_family.keys()
 
 # We can use regular syntax.
 
-# In[23]:
+# In[25]:
 
 
 expected_query = {'bool': {'must': [
@@ -284,7 +339,7 @@ expected_query = {'bool': {'must': [
 ]}}
 
 
-# In[24]:
+# In[26]:
 
 
 from pandagg.query import Query
@@ -297,14 +352,15 @@ q
 
 # With pandagg DSL syntax, it could also be declared this way:
 
-# In[25]:
+# In[27]:
 
 
-from pandagg.query import Nested, Bool, Query, Terms, Range, Term
+from pandagg.query import Nested, Bool, Query, Range, Term, Terms as TermsFilter
+# warning, pandagg.query.Terms and pandagg.agg.Terms classes have same name, but one is a filter, the other an aggreggation
 
 q = Query(
     Bool(must=[
-        Terms('genres', terms=['Action', 'Thriller']),
+        TermsFilter('genres', terms=['Action', 'Thriller']),
         Range('rank', gte=7),
         Nested(
             path='roles', 
@@ -317,7 +373,7 @@ q = Query(
 )
 
 
-# In[26]:
+# In[28]:
 
 
 # query computation
@@ -327,12 +383,12 @@ q.query_dict() == expected_query
 # Suppose you want to expose a route to your customers with actionable filters, it is easy to add query clauses at specific places in your query by chaining your clauses:
 # 
 
-# In[27]:
+# In[29]:
 
 
 # accepts mix of DSL and dict syntax
 
-my_query = Query()    .must(Terms('genres', terms=['Action', 'Thriller']))    .must({'range': {'rank': {'gte': 7}}})    .must(
+my_query = Query()    .must(TermsFilter('genres', terms=['Action', 'Thriller']))    .must({'range': {'rank': {'gte': 7}}})    .must(
         Nested(
             path='roles', 
             query=Bool(must=[
@@ -352,7 +408,7 @@ my_query.query_dict() == expected_query
 # 
 # A simple use case could be to expose some filters to a client among which some apply to nested clauses (for instance nested 'roles').
 
-# In[28]:
+# In[30]:
 
 
 from pandagg.utils import equal_queries
@@ -368,7 +424,7 @@ q = Query()
 
 
 if genres_in is not None:
-    q = q.must(Terms('genres', terms=genres_in))
+    q = q.must(TermsFilter('genres', terms=genres_in))
 if rank_above is not None:
     q = q.must(Range('rank', gte=rank_above))
 
