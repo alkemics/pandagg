@@ -59,10 +59,10 @@ class IResponse(TreeBasedObj):
         if _source is not None:
             body["_source"] = _source
         body.update(kwargs)
-        response = self._client.search(index=self._index_name, body=body)['hits']
+        response = self._client.search(index=self._index_name, body=body)
         if not compact:
             return response
         return {
-            'total': response['total'],
-            'hits': list(map(lambda x: x['_source'], response['hits']))
+            'total': response['hits']['total'],
+            'hits': list(map(lambda x: x['_source'], response['hits']['hits']))
         }
