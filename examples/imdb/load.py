@@ -2,7 +2,7 @@
 import json
 from os.path import join
 from elasticsearch import Elasticsearch, helpers
-from conf import ES_HOST, DATA_DIR
+from .conf import ES_HOST, DATA_DIR
 
 index_name = 'movies'
 mapping = {
