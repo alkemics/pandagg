@@ -5,54 +5,38 @@
 ***Disclaimer*** *:this is a pre-release version*
 ## Features
 
-- classes to navigate into an index mapping, list possible aggregations on chosen field, and compute those aggregations ([example here](docs/mapping.md))
-- flexible interface to declare aggregation queries with:
-    - automated handling of nested aggregations
-    - aggregation validation
-    - parsing of results in several formats
-- classes to display, navigate, manipulate results
-- ability to build filter query listing documents belonging to an aggregation bucket
+- flexible aggregation and search queries declaration
+- query validation based on provided mapping
+- parsing of aggregation results in handy formats: tree with interactive navigation, csv-like tabular breakdown, and others
+- mapping interactive navigation
+
 
 ## Usage
-See examples in [docs](docs) directory.
+
+Full documentation and HOW-TO are available here: 
+
+***TODO** - redirect to sphinx documentation*
+
+***TODO** - find good simple example*
 
 ## Installation
-Compatible on python 2 and python 3.
-### Once added in pypi, and treelib PR merged
 ```
 pip install pandagg
 ```
 
-### Until then
-
-```
-git clone git@github.com:alkemics/pandagg.git
-
-# create virtualenv for your project
-cd pandagg
-virtualenv env
-source env/bin/activate
-python setup.py develop
-
-
-# depending on your usage you might want to install as well
-# because of https://github.com/pypa/pip/issues/6667 issue, you might have to install numpy before pandas
-pip install numpy pandas jupyter matplotlib
-```
-
 ## Dependencies
-Only one dependency:
-- [treelib](https://pypi.org/project/treelib/): 1.5.6 or higher (/!\ waiting for [this PR](https://github.com/caesar0301/treelib/pull/120) approval)
+**Hard dependency**: [treelib](https://pypi.org/project/treelib/): 1.5.6 or higher (/!\ waiting for [this PR](https://github.com/caesar0301/treelib/pull/120) approval)
 
-Parsing of aggregation results as dataframe will require to install as well:
-- [pandas](https://github.com/pandas-dev/pandas/)
+**Soft dependency**: to parse aggregation results as tabular dataframe: [pandas](https://github.com/pandas-dev/pandas/)
 
 ## Motivations
 
-A [high level python client](https://github.com/elastic/elasticsearch-dsl-py) already exists for ElasticSearch,
-but despite many qualities, its api was not convenient when dealing with deeply nested aggregations.
+`pandagg` only focuses on read operations (queries and aggregations), a 
+high level python client [elasticsearch-dsl](https://github.com/elastic/elasticsearch-dsl-py) already exists for ElasticSearch, 
+but despite many qualities, in some cases its api was not always convenient when dealing with deeply 
+nested queries and aggregations.
 
-The fundamental difference between those libraries is how we deal with the tree structure of aggregation queries
+The fundamental difference between those libraries is how they deal with the tree structure of aggregation queries
 and their responses.
 
 Suppose we have this aggregation structure: (types of agg don't matter). Let's call all of **A**, **B**, **C**, **D** our aggregation **nodes**, and the whole structure our **tree**.
@@ -86,3 +70,19 @@ sphinx-apidoc -o docs/source/reference pandagg -Te
 rm -r docs/build/*
 sphinx-build -b html docs/source docs/build
 ```
+
+## Roadmap
+
+- choose simple example to showcase pandagg in readme
+- write sphinx documentation
+- implement CI workflow: python2/3 tests, coverage
+- nested fields: automatic handling and validation in `Query` instances
+- `Query.query`, `Agg.agg`, `Agg.groupby` methods: allow passing of `tree` instance, in addition to current `dict` and `node` syntaxes
+- documentation; explain challenges induced by nested `nodes` syntaxes: for instance why are nested query clauses
+saved in `children` attribute before tree deserialization
+- extend test coverage on `named` queries serialization
+- evaluate interest and tradeoffs of using metaclasses like similarly to `elasticsearch-dsl` library to declare `node` classes
+- on aggregation `nodes`, ensure all allowed `fields` are listed
+- on aggregation response `tree`, use `Query` DSL to compute bucket filters
+- package versions for different ElasticSearch versions
+- remove `Bucket` `nodes` knowledge of their `depth` once [this `treelib` issue is resolved](https://github.com/caesar0301/treelib/issues/149)
