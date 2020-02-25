@@ -103,6 +103,7 @@ class Agg(Tree):
         self.client = client
         if index_name is not None:
             self.index_name = index_name
+        return self
 
     def set_mapping(self, mapping):
         self.tree_mapping = as_mapping(mapping)

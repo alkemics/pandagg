@@ -34,15 +34,14 @@ class IMapping(TreeBasedObj):
             initial_tree=initial_tree,
         )
         # if we reached a leave, add aggregation capabilities based on reached mapping type
-        if self._client is not None and not self._tree.children(self._tree.root):
-            field_node = self._tree[self._tree.root]
-            if field_node.KEY in field_classes_per_name:
-                self.a = field_classes_per_name[field_node.KEY](
-                    mapping_tree=self._initial_tree,
-                    client=self._client,
-                    field=field_node.path,
-                    index_name=self._index_name
-                )
+        self._set_agg_property_if_required()
+
+    def bind(self, client, index_name=None):
+        self._client = client
+        if index_name is not None:
+            self._index_name = index_name
+        self._set_agg_property_if_required()
+        return self
 
     def _clone(self, nid, root_path, depth):
         return IMapping(
@@ -53,6 +52,17 @@ class IMapping(TreeBasedObj):
             initial_tree=self._initial_tree,
             index_name=self._index_name
         )
+
+    def _set_agg_property_if_required(self):
+        if self._client is not None and not self._tree.children(self._tree.root):
+            field_node = self._tree[self._tree.root]
+            if field_node.KEY in field_classes_per_name:
+                self.a = field_classes_per_name[field_node.KEY](
+                    mapping_tree=self._initial_tree,
+                    client=self._client,
+                    field=field_node.path,
+                    index_name=self._index_name
+                )
 
     def __call__(self, *args, **kwargs):
         return self._tree[self._tree.root]
