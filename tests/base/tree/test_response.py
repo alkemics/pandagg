@@ -77,7 +77,7 @@ class ResponseTestCase(TestCase):
             }
         }
         self.assertEqual(allergentypelist.list_documents(execute=False), expected_query)
-        self.assertEqual(allergentypelist._documents_query(), expected_query)
+        self.assertEqual(allergentypelist.get_bucket_filter(), expected_query)
 
 
 class ClientBoundResponseTestCase(TestCase):
@@ -111,7 +111,7 @@ class ClientBoundResponseTestCase(TestCase):
 
         # test filter query used to list documents belonging to bucket
         self.assertEqual(
-            allergentypelist._documents_query(),
+            allergentypelist.get_bucket_filter(),
             {
                 "bool": {
                     "must": [
