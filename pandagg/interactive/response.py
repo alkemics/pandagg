@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
-
-from six import iteritems
-
 from pandagg.tree.query import Query
-from pandagg.utils import bool_if_required
 from pandagg.interactive.abstract import TreeBasedObj
 
 
