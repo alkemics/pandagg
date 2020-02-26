@@ -17,9 +17,10 @@ Full documentation and HOW-TO are available here:
 
 ***TODO** - redirect to sphinx documentation*
 
-Suppose we want to build the following query:
-
+**Elasticsearch dict syntax**
 ```
+>>> from pandagg.query import Query
+
 >>> expected_query = {'bool': {'must': [
     {'terms': {'genres': ['Action', 'Thriller']}},
     {'range': {'rank': {'gte': 7}}},
@@ -31,12 +32,6 @@ Suppose we want to build the following query:
          }
     }}
 ]}}
-```
-**Elasticsearch dict syntax**
-```
-
->>> from pandagg.query import Query
->>> q = Query()
 >>> q = Query(expected_query)
 >>> q
 <Query>
