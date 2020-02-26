@@ -17,7 +17,93 @@ Full documentation and HOW-TO are available here:
 
 ***TODO** - redirect to sphinx documentation*
 
-***TODO** - find good simple example*
+Suppose we want to build the following query:
+
+```
+>>> expected_query = {'bool': {'must': [
+    {'terms': {'genres': ['Action', 'Thriller']}},
+    {'range': {'rank': {'gte': 7}}},
+    {'nested': {
+        'path': 'roles',
+        'query': {'bool': {'must': [
+            {'term': {'roles.gender': {'value': 'F'}}},
+            {'term': {'roles.role': {'value': 'Reporter'}}}]}
+         }
+    }}
+]}}
+```
+**Elasticsearch dict syntax**
+```
+
+>>> from pandagg.query import Query
+>>> q = Query()
+>>> q = Query(expected_query)
+>>> q
+<Query>
+bool
+└── must
+    ├── nested
+    │   ├── path="roles"
+    │   └── query
+    │       └── bool
+    │           └── must
+    │               ├── term, field=roles.gender, value="F"
+    │               └── term, field=roles.role, value="Reporter"
+    ├── range, field=rank, gte=7
+    └── terms, field=genres, values=['Action', 'Thriller']
+```
+
+**DSL syntax**
+```
+from pandagg.query import Nested, Bool, Query, Range, Term, Terms
+>>> q = Query(
+    Bool(must=[
+        TermsFilter('genres', terms=['Action', 'Thriller']),
+        Range('rank', gte=7),
+        Nested(
+            path='roles', 
+            query=Bool(must=[
+                Term('roles.gender', value='F'),
+                Term('roles.role', value='Reporter')
+            ])
+        )
+    ])
+)
+
+# serialized query is computed by `query_dict` method
+>>> q.query_dict() == expected_query
+True
+```
+
+**Chained syntax**
+
+```
+>>> from pandagg.query import Query, Range, Term
+
+>>> q = Query()\
+    .query({'terms': {'genres': ['Action', 'Thriller']}})\
+    .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
+    .query(Range('rank', gte=7))\
+    .query(Term('roles.role', value='Reporter'), parent='nested_roles')
+
+>>> q
+<Query>
+bool
+└── must
+    ├── nested
+    │   ├── path="roles"
+    │   └── query
+    │       └── bool
+    │           └── must
+    │               ├── term, field=roles.gender, value="F"
+    │               └── term, field=roles.role, value="Reporter"
+    ├── range, field=rank, gte=7
+    └── terms, field=genres, values=['Action', 'Thriller']
+     
+```
+Notes:
+ - both DSL and dict syntaxes are accepted in `Query` compound clauses methods (`query`, `nested`, `must` etc).
+ - the last query uses the nested clause `_name` to detect where it should be inserted
 
 ## Installation
 ```
