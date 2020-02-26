@@ -6,10 +6,10 @@ Subpackages
 
 .. toctree::
 
-    pandagg.node.agg
-    pandagg.node.mapping
-    pandagg.node.query
-    pandagg.node.response
+   pandagg.node.agg
+   pandagg.node.mapping
+   pandagg.node.query
+   pandagg.node.response
 
 Submodules
 ----------
@@ -23,6 +23,6 @@ Module contents
 ---------------
 
 .. automodule:: pandagg.node
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

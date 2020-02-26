@@ -23,11 +23,14 @@ the following features:
 - parsing of aggregation results in handy format: interactive bucket tree, normalized tree or tabular breakdown
 - mapping interactive navigation
 
+`IMDB example <_external/imdb_exploration.html>`_
 
 pandagg is easy to use::
 
-    >>> from pandagg.Agg import Agg, DateRange
-    >>> q = Agg()\
+    >>> from pandagg.agg import Agg, Term, DateRange
+    >>> a = Agg()\
+    >>>     .groupby(DateRange('creationYear', field=creation))\
+    >>>     .agg({'avg'})
 
 
 Installing

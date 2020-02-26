@@ -12,6 +12,6 @@ Module contents
 ---------------
 
 .. automodule:: pandagg.node.response
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

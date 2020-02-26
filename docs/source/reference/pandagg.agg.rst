@@ -2,6 +2,6 @@ pandagg.agg module
 ==================
 
 .. automodule:: pandagg.agg
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -6,9 +6,9 @@ Subpackages
 
 .. toctree::
 
-    pandagg.interactive
-    pandagg.node
-    pandagg.tree
+   pandagg.interactive
+   pandagg.node
+   pandagg.tree
 
 Submodules
 ----------
@@ -26,6 +26,6 @@ Module contents
 ---------------
 
 .. automodule:: pandagg
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

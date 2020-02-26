@@ -22,6 +22,6 @@ Module contents
 ---------------
 
 .. automodule:: pandagg.node.query
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

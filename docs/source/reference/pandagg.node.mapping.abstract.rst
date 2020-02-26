@@ -1,7 +1,7 @@
-pandagg.node.query.full\_text module
+pandagg.node.mapping.abstract module
 ====================================
 
-.. automodule:: pandagg.node.query.full_text
+.. automodule:: pandagg.node.mapping.abstract
    :members:
    :undoc-members:
    :show-inheritance:

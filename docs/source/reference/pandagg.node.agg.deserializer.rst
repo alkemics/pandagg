@@ -1,7 +1,7 @@
-pandagg.node.query.full\_text module
+pandagg.node.agg.deserializer module
 ====================================
 
-.. automodule:: pandagg.node.query.full_text
+.. automodule:: pandagg.node.agg.deserializer
    :members:
    :undoc-members:
    :show-inheritance:

@@ -60,9 +60,9 @@ m = movies.mapping
 from examples.imdb.load import mapping as imdb_mapping
 from pandagg.mapping import IMapping
 
-m = IMapping(imdb_mapping, client=client)
+m = IMapping(imdb_mapping, client=client, index_name='movies')
 
-# Note: client argument is optional, but doing so provides the ability to 
+# Note: client and index_name arguments are optional, but doing so provides the ability to
 # compute "quick-access" aggregations on fields (will be detailed below)
 
 
@@ -267,16 +267,23 @@ per_decate_genres.unstack().T.plot(figsize=(12,12))
 
 
 from datetime import datetime
-from pandagg.agg import Avg
+from pandagg.agg import Agg, Avg, Min, Max
 from pandagg.query import Range
 
+
 # in groupby and agg methods, 
-agg = movies    .groupby(['roles.full_name.raw', 'genres'], size=2)    .agg([Avg('avg_rank', field='rank'), Avg('avg_date', field='year')])    .query(Range(field='year', gte='1990', lt='2000'))
+agg = Agg(client=client, index_name='movies', mapping=imdb_mapping)    .groupby(['roles.full_name.raw', 'genres'], size=2)    .agg([
+        Avg('avg_rank', field='rank'), 
+        Min('min_date', field='year'),
+        Max('max_date', field='year')
+    ])\
+    .query(Range(field='year', gte='2000', lt='2010'))
 
 print(agg)
 r = agg.execute()
         
-r['avg_year'] = r.avg_date.apply(lambda x: datetime.fromtimestamp(x / 1000.).year)
+r['min_year'] = r.min_date.apply(lambda x: datetime.fromtimestamp(x / 1000.).year)
+r['max_year'] = r.max_date.apply(lambda x: datetime.fromtimestamp(x / 1000.).year)
 r
 
 
@@ -302,7 +309,7 @@ t
 # In[25]:
 
 
-t.roles_full_name_raw_Frank_Welker__506067_
+t.roles_full_name_raw_Grey_DeLisle__599599_
 
 
 # #### List documents in given bucket (with autocompletion)
@@ -310,13 +317,13 @@ t.roles_full_name_raw_Frank_Welker__506067_
 # In[26]:
 
 
-frank_welker_family = t    .roles_full_name_raw_Frank_Welker__506067_    .reverse_nested_below_roles_full_name_raw    .genres_Family    .list_documents(_source=['id', 'genres', 'name'], size=2)
+delisle_adventure = t    .roles_full_name_raw_Grey_DeLisle__599599_    .reverse_nested_below_roles_full_name_raw    .genres_Adventure    .list_documents(_source=['id', 'genres', 'name'], size=2)
 
 
 # In[27]:
 
 
-frank_welker_family
+delisle_adventure
 
 
 # ## 4. Queries
@@ -325,12 +332,10 @@ frank_welker_family
 # - actions or thriller movies
 # - with ranking >= 7
 # - with a female actor playing a reporter role
-# 
-# I would perform the following request:
 
 # ### Regular syntax
 
-# We can use regular syntax.
+# We would perform the following request:
 
 # In[28]:
 
@@ -347,6 +352,8 @@ expected_query = {'bool': {'must': [
     }}
 ]}}
 
+
+# We can build our Query instance using this regular syntax:
 
 # In[29]:
 
