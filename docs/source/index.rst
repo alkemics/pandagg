@@ -12,6 +12,7 @@ pandagg
 
    user-guide
    advanced-usage
+   Usage example <imdb>
    API reference <reference/pandagg>
    contributing
 
@@ -22,16 +23,6 @@ the following features:
 - query validation based on provided mapping
 - parsing of aggregation results in handy format: interactive bucket tree, normalized tree or tabular breakdown
 - mapping interactive navigation
-
-`IMDB example <_external/imdb_exploration.html>`_
-
-pandagg is easy to use::
-
-    >>> from pandagg.agg import Agg, Term, DateRange
-    >>> a = Agg()\
-    >>>     .groupby(DateRange('creationYear', field=creation))\
-    >>>     .agg({'avg'})
-
 
 Installing
 ----------
@@ -51,7 +42,11 @@ Usage
 The :doc:`user-guide` is the place to go to learn how to use the library and
 accomplish common tasks. The more in-depth :doc:`advanced-usage` guide is the place to go for deeply nested queries.
 
+An example based on publicly available IMDB data is documented in repository `examples/imdb` directory, with
+a jupyter notebook to showcase some of `pandagg` functionalities: `here it is <_external/imdb_exploration.html>`_.
+
 The :doc:`reference/pandagg` documentation provides API-level documentation.
+
 
 License
 -------
