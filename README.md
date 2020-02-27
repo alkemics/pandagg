@@ -106,7 +106,7 @@ pip install pandagg
 ```
 
 ## Dependencies
-**Hard dependency**: [treelib](https://pypi.org/project/treelib/): 1.5.6 or higher (/!\ waiting for [this PR](https://github.com/caesar0301/treelib/pull/120) approval)
+**Hard dependency**: [treelib](https://pypi.org/project/treelib/): 1.6.1 or higher
 
 **Soft dependency**: to parse aggregation results as tabular dataframe: [pandas](https://github.com/pandas-dev/pandas/)
 
@@ -157,3 +157,4 @@ saved in `children` attribute before tree deserialization
 - on aggregation response `tree`, use `Query` DSL to compute bucket filters
 - package versions for different ElasticSearch versions
 - remove `Bucket` `nodes` knowledge of their `depth` once [this `treelib` issue is resolved](https://github.com/caesar0301/treelib/issues/149)
+- on `Mapping` `nodes`, remove knowledge of full path, should be known only by `tree`

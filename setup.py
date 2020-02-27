@@ -28,8 +28,7 @@ tests_require = [
 
 install_requires = [
     'future',
-    # until treelib v1.6.0 release: https://github.com/caesar0301/treelib/issues/128
-    # 'treelib==1.6.1',
+    'treelib>=1.6.1,<2.0.0',
     'elasticsearch>=7.1.0,<8.0.0',
     'six>=1.13.0,<2.0.0'
 ]
@@ -59,6 +58,4 @@ setup(
     install_requires=install_requires,
     tests_require=tests_require,
     extras_require=extras_require,
-    # until treelib v1.6.0 release: https://github.com/caesar0301/treelib/issues/128
-    dependency_links=['git+https://github.com/leonardbinet/treelib@node_dict_pointer#egg=treelib-1.5.6']
 )
