@@ -166,11 +166,17 @@ class Agg(Tree):
     def groupby(self, by, insert_below=None, **kwargs):
         """Arrange passed aggregations in `by` arguments "vertically" (nested manner).
 
-        Those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest linear
-        bucket aggregation if there is no ambiguity:
+        Those will be placed between the `insert_below` aggregation clause id if provided else under the deepest linear
+        bucket aggregation if there is no ambiguity, and its children:
+
+        If `insert_below` is not provided:
         OK: A──> B ─> C ─> by
         KO: A──> B
             └──> C
+
+        If `insert_below` = 'A'
+        A──> B          ->  A──> by──> B
+        └──> C                    └──> C
 
         `by` argument accepts single occurrence or sequence of following formats:
         - string (for terms agg concise declaration)
@@ -185,6 +191,12 @@ class Agg(Tree):
         insert_below = self._validate_aggs_parent_id(insert_below)
         new_agg = self._clone(with_tree=True)
 
+        # empty initial tree
+        if insert_below is None:
+            insert_below_subtrees = []
+        else:
+            insert_below_subtrees = [new_agg.remove_subtree(c.identifier) for c in new_agg.children(insert_below)]
+
         if isinstance(by, collections.Iterable) and not isinstance(by, string_types) and not isinstance(by, dict):
             for arg_el in by:
                 arg_el = Agg._deserialize_extended(arg_el, **kwargs)
@@ -193,6 +205,9 @@ class Agg(Tree):
         else:
             arg_el = Agg._deserialize_extended(by, **kwargs)
             new_agg._insert(arg_el, pid=insert_below)
+            insert_below = arg_el.deepest_linear_bucket_agg
+        for st in insert_below_subtrees:
+            new_agg.paste(nid=insert_below, new_tree=st)
         return new_agg
 
     def agg(self, arg, insert_below=None, **kwargs):

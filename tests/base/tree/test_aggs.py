@@ -731,6 +731,80 @@ class AggTestCase(TestCase):
         self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
         self.assertEqual(agg.__str__(), sample.EXPECTED_REPR)
 
+    def test_groupby_insert_below(self):
+        a1 = Agg(
+            Terms('A', field='A', aggs=[
+                Terms('B', field='B'),
+                Terms('C', field='C')
+            ]))
+        self.assertEqual(a1.__repr__(), '''<Aggregation>
+[A] terms
+├── [B] terms
+└── [C] terms
+''')
+
+        self.assertEqual(a1.groupby(
+            by=Terms('D', field='D'),
+            insert_below='A'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+└── [D] terms
+    ├── [B] terms
+    └── [C] terms
+''')
+        self.assertEqual(a1.groupby(
+            by=[Terms('D', field='D'), Terms('E', field='E')],
+            insert_below='A'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+└── [D] terms
+    └── [E] terms
+        ├── [B] terms
+        └── [C] terms
+''')
+        self.assertEqual(a1.groupby(
+            by=Terms('D', field='D', aggs=Terms('E', field='E')),
+            insert_below='A'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+└── [D] terms
+    └── [E] terms
+        ├── [B] terms
+        └── [C] terms
+''')
+
+    def test_agg_insert_below(self):
+        a1 = Agg(
+            Terms('A', field='A', aggs=[
+                Terms('B', field='B'),
+                Terms('C', field='C')
+            ]))
+        self.assertEqual(a1.__repr__(), '''<Aggregation>
+[A] terms
+├── [B] terms
+└── [C] terms
+''')
+
+        self.assertEqual(a1.agg(
+            arg=Terms('D', field='D'),
+            insert_below='A'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+├── [B] terms
+├── [C] terms
+└── [D] terms
+''')
+        self.assertEqual(a1.agg(
+            arg=[Terms('D', field='D'), Terms('E', field='E')],
+            insert_below='A'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+├── [B] terms
+├── [C] terms
+├── [D] terms
+└── [E] terms
+''')
+
     def test_applied_nested_path_at_node(self):
         """ Check that correct nested path is detected at node levels:
         week
@@ -818,9 +892,6 @@ class AggTestCase(TestCase):
         )
         agg2 = Agg(from_=node_hierarchy_2, mapping=MAPPING)
         self.assertEqual(agg2.deepest_linear_bucket_agg, 'week')
-
-
-class ClientBoundAggTestCase(TestCase):
 
     def test_query(self):
         agg = Agg(client=None, index_name='some_index')
