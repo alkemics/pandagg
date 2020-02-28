@@ -163,33 +163,62 @@ class Agg(Tree):
                              'aggregations should be placed.')
         return paths[0][-1]
 
-    def groupby(self, by, insert_below=None, **kwargs):
-        """Arrange passed aggregations in `by` arguments "vertically" (nested manner).
+    def groupby(self, by, insert_below=None, insert_above=None, **kwargs):
+        """Arrange passed aggregations in `by` arguments "vertically" (nested manner), above or below another agg
+        clause.
 
-        Those will be placed between the `insert_below` aggregation clause id if provided else under the deepest linear
-        bucket aggregation if there is no ambiguity, and its children:
+        Given the initial aggregation:
+        A──> B
+        └──> C
 
-        If `insert_below` is not provided:
-        OK: A──> B ─> C ─> by
-        KO: A──> B
-            └──> C
+        If `insert_below` = 'A':
+        A──> by──> B
+              └──> C
 
-        If `insert_below` = 'A'
-        A──> B          ->  A──> by──> B
-        └──> C                    └──> C
+        If `insert_above` = 'B':
+        A──> by──> B
+        └──> C
 
         `by` argument accepts single occurrence or sequence of following formats:
         - string (for terms agg concise declaration)
         - regular Elasticsearch dict syntax
         - AggNode instance (for instance Terms, Filters etc)
 
+        If `insert_below` nor `insert_above` is provided by will be placed between the the deepest linear
+        bucket aggregation if there is no ambiguity, and its children:
+        A──> B      : OK generates     A──> B ─> C ─> by
+
+        A──> B      : KO, ambiguous, must precise either A, B or C
+        └──> C
+
         :param by: aggregation(s) clauses to insert "vertically"
         :param insert_below: parent aggregation id under which these aggregations should be placed
+        :param insert_above: aggregation id above which these aggregations should be placed
         :param kwargs: agg body arguments when using "string" syntax for terms aggregation
         :rtype: pandagg.agg.Agg
         """
-        insert_below = self._validate_aggs_parent_id(insert_below)
+        if insert_below is not None and insert_above is not None:
+            raise ValueError('Must define at most one of "insert_above" and "insert_below", got both.')
+
         new_agg = self._clone(with_tree=True)
+        if insert_above is not None:
+            parent = new_agg.parent(insert_above)
+            # None if insert_above was root
+            insert_below = parent.identifier if parent is not None else None
+            insert_above_subtree = new_agg.remove_subtree(insert_above)
+            if isinstance(by, collections.Iterable) and not isinstance(by, string_types) and not isinstance(by, dict):
+                for arg_el in by:
+                    arg_el = Agg._deserialize_extended(arg_el, **kwargs)
+                    new_agg._insert(arg_el, pid=insert_below)
+                    insert_below = arg_el.deepest_linear_bucket_agg
+            else:
+                arg_el = Agg._deserialize_extended(by, **kwargs)
+                new_agg._insert(arg_el, pid=insert_below)
+                insert_below = arg_el.deepest_linear_bucket_agg
+            new_agg.paste(nid=insert_below, new_tree=insert_above_subtree)
+            return new_agg
+
+        insert_below = self._validate_aggs_parent_id(insert_below)
 
         # empty initial tree
         if insert_below is None:
@@ -225,7 +254,7 @@ class Agg(Tree):
         - AggNode instance (for instance Terms, Filters etc)
 
 
-        :param by: aggregation(s) clauses to insert "vertically"
+        :param arg: aggregation(s) clauses to insert "horizontally"
         :param insert_below: parent aggregation id under which these aggregations should be placed
         :param kwargs: agg body arguments when using "string" syntax for terms aggregation
         :rtype: pandagg.agg.Agg

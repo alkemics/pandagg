@@ -773,6 +773,59 @@ class AggTestCase(TestCase):
         └── [C] terms
 ''')
 
+    def test_groupby_insert_above(self):
+        a1 = Agg(
+            Terms('A', field='A', aggs=[
+                Terms('B', field='B'),
+                Terms('C', field='C')
+            ]))
+        self.assertEqual(a1.__repr__(), '''<Aggregation>
+[A] terms
+├── [B] terms
+└── [C] terms
+''')
+
+        self.assertEqual(a1.groupby(
+            by=Terms('D', field='D'),
+            insert_above='B'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+├── [C] terms
+└── [D] terms
+    └── [B] terms
+''')
+        self.assertEqual(a1.groupby(
+            by=[Terms('D', field='D'), Terms('E', field='E')],
+            insert_above='B'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+├── [C] terms
+└── [D] terms
+    └── [E] terms
+        └── [B] terms
+''')
+        self.assertEqual(a1.groupby(
+            by=Terms('D', field='D', aggs=Terms('E', field='E')),
+            insert_above='B'
+        ).__repr__(), '''<Aggregation>
+[A] terms
+├── [C] terms
+└── [D] terms
+    └── [E] terms
+        └── [B] terms
+''')
+        # above root
+        self.assertEqual(a1.groupby(
+            by=Terms('D', field='D', aggs=Terms('E', field='E')),
+            insert_above='A'
+        ).__repr__(), '''<Aggregation>
+[D] terms
+└── [E] terms
+    └── [A] terms
+        ├── [B] terms
+        └── [C] terms
+''')
+
     def test_agg_insert_below(self):
         a1 = Agg(
             Terms('A', field='A', aggs=[
