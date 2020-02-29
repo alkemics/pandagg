@@ -7,7 +7,7 @@
 from os.path import join
 import simplejson
 import pandas as pd
-from conf import DATA_DIR, OUTPUT_FILE_NAME
+from .conf import DATA_DIR, OUTPUT_FILE_NAME
 
 
 if __name__ == '__main__':

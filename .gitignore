@@ -9,6 +9,7 @@
 /dist
 /build
 /docs/build
+/examples/imdb/conf.py
 
 env/
 env3/

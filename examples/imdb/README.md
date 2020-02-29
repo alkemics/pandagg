@@ -116,7 +116,7 @@ virtualenv env
 python setup.py develop
 pip install pandas simplejson jupyter seaborn
 ```
-Then edit `conf.py` file:
+Then copy `conf.py.dist` file into `conf.py` and edit variables as suits you, for instance:
 ```
 # your cluster address
 ES_HOST = 'localhost:9200'

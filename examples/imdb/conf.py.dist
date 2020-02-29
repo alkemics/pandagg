@@ -1,0 +1,6 @@
+# your cluster address, if local probably 'localhost:9200'
+ES_HOST = '__FILL_ME__'
+
+# where your table dumps are stored, and where serialized output will be written
+DATA_DIR = '__FILL_ME__'
+OUTPUT_FILE_NAME = 'serialized.json'
