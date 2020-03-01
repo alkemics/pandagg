@@ -60,7 +60,7 @@ class IMapping(TreeBasedObj):
                 self.a = field_classes_per_name[field_node.KEY](
                     mapping_tree=self._initial_tree,
                     client=self._client,
-                    field=field_node.path,
+                    field=self._tree.node_path(field_node.identifier),
                     index_name=self._index_name
                 )
 

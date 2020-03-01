@@ -157,4 +157,3 @@ saved in `children` attribute before tree deserialization
 - on aggregation response `tree`, use `Query` DSL to compute bucket filters
 - package versions for different ElasticSearch versions
 - remove `Bucket` `nodes` knowledge of their `depth` once [this `treelib` issue is resolved](https://github.com/caesar0301/treelib/issues/149)
-- on `Mapping` `nodes`, remove knowledge of full path, should be known only by `tree`

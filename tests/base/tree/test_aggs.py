@@ -620,12 +620,12 @@ class AggTestCase(TestCase):
         agg_from_tree_mapping = Agg(mapping=Mapping(body=MAPPING))
         agg_from_obj_mapping = Agg(mapping=IMapping(tree=Mapping(body=MAPPING)))
         self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.to_dict(),
-            agg_from_tree_mapping.tree_mapping.to_dict()
+            agg_from_dict_mapping.tree_mapping.__repr__(),
+            agg_from_tree_mapping.tree_mapping.__repr__()
         )
         self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.to_dict(),
-            agg_from_obj_mapping.tree_mapping.to_dict()
+            agg_from_dict_mapping.tree_mapping.__repr__(),
+            agg_from_obj_mapping.tree_mapping.__repr__()
         )
         self.assertIsInstance(agg_from_dict_mapping, Agg)
         self.assertIsInstance(agg_from_tree_mapping, Agg)
@@ -639,12 +639,12 @@ class AggTestCase(TestCase):
         agg_from_obj_mapping = Agg() \
             .set_mapping(mapping=IMapping(tree=Mapping(body=MAPPING), client=None))
         self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.to_dict(),
-            agg_from_tree_mapping.tree_mapping.to_dict()
+            agg_from_dict_mapping.tree_mapping.__repr__(),
+            agg_from_tree_mapping.tree_mapping.__repr__()
         )
         self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.to_dict(),
-            agg_from_obj_mapping.tree_mapping.to_dict()
+            agg_from_dict_mapping.tree_mapping.__repr__(),
+            agg_from_obj_mapping.tree_mapping.__repr__()
         )
         # set mapping returns self
         self.assertIsInstance(agg_from_dict_mapping, Agg)

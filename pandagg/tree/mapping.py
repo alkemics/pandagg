@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from six import iteritems
+from treelib.exceptions import NodeIDAbsentError
 
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.deserializer import deserialize_field
@@ -17,18 +18,49 @@ class Mapping(Tree):
         super(Mapping, self).__init__(identifier=identifier)
         self.body = body
         if body:
-            self.deserialize(path='', body=body)
+            self.deserialize(name='', body=body)
 
-    def deserialize(self, path, body, pid=None, depth=0, is_subfield=False):
-        node = deserialize_field(path=path, depth=depth, is_subfield=is_subfield, body=body)
+    def deserialize(self, name, body, pid=None, depth=0, is_subfield=False):
+        node = deserialize_field(name=name, depth=depth, is_subfield=is_subfield, body=body)
         self.add_node(node, parent=pid)
         depth += 1
         for sub_name, sub_body in iteritems(node.properties or {}):
-            sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-            self.deserialize(path=sub_path, body=sub_body, pid=node.path, depth=depth)
+            self.deserialize(name=sub_name, body=sub_body, pid=node.identifier, depth=depth)
         for sub_name, sub_body in iteritems(node.fields or {}):
-            sub_path = '%s.%s' % (path, sub_name) if path else sub_name
-            self.deserialize(path=sub_path, body=sub_body, pid=node.identifier, depth=depth, is_subfield=True)
+            self.deserialize(name=sub_name, body=sub_body, pid=node.identifier, depth=depth, is_subfield=True)
+
+    def __getitem__(self, key):
+        """Tries to fetch node by identifier, else by succession of names."""
+        try:
+            return self._nodes[key]
+        except KeyError:
+            pass
+        pid = self.root
+        names = key.split('.')
+        for name in names:
+            matching_children = [c for c in self.children(pid) if c.name == name]
+            if len(matching_children) != 1:
+                raise NodeIDAbsentError()
+            pid = matching_children[0].identifier
+        return self[pid]
+
+    def __contains__(self, identifier):
+        try:
+            return self[identifier] is not None
+        except NodeIDAbsentError:
+            return False
+
+    def node_path(self, nid):
+        path = self[nid].name
+        node = self.parent(nid)
+        while node is not None and node.identifier is not self.root:
+            path = '%s.%s' % (node.name, path)
+            node = self.parent(node.identifier)
+        return path
+
+    def contains(self, nid):
+        # remove after https://github.com/caesar0301/treelib/issues/155
+        return nid in self
 
     def _clone(self, identifier, with_tree=False, deep=False):
         return Mapping(
@@ -76,8 +108,11 @@ class Mapping(Tree):
         return self[field_path].KEY
 
     def nested_at_field(self, field_path):
-        return next(iter(self.list_nesteds_at_field(field_path)), None)
+        nesteds = self.list_nesteds_at_field(field_path)
+        if nesteds:
+            return self.node_path(nesteds[0])
+        return None
 
     def list_nesteds_at_field(self, field_path):
         # from deepest to highest
-        return list(self.rsearch(field_path, filter=lambda n: n.KEY == 'nested'))
+        return [self.node_path(nid) for nid in self.rsearch(field_path, filter=lambda n: n.KEY == 'nested')]

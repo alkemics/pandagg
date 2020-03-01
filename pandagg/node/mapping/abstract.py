@@ -14,10 +14,9 @@ class Field(Node):
     KEY = NotImplementedError()
     DISPLAY_PATTERN = '  %s'
 
-    def __init__(self, path, depth, is_subfield=False, **body):
-        self.path = path
+    def __init__(self, name, depth, is_subfield=False, **body):
         # name will be used for dynamic attribute access in tree
-        self.name = path.split('.')[-1]
+        self.name = name
         # TODO - remove knowledge of depth here -> PR in treelib to update `show` method
         self.depth = depth
         self.is_subfield = is_subfield
@@ -25,13 +24,17 @@ class Field(Node):
         self.fields = body.pop('fields', None)
         self.properties = body.pop('properties', None)
         self._body = body
-        super(Field, self).__init__(identifier=path, data=PrettyNode(pretty=self.tree_repr))
+        super(Field, self).__init__(data=PrettyNode(pretty=self.tree_repr))
+
+    @property
+    def _identifier_prefix(self):
+        return self.name
 
     @classmethod
-    def deserialize(cls, path, body, depth=0, is_subfield=False):
+    def deserialize(cls, name, body, depth=0, is_subfield=False):
         if 'type' in body and body['type'] != cls.KEY:
             raise ValueError('Deserialization error for field <%s>: <%s>' % (cls.KEY, body))
-        return cls(path=path, depth=depth, is_subfield=is_subfield, **body)
+        return cls(name=name, depth=depth, is_subfield=is_subfield, **body)
 
     @property
     def body(self):
@@ -54,7 +57,7 @@ class Field(Node):
 
     def __str__(self):
         return '<Mapping Field %s> of type %s:\n%s' % (
-            text(self.path),
+            text(self.name),
             text(self.KEY),
             text(json.dumps(self.body, indent=4))
         )

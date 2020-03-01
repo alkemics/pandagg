@@ -22,7 +22,7 @@ class MappingTreeTestCase(TestCase):
 
     def test_node_repr(self):
         node = Keyword(
-            path='path.to.field',
+            name='path.to.field',
             depth=3,
             fields={'searchable': {'type': 'text'}}
         )
@@ -69,10 +69,13 @@ class MappingTreeTestCase(TestCase):
         self.assertEqual(mapping_tree.mapping_type_of_field('global_metrics.field.name.raw'), 'keyword')
         self.assertEqual(mapping_tree.mapping_type_of_field('local_metrics.dataset.support_test'), 'integer')
 
-
-class MappingTestCase(TestCase):
-    """Check that calling a tree will return its root node.
-    """
+    def test_node_path(self):
+        mapping_tree = Mapping(body=MAPPING)
+        # get node by path syntax
+        node = mapping_tree['local_metrics.dataset.support_test']
+        self.assertIsInstance(node, Field)
+        self.assertEqual(node.name, 'support_test')
+        self.assertEqual(mapping_tree.node_path(node.identifier), 'local_metrics.dataset.support_test')
 
     def test_mapping_aggregations(self):
         mapping_tree = Mapping(body=MAPPING)
@@ -82,15 +85,14 @@ class MappingTestCase(TestCase):
             self.assertTrue(hasattr(mapping, field_name))
 
         workflow = mapping.workflow
+        # Check that calling a tree will return its root node.
         workflow_node = workflow()
         self.assertTrue(isinstance(workflow_node, Field))
 
-
-class ClientBoundMappingTestCase(TestCase):
-    """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
-    aggregations on that field type.
-    """
     def test_client_bound(self):
+        """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
+        aggregations on that field type.
+        """
         client_mock = Mock(spec=['search'])
         es_response_mock = {
             "_shards": {
