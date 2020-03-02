@@ -2,7 +2,7 @@
 import json
 from os.path import join
 from elasticsearch import Elasticsearch, helpers
-from .conf import ES_HOST, DATA_DIR
+from examples.imdb.conf import ES_HOST, DATA_DIR
 
 index_name = 'movies'
 mapping = {
@@ -14,7 +14,10 @@ mapping = {
                 'raw': {'type': 'keyword'}
             }
         },
-        'year': {'type': 'date'},
+        'year': {
+            'type': 'date',
+            'format': 'yyyy'
+        },
         'rank': {'type': 'float'},
         # array
         'genres': {'type': 'keyword'},
@@ -72,7 +75,9 @@ mapping = {
                     'type': 'keyword'
                 }
             }
-        }
+        },
+        'nb_directors': {'type': 'integer'},
+        'nb_roles': {'type': 'integer'}
     }
 }
 
