@@ -134,8 +134,8 @@ Question is who has the charge of storing the **tree structure** (how **nodes** 
 In ***elasticsearch-dsl*** library, each aggregation **node** is responsible of knowing which are its direct children.
 
 In ***pandagg***, all **nodes** are agnostic about which are their parents/children, and a **tree** object is in charge
-of storing this structure. It becomes much easier to add/update/remove aggregation **nodes** or **sub-trees** in
-specific locations of the initial **tree**, thus making it easier to build your aggregation.
+of storing this structure. It is thus possible to add/update/remove aggregation **nodes** or **sub-trees** in
+specific locations of the initial **tree**, thus allowing more flexible ways to build your queries.
 
 ## Contributing
 
