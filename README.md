@@ -13,10 +13,10 @@
 
 ## Usage
 
-Full documentation and HOW-TO are available here: 
+### Documentation
+Full documentation and user-guide are available [here on read-the-docs](https://pandagg.readthedocs.io/en/latest/user-guide.html).
 
-***TODO** - redirect to sphinx documentation*
-
+### Quick sneak peek 
 **Elasticsearch dict syntax**
 ```
 >>> from pandagg.query import Query
