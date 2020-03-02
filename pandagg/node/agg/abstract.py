@@ -222,17 +222,16 @@ class MultipleBucketAgg(BucketAggNode):
         raise NotImplementedError()
 
 
-class FieldMetricAgg(MetricAgg):
+class FieldOrScriptMetricAgg(MetricAgg):
     """Metric aggregation based on single field."""
     VALUE_ATTRS = NotImplementedError()
 
-    def __init__(self, name, field, meta=None, **body):
-        self.field = field
-        self.inner_body = body
-        super(FieldMetricAgg, self).__init__(
+    def __init__(self, name, meta=None, **body):
+        self.field = body.get('field')
+        self.script = body.get('script')
+        super(FieldOrScriptMetricAgg, self).__init__(
             name=name,
             meta=meta,
-            field=field,
             **body
         )
 

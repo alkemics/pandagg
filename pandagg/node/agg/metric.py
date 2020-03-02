@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from pandagg.node.types import NUMERIC_TYPES
-from pandagg.node.agg.abstract import FieldMetricAgg, MetricAgg
+from pandagg.node.agg.abstract import FieldOrScriptMetricAgg, MetricAgg
 
 
 class TopHits(MetricAgg):
@@ -12,68 +12,68 @@ class TopHits(MetricAgg):
     KEY = 'top_hits'
 
 
-class Avg(FieldMetricAgg):
+class Avg(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['value']
     KEY = 'avg'
 
 
-class Sum(FieldMetricAgg):
+class Sum(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['value']
     KEY = 'sum'
 
 
-class Max(FieldMetricAgg):
+class Max(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['value']
     KEY = 'max'
 
 
-class Min(FieldMetricAgg):
+class Min(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['value']
     KEY = 'min'
 
 
-class Cardinality(FieldMetricAgg):
+class Cardinality(FieldOrScriptMetricAgg):
     VALUE_ATTRS = ['value']
     KEY = 'cardinality'
 
 
-class Stats(FieldMetricAgg):
+class Stats(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['count', 'min', 'max', 'avg', 'sum']
     KEY = 'stats'
 
 
-class ExtendedStats(FieldMetricAgg):
+class ExtendedStats(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = [
         'count', 'min', 'max', 'avg', 'sum', 'sum_of_squares', 'variance', 'std_deviation', 'std_deviation_bounds']
     KEY = 'extended_stats'
 
 
-class GeoBound(FieldMetricAgg):
+class GeoBound(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = ['geo_point']
     VALUE_ATTRS = ['bounds']
     KEY = 'geo_bounds'
 
 
-class GeoCentroid(FieldMetricAgg):
+class GeoCentroid(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = ['geo_point']
     VALUE_ATTRS = ['location']
     KEY = 'geo_centroid'
 
 
-class Percentiles(FieldMetricAgg):
+class Percentiles(FieldOrScriptMetricAgg):
     """Percents body argument can be passed to specify which percentiles to fetch."""
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['values']
     KEY = 'percentiles'
 
 
-class PercentileRanks(FieldMetricAgg):
+class PercentileRanks(FieldOrScriptMetricAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     VALUE_ATTRS = ['values']
     KEY = 'percentile_ranks'
@@ -82,7 +82,7 @@ class PercentileRanks(FieldMetricAgg):
         super(PercentileRanks, self).__init__(name=name, field=field, meta=meta, values=values, **body)
 
 
-class ValueCount(FieldMetricAgg):
+class ValueCount(FieldOrScriptMetricAgg):
     BLACKLISTED_MAPPING_TYPES = []
     VALUE_ATTRS = ['value']
     KEY = 'value_count'

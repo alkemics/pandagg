@@ -1,13 +1,14 @@
 from unittest import TestCase
 
-from pandagg.node.agg.abstract import FieldMetricAgg
+from pandagg.node.agg.abstract import FieldOrScriptMetricAgg, AggNode
 from pandagg.agg import Avg, TopHits
+from pandagg.node.agg.deserializer import deserialize_agg
 
 
 class MetricAggNodesTestCase(TestCase):
 
     def test_abstract_metric_agg(self):
-        class MyMetricAgg(FieldMetricAgg):
+        class MyMetricAgg(FieldOrScriptMetricAgg):
             KEY = 'custom'
             VALUE_ATTRS = ['some_attr_name']
 
@@ -49,6 +50,34 @@ class MetricAggNodesTestCase(TestCase):
 
         # test extract bucket value
         self.assertEqual(Avg.extract_bucket_value({"value": 75.0}), 75.0)
+
+        # test deserialization
+        a = deserialize_agg({
+            "avg_grade": {
+                "avg": {
+                    "field": "grade"
+                }
+            }
+        })
+        self.assertIsInstance(a, Avg)
+        self.assertEqual(a.name, 'avg_grade')
+        self.assertEqual(a.field, 'grade')
+
+        a_script = deserialize_agg({
+            "avg_grade": {
+                "avg": {
+                    "script": {
+                        "source": "doc.grade.value"
+                    }
+                }
+            }
+        })
+        self.assertIsInstance(a_script, Avg)
+        self.assertEqual(a_script.name, 'avg_grade')
+        self.assertEqual(a_script.field, None)
+        self.assertEqual(a_script.script, {
+            "source": "doc.grade.value"
+        })
 
     def test_top_hits(self):
         query = {
@@ -108,9 +137,9 @@ class MetricAggNodesTestCase(TestCase):
                 ]
             }
         }
-        self.assertEqual\
-            (top_hits.extract_bucket_value(es_raw_answer),
-             {
+        self.assertEqual(
+            top_hits.extract_bucket_value(es_raw_answer),
+            {
                  "total": {
                      "value": 3,
                      "relation": "eq"
@@ -132,4 +161,4 @@ class MetricAggNodesTestCase(TestCase):
                      }
                  ]
              }
-         )
+        )
