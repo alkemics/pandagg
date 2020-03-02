@@ -44,12 +44,15 @@ extras_require = {
 
 setup(
     name='pandagg',
-    version='0.1',
+    version='0.0.1',
     description='Python package provided to make elasticsearch aggregation easy, inspired by pandas library.',
     long_description=README,
+    long_description_content_type='text/markdown',
     classifiers=[],
     author='Léonard Binet',
     author_email='leonardbinet@gmail.com',
+    url='https://github.com/alkemics/pandagg',
+    download_url='https://github.com/alkemics/pandagg/archive/v0.0.1.tar.gz',
     keywords='elasticsearch aggregation pandas',
     packages=find_packages(),
     include_package_data=True,

@@ -14,7 +14,7 @@
 ## Usage
 
 ### Documentation
-Full documentation and user-guide are available [here on read-the-docs](https://pandagg.readthedocs.io/en/latest/user-guide.html).
+Full documentation and user-guide are available [here on read-the-docs](https://pandagg.readthedocs.io/en/latest/).
 
 ### Quick sneak peek 
 **Elasticsearch dict syntax**
