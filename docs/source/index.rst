@@ -3,20 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+#######
 pandagg
-=======
+#######
 
 .. toctree::
    :hidden:
    :maxdepth: 4
 
+   Introduction <self>
    user-guide
    advanced-usage
    Usage example <imdb>
    API reference <reference/pandagg>
    Contributing <CONTRIBUTING>
 
-pandagg is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations. It brings
+**pandagg** is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations. It brings
 the following features:
 
 - flexible aggregation and search queries declaration
@@ -24,10 +26,11 @@ the following features:
 - parsing of aggregation results in handy format: interactive bucket tree, normalized tree or tabular breakdown
 - mapping interactive navigation
 
+**********
 Installing
-----------
+**********
 
-pandagg can be installed with `pip <https://pip.pypa.io>`_::
+**pandagg** can be installed with `pip <https://pip.pypa.io>`_::
 
     $ pip install pandagg
 
@@ -36,8 +39,9 @@ Alternatively, you can grab the latest source code from `GitHub <https://github.
     $ git clone git://github.com/alkemics/pandagg.git
     $ python setup.py install
 
+*****
 Usage
------
+*****
 
 The :doc:`user-guide` is the place to go to learn how to use the library and
 accomplish common tasks. The more in-depth :doc:`advanced-usage` guide is the place to go for deeply nested queries.
@@ -47,13 +51,14 @@ a jupyter notebook to showcase some of `pandagg` functionalities: `here it is <h
 
 The :doc:`reference/pandagg` documentation provides API-level documentation.
 
-
+*******
 License
--------
+*******
 
 pandagg is made available under the MIT License. For more details, see `LICENSE.txt <https://github.com/alkemics/pandagg/blob/master/LICENCE>`_.
 
+************
 Contributing
-------------
+************
 
 We happily welcome contributions, please see :doc:`CONTRIBUTING` for details.
