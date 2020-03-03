@@ -14,7 +14,7 @@ pandagg
    advanced-usage
    Usage example <imdb>
    API reference <reference/pandagg>
-   contributing
+   Contributing <CONTRIBUTING>
 
 pandagg is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations. It brings
 the following features:
@@ -56,4 +56,4 @@ pandagg is made available under the MIT License. For more details, see `LICENSE.
 Contributing
 ------------
 
-We happily welcome contributions, please see :doc:`contributing` for details.
+We happily welcome contributions, please see :doc:`CONTRIBUTING` for details.
