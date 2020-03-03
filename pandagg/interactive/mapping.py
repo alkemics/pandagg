@@ -36,7 +36,7 @@ class IMapping(TreeBasedObj):
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         self._set_agg_property_if_required()
 
-    def bind(self, client, index_name=None):
+    def _bind(self, client, index_name=None):
         self._client = client
         if index_name is not None:
             self._index_name = index_name
@@ -60,7 +60,7 @@ class IMapping(TreeBasedObj):
                 self.a = field_classes_per_name[field_node.KEY](
                     mapping_tree=self._initial_tree,
                     client=self._client,
-                    field=self._tree.node_path(field_node.identifier),
+                    field=self._initial_tree.node_path(field_node.identifier),
                     index_name=self._index_name
                 )
 

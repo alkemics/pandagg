@@ -115,4 +115,10 @@ class Mapping(Tree):
 
     def list_nesteds_at_field(self, field_path):
         # from deepest to highest
-        return [self.node_path(nid) for nid in self.rsearch(field_path, filter=lambda n: n.KEY == 'nested')]
+        return [
+            self.node_path(nid)
+            for nid in self.rsearch(
+                self[field_path].identifier,
+                filter=lambda n: n.KEY == 'nested'
+            )
+        ]
