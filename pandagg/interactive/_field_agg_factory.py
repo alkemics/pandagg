@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from operator import itemgetter
 
-import pandas as pd
 from pandagg.node.agg.deserializer import AGGS
 from pandagg.node.types import MAPPING_TYPES
 
@@ -61,6 +60,10 @@ def _operate(self, agg_node, index, execute, output, query):
         if output is None:
             return result
         elif output == 'dataframe':
+            try:
+                import pandas as pd
+            except ImportError:
+                return result
             keys = map(itemgetter(0), result)
             raw_values = map(itemgetter(1), result)
             return pd.DataFrame(index=keys, data=raw_values)
