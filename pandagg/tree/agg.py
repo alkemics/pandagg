@@ -78,8 +78,6 @@ class Agg(Tree):
         if isinstance(agg_node, BucketAggNode):
             for child_agg_node in agg_node.aggs or []:
                 self._insert(child_agg_node, pid=agg_node.identifier)
-            # reset children to None to avoid confusion since this serves only __init__ syntax.
-            agg_node.aggs = None
 
     def _insert(self, from_, pid=None):
         inserted_tree = self.deserialize(from_=from_)
@@ -324,7 +322,7 @@ class Agg(Tree):
             return super(Agg, self).paste(nid, new_tree, deep)
         # validates that mappings are similar
         if new_tree.tree_mapping is not None:
-            if new_tree.tree_mapping.body != self.tree_mapping.body:
+            if new_tree.tree_mapping.serialize() != self.tree_mapping.serialize():
                 raise MappingError('Pasted tree has a different mapping.')
 
         # check root node nested position in mapping

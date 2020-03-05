@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import copy
 
 from six import iteritems
 from treelib.exceptions import NodeIDAbsentError
@@ -7,6 +8,7 @@ from treelib.exceptions import NodeIDAbsentError
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.deserializer import deserialize_field
 from pandagg.exceptions import AbsentMappingFieldError, InvalidOperationMappingFieldError
+from pandagg.node.mapping.field_datatypes import Object
 from pandagg.tree._tree import Tree
 
 
@@ -14,20 +16,71 @@ class Mapping(Tree):
 
     node_class = Field
 
-    def __init__(self, body=None, identifier=None):
+    def __init__(self, from_=None, identifier=None, properties=None, dynamic=False):
+        if from_ is not None and properties is not None:
+            raise ValueError('Can provide at most one of "from_" and "properties"')
+        if properties is not None:
+            from_ = Object(name='', properties=properties, dynamic=dynamic)
         super(Mapping, self).__init__(identifier=identifier)
-        self.body = body
-        if body:
-            self.deserialize(name='', body=body)
+        if from_ is not None:
+            self._insert(from_, depth=0)
 
-    def deserialize(self, name, body, pid=None, depth=0, is_subfield=False):
+    @classmethod
+    def deserialize(cls, from_, depth=0):
+        if isinstance(from_, Mapping):
+            return from_
+        if isinstance(from_, Field):
+            new = Mapping()
+            new._insert_from_node(field=from_, depth=depth, is_subfield=False)
+            return new
+        if isinstance(from_, dict):
+            from_ = copy.deepcopy(from_)
+            new = Mapping()
+            new._insert_from_dict(name='', body=from_, is_subfield=False, depth=depth)
+            return new
+        else:
+            raise ValueError('Unsupported type <%s>.' % type(from_))
+
+    def serialize(self):
+        if self.root is None:
+            return None
+        return self[self.root].body(with_children=True)
+
+    def _insert_from_dict(self, name, body, is_subfield, depth, pid=None):
         node = deserialize_field(name=name, depth=depth, is_subfield=is_subfield, body=body)
-        self.add_node(node, parent=pid)
-        depth += 1
-        for sub_name, sub_body in iteritems(node.properties or {}):
-            self.deserialize(name=sub_name, body=sub_body, pid=node.identifier, depth=depth)
-        for sub_name, sub_body in iteritems(node.fields or {}):
-            self.deserialize(name=sub_name, body=sub_body, pid=node.identifier, depth=depth, is_subfield=True)
+        self._insert_from_node(node, depth=depth, pid=pid, is_subfield=is_subfield)
+
+    def _insert_from_node(self, field, depth, is_subfield, pid=None):
+        # overriden to allow smooth DSL declaration
+        field.depth = depth
+        field.is_subfield = is_subfield
+        field.reset_data()
+
+        self.add_node(field, pid)
+        for subfield in field.fields or []:
+            if isinstance(subfield, dict):
+                name, body = next(iteritems(subfield))
+                self._insert_from_dict(name=name, body=body, pid=field.identifier, is_subfield=True, depth=depth + 1)
+            elif isinstance(subfield, Field):
+                self._insert_from_node(subfield, pid=field.identifier, depth=depth + 1, is_subfield=True)
+            else:
+                raise ValueError('Wrong type %s' % type(field))
+        for subfield in field.properties or []:
+            if isinstance(subfield, dict):
+                name, body = next(iteritems(subfield))
+                self._insert_from_dict(name=name, body=body, pid=field.identifier, is_subfield=False, depth=depth + 1)
+            elif isinstance(subfield, Field):
+                self._insert_from_node(subfield, pid=field.identifier, depth=depth + 1, is_subfield=False)
+            else:
+                raise ValueError('Wrong type %s' % type(field))
+
+    def _insert(self, from_, depth, pid=None):
+        inserted_tree = self.deserialize(from_=from_, depth=depth)
+        if self.root is None:
+            self.merge(nid=pid, new_tree=inserted_tree)
+            return self
+        self.paste(nid=pid, new_tree=inserted_tree)
+        return self
 
     def __getitem__(self, key):
         """Tries to fetch node by identifier, else by succession of names."""
@@ -65,7 +118,7 @@ class Mapping(Tree):
     def _clone(self, identifier, with_tree=False, deep=False):
         return Mapping(
             identifier=identifier,
-            body=self.body if with_tree else None
+            from_=self if with_tree else None
         )
 
     def show(self, data_property='pretty', **kwargs):

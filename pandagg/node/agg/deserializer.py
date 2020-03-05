@@ -25,7 +25,7 @@ def deserialize_agg(d):
             agg_class.__name__, children_aggs))
     if children_aggs:
         if isinstance(children_aggs, dict):
-            children_aggs = [{k: v for k, v in iteritems(children_aggs)}]
+            children_aggs = [{k: v} for k, v in iteritems(children_aggs)]
         elif isinstance(children_aggs, AggNode):
             children_aggs = (children_aggs,)
         agg_body['aggs'] = children_aggs

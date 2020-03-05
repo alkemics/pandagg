@@ -617,8 +617,8 @@ class AggTestCase(TestCase):
 
     def test_mapping_from_init(self):
         agg_from_dict_mapping = Agg(mapping=MAPPING)
-        agg_from_tree_mapping = Agg(mapping=Mapping(body=MAPPING))
-        agg_from_obj_mapping = Agg(mapping=IMapping(tree=Mapping(body=MAPPING)))
+        agg_from_tree_mapping = Agg(mapping=Mapping(from_=MAPPING))
+        agg_from_obj_mapping = Agg(mapping=IMapping(tree=Mapping(from_=MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.__repr__(),
             agg_from_tree_mapping.tree_mapping.__repr__()
@@ -635,9 +635,9 @@ class AggTestCase(TestCase):
         agg_from_dict_mapping = Agg() \
             .set_mapping(mapping=MAPPING)
         agg_from_tree_mapping = Agg() \
-            .set_mapping(mapping=Mapping(body=MAPPING))
+            .set_mapping(mapping=Mapping(from_=MAPPING))
         agg_from_obj_mapping = Agg() \
-            .set_mapping(mapping=IMapping(tree=Mapping(body=MAPPING), client=None))
+            .set_mapping(mapping=IMapping(tree=Mapping(from_=MAPPING), client=None))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.__repr__(),
             agg_from_tree_mapping.tree_mapping.__repr__()

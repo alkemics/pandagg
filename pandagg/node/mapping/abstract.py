@@ -3,7 +3,7 @@
 
 import copy
 import json
-from six import python_2_unicode_compatible
+from six import python_2_unicode_compatible, iteritems
 from builtins import str as text
 from pandagg.node._node import Node
 from pandagg.utils import PrettyNode
@@ -14,17 +14,43 @@ class Field(Node):
     KEY = NotImplementedError()
     DISPLAY_PATTERN = '  %s'
 
-    def __init__(self, name, depth, is_subfield=False, **body):
+    def __init__(self, name, depth=0, is_subfield=False, **body):
         # name will be used for dynamic attribute access in tree
         self.name = name
         # TODO - remove knowledge of depth here -> PR in treelib to update `show` method
         self.depth = depth
         self.is_subfield = is_subfield
 
-        self.fields = body.pop('fields', None)
-        self.properties = body.pop('properties', None)
+        # fields and properties can be a Field instance, a sequence of Field instances, or a dict
+        self.fields = self._atomize(body.pop('fields', None))
+        self.properties = self._atomize(body.pop('properties', None))
+        # rest of body
         self._body = body
         super(Field, self).__init__(data=PrettyNode(pretty=self.tree_repr))
+
+    def reset_data(self):
+        # hack until treelib show issue is fixed
+        self.data = PrettyNode(pretty=self.tree_repr)
+
+    @staticmethod
+    def _atomize(children):
+        if children is None:
+            return []
+        if isinstance(children, dict):
+            return [{k: v} for k, v in iteritems(children)]
+        if isinstance(children, Field):
+            return [children]
+        return children
+
+    @staticmethod
+    def _serialize_atomized(children):
+        d = {}
+        for child in children:
+            if isinstance(child, dict):
+                d.update(child)
+            if isinstance(child, Field):
+                d[child.name] = child.body(with_children=True)
+        return d
 
     @property
     def _identifier_prefix(self):
@@ -36,13 +62,12 @@ class Field(Node):
             raise ValueError('Deserialization error for field <%s>: <%s>' % (cls.KEY, body))
         return cls(name=name, depth=depth, is_subfield=is_subfield, **body)
 
-    @property
-    def body(self):
+    def body(self, with_children=False):
         b = copy.deepcopy(self._body)
-        if self.properties:
-            b['properties'] = self.properties
-        if self.fields:
-            b['fields'] = self.fields
+        if with_children and self.properties:
+            b['properties'] = self._serialize_atomized(self.properties)
+        if with_children and self.fields:
+            b['fields'] = self._serialize_atomized(self.fields)
         if self.KEY in ('object', ''):
             return b
         b['type'] = self.KEY
@@ -59,5 +84,5 @@ class Field(Node):
         return '<Mapping Field %s> of type %s:\n%s' % (
             text(self.name),
             text(self.KEY),
-            text(json.dumps(self.body, indent=4))
+            text(json.dumps(self.body(with_children=True), indent=4))
         )

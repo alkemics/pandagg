@@ -96,8 +96,6 @@ class Query(Tree):
         if hasattr(query_node, 'children'):
             for child_node in query_node.children or []:
                 self._insert(child_node, pid=query_node.identifier)
-            # reset children to None to avoid confusion since this serves only __init__ syntax.
-            query_node.children = None
 
     def add_node(self, node, pid=None):
         if pid is None:
