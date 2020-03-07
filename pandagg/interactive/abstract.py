@@ -55,7 +55,7 @@ class Obj(object):
     key
     key2
 
-    Items names that are not compliant with python attributes (accepted characters are [a-zA-Z0-9_] without beginning
+    Items names that are not compliant with python attributes (accepted characters are [a-zA-Z0-9\_] without beginning
     with a figure), will be only available through dict `__getitem__` access.
     """
     _REPR_NAME = None

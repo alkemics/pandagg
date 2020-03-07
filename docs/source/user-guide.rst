@@ -2,39 +2,11 @@
 User Guide
 ##########
 
-.. toctree::
-
 
 .. note::
 
+    Examples will be based on :doc:`IMDB` data.
     This is a work in progress. Some sections still need to be furnished.
-
-**********
-Philosophy
-**********
-
-**pandagg** is designed for both for "regular" code repository usage, and "interactive" usage (ipython or jupyter
-notebook usage with autocompletion features inspired by `pandas <https://github.com/pandas-dev/pandas>`_ design).
-
-This library focuses on two principles:
-
-* stick to the **tree** structure of Elasticsearch objects
-* provide simple and flexible interfaces to make it easy and intuitive to use in an interactive usage
-
-Elasticsearch tree structures
-=============================
-
-Many Elasticsearch objects have a **tree** structure, ie they are built from a hierarchy of **nodes**:
-
-* a `mapping <https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html>`_ (tree) is a hierarchy of `fields <https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html>`_ (nodes)
-* a `query <https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html>`_ (tree) is a hierarchy of query clauses (nodes)
-* an `aggregation <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html>`_ (tree) is a hierarchy of aggregation clauses (nodes)
-* an aggregation response (tree) is a hierarchy of response buckets (nodes)
-
-This library aims to stick to that structure by providing a flexible syntax distinguishing **trees** and **nodes**.
-
-Interactive usage
-=================
 
 
 *****
@@ -121,6 +93,7 @@ Another way to declare this query is through chaining:
 .. note::
     `equal_queries` function won't consider order of clauses in must/should parameters since it actually doesn't matter
     in Elasticsearch execution, ie
+
         >>> equal_queries({'must': [A, B]}, {'must': [B, A]})
         True
 
@@ -144,16 +117,6 @@ Eventually, you can also use regular Elasticsearch dict syntax:
         └── terms, field=genres, values=['Action', 'Thriller']
 
 
-*******
-Mapping
-*******
-
-Mapping declaration
-===================
-
-Mapping navigation
-==================
-
 ***********
 Aggregation
 ***********
@@ -166,8 +129,175 @@ Aggregation response
 
 TODO
 
+*******
+Mapping
+*******
+
+Here is a portion of :doc:`IMDB` example mapping:
+
+    >>> imdb_mapping = {
+    >>>     'dynamic': False,
+    >>>     'properties': {
+    >>>         'movie_id': {'type': 'integer'},
+    >>>         'name': {
+    >>>             'type': 'text',
+    >>>             'fields': {
+    >>>                 'raw': {'type': 'keyword'}
+    >>>             }
+    >>>         },
+    >>>         'year': {
+    >>>             'type': 'date',
+    >>>             'format': 'yyyy'
+    >>>         },
+    >>>         'rank': {'type': 'float'},
+    >>>         'genres': {'type': 'keyword'},
+    >>>         'roles': {
+    >>>             'type': 'nested',
+    >>>             'properties': {
+    >>>                 'role': {'type': 'keyword'},
+    >>>                 'actor_id': {'type': 'integer'},
+    >>>                 'gender': {'type': 'keyword'},
+    >>>                 'first_name':  {
+    >>>                     'type': 'text',
+    >>>                     'fields': {
+    >>>                         'raw': {'type': 'keyword'}
+    >>>                     }
+    >>>                 },
+    >>>                 'last_name':  {
+    >>>                     'type': 'text',
+    >>>                     'fields': {
+    >>>                         'raw': {'type': 'keyword'}
+    >>>                     }
+    >>>                 }
+    >>>             }
+    >>>         }
+    >>>     }
+    >>> }
+
+Mapping DSL
+===========
+
+The :class:`~pandagg.tree.mapping.Mapping` class provides a more compact view, which can help when dealing with large mappings:
+
+    >>> from pandagg.mapping import Mapping
+    >>> m = Mapping(imdb_mapping)
+    <Mapping>
+                                                                 {Object}
+    ├── genres                                                    Keyword
+    ├── movie_id                                                  Integer
+    ├── name                                                      Text
+    │   └── raw                                                 ~ Keyword
+    ├── rank                                                      Float
+    ├── roles                                                    [Nested]
+    │   ├── actor_id                                              Integer
+    │   ├── first_name                                            Text
+    │   │   └── raw                                             ~ Keyword
+    │   ├── gender                                                Keyword
+    │   ├── last_name                                             Text
+    │   │   └── raw                                             ~ Keyword
+    │   └── role                                                  Keyword
+    └── year                                                      Date
+
+
+With pandagg DSL, an equivalent declaration would be the following:
+
+    >>> from pandagg.mapping import Mapping, Object, Nested, Float, Keyword, Date, Integer, Text
+    >>>
+    >>> dsl_mapping = Mapping(properties=[
+    >>>     Integer('movie_id'),
+    >>>     Text('name', fields=[
+    >>>         Keyword('raw')
+    >>>     ]),
+    >>>     Date('year', format='yyyy'),
+    >>>     Float('rank'),
+    >>>     Keyword('genres'),
+    >>>     Nested('roles', properties=[
+    >>>         Keyword('role'),
+    >>>         Integer('actor_id'),
+    >>>         Keyword('gender'),
+    >>>         Text('first_name', fields=[
+    >>>             Keyword('raw')
+    >>>         ]),
+    >>>         Text('last_name', fields=[
+    >>>             Keyword('raw')
+    >>>         ])
+    >>>     ])
+    >>> ])
+
+Which is exactly equivalent to initial mapping:
+
+    >>> dsl_mapping.serialize() == imdb_mapping
+    True
+
+
+Interactive mapping
+===================
+
+In interactive context, the :class:`~pandagg.interactive.mapping.IMapping` class provides navigation features with autocompletion to quickly discover a large
+mapping:
+
+    >>> from pandagg.mapping import IMapping
+    >>> m = IMapping(imdb_mapping)
+    >>> m.roles
+    <IMapping subpart: roles>
+    roles                                                    [Nested]
+    ├── actor_id                                              Integer
+    ├── first_name                                            Text
+    │   └── raw                                             ~ Keyword
+    ├── gender                                                Keyword
+    ├── last_name                                             Text
+    │   └── raw                                             ~ Keyword
+    └── role                                                  Keyword
+    >>> m.roles.first_name
+    <IMapping subpart: roles.first_name>
+    first_name                                            Text
+    └── raw                                             ~ Keyword
+
+To get the complete field definition, just call it:
+
+    >>> m.roles.first_name()
+    <Mapping Field first_name> of type text:
+    {
+        "type": "text",
+        "fields": {
+            "raw": {
+                "type": "keyword"
+            }
+        }
+    }
+
+A **IMapping** instance can be bound to an Elasticsearch client to get quick access to aggregations computation on mapping fields.
+
+Suppose you have the following client:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+
+Client can be bound either at initiation:
+
+    >>> m = IMapping(imdb_mapping, client=client, index_name='movies')
+
+or afterwards through `bind` method:
+
+    >>> m = IMapping(imdb_mapping)
+    >>> m.bind(client=client, index_name='movies')
+
+Doing so will generate a **a** attribute on mapping fields, this attribute will list all available aggregation for that
+field type (with autocompletion):
+
+    >>> m.roles.gender.a.terms()
+    [('M', {'key': 'M', 'doc_count': 2296792}),
+    ('F', {'key': 'F', 'doc_count': 1135174})]
+
+
+.. note::
+
+    Nested clauses will be automatically taken into account.
+
+
 *************************
 Cluster indices discovery
 *************************
 
 TODO
+

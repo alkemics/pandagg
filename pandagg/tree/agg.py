@@ -165,22 +165,26 @@ class Agg(Tree):
         """Arrange passed aggregations in `by` arguments "vertically" (nested manner), above or below another agg
         clause.
 
-        Given the initial aggregation:
-        A──> B
-        └──> C
+        Given the initial aggregation::
 
-        If `insert_below` = 'A':
-        A──> by──> B
-              └──> C
+            A──> B
+            └──> C
 
-        If `insert_above` = 'B':
-        A──> by──> B
-        └──> C
+        If `insert_below` = 'A'::
+
+            A──> by──> B
+                  └──> C
+
+        If `insert_above` = 'B'::
+
+            A──> by──> B
+            └──> C
 
         `by` argument accepts single occurrence or sequence of following formats:
-        - string (for terms agg concise declaration)
-        - regular Elasticsearch dict syntax
-        - AggNode instance (for instance Terms, Filters etc)
+
+        * string (for terms agg concise declaration)
+        * regular Elasticsearch dict syntax
+        * AggNode instance (for instance Terms, Filters etc)
 
         If `insert_below` nor `insert_above` is provided by will be placed between the the deepest linear
         bucket aggregation if there is no ambiguity, and its children:
@@ -242,14 +246,21 @@ class Agg(Tree):
 
         Those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest linear
         bucket aggregation if there is no ambiguity:
-        OK: A──> B ─> C ─> arg
-        KO: A──> B
+
+        OK::
+
+            A──> B ─> C ─> arg
+
+        KO::
+
+            A──> B
             └──> C
 
         `arg` argument accepts single occurrence or sequence of following formats:
-        - string (for terms agg concise declaration)
-        - regular Elasticsearch dict syntax
-        - AggNode instance (for instance Terms, Filters etc)
+
+        * string (for terms agg concise declaration)
+        * regular Elasticsearch dict syntax
+        * AggNode instance (for instance Terms, Filters etc)
 
 
         :param arg: aggregation(s) clauses to insert "horizontally"

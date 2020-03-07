@@ -150,7 +150,7 @@ class IMappingTestCase(TestCase):
 
         response = workflow_field.a.terms(
             size=20,
-            output=None,
+            raw_output=True,
             query={'term': {'classification_type': 'multiclass'}}
         )
         self.assertEqual(response, [

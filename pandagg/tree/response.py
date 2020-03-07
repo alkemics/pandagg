@@ -109,13 +109,13 @@ class ResponseTree(Tree):
 
     def get_bucket_filter(self, nid):
         """Build query filtering documents belonging to that bucket.
-        Suppose the following configuration:
+        Suppose the following configuration::
 
-        Base                        <- filter on base
-          |── Nested_A                 no filter on A (nested still must be applied for children)
-          |     |── SubNested A1
-          |     └── SubNested A2    <- filter on A2
-          └── Nested_B              <- filter on B
+            Base                        <- filter on base
+              |── Nested_A                 no filter on A (nested still must be applied for children)
+              |     |── SubNested A1
+              |     └── SubNested A2    <- filter on A2
+              └── Nested_B              <- filter on B
 
         """
         tree_mapping = self.agg_tree.tree_mapping

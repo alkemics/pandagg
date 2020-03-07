@@ -43,23 +43,25 @@ class AggNode(Node):
         return False
 
     def query_dict(self, with_name=False):
-        """ElasticSearch aggregation queries follow this formatting:
-        {
-            "<aggregation_name>" : {
+        """ElasticSearch aggregation queries follow this formatting::
+
+            {
+                "<aggregation_name>" : {
+                    "<aggregation_type>" : {
+                        <aggregation_body>
+                    }
+                    [,"meta" : {  [<meta_data_body>] } ]?
+                }
+            }
+
+        Query dict returns the following part (without aggregation name)::
+
+            {
                 "<aggregation_type>" : {
                     <aggregation_body>
                 }
                 [,"meta" : {  [<meta_data_body>] } ]?
             }
-        }
-
-        Query dict returns the following part (without aggregation name):
-        {
-            "<aggregation_type>" : {
-                <aggregation_body>
-            }
-            [,"meta" : {  [<meta_data_body>] } ]?
-        }
         """
         aggs = {self.KEY: self.body}
         if self.meta:

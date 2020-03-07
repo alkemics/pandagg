@@ -1,5 +1,4 @@
-# Minimal makefile for Sphinx documentation
-#
+# Makefile for Sphinx documentation
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -10,6 +9,20 @@ BUILDDIR      = build
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+clean:
+	@rm -rf build
+
+api-doc:
+	@# T: notoc, e: separate module pages, f: rewrite
+	@sphinx-apidoc -o source/reference ../pandagg -Tfe
+
+build:
+	@mkdir -p build
+	@sphinx-build -b html source build
+
+generate: clean api-doc build
+	@#
 
 .PHONY: help Makefile
 
