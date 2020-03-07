@@ -56,9 +56,6 @@ class IndexTestCase(TestCase):
         )
         self.assertEqual(agg.__str__(), equivalent_agg.__str__())
 
-
-class ClientBoundTestCase(TestCase):
-
     @staticmethod
     def get_client_bound_index(es_response=None):
         client_mock = Elasticsearch()

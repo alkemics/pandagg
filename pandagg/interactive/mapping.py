@@ -3,6 +3,7 @@
 
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.interactive.abstract import TreeBasedObj
+from pandagg.node.mapping.field_datatypes import Object
 from pandagg.tree.mapping import Mapping
 
 
@@ -22,11 +23,16 @@ class IMapping(TreeBasedObj):
     """
     _NODE_PATH_ATTR = 'name'
 
-    def __init__(self, tree, client=None, root_path=None, depth=1, initial_tree=None, index_name=None):
+    def __init__(self, from_=None, properties=None, dynamic=False, client=None, root_path=None, depth=1, initial_tree=None, index_name=None):
+        if from_ is not None and properties is not None:
+            raise ValueError('Can provide at most one of "from_" and "properties"')
+        if properties is not None:
+            from_ = Object(name='', properties=properties, dynamic=dynamic)
+        tree = Mapping.deserialize(from_)
+
         self._client = client
         self._index_name = index_name
-        if isinstance(tree, dict):
-            tree = Mapping(tree)
+
         super(IMapping, self).__init__(
             tree=tree,
             root_path=root_path,
@@ -46,7 +52,7 @@ class IMapping(TreeBasedObj):
     def _clone(self, nid, root_path, depth):
         return IMapping(
             client=self._client,
-            tree=self._tree.subtree(nid),
+            from_=self._tree.subtree(nid),
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,

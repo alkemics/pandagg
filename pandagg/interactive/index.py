@@ -23,7 +23,7 @@ class Index(Obj):
         self.mapping = IMapping(
             client=self.client,
             index_name=self.name,
-            tree=Mapping(mapping),
+            from_=Mapping(mapping),
             depth=1
         )
 
