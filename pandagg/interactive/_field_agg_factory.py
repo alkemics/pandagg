@@ -57,7 +57,7 @@ def _operate(self, agg_node, index, execute, output, query):
         for nested in nesteds:
             raw_response = raw_response[nested]
         result = list(agg_node.extract_buckets(raw_response[agg_node.name]))
-        if output is None:
+        if output == 'raw':
             return result
         elif output == 'dataframe':
             try:

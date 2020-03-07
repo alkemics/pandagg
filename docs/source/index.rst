@@ -11,10 +11,10 @@ pandagg
    :hidden:
    :maxdepth: 4
 
-   Introduction <self>
+   introduction
    user-guide
    advanced-usage
-   Usage example <imdb>
+   Tutorial dataset <IMDB>
    API reference <reference/pandagg>
    Contributing <CONTRIBUTING>
 

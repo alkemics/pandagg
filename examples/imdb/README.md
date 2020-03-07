@@ -1,4 +1,4 @@
-# Explore IMDB with ElasticSearch
+# IMDB dataset
 
 You might know the Internet Movie Database, commonly called [IMDB](https://www.imdb.com/).
 
@@ -7,7 +7,7 @@ Well it's a good simple example to showcase ElasticSearch capabilities.
 In this case, relational databases (SQL) are a good fit to store with consistence this kind of data.
 Yet indexing some of this data in a optimized search engine will allow more powerful queries.
 
-## Goal of exercice
+## Query requirements
 In this example, we'll suppose most usage/queries requirements will be around the concept of movie (rather than usages 
 focused on fetching actors or directors, even though it will still be possible with this data structure).
 
@@ -21,7 +21,9 @@ The index should provide good performances trying to answer these kind question 
 
 
 ## Data source
-I exported following SQL tables from MariaDB as described in https://relational.fit.cvut.cz/dataset/IMDb:
+I exported following SQL tables from MariaDB [following these instructions](https://relational.fit.cvut.cz/dataset/IMDb).
+
+Relational schema is the following:
 
 ![imdb tables](ressources/imdb_ijs.svg) 
 
@@ -61,6 +63,7 @@ https://www.elastic.co/fr/blog/strings-are-dead-long-live-strings)
 
 #### Final mapping
 
+*TODO -> use [copy_to](https://www.elastic.co/guide/en/elasticsearch/reference/current/copy-to.html) parameter to build **full_name***
 ```
 .                                                            
 ├── directors                         [Nested]
@@ -139,6 +142,7 @@ python examples/imdb/load.py
 
 
 #### Explore pandagg notebooks
-```
-jupyter notebook
-```
+
+An example notebook is available to showcase some of `pandagg` functionalities: [here it is](https://gistpreview.github.io/?4cedcfe49660cd6757b94ba491abb95a).
+
+Code is present in `examples/imdb/IMDB exploration.py` file.
