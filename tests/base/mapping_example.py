@@ -4,46 +4,31 @@
 MAPPING = {
     "dynamic": False,
     "properties": {
-        "classification_type": {
-            "type": "keyword"
-        },
-        "date": {
-            "type": "date",
-            "format": "strict_date_optional_time||epoch_millis"
-        },
+        "classification_type": {"type": "keyword"},
+        "date": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
         "global_metrics": {
             "dynamic": False,
             "properties": {
                 "field": {
                     "dynamic": False,
                     "properties": {
-                        "id": {
-                            "type": "integer"
-                        },
+                        "id": {"type": "integer"},
                         "name": {
                             "type": "text",
                             "fields": {
                                 # subfield
-                                "raw": {
-                                    "type": "keyword"
-                                }
+                                "raw": {"type": "keyword"}
                             },
                         },
-                        "type": {
-                            "type": "keyword"
-                        }
-                    }
+                        "type": {"type": "keyword"},
+                    },
                 },
                 "dataset": {
                     "dynamic": False,
                     "properties": {
-                        "nb_classes": {
-                            "type": "integer"
-                        },
-                        "support_train": {
-                            "type": "integer"
-                        }
-                    }
+                        "nb_classes": {"type": "integer"},
+                        "support_train": {"type": "integer"},
+                    },
                 },
                 "performance": {
                     "dynamic": False,
@@ -54,43 +39,27 @@ MAPPING = {
                                 "macro": {
                                     "dynamic": False,
                                     "properties": {
-                                        "f1_score": {
-                                            "type": "float"
-                                        },
-                                        "precision": {
-                                            "type": "float"
-                                        },
-                                        "recall": {
-                                            "type": "float"
-                                        }
-                                    }
+                                        "f1_score": {"type": "float"},
+                                        "precision": {"type": "float"},
+                                        "recall": {"type": "float"},
+                                    },
                                 },
                                 "micro": {
                                     "dynamic": False,
                                     "properties": {
-                                        "f1_score": {
-                                            "type": "float"
-                                        },
-                                        "precision": {
-                                            "type": "float"
-                                        },
-                                        "recall": {
-                                            "type": "float"
-                                        }
-                                    }
-                                }
-                            }
+                                        "f1_score": {"type": "float"},
+                                        "precision": {"type": "float"},
+                                        "recall": {"type": "float"},
+                                    },
+                                },
+                            },
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
-        "id": {
-            "type": "keyword"
-        },
-        "language": {
-            "type": "keyword"
-        },
+        "id": {"type": "keyword"},
+        "language": {"type": "keyword"},
         "local_metrics": {
             "type": "nested",
             "dynamic": False,
@@ -98,24 +67,16 @@ MAPPING = {
                 "dataset": {
                     "dynamic": False,
                     "properties": {
-                        "support_test": {
-                            "type": "integer"
-                        },
-                        "support_train": {
-                            "type": "integer"
-                        }
-                    }
+                        "support_test": {"type": "integer"},
+                        "support_train": {"type": "integer"},
+                    },
                 },
                 "field_class": {
                     "dynamic": False,
                     "properties": {
-                        "id": {
-                            "type": "integer"
-                        },
-                        "name": {
-                            "type": "keyword"
-                        }
-                    }
+                        "id": {"type": "integer"},
+                        "name": {"type": "keyword"},
+                    },
                 },
                 "performance": {
                     "dynamic": False,
@@ -123,25 +84,17 @@ MAPPING = {
                         "test": {
                             "dynamic": False,
                             "properties": {
-                                "f1_score": {
-                                    "type": "float"
-                                },
-                                "precision": {
-                                    "type": "float"
-                                },
-                                "recall": {
-                                    "type": "float"
-                                }
-                            }
+                                "f1_score": {"type": "float"},
+                                "precision": {"type": "float"},
+                                "recall": {"type": "float"},
+                            },
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
-        "workflow": {
-            "type": "keyword"
-        }
-    }
+        "workflow": {"type": "keyword"},
+    },
 }
 
 EXPECTED_MAPPING_REPR = """                                                             {Object}

@@ -9,7 +9,6 @@ from pandagg.interactive.abstract import Obj
 
 
 class Index(Obj):
-
     def __init__(self, name, settings, mapping, aliases, client=None):
         super(Index, self).__init__()
         self.client = client
@@ -21,32 +20,25 @@ class Index(Obj):
 
     def set_mapping(self, mapping):
         self.mapping = IMapping(
-            client=self.client,
-            index_name=self.name,
-            from_=Mapping(mapping),
-            depth=1
+            client=self.client, index_name=self.name, from_=Mapping(mapping), depth=1
         )
 
     def query(self, query, validate=False, **kwargs):
         return Agg(
-            client=self.client,
-            index_name=self.name,
-            mapping=self.mapping
+            client=self.client, index_name=self.name, mapping=self.mapping
         ).query(query, validate=validate, **kwargs)
 
     def groupby(self, by, insert_below=None, **kwargs):
         return Agg(
-            client=self.client,
-            index_name=self.name,
-            mapping=self.mapping
+            client=self.client, index_name=self.name, mapping=self.mapping
         ).groupby(by, insert_below=insert_below, **kwargs)
 
-    def agg(self, arg, insert_below=None, output=Agg.DEFAULT_OUTPUT, execute=True, **kwargs):
-        return Agg(
-            client=self.client,
-            index_name=self.name,
-            mapping=self.mapping
-        ).agg(arg, insert_below=insert_below, execute=execute, output=output, **kwargs)
+    def agg(
+        self, arg, insert_below=None, output=Agg.DEFAULT_OUTPUT, execute=True, **kwargs
+    ):
+        return Agg(client=self.client, index_name=self.name, mapping=self.mapping).agg(
+            arg, insert_below=insert_below, execute=execute, output=output, **kwargs
+        )
 
 
 class Indices(Obj):

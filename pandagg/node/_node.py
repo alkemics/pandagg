@@ -25,13 +25,16 @@ class Node(OriginalNode):
 
     @property
     def _identifier_prefix(self):
-        return ''
+        return ""
 
     def _set_identifier(self, nid):
         if nid is not None:
             self._identifier = nid
             return
-        self._identifier = '%s%s' % (self._identifier_prefix, text(uuid.uuid4())[:self.NID_SIZE])
+        self._identifier = "%s%s" % (
+            self._identifier_prefix,
+            text(uuid.uuid4())[: self.NID_SIZE],
+        )
 
     def __repr__(self):
         return self.__str__()

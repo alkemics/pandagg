@@ -3,29 +3,29 @@ from .abstract import LeafQueryClause, SingleFieldQueryClause, MultiFieldsQueryC
 
 class DistanceFeature(SingleFieldQueryClause):
     FLAT = True
-    KEY = 'distance_feature'
+    KEY = "distance_feature"
 
 
 class MoreLikeThis(MultiFieldsQueryClause):
-    KEY = 'more_like_this'
+    KEY = "more_like_this"
 
 
 class Percolate(SingleFieldQueryClause):
     FLAT = True
-    KEY = 'percolate'
+    KEY = "percolate"
 
 
 class RankFeature(SingleFieldQueryClause):
     FLAT = True
-    KEY = 'rank_feature'
+    KEY = "rank_feature"
 
 
 class Script(LeafQueryClause):
-    KEY = 'script'
+    KEY = "script"
 
 
 class Wrapper(LeafQueryClause):
-    KEY = 'wrapper'
+    KEY = "wrapper"
 
 
 SPECIALIZED_QUERIES = [
@@ -34,5 +34,5 @@ SPECIALIZED_QUERIES = [
     Percolate,
     RankFeature,
     Script,
-    Wrapper
+    Wrapper,
 ]

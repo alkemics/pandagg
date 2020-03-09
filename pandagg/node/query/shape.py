@@ -2,9 +2,7 @@ from .abstract import LeafQueryClause
 
 
 class Shape(LeafQueryClause):
-    KEY = 'shape'
+    KEY = "shape"
 
 
-SHAPE_QUERIES = [
-    Shape
-]
+SHAPE_QUERIES = [Shape]

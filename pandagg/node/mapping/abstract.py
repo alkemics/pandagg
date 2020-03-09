@@ -12,7 +12,7 @@ from pandagg.utils import PrettyNode
 @python_2_unicode_compatible
 class Field(Node):
     KEY = NotImplementedError()
-    DISPLAY_PATTERN = '  %s'
+    DISPLAY_PATTERN = "  %s"
 
     def __init__(self, name, depth=0, is_subfield=False, **body):
         # name will be used for dynamic attribute access in tree
@@ -22,8 +22,8 @@ class Field(Node):
         self.is_subfield = is_subfield
 
         # fields and properties can be a Field instance, a sequence of Field instances, or a dict
-        self.fields = self._atomize(body.pop('fields', None))
-        self.properties = self._atomize(body.pop('properties', None))
+        self.fields = self._atomize(body.pop("fields", None))
+        self.properties = self._atomize(body.pop("properties", None))
         # rest of body
         self._body = body
         super(Field, self).__init__(data=PrettyNode(pretty=self.tree_repr))
@@ -58,31 +58,33 @@ class Field(Node):
 
     @classmethod
     def deserialize(cls, name, body, depth=0, is_subfield=False):
-        if 'type' in body and body['type'] != cls.KEY:
-            raise ValueError('Deserialization error for field <%s>: <%s>' % (cls.KEY, body))
+        if "type" in body and body["type"] != cls.KEY:
+            raise ValueError(
+                "Deserialization error for field <%s>: <%s>" % (cls.KEY, body)
+            )
         return cls(name=name, depth=depth, is_subfield=is_subfield, **body)
 
     def body(self, with_children=False):
         b = copy.deepcopy(self._body)
         if with_children and self.properties:
-            b['properties'] = self._serialize_atomized(self.properties)
+            b["properties"] = self._serialize_atomized(self.properties)
         if with_children and self.fields:
-            b['fields'] = self._serialize_atomized(self.fields)
-        if self.KEY in ('object', ''):
+            b["fields"] = self._serialize_atomized(self.fields)
+        if self.KEY in ("object", ""):
             return b
-        b['type'] = self.KEY
+        b["type"] = self.KEY
         return b
 
     @property
     def tree_repr(self):
         max_size = 60
         pad = max(max_size - 4 * self.depth - len(self.name), 4)
-        field_pattern = '~ %s' if self.is_subfield else self.DISPLAY_PATTERN
-        return "%s%s%s" % (self.name, ' ' * pad, field_pattern) % self.KEY.capitalize()
+        field_pattern = "~ %s" if self.is_subfield else self.DISPLAY_PATTERN
+        return "%s%s%s" % (self.name, " " * pad, field_pattern) % self.KEY.capitalize()
 
     def __str__(self):
-        return '<Mapping Field %s> of type %s:\n%s' % (
+        return "<Mapping Field %s> of type %s:\n%s" % (
             text(self.name),
             text(self.KEY),
-            text(json.dumps(self.body(with_children=True), indent=4))
+            text(json.dumps(self.body(with_children=True), indent=4)),
         )

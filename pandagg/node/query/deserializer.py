@@ -3,9 +3,11 @@ from ._compound import deserialize_compound_clause
 from ._parameter_clause import deserialize_parameter
 
 
-def deserialize_node(k, body, accept_leaf=True, accept_compound=True, accept_param=True):
+def deserialize_node(
+    k, body, accept_leaf=True, accept_compound=True, accept_param=True
+):
     if not (accept_leaf or accept_compound or accept_param):
-        raise ValueError('Must accept at least one type of deserialization.')
+        raise ValueError("Must accept at least one type of deserialization.")
 
     if accept_leaf:
         try:

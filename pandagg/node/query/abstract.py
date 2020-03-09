@@ -30,7 +30,7 @@ class QueryClause(Node):
 
     @property
     def _identifier_prefix(self):
-        return '%s_' % self.KEY
+        return "%s_" % self.KEY
 
     @classmethod
     def deserialize(cls, **body):
@@ -39,14 +39,15 @@ class QueryClause(Node):
     def serialize(self, named=False):
         b = copy.deepcopy(self.body)
         if named:
-            b['_name'] = self.name
+            b["_name"] = self.name
         return {self.KEY: b}
 
     def __str__(self):
         return "<{class_}, id={id}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
             type=text(self.KEY),
-            id=text(self.identifier), body=json.dumps(self.body)
+            id=text(self.identifier),
+            body=json.dumps(self.body),
         )
 
     def __eq__(self, other):
@@ -78,10 +79,11 @@ class SingleFieldQueryClause(LeafQueryClause):
 
     @property
     def tag(self):
-        base = '%s, field=%s' % (text(self.KEY), text(self.field))
+        base = "%s, field=%s" % (text(self.KEY), text(self.field))
         if self.inner_body:
-            base += ', %s' % ', '.join(
-                '%s=%s' % (text(k), text(json.dumps(self.inner_body[k], sort_keys=True)))
+            base += ", %s" % ", ".join(
+                "%s=%s"
+                % (text(k), text(json.dumps(self.inner_body[k], sort_keys=True)))
                 for k in sorted(self.inner_body.keys())
             )
         return base
@@ -90,7 +92,7 @@ class SingleFieldQueryClause(LeafQueryClause):
     def deserialize(cls, **body):
         if cls.FLAT:
             return cls(**body)
-        _name = body.pop('_name', None)
+        _name = body.pop("_name", None)
         assert len(body.keys()) == 1
         k, v = next(iteritems(body))
         if cls.SHORT_TAG and not isinstance(v, dict):
@@ -105,4 +107,4 @@ class MultiFieldsQueryClause(LeafQueryClause):
 
     @property
     def tag(self):
-        return '%s, fields=%s' % (self.KEY, list(map(text, self.fields)))
+        return "%s, fields=%s" % (self.KEY, list(map(text, self.fields)))

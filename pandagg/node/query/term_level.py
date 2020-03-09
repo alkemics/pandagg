@@ -1,10 +1,9 @@
-
 from .abstract import LeafQueryClause, SingleFieldQueryClause
 from builtins import str as text
 
 
 class Exists(LeafQueryClause):
-    KEY = 'exists'
+    KEY = "exists"
 
     def __init__(self, field, _name=None):
         self.field = field
@@ -12,57 +11,57 @@ class Exists(LeafQueryClause):
 
     @property
     def tag(self):
-        return '%s, field=%s' % (self.KEY, self.field)
+        return "%s, field=%s" % (self.KEY, self.field)
 
 
 class Fuzzy(SingleFieldQueryClause):
-    KEY = 'fuzzy'
+    KEY = "fuzzy"
 
 
 class Ids(LeafQueryClause):
-    KEY = 'ids'
+    KEY = "ids"
 
     def __init__(self, values, _name=None):
-        self.field = 'id'
+        self.field = "id"
         self.values = values
         super(Ids, self).__init__(_name=_name, values=values)
 
     def serialize(self, named=False):
-        b = {'values': self.values}
+        b = {"values": self.values}
         if named:
-            b['_name'] = self.name
+            b["_name"] = self.name
         return {self.KEY: b}
 
     @property
     def tag(self):
-        return '%s, values=%s' % (self.KEY, self.values)
+        return "%s, values=%s" % (self.KEY, self.values)
 
 
 class Prefix(SingleFieldQueryClause):
-    KEY = 'prefix'
+    KEY = "prefix"
 
 
 class Range(SingleFieldQueryClause):
-    KEY = 'range'
+    KEY = "range"
 
 
 class Regexp(SingleFieldQueryClause):
-    KEY = 'regexp'
+    KEY = "regexp"
 
 
 class Term(SingleFieldQueryClause):
-    SHORT_TAG = 'value'
-    KEY = 'term'
+    SHORT_TAG = "value"
+    KEY = "term"
 
     def __init__(self, field, value, _name=None, **body):
         # only impact is setting value as required arg
         if _name is not None:
-            body['_name'] = _name
+            body["_name"] = _name
         super(Term, self).__init__(field=field, value=value, **body)
 
 
 class Terms(LeafQueryClause):
-    KEY = 'terms'
+    KEY = "terms"
 
     def __init__(self, field, terms, _name=None, **body):
         self.field = field
@@ -73,11 +72,15 @@ class Terms(LeafQueryClause):
 
     @property
     def tag(self):
-        return '%s, field=%s, values=%s' % (self.KEY, self.field, list(map(text, self.terms)))
+        return "%s, field=%s, values=%s" % (
+            self.KEY,
+            self.field,
+            list(map(text, self.terms)),
+        )
 
     @classmethod
     def deserialize(cls, **body):
-        allowed_params = {'boost'}
+        allowed_params = {"boost"}
         other_keys = set(body.keys()).difference(allowed_params)
         assert len(other_keys) == 1
         field_key = other_keys.pop()
@@ -86,15 +89,15 @@ class Terms(LeafQueryClause):
 
 
 class TermsSet(SingleFieldQueryClause):
-    KEY = 'terms_set'
+    KEY = "terms_set"
 
 
 class Type(SingleFieldQueryClause):
-    KEY = 'type'
+    KEY = "type"
 
 
 class Wildcard(SingleFieldQueryClause):
-    KEY = 'wildcard'
+    KEY = "wildcard"
 
 
 TERM_LEVEL_QUERIES = [
@@ -108,5 +111,5 @@ TERM_LEVEL_QUERIES = [
     Terms,
     TermsSet,
     Type,
-    Wildcard
+    Wildcard,
 ]

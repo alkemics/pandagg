@@ -1,7 +1,16 @@
 from six import iteritems
 
-from pandagg.node.query._parameter_clause import deserialize_parameter, ParameterClause, PARAMETERS, \
-    SimpleParameter, Must, Filter, Queries, QueryP, Positive
+from pandagg.node.query._parameter_clause import (
+    deserialize_parameter,
+    ParameterClause,
+    PARAMETERS,
+    SimpleParameter,
+    Must,
+    Filter,
+    Queries,
+    QueryP,
+    Positive,
+)
 from pandagg.node.query.abstract import QueryClause
 
 
@@ -39,7 +48,7 @@ class CompoundClause(QueryClause):
     PARAMS_WHITELIST = None
 
     def __init__(self, *args, **kwargs):
-        _name = kwargs.pop('_name', None)
+        _name = kwargs.pop("_name", None)
         children = []
         for key, value in iteritems(kwargs):
             children.append({key: value})
@@ -55,17 +64,27 @@ class CompoundClause(QueryClause):
             if isinstance(child, dict):
                 assert len(child.keys()) == 1
                 key, value = next(iteritems(child))
-                if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
-                    raise ValueError('Unauthorized parameter <%s> under <%s> clause' % (key, self.KEY))
+                if (
+                    self.PARAMS_WHITELIST is not None
+                    and key not in self.PARAMS_WHITELIST
+                ):
+                    raise ValueError(
+                        "Unauthorized parameter <%s> under <%s> clause"
+                        % (key, self.KEY)
+                    )
                 serialized_child = deserialize_parameter(key, value)
             else:
                 if not isinstance(child, ParameterClause):
-                    raise ValueError('Unsupported <%s> clause type under compound clause of type <%s>' % (
-                        type(child), self.KEY))
+                    raise ValueError(
+                        "Unsupported <%s> clause type under compound clause of type <%s>"
+                        % (type(child), self.KEY)
+                    )
                 key = child.KEY
                 serialized_child = child
             if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
-                raise ValueError('Unauthorized parameter <%s> under <%s> clause' % (key, self.KEY))
+                raise ValueError(
+                    "Unauthorized parameter <%s> under <%s> clause" % (key, self.KEY)
+                )
             serialized_children.append(serialized_child)
         self.children = serialized_children
         super(CompoundClause, self).__init__(_name=_name)
@@ -75,16 +94,18 @@ class CompoundClause(QueryClause):
         if key is None:
             return cls.DEFAULT_OPERATOR
         if key not in cls.PARAMS_WHITELIST:
-            raise ValueError('Child operator <%s> not permitted for compound query of type <%s>' % (
-                key, cls.__name__
-            ))
+            raise ValueError(
+                "Child operator <%s> not permitted for compound query of type <%s>"
+                % (key, cls.__name__)
+            )
         return PARAMETERS[key]
 
     @classmethod
     def params(cls, parent_only=False):
         """Return map of key -> params that handle children leaves."""
         return {
-            p: PARAMETERS[p] for p in cls.PARAMS_WHITELIST or []
+            p: PARAMETERS[p]
+            for p in cls.PARAMS_WHITELIST or []
             if not parent_only or not issubclass(PARAMETERS[p], SimpleParameter)
         }
 
@@ -95,40 +116,48 @@ class CompoundClause(QueryClause):
 
 class Bool(CompoundClause):
     DEFAULT_OPERATOR = Must
-    PARAMS_WHITELIST = ['should', 'must', 'must_not', 'filter', 'boost', 'minimum_should_match']
-    KEY = 'bool'
+    PARAMS_WHITELIST = [
+        "should",
+        "must",
+        "must_not",
+        "filter",
+        "boost",
+        "minimum_should_match",
+    ]
+    KEY = "bool"
 
 
 class Boosting(CompoundClause):
     DEFAULT_OPERATOR = Positive
-    PARAMS_WHITELIST = ['positive', 'negative', 'negative_boost']
-    KEY = 'boosting'
+    PARAMS_WHITELIST = ["positive", "negative", "negative_boost"]
+    KEY = "boosting"
 
 
 class ConstantScore(CompoundClause):
     DEFAULT_OPERATOR = Filter
-    PARAMS_WHITELIST = ['filter', 'boost']
-    KEY = 'constant_score'
+    PARAMS_WHITELIST = ["filter", "boost"]
+    KEY = "constant_score"
 
 
 class DisMax(CompoundClause):
     DEFAULT_OPERATOR = Queries
-    PARAMS_WHITELIST = ['queries', 'tie_breaker']
-    KEY = 'dis_max'
+    PARAMS_WHITELIST = ["queries", "tie_breaker"]
+    KEY = "dis_max"
 
 
 class FunctionScore(CompoundClause):
     DEFAULT_OPERATOR = QueryP
     PARAMS_WHITELIST = [
-        'query', 'boost', 'random_score', 'boost_mode', 'functions', 'max_boost', 'score_mode', 'min_score'
+        "query",
+        "boost",
+        "random_score",
+        "boost_mode",
+        "functions",
+        "max_boost",
+        "score_mode",
+        "min_score",
     ]
-    KEY = 'function_score'
+    KEY = "function_score"
 
 
-COMPOUND_QUERIES = [
-    Bool,
-    Boosting,
-    ConstantScore,
-    FunctionScore,
-    DisMax
-]
+COMPOUND_QUERIES = [Bool, Boosting, ConstantScore, FunctionScore, DisMax]

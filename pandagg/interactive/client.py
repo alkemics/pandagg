@@ -9,8 +9,7 @@ from pandagg.interactive.index import Index, Indices
 
 
 class Elasticsearch(OriginalElasticSearch):
-
-    def fetch_indices(self, index='*'):
+    def fetch_indices(self, index="*"):
         """
         :param index: Comma-separated list or wildcard expression of index names used to limit the request.
         """
@@ -19,8 +18,8 @@ class Elasticsearch(OriginalElasticSearch):
             indices[index_name] = Index(
                 client=self,
                 name=index_name,
-                mapping=index_detail['mappings'],
-                settings=index_detail['settings'],
-                aliases=index_detail['aliases'],
+                mapping=index_detail["mappings"],
+                settings=index_detail["settings"],
+                aliases=index_detail["aliases"],
             )
         return indices

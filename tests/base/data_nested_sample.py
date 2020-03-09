@@ -19,19 +19,13 @@ EXPECTED_AGG_QUERY = {
                         },
                         "terms": {
                             "field": "local_metrics.field_class.name",
-                            "size": 10
-                        }
+                            "size": 10,
+                        },
                     }
                 },
-                "nested": {
-                    "path": "local_metrics"
-                }
+                "nested": {"path": "local_metrics"},
             }
         },
-        "date_histogram": {
-            "field": "date",
-            "format": "yyyy-MM-dd",
-            "interval": "1w"
-        }
+        "date_histogram": {"field": "date", "format": "yyyy-MM-dd", "interval": "1w"},
     }
 }

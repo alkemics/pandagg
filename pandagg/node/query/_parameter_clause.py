@@ -22,98 +22,98 @@ class SimpleParameter(ParameterClause):
 
     @property
     def tag(self):
-        return '%s=%s' % (self.KEY, json.dumps(self.body['value']))
+        return "%s=%s" % (self.KEY, json.dumps(self.body["value"]))
 
     @classmethod
     def deserialize(cls, value):
         return cls(value)
 
     def serialize(self, named=False):
-        return {self.KEY: self.body['value']}
+        return {self.KEY: self.body["value"]}
 
 
 class Boost(SimpleParameter):
-    KEY = 'boost'
+    KEY = "boost"
 
 
 class BoostMode(SimpleParameter):
-    KEY = 'boost_mode'
+    KEY = "boost_mode"
 
 
 class FieldValueFactor(SimpleParameter):
-    KEY = 'field_value_factor'
+    KEY = "field_value_factor"
 
 
 class Functions(SimpleParameter):
-    KEY = 'functions'
+    KEY = "functions"
 
 
 class IdsP(SimpleParameter):
-    KEY = 'ids'
+    KEY = "ids"
 
 
 class IgnoreUnmapped(SimpleParameter):
-    KEY = 'ignore_unmapped'
+    KEY = "ignore_unmapped"
 
 
 class MaxBoost(SimpleParameter):
-    KEY = 'max_boost'
+    KEY = "max_boost"
 
 
 class MaxChildren(SimpleParameter):
-    KEY = 'max_children'
+    KEY = "max_children"
 
 
 class MinChildren(SimpleParameter):
-    KEY = 'min_children'
+    KEY = "min_children"
 
 
 class MinimumShouldMatch(SimpleParameter):
-    KEY = 'minimum_should_match'
+    KEY = "minimum_should_match"
 
 
 class MinScore(SimpleParameter):
-    KEY = 'min_score'
+    KEY = "min_score"
 
 
 class NegativeBoost(SimpleParameter):
-    KEY = 'negative_boost'
+    KEY = "negative_boost"
 
 
 class Path(SimpleParameter):
-    KEY = 'path'
+    KEY = "path"
 
 
 class ParentType(SimpleParameter):
-    KEY = 'parent_type'
+    KEY = "parent_type"
 
 
 class RandomScore(SimpleParameter):
-    KEY = 'random_score'
+    KEY = "random_score"
 
 
 class Rewrite(SimpleParameter):
-    KEY = 'rewrite'
+    KEY = "rewrite"
 
 
 class ScoreMode(SimpleParameter):
-    KEY = 'score_mode'
+    KEY = "score_mode"
 
 
 class ScriptP(SimpleParameter):
-    KEY = 'script'
+    KEY = "script"
 
 
 class ScriptScore(SimpleParameter):
-    KEY = 'script_score'
+    KEY = "script_score"
 
 
 class TieBreaker(SimpleParameter):
-    KEY = 'tie_breaker'
+    KEY = "tie_breaker"
 
 
 class Type(SimpleParameter):
-    KEY = 'type'
+    KEY = "type"
 
 
 SIMPLE_PARAMETERS = [
@@ -147,7 +147,7 @@ class ParentParameterClause(ParameterClause):
 
     def __init__(self, *args, **kwargs):
         children = []
-        _name = kwargs.pop('_name', None)
+        _name = kwargs.pop("_name", None)
         if kwargs:
             children.append(kwargs)
         for arg in args:
@@ -156,7 +156,9 @@ class ParentParameterClause(ParameterClause):
             else:
                 children.append(arg)
         if not self.MULTIPLE and len(children) > 1:
-            raise ValueError('%s clause does not accept multiple query clauses.' % self.KEY)
+            raise ValueError(
+                "%s clause does not accept multiple query clauses." % self.KEY
+            )
         serialized_children = []
         for child in children:
             if isinstance(child, dict):
@@ -181,48 +183,48 @@ class ParentParameterClause(ParameterClause):
 
 
 class Filter(ParentParameterClause):
-    KEY = 'filter'
+    KEY = "filter"
     MULTIPLE = True
 
 
 class Must(ParentParameterClause):
-    KEY = 'must'
+    KEY = "must"
     MULTIPLE = True
 
 
 class MustNot(ParentParameterClause):
-    KEY = 'must_not'
+    KEY = "must_not"
     MULTIPLE = True
 
 
 class Negative(ParentParameterClause):
-    KEY = 'negative'
+    KEY = "negative"
     MULTIPLE = False
 
 
 class Organic(ParentParameterClause):
-    KEY = 'organic'
+    KEY = "organic"
     MULTIPLE = False
 
 
 class Positive(ParentParameterClause):
-    KEY = 'positive'
+    KEY = "positive"
     MULTIPLE = False
 
 
 class Queries(ParentParameterClause):
-    KEY = 'queries'
+    KEY = "queries"
     MULTIPLE = True
 
 
 class QueryP(ParentParameterClause):
     # different name to avoid confusion with Query "tree" class
-    KEY = 'query'
+    KEY = "query"
     MULTIPLE = False
 
 
 class Should(ParentParameterClause):
-    KEY = 'should'
+    KEY = "should"
     MULTIPLE = True
 
 
@@ -244,7 +246,7 @@ PARAMETERS = {p.KEY: p for p in PARENT_PARAMETERS + SIMPLE_PARAMETERS}
 
 def deserialize_parameter(key, body):
     if key not in PARAMETERS.keys():
-        raise NotImplementedError('Unknown parameter type <%s>' % key)
+        raise NotImplementedError("Unknown parameter type <%s>" % key)
     klass = PARAMETERS[key]
     if issubclass(klass, SimpleParameter):
         return klass.deserialize(body)

@@ -8,7 +8,7 @@ from pandagg.utils import PrettyNode
 
 class Bucket(Node):
 
-    ROOT_NAME = 'root'
+    ROOT_NAME = "root"
 
     def __init__(self, depth, value, key=None, level=None):
         self.value = value
@@ -17,8 +17,7 @@ class Bucket(Node):
         self.key = key
 
         super(Bucket, self).__init__(
-            tag=self.display_name,
-            data=PrettyNode(pretty=self.display_name_with_value)
+            tag=self.display_name, data=PrettyNode(pretty=self.display_name_with_value)
         )
 
     @property
@@ -30,13 +29,13 @@ class Bucket(Node):
         item access (dict like), see more in 'utils.Obj' for more details.
         """
         if self.key is not None:
-            return '%s_%s' % (self.level.replace('.', '_'), self.key)
-        return self.level.replace('.', '_')
+            return "%s_%s" % (self.level.replace(".", "_"), self.key)
+        return self.level.replace(".", "_")
 
     @property
     def display_name(self):
         if self.key is not None:
-            return '%s=%s' % (self.level, self.key)
+            return "%s=%s" % (self.level, self.key)
         return self.level
 
     @property
@@ -46,5 +45,5 @@ class Bucket(Node):
         s = self.display_name
         if self.value is not None:
             pad = max(REPR_SIZE - 4 * self.depth - len(s) - len(str(self.value)), 4)
-            s = s + ' ' * pad + str(self.value)
+            s = s + " " * pad + str(self.value)
         return s

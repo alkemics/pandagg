@@ -10,14 +10,25 @@ class IResponse(TreeBasedObj):
     """Interactive aggregation response.
     """
 
-    _NODE_PATH_ATTR = 'attr_name'
+    _NODE_PATH_ATTR = "attr_name"
     _COERCE_ATTR = True
 
-    def __init__(self, tree, client=None, index_name=None, root_path=None, depth=None, initial_tree=None, query=None):
+    def __init__(
+        self,
+        tree,
+        client=None,
+        index_name=None,
+        root_path=None,
+        depth=None,
+        initial_tree=None,
+        query=None,
+    ):
         self._client = client
         self._index_name = index_name
         self._query = Query(query)
-        super(IResponse, self).__init__(tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree)
+        super(IResponse, self).__init__(
+            tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree
+        )
 
     def _clone(self, nid, root_path, depth):
         return IResponse(
@@ -27,14 +38,16 @@ class IResponse(TreeBasedObj):
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,
-            query=self._query
+            query=self._query,
         )
 
     def get_bucket_filter(self):
         """Build filters to select documents belonging to that bucket"""
         return self._initial_tree.get_bucket_filter(self._tree.root)
 
-    def list_documents(self, size=None, execute=True, _source=None, compact=False, **kwargs):
+    def list_documents(
+        self, size=None, execute=True, _source=None, compact=False, **kwargs
+    ):
         """Return ES aggregation query to list documents belonging to given bucket.
         :param size: number of returned documents (ES default: 20)
         :param execute: if set to False, return aggregation query
@@ -58,6 +71,6 @@ class IResponse(TreeBasedObj):
         if not compact:
             return response
         return {
-            'total': response['hits']['total'],
-            'hits': list(map(lambda x: x['_source'], response['hits']['hits']))
+            "total": response["hits"]["total"],
+            "hits": list(map(lambda x: x["_source"], response["hits"]["hits"])),
         }

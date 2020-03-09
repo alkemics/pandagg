@@ -9,16 +9,28 @@ from builtins import str as text
 
 from pandagg.tree._tree import Tree
 from pandagg.interactive.mapping import as_mapping
-from pandagg.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause, PARAMETERS
+from pandagg.node.query._parameter_clause import (
+    SimpleParameter,
+    ParameterClause,
+    ParentParameterClause,
+    PARAMETERS,
+)
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause
-from pandagg.node.query.compound import CompoundClause, Bool, Boosting, ConstantScore, DisMax, FunctionScore
+from pandagg.node.query.compound import (
+    CompoundClause,
+    Bool,
+    Boosting,
+    ConstantScore,
+    DisMax,
+    FunctionScore,
+)
 from pandagg.node.query.deserializer import deserialize_node
 from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
 from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
 
-ADD = 'add'
-REPLACE = 'replace'
-REPLACE_ALL = 'replace_all'
+ADD = "add"
+REPLACE = "replace"
+REPLACE_ALL = "replace_all"
 
 
 @python_2_unicode_compatible
@@ -30,7 +42,9 @@ class Query(Tree):
 
     node_class = QueryClause
 
-    def __init__(self, from_=None, mapping=None, identifier=None, client=None, index_name=None):
+    def __init__(
+        self, from_=None, mapping=None, identifier=None, client=None, index_name=None
+    ):
         self.index_name = index_name
         self.client = client
         self.tree_mapping = None
@@ -46,7 +60,7 @@ class Query(Tree):
             index_name=self.index_name,
             mapping=self.tree_mapping,
             identifier=identifier,
-            from_=self if with_tree else None
+            from_=self if with_tree else None,
         )
 
     def bind(self, client, index_name=None):
@@ -73,7 +87,7 @@ class Query(Tree):
             new._insert_from_dict(from_)
             return new
         else:
-            raise ValueError('Unsupported type <%s>.' % type(from_))
+            raise ValueError("Unsupported type <%s>." % type(from_))
 
     def _insert(self, from_, pid=None):
         inserted_tree = self.deserialize(from_=from_)
@@ -85,7 +99,10 @@ class Query(Tree):
 
     def _insert_from_dict(self, body, pid=None):
         if len(body.keys()) > 1:
-            raise ValueError('Invalid query format, got multiple keys, expected a single one: %s' % (body.keys()))
+            raise ValueError(
+                "Invalid query format, got multiple keys, expected a single one: %s"
+                % (body.keys())
+            )
         q_type, q_body = next(iteritems(body))
         node = deserialize_node(q_type, q_body, accept_param=False)
         self._insert_from_node(node, pid)
@@ -93,7 +110,7 @@ class Query(Tree):
     def _insert_from_node(self, query_node, pid=None):
         """Insert in tree a node and all of its potential children (stored in .children)."""
         self.add_node(query_node, pid)
-        if hasattr(query_node, 'children'):
+        if hasattr(query_node, "children"):
             for child_node in query_node.children or []:
                 self._insert(child_node, pid=query_node.identifier)
 
@@ -103,15 +120,24 @@ class Query(Tree):
 
         pnode = self[pid]
         if isinstance(pnode, LeafQueryClause):
-            raise ValueError('Cannot add clause under leaf query clause <%s>' % pnode.KEY)
+            raise ValueError(
+                "Cannot add clause under leaf query clause <%s>" % pnode.KEY
+            )
         if isinstance(pnode, ParentParameterClause):
             if isinstance(node, ParameterClause):
-                raise ValueError('Cannot add parameter clause <%s> under another paramter clause <%s>' % (
-                    pnode.KEY, node.KEY))
+                raise ValueError(
+                    "Cannot add parameter clause <%s> under another paramter clause <%s>"
+                    % (pnode.KEY, node.KEY)
+                )
         if isinstance(pnode, CompoundClause):
-            if not isinstance(node, ParameterClause) or node.KEY not in pnode.PARAMS_WHITELIST:
-                raise ValueError('Expect a parameter clause of type %s under <%s> compound clause, got <%s>' % (
-                    pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY))
+            if (
+                not isinstance(node, ParameterClause)
+                or node.KEY not in pnode.PARAMS_WHITELIST
+            ):
+                raise ValueError(
+                    "Expect a parameter clause of type %s under <%s> compound clause, got <%s>"
+                    % (pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY)
+                )
         super(Query, self).add_node(node, pid)
 
     def query_dict(self, from_=None, named=False):
@@ -137,7 +163,7 @@ class Query(Tree):
             # {bool: {filter: ..., must: ...}
             body = {k: v for d in serialized_children for k, v in d.items()}
             if named:
-                body['_name'] = node.name
+                body["_name"] = node.name
             return {node.KEY: body}
         # parent parameter clause
         # {filter: [{...}, {...}]}
@@ -146,7 +172,9 @@ class Query(Tree):
             return {node.KEY: serialized_children}
         return {node.KEY: serialized_children[0]}
 
-    def query(self, q, parent=None, child=None, parent_param=None, child_param=None, mode=ADD):
+    def query(
+        self, q, parent=None, child=None, parent_param=None, child_param=None, mode=ADD
+    ):
         """Place query below a given parent.
         """
         # TODO accept query tree
@@ -156,19 +184,21 @@ class Query(Tree):
         elif isinstance(q, QueryClause):
             node = q
         else:
-            raise ValueError('Unsupported type <%s>, must be either dict or QueryClause.' % type(q))
+            raise ValueError(
+                "Unsupported type <%s>, must be either dict or QueryClause." % type(q)
+            )
         return self._insert_into(
             node,
             parent=parent,
             child=child,
             mode=mode,
             child_param=child_param,
-            parent_param=parent_param
+            parent_param=parent_param,
         )
 
     def _update_compound(self, new_compound, mode):
         if mode not in (ADD, REPLACE, REPLACE_ALL):
-            raise ValueError('Unsupported mode <%s> to update compound clause' % mode)
+            raise ValueError("Unsupported mode <%s> to update compound clause" % mode)
         existing_query = self._clone(with_tree=True)
         parent_node = existing_query.parent(new_compound.identifier)
         if parent_node is None:
@@ -183,38 +213,44 @@ class Query(Tree):
 
         new_compound_tree = Query(new_compound)
         for param_node in new_compound_tree.children(new_compound.identifier):
-            existing_param = next((
-                p for p in existing_query.children(new_compound.identifier) if p.KEY == param_node.KEY), None)
+            existing_param = next(
+                (
+                    p
+                    for p in existing_query.children(new_compound.identifier)
+                    if p.KEY == param_node.KEY
+                ),
+                None,
+            )
             if not existing_param:
                 existing_query.paste(
                     new_tree=new_compound_tree.subtree(param_node.identifier),
-                    nid=new_compound.identifier
+                    nid=new_compound.identifier,
                 )
                 continue
             if mode == REPLACE:
                 existing_query.remove_node(existing_param.identifier)
                 existing_query.paste(
                     new_tree=new_compound_tree.subtree(param_node.identifier),
-                    nid=new_compound.identifier
+                    nid=new_compound.identifier,
                 )
                 continue
             if mode == ADD:
                 for clause_node in new_compound_tree.children(param_node.identifier):
                     existing_query.paste(
                         new_tree=new_compound_tree.subtree(clause_node.identifier),
-                        nid=existing_param.identifier
+                        nid=existing_param.identifier,
                     )
                 continue
         return existing_query
 
     def _compound_insert(self, compound_klass, *args, **kwargs):
-        _name = kwargs.pop('_name', None)
-        mode = kwargs.pop('mode', ADD)
+        _name = kwargs.pop("_name", None)
+        mode = kwargs.pop("mode", ADD)
         # provided parent is compound, real one is parameter
-        parent = kwargs.pop('parent', None)
-        parent_param = kwargs.pop('parent_param', None)
-        child = kwargs.pop('child', None)
-        child_param = kwargs.pop('child_param', None)
+        parent = kwargs.pop("parent", None)
+        parent_param = kwargs.pop("parent_param", None)
+        child = kwargs.pop("child", None)
+        child_param = kwargs.pop("child_param", None)
         compound_node = compound_klass(_name=_name, *args, **kwargs)
         return self._insert_into(
             compound_node,
@@ -222,10 +258,18 @@ class Query(Tree):
             parent=parent,
             parent_param=parent_param,
             child=child,
-            child_param=child_param
+            child_param=child_param,
         )
 
-    def _insert_into(self, inserted_node, mode=None, parent=None, parent_param=None, child=None, child_param=None):
+    def _insert_into(
+        self,
+        inserted_node,
+        mode=None,
+        parent=None,
+        parent_param=None,
+        child=None,
+        child_param=None,
+    ):
         """Insert node in query.
         :param inserted_node:
         :param mode:
@@ -246,8 +290,10 @@ class Query(Tree):
         if isinstance(inserted_node, CompoundClause) and inserted_node.name in q:
             if child is not None or parent is not None:
                 raise ValueError(
-                    'Child or parent cannot be provided when inserting compound clause with existing '
-                    '_name <%s> in query. Got child <%s> and parent <%s>.' % (inserted_node.name, child, parent))
+                    "Child or parent cannot be provided when inserting compound clause with existing "
+                    "_name <%s> in query. Got child <%s> and parent <%s>."
+                    % (inserted_node.name, child, parent)
+                )
             return q._update_compound(new_compound=inserted_node, mode=mode)
 
         # If no parent nor child is provided, place on top (wrapped in bool-must if necessary).
@@ -264,16 +310,27 @@ class Query(Tree):
             if isinstance(inserted_node, Bool):
                 inserted_q = Query(inserted_node)
                 child_operator = inserted_node.operator(child_param)
-                child_operator_node = next((
-                    c for c in inserted_q.children(inserted_node.name) if isinstance(c, child_operator)), None)
+                child_operator_node = next(
+                    (
+                        c
+                        for c in inserted_q.children(inserted_node.name)
+                        if isinstance(c, child_operator)
+                    ),
+                    None,
+                )
                 if child_operator_node is None:
                     child_operator_node = child_operator()
                     inserted_q.add_node(child_operator_node, pid=inserted_node.name)
                 inserted_q.paste(new_tree=q, nid=child_operator_node.name)
                 return inserted_q
             if isinstance(q[q.root], Bool):
-                return q.must(inserted_node, _name=q.root, mode=mode,
-                              parent_param=parent_param, child_param=child_param)
+                return q.must(
+                    inserted_node,
+                    _name=q.root,
+                    mode=mode,
+                    parent_param=parent_param,
+                    child_param=child_param,
+                )
             parent_param_key = Bool.operator(parent_param).KEY
             return q.bool(
                 parent_param=parent_param,
@@ -285,25 +342,35 @@ class Query(Tree):
         # If a child is provided (only possible if inserted node is compound): place on top using child_param.
         if child is not None:
             if not isinstance(inserted_node, CompoundClause):
-                raise ValueError('Cannot place non-compound clause <%s> above other clause <%s>.' % (
-                    inserted_node.KEY, child
-                ))
+                raise ValueError(
+                    "Cannot place non-compound clause <%s> above other clause <%s>."
+                    % (inserted_node.KEY, child)
+                )
             if child not in q:
-                raise ValueError('Child <%s> does not exist in current query.' % child)
+                raise ValueError("Child <%s> does not exist in current query." % child)
             child_operator = inserted_node.operator(child_param)
             if parent is not None:
-                raise ValueError('Cannot declare both parent <%s> and child <%s> (only one accepted).' % (
-                    parent, child
-                ))
+                raise ValueError(
+                    "Cannot declare both parent <%s> and child <%s> (only one accepted)."
+                    % (parent, child)
+                )
 
             # suppose we are under a nested clause, the parent is the "query" param clause
             existing_parent_param_node = q.parent(child)
-            direct_pid = existing_parent_param_node.name if existing_parent_param_node else None
+            direct_pid = (
+                existing_parent_param_node.name if existing_parent_param_node else None
+            )
             child_tree = q.remove_subtree(child)
 
             q._insert_from_node(inserted_node, pid=direct_pid)
-            child_operator_node = next((
-                c for c in q.children(inserted_node.name) if isinstance(c, child_operator)), None)
+            child_operator_node = next(
+                (
+                    c
+                    for c in q.children(inserted_node.name)
+                    if isinstance(c, child_operator)
+                ),
+                None,
+            )
             if child_operator_node is None:
                 child_operator_node = child_operator()
                 q.add_node(child_operator_node, pid=inserted_node.name)
@@ -312,13 +379,17 @@ class Query(Tree):
 
         # If a parent is provided (only under compound query): place under it.
         if parent not in q:
-            raise ValueError('Parent <%s> does not exist in current query.' % parent)
+            raise ValueError("Parent <%s> does not exist in current query." % parent)
         parent_node = q[parent]
         if not isinstance(parent_node, CompoundClause):
             raise ValueError(
-                'Cannot place clause under non-compound clause <%s> of type <%s>.' % (parent, parent_node.KEY))
+                "Cannot place clause under non-compound clause <%s> of type <%s>."
+                % (parent, parent_node.KEY)
+            )
         parent_operator = parent_node.operator(parent_param)
-        parent_operator_node = next((c for c in q.children(parent) if isinstance(c, parent_operator)), None)
+        parent_operator_node = next(
+            (c for c in q.children(parent) if isinstance(c, parent_operator)), None
+        )
         if parent_operator_node is not None and not parent_operator_node.MULTIPLE:
             if isinstance(parent_node, Bool):
                 return q.bool(must=inserted_node, _name=parent)
@@ -334,13 +405,13 @@ class Query(Tree):
         return q
 
     def _compound_param(self, method_name, param_key, *args, **kwargs):
-        mode = kwargs.pop('mode', ADD)
+        mode = kwargs.pop("mode", ADD)
         param_klass = PARAMETERS[param_key]
-        _name = kwargs.pop('_name', None)
-        parent = kwargs.pop('parent', None)
-        parent_param = kwargs.pop('parent_param', None)
-        child = kwargs.pop('child', None)
-        child_param = kwargs.pop('child_param', None)
+        _name = kwargs.pop("_name", None)
+        parent = kwargs.pop("parent", None)
+        parent_param = kwargs.pop("parent_param", None)
+        child = kwargs.pop("child", None)
+        child_param = kwargs.pop("child_param", None)
         return getattr(self, method_name)(
             param_klass(*args, **kwargs),
             mode=mode,
@@ -387,23 +458,23 @@ class Query(Tree):
 
     # compound parameters
     def must(self, *args, **kwargs):
-        return self._compound_param('bool', 'must', *args, **kwargs)
+        return self._compound_param("bool", "must", *args, **kwargs)
 
     def should(self, *args, **kwargs):
-        return self._compound_param('bool', 'should', *args, **kwargs)
+        return self._compound_param("bool", "should", *args, **kwargs)
 
     def must_not(self, *args, **kwargs):
-        return self._compound_param('bool', 'must_not', *args, **kwargs)
+        return self._compound_param("bool", "must_not", *args, **kwargs)
 
     def filter(self, *args, **kwargs):
-        return self._compound_param('bool', 'filter', *args, **kwargs)
+        return self._compound_param("bool", "filter", *args, **kwargs)
 
     def __str__(self):
-        return '<Query>\n%s' % text(self.show())
+        return "<Query>\n%s" % text(self.show())
 
     def execute(self, index=None, **kwargs):
         if self.client is None:
             raise ValueError('Execution requires to specify "client" at __init__.')
-        body = {'query': self.query_dict()}
+        body = {"query": self.query_dict()}
         body.update(kwargs)
         return self.client.search(index=index or self.index_name, body=body)

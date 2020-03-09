@@ -32,7 +32,7 @@ class AggNode(Node):
 
     @property
     def tag(self):
-        return '[%s] %s' % (text(self.name), text(self.KEY))
+        return "[%s] %s" % (text(self.name), text(self.KEY))
 
     @classmethod
     def valid_on_field_type(cls, field_type):
@@ -95,7 +95,8 @@ class AggNode(Node):
         return "<{class_}, name={name}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
             type=text(self.KEY),
-            name=text(self.name), body=json.dumps(self.body)
+            name=text(self.name),
+            body=json.dumps(self.body),
         )
 
     def __eq__(self, other):
@@ -107,6 +108,7 @@ class AggNode(Node):
 
 class MetricAgg(AggNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
+
     VALUE_ATTRS = NotImplementedError()
 
     def extract_buckets(self, response_value):
@@ -137,14 +139,11 @@ class BucketAggNode(AggNode):
     Yet, the aggs attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
     bpointer/fpointer attributes inherited from treelib.Tree class.
     """
+
     VALUE_ATTRS = NotImplementedError()
 
     def __init__(self, name, meta=None, aggs=None, **body):
-        super(BucketAggNode, self).__init__(
-            name=name,
-            meta=meta,
-            **body
-        )
+        super(BucketAggNode, self).__init__(name=name, meta=meta, **body)
         aggs = aggs or []
         if aggs is None:
             aggs = []
@@ -165,18 +164,20 @@ class BucketAggNode(AggNode):
 
 class ShadowRoot(BucketAggNode):
     """Not a real aggregation."""
-    KEY = 'shadow_root'
+
+    KEY = "shadow_root"
 
     def __init__(self):
-        super(ShadowRoot, self).__init__('_')
+        super(ShadowRoot, self).__init__("_")
 
     @property
     def tag(self):
-        return '[%s]' % text(self.name)
+        return "[%s]" % text(self.name)
 
 
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
+
     VALUE_ATTRS = NotImplementedError()
 
     def extract_buckets(self, response_value):
@@ -191,7 +192,7 @@ class MultipleBucketAgg(BucketAggNode):
     VALUE_ATTRS = NotImplementedError()
     IMPLICIT_KEYED = False
 
-    def __init__(self, name, keyed=None, key_path='key', meta=None, aggs=None, **body):
+    def __init__(self, name, keyed=None, key_path="key", meta=None, aggs=None, **body):
         """Aggregation that return either a list or a map of buckets.
 
         If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
@@ -205,11 +206,11 @@ class MultipleBucketAgg(BucketAggNode):
         self.keyed = keyed or self.IMPLICIT_KEYED
         self.key_path = key_path
         if keyed and not self.IMPLICIT_KEYED:
-            body['keyed'] = keyed
+            body["keyed"] = keyed
         super(MultipleBucketAgg, self).__init__(name=name, meta=meta, aggs=aggs, **body)
 
     def extract_buckets(self, response_value):
-        buckets = response_value['buckets']
+        buckets = response_value["buckets"]
         if self.keyed:
             for key in sorted(buckets.keys()):
                 yield (key, buckets[key])
@@ -226,36 +227,31 @@ class MultipleBucketAgg(BucketAggNode):
 
 class FieldOrScriptMetricAgg(MetricAgg):
     """Metric aggregation based on single field."""
+
     VALUE_ATTRS = NotImplementedError()
 
     def __init__(self, name, meta=None, **body):
-        self.field = body.get('field')
-        self.script = body.get('script')
-        super(FieldOrScriptMetricAgg, self).__init__(
-            name=name,
-            meta=meta,
-            **body
-        )
+        self.field = body.get("field")
+        self.script = body.get("script")
+        super(FieldOrScriptMetricAgg, self).__init__(name=name, meta=meta, **body)
 
 
 class Pipeline(UniqueBucketAgg):
 
     VALUE_ATTRS = NotImplementedError()
 
-    def __init__(self, name, buckets_path, gap_policy=None, meta=None, aggs=None, **body):
+    def __init__(
+        self, name, buckets_path, gap_policy=None, meta=None, aggs=None, **body
+    ):
         self.buckets_path = buckets_path
         self.gap_policy = gap_policy
         body_kwargs = dict(body)
         if gap_policy is not None:
-            assert gap_policy in ('skip', 'insert_zeros')
-            body_kwargs['gap_policy'] = gap_policy
+            assert gap_policy in ("skip", "insert_zeros")
+            body_kwargs["gap_policy"] = gap_policy
 
         super(Pipeline, self).__init__(
-            name=name,
-            meta=meta,
-            aggs=aggs,
-            buckets_path=buckets_path,
-            **body
+            name=name, meta=meta, aggs=aggs, buckets_path=buckets_path, **body
         )
 
     def get_filter(self, key):
@@ -264,9 +260,11 @@ class Pipeline(UniqueBucketAgg):
 
 class ScriptPipeline(Pipeline):
     KEY = NotImplementedError()
-    VALUE_ATTRS = 'value'
+    VALUE_ATTRS = "value"
 
-    def __init__(self, name, script, buckets_path, gap_policy=None, meta=None, aggs=None, **body):
+    def __init__(
+        self, name, script, buckets_path, gap_policy=None, meta=None, aggs=None, **body
+    ):
         super(ScriptPipeline, self).__init__(
             name=name,
             buckets_path=buckets_path,

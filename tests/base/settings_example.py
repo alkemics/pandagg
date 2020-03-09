@@ -3,14 +3,9 @@ SETTINGS = {
         "analysis": {
             "analyzer": {
                 "default": {
-                    "char_filter": [
-                        "html_strip"
-                    ],
-                    "filter": [
-                        "lowercase",
-                        "asciifolding"
-                    ],
-                    "tokenizer": "standard"
+                    "char_filter": ["html_strip"],
+                    "filter": ["lowercase", "asciifolding"],
+                    "tokenizer": "standard",
                 }
             }
         },
@@ -18,8 +13,6 @@ SETTINGS = {
         "number_of_replicas": "1",
         "number_of_shards": "5",
         "uuid": "7yy5q97eSVum8a54i-ZFXQ",
-        "version": {
-            "created": "2030399"
-        }
+        "version": {"created": "2030399"},
     }
 }

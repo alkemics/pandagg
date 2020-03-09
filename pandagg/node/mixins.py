@@ -1,5 +1,3 @@
-
-
 class FieldValidityMixin(object):
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None

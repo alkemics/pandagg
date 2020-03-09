@@ -24,10 +24,7 @@ class ResponseTree(Tree):
         self.agg_tree = agg_tree
 
     def _clone(self, identifier, with_tree=False, deep=False):
-        return ResponseTree(
-            agg_tree=self.agg_tree,
-            identifier=identifier
-        )
+        return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
 
     def parse_aggregation(self, raw_response):
         """Build response tree from ES response
@@ -41,7 +38,9 @@ class ResponseTree(Tree):
         if not isinstance(root_node, UniqueBucketAgg):
             bucket = Bucket(value=None, depth=0)
             self.add_node(bucket, None)
-            self._parse_node_with_children(root_node, raw_response, pid=bucket.identifier)
+            self._parse_node_with_children(
+                root_node, raw_response, pid=bucket.identifier
+            )
         else:
             self._parse_node_with_children(root_node, raw_response)
         return self
@@ -59,7 +58,7 @@ class ResponseTree(Tree):
                 level=agg_node.name,
                 key=key,
                 value=agg_node.extract_bucket_value(raw_value),
-                depth=depth + 1
+                depth=depth + 1,
             )
             self.add_node(bucket, pid)
             for child in self.agg_tree.children(agg_node.name):
@@ -67,7 +66,7 @@ class ResponseTree(Tree):
                     agg_node=child,
                     raw_response=raw_value,
                     depth=depth + 1,
-                    pid=bucket.identifier
+                    pid=bucket.identifier,
                 )
 
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
@@ -91,7 +90,9 @@ class ResponseTree(Tree):
         return self.bucket_properties(parent, properties, end_level, depth)
 
     @classmethod
-    def _build_filter(cls, nid_to_children, filters_per_nested_level, current_nested_path=None):
+    def _build_filter(
+        cls, nid_to_children, filters_per_nested_level, current_nested_path=None
+    ):
         """Recursive function to build bucket filters from highest to deepest nested conditions.
         """
         # TODO - use Query DSL
@@ -101,10 +102,12 @@ class ResponseTree(Tree):
             nested_child_conditions = cls._build_filter(
                 nid_to_children=nid_to_children,
                 filters_per_nested_level=filters_per_nested_level,
-                current_nested_path=nested_child
+                current_nested_path=nested_child,
             )
             if nested_child_conditions:
-                current_conditions.append({'nested': {'path': nested_child, 'query': nested_child_conditions}})
+                current_conditions.append(
+                    {"nested": {"path": nested_child, "query": nested_child_conditions}}
+                )
         return bool_if_required(current_conditions)
 
     def get_bucket_filter(self, nid):
@@ -123,8 +126,7 @@ class ResponseTree(Tree):
         selected_bucket = self[nid]
         bucket_properties = self.bucket_properties(selected_bucket)
         agg_node_key_tuples = [
-            (self.agg_tree[level], key) for
-            level, key in iteritems(bucket_properties)
+            (self.agg_tree[level], key) for level, key in iteritems(bucket_properties)
         ]
 
         filters_per_nested_level = defaultdict(list)
@@ -132,8 +134,10 @@ class ResponseTree(Tree):
         for agg_node, key in agg_node_key_tuples:
             level_agg_filter = agg_node.get_filter(key)
             # remove unnecessary match_all filters
-            if level_agg_filter is not None and 'match_all' not in level_agg_filter:
-                current_nested = self.agg_tree.applied_nested_path_at_node(agg_node.identifier)
+            if level_agg_filter is not None and "match_all" not in level_agg_filter:
+                current_nested = self.agg_tree.applied_nested_path_at_node(
+                    agg_node.identifier
+                )
                 filters_per_nested_level[current_nested].append(level_agg_filter)
 
         nested_with_conditions = [n for n in filters_per_nested_level.keys() if n]
@@ -141,16 +145,19 @@ class ResponseTree(Tree):
         all_nesteds = [
             n.identifier
             for n in tree_mapping.filter_nodes(
-                lambda x: (x.KEY == 'nested') and any((i in x.identifier or '' for i in nested_with_conditions))
+                lambda x: (x.KEY == "nested")
+                and any((i in x.identifier or "" for i in nested_with_conditions))
             )
         ]
 
         nid_to_children = defaultdict(set)
         for nested in all_nesteds:
-            nested_with_parents = list(tree_mapping.rsearch(nid=nested, filter=lambda x: x.KEY == 'nested'))
+            nested_with_parents = list(
+                tree_mapping.rsearch(nid=nested, filter=lambda x: x.KEY == "nested")
+            )
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
-    def show(self, data_property='pretty', **kwargs):
+    def show(self, data_property="pretty", **kwargs):
         return super(ResponseTree, self).show(data_property=data_property)
