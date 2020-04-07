@@ -11,6 +11,7 @@ from pandagg.node.agg.bucket import (
     Nested,
     ReverseNested,
     Range,
+    Missing
 )
 
 from pandagg.node.agg.metric import (
@@ -56,6 +57,7 @@ __all__ = [
     "Range",
     "Global",
     "Filter",
+    "Missing",
     "Nested",
     "ReverseNested",
     "Avg",

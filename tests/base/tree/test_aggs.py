@@ -489,7 +489,7 @@ class AggTestCase(TestCase):
 
     def test_parse_as_tree(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        response = my_agg._serialize_response_as_tree(sample.ES_AGG_RESPONSE)
+        response = my_agg.serialize_response_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response, IResponse)
         self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_REPR)
         # check that tree attributes are accessible
@@ -498,14 +498,14 @@ class AggTestCase(TestCase):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         self.assertTrue(
             equal_queries(
-                my_agg._serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
+                my_agg.serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
                 sample.EXPECTED_NORMALIZED_RESPONSE,
             )
         )
 
     def test_parse_as_tabular(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        index, index_names, values = my_agg._serialize_response_as_tabular(
+        index, index_names, values = my_agg.serialize_response_as_tabular(
             sample.ES_AGG_RESPONSE
         )
         self.assertEqual(
@@ -518,7 +518,7 @@ class AggTestCase(TestCase):
 
     def test_parse_as_dataframe(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        df = my_agg._serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
+        df = my_agg.serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(
             set(df.index.names), {"classification_type", "global_metrics.field.name"}

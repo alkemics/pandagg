@@ -161,14 +161,15 @@ class Agg(Tree):
         """If pid is not None, ensure that pid belongs to tree, and that it refers to a bucket aggregation.
 
         Else, if not provided, return deepest bucket aggregation if there is no ambiguity (linear aggregations).
-        KO: non-ambiguous:
-        A──> B──> C1
-             └──> C2
-        raise error
+        KO: non-ambiguous::
+            A──> B──> C1
+                 └──> C2
+            raise error
 
-        OK: non-ambiguous (linear):
-        A──> B──> C1
-        return C1
+        OK: non-ambiguous (linear)::
+
+            A──> B──> C1
+            return C1
         """
         if pid is not None:
             if not self._is_eligible_grouping_node(pid):
@@ -213,11 +214,12 @@ class Agg(Tree):
         * AggNode instance (for instance Terms, Filters etc)
 
         If `insert_below` nor `insert_above` is provided by will be placed between the the deepest linear
-        bucket aggregation if there is no ambiguity, and its children:
-        A──> B      : OK generates     A──> B ─> C ─> by
+        bucket aggregation if there is no ambiguity, and its children::
 
-        A──> B      : KO, ambiguous, must precise either A, B or C
-        └──> C
+            A──> B      : OK generates     A──> B ─> C ─> by
+
+            A──> B      : KO, ambiguous, must precise either A, B or C
+            └──> C
 
         :param by: aggregation(s) clauses to insert "vertically"
         :param insert_below: parent aggregation id under which these aggregations should be placed
@@ -568,14 +570,15 @@ class Agg(Tree):
 
     def _normalize_buckets(self, agg_response, agg_name=None):
         """Recursive function to parse aggregation response as a normalized entities.
-        Each response bucket is represented as a dict with keys (key, level, value, children):
-        {
-            "level": "owner.id",
-            "key": 35,
-            "value": 235,
-            "children": [
-            ]
-        }
+        Each response bucket is represented as a dict with keys (key, level, value, children)::
+
+            {
+                "level": "owner.id",
+                "key": 35,
+                "value": 235,
+                "children": [
+                ]
+            }
         """
         agg_name = agg_name or self.root
         agg_node = self[agg_name]
@@ -597,9 +600,9 @@ class Agg(Tree):
                 result["children"] = normalized_children
             yield result
 
-    def _serialize_response_as_tabular(
+    def serialize_response_as_tabular(
         self,
-        aggs_response,
+        aggs,
         row_as_tuple=False,
         grouped_by=None,
         normalize_children=True,
@@ -607,20 +610,22 @@ class Agg(Tree):
         """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
         reached, and using children aggregations of grouping level as values for each of generated groups (columns).
 
-        Suppose an aggregation of this shape (A & B bucket aggregations)
-        A──> B──> C1
-             ├──> C2
-             └──> C3
+        Suppose an aggregation of this shape (A & B bucket aggregations)::
 
-        With grouped_by='B', breakdown ElasticSearch response (tree structure), into a tabular structure of this shape:
-                              C1     C2    C3
-        A           B
-        wood        blue      10     4     0
-                    red       7      5     2
-        steel       blue      1      9     0
-                    red       23     4     2
+            A──> B──> C1
+                 ├──> C2
+                 └──> C3
 
-        :param aggs_response: ElasticSearch response
+        With grouped_by='B', breakdown ElasticSearch response (tree structure), into a tabular structure of this shape::
+
+                                  C1     C2    C3
+            A           B
+            wood        blue      10     4     0
+                        red       7      5     2
+            steel       blue      1      9     0
+                        red       23     4     2
+
+        :param aggs: ElasticSearch response
         :param row_as_tuple: if True, level-key samples are returned as tuples, else in a dictionnary
         :param grouped_by: name of the aggregation node used as last grouping level
         :param normalize_children: if True, normalize columns buckets
@@ -635,7 +640,7 @@ class Agg(Tree):
             )
 
         index_values = self._parse_group_by(
-            response=aggs_response, row_as_tuple=row_as_tuple, until=grouped_by
+            response=aggs, row_as_tuple=row_as_tuple, until=grouped_by
         )
         index_values_l = list(index_values)
         if not index_values_l:
@@ -681,7 +686,7 @@ class Agg(Tree):
         serialized_values = list(map(serialize_columns, values))
         return index, index_names, serialized_values
 
-    def _serialize_response_as_dataframe(
+    def serialize_response_as_dataframe(
         self, aggs, grouped_by=None, normalize_children=True
     ):
         try:
@@ -691,8 +696,8 @@ class Agg(Tree):
                 'Using dataframe output format requires to install pandas. Please install "pandas" or '
                 "use another output format."
             )
-        index, index_names, values = self._serialize_response_as_tabular(
-            aggs_response=aggs,
+        index, index_names, values = self.serialize_response_as_tabular(
+            aggs=aggs,
             row_as_tuple=True,
             grouped_by=grouped_by,
             normalize_children=normalize_children,
@@ -705,14 +710,14 @@ class Agg(Tree):
             index = pd.MultiIndex.from_tuples(index, names=index_names)
         return pd.DataFrame(index=index, data=values)
 
-    def _serialize_response_as_normalized(self, aggs):
+    def serialize_response_as_normalized(self, aggs):
         children = []
         for k in sorted(iterkeys(aggs)):
             for child in self._normalize_buckets(aggs, k):
                 children.append(child)
         return {"level": "root", "key": None, "value": None, "children": children}
 
-    def _serialize_response_as_tree(self, aggs):
+    def serialize_response_as_tree(self, aggs):
         response_tree = ResponseTree(self).parse_aggregation(aggs)
         return IResponse(
             tree=response_tree,
@@ -723,16 +728,22 @@ class Agg(Tree):
         )
 
     def serialize_response(self, aggs, output, **kwargs):
+        """
+        :param aggs: aggregation response, dict
+        :param output: output format, one of "raw", "tree", "normalized_tree", "dict_rows", "dataframe"
+        :param kwargs: serialization kwargs
+        :return:
+        """
         if output == "raw":
             return aggs
         elif output == "tree":
-            return self._serialize_response_as_tree(aggs)
+            return self.serialize_response_as_tree(aggs)
         elif output == "normalized_tree":
-            return self._serialize_response_as_normalized(aggs)
+            return self.serialize_response_as_normalized(aggs)
         elif output == "dict_rows":
-            return self._serialize_response_as_tabular(aggs, **kwargs)
+            return self.serialize_response_as_tabular(aggs, **kwargs)
         elif output == "dataframe":
-            return self._serialize_response_as_dataframe(aggs, **kwargs)
+            return self.serialize_response_as_dataframe(aggs, **kwargs)
         else:
             raise NotImplementedError("Unkown %s output format." % output)
 
