@@ -25,7 +25,7 @@ Many Elasticsearch objects have a **tree** structure, ie they are built from a h
 * an aggregation response (tree) is a hierarchy of response buckets (nodes)
 
 This library sticks to that structure by providing a flexible syntax distinguishing **trees** and **nodes**, **trees** all inherit from
-treelib.tree.Tree class, whereas nodes all inherit from treelib.node.Node class.
+lighttree.Tree class, whereas nodes all inherit from lighttree.Node class.
 
 
 *****************

@@ -9,8 +9,7 @@ class Exists(LeafQueryClause):
         self.field = field
         super(Exists, self).__init__(_name=_name, field=field)
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "%s, field=%s" % (self.KEY, self.field)
 
 
@@ -28,12 +27,11 @@ class Ids(LeafQueryClause):
 
     def serialize(self, named=False):
         b = {"values": self.values}
-        if named:
+        if named and self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "%s, values=%s" % (self.KEY, self.values)
 
 
@@ -70,8 +68,7 @@ class Terms(LeafQueryClause):
         b.update(body)
         super(Terms, self).__init__(_name=_name, **b)
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "%s, field=%s, values=%s" % (
             self.KEY,
             self.field,

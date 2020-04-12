@@ -4,15 +4,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 
-class PrettyNode(object):
-    # class to display pretty nodes while working with trees
-    __slots__ = ["pretty"]
-
-    def __init__(self, pretty):
-        super(PrettyNode, self).__init__()
-        self.pretty = pretty
-
-
 def ordered(obj):
     if isinstance(obj, dict):
         return sorted((k, ordered(v)) for k, v in obj.items())

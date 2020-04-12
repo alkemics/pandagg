@@ -30,8 +30,7 @@ class AggNode(Node):
         self.body = body
         self.meta = meta
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "[%s] %s" % (text(self.name), text(self.KEY))
 
     @classmethod
@@ -136,8 +135,6 @@ class BucketAggNode(AggNode):
     >>>         Avg(agg_name='avg_agg', field='some_other_path')
     >>>     ]
     >>> )
-    Yet, the aggs attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
-    bpointer/fpointer attributes inherited from treelib.Tree class.
     """
 
     VALUE_ATTRS = NotImplementedError()
@@ -170,8 +167,7 @@ class ShadowRoot(BucketAggNode):
     def __init__(self):
         super(ShadowRoot, self).__init__("_")
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "[%s]" % text(self.name)
 
 

@@ -3,6 +3,8 @@
 
 from unittest import TestCase
 
+from mock import patch
+
 from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.field_datatypes import Keyword, Object, Text, Nested, Integer
@@ -18,9 +20,7 @@ class MappingTreeTestCase(TestCase):
     """
 
     def test_node_repr(self):
-        node = Keyword(
-            name="path.to.field", depth=3, fields={"searchable": {"type": "text"}}
-        )
+        node = Keyword(name="path.to.field", fields={"searchable": {"type": "text"}})
         self.assertEqual(
             node.__str__(),
             u"""<Mapping Field path.to.field> of type keyword:
@@ -122,6 +122,25 @@ class MappingTreeTestCase(TestCase):
             ["local_metrics"],
         )
 
+    @patch("uuid.uuid4")
+    def test_resolve_path_to_id(self, uuid_mock):
+        uuid_mock.side_effect = range(100)
+        mapping_tree = Mapping(from_=MAPPING)
+        # do not resolve
+        self.assertEqual(
+            mapping_tree.resolve_path_to_id("global_metrics.non_existing_field"),
+            "global_metrics.non_existing_field",
+        )
+        # resolve
+        self.assertEqual(
+            mapping_tree.resolve_path_to_id("classification_type"),
+            "classification_type1",
+        )
+        self.assertEqual(
+            mapping_tree.resolve_path_to_id("local_metrics.dataset.support_test"),
+            "support_test26",
+        )
+
     def test_mapping_type_of_field(self):
         mapping_tree = Mapping(from_=MAPPING)
         with self.assertRaises(AbsentMappingFieldError):
@@ -141,7 +160,7 @@ class MappingTreeTestCase(TestCase):
     def test_node_path(self):
         mapping_tree = Mapping(from_=MAPPING)
         # get node by path syntax
-        node = mapping_tree["local_metrics.dataset.support_test"]
+        node = mapping_tree.get("local_metrics.dataset.support_test")
         self.assertIsInstance(node, Field)
         self.assertEqual(node.name, "support_test")
         self.assertEqual(

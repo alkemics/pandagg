@@ -60,12 +60,12 @@ class FullTextQueriesTestCase(TestCase):
         tag = 'intervals, field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, {"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": "big bad"}}]}}, {"match": {"query": "wolf"}}], "max_gaps": 0, "ordered": true}'
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, tag)
+        self.assertEqual(q.line_repr(depth=None), tag)
 
         deserialized = Intervals.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, tag)
+        self.assertEqual(deserialized.line_repr(depth=None), tag)
 
     def test_match_clause(self):
         body = {"message": {"query": "this is a test", "operator": "and"}}
@@ -75,14 +75,15 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag, 'match, field=message, operator="and", query="this is a test"'
+            q.line_repr(depth=None),
+            'match, field=message, operator="and", query="this is a test"',
         )
 
         deserialized = Match.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'match, field=message, operator="and", query="this is a test"',
         )
 
@@ -94,7 +95,8 @@ class FullTextQueriesTestCase(TestCase):
             {"match": {"message": {"query": "this is a test"}}},
         )
         self.assertEqual(
-            deserialized.tag, 'match, field=message, query="this is a test"'
+            deserialized.line_repr(depth=None),
+            'match, field=message, query="this is a test"',
         )
 
     def test_match_bool_prefix_clause(self):
@@ -105,7 +107,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag,
+            q.line_repr(depth=None),
             'match_bool_prefix, field=message, analyzer="keyword", query="quick brown f"',
         )
 
@@ -113,7 +115,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'match_bool_prefix, field=message, analyzer="keyword", query="quick brown f"',
         )
 
@@ -125,7 +127,8 @@ class FullTextQueriesTestCase(TestCase):
             {"match_bool_prefix": {"message": {"query": "quick brown f"}}},
         )
         self.assertEqual(
-            deserialized.tag, 'match_bool_prefix, field=message, query="quick brown f"'
+            deserialized.line_repr(depth=None),
+            'match_bool_prefix, field=message, query="quick brown f"',
         )
 
     def test_match_phrase_clause(self):
@@ -136,7 +139,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag,
+            q.line_repr(depth=None),
             'match_phrase, field=message, analyzer="my_analyzer", query="this is a test"',
         )
 
@@ -144,7 +147,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'match_phrase, field=message, analyzer="my_analyzer", query="this is a test"',
         )
 
@@ -156,7 +159,8 @@ class FullTextQueriesTestCase(TestCase):
             {"match_phrase": {"message": {"query": "this is a test"}}},
         )
         self.assertEqual(
-            deserialized.tag, 'match_phrase, field=message, query="this is a test"'
+            deserialized.line_repr(depth=None),
+            'match_phrase, field=message, query="this is a test"',
         )
 
     def test_match_phrase_prefix_clause(self):
@@ -169,7 +173,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag,
+            q.line_repr(depth=None),
             'match_phrase_prefix, field=message, analyzer="my_analyzer", query="this is a test"',
         )
 
@@ -177,7 +181,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'match_phrase_prefix, field=message, analyzer="my_analyzer", query="this is a test"',
         )
 
@@ -189,7 +193,7 @@ class FullTextQueriesTestCase(TestCase):
             {"match_phrase_prefix": {"message": {"query": "this is a test"}}},
         )
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'match_phrase_prefix, field=message, query="this is a test"',
         )
 
@@ -206,12 +210,17 @@ class FullTextQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "multi_match, fields=['subject', 'message']")
+        self.assertEqual(
+            q.line_repr(depth=None), "multi_match, fields=['subject', 'message']"
+        )
 
         deserialized = MultiMatch.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "multi_match, fields=['subject', 'message']")
+        self.assertEqual(
+            deserialized.line_repr(depth=None),
+            "multi_match, fields=['subject', 'message']",
+        )
 
     def test_query_string_clause(self):
         body = {"query": "(new york city) OR (big apple)", "default_field": "content"}
@@ -220,12 +229,12 @@ class FullTextQueriesTestCase(TestCase):
         q = QueryString(query="(new york city) OR (big apple)", default_field="content")
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "query_string")
+        self.assertEqual(q.line_repr(depth=None), "query_string")
 
         deserialized = QueryString.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "query_string")
+        self.assertEqual(deserialized.line_repr(depth=None), "query_string")
 
     def test_simple_string_clause(self):
         body = {"query": "(new york city) OR (big apple)", "default_field": "content"}
@@ -236,9 +245,9 @@ class FullTextQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "simple_string")
+        self.assertEqual(q.line_repr(depth=None), "simple_string")
 
         deserialized = SimpleQueryString.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "simple_string")
+        self.assertEqual(deserialized.line_repr(depth=None), "simple_string")

@@ -1,4 +1,4 @@
-.PHONY : develop check clean clean_pyc doc lint-diff black doc-references
+.PHONY : develop check clean clean_pyc doc lint-diff black doc-references coverage
 
 clean:
 	-python setup.py clean
@@ -18,5 +18,9 @@ develop:
 
 doc-references:
 	-make -C docs api-doc
+
+coverage:
+	coverage run --source=./pandagg -m pytest
+	coverage report
 
 check: black doc-references

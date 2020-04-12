@@ -11,7 +11,7 @@ from pandagg.node.agg.bucket import (
     Nested,
     ReverseNested,
     Range,
-    Missing
+    Missing,
 )
 
 from pandagg.node.agg.metric import (

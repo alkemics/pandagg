@@ -25,14 +25,15 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag, 'distance_feature, field=production_date, origin="now", pivot="7d"'
+            q.line_repr(depth=None),
+            'distance_feature, field=production_date, origin="now", pivot="7d"',
         )
 
         deserialized = DistanceFeature.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'distance_feature, field=production_date, origin="now", pivot="7d"',
         )
 
@@ -53,13 +54,16 @@ class SpecializedQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "more_like_this, fields=['title', 'description']")
+        self.assertEqual(
+            q.line_repr(depth=None), "more_like_this, fields=['title', 'description']"
+        )
 
         deserialized = MoreLikeThis.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag, "more_like_this, fields=['title', 'description']"
+            deserialized.line_repr(depth=None),
+            "more_like_this, fields=['title', 'description']",
         )
 
     def test_percolate_clause(self):
@@ -75,7 +79,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag,
+            q.line_repr(depth=None),
             'percolate, field=query, document={"message": "A new bonsai tree in the office"}',
         )
 
@@ -83,7 +87,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'percolate, field=query, document={"message": "A new bonsai tree in the office"}',
         )
 
@@ -94,12 +98,17 @@ class SpecializedQueriesTestCase(TestCase):
         q = RankFeature(field="url_length", boost=0.1)
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "rank_feature, field=url_length, boost=0.1")
+        self.assertEqual(
+            q.line_repr(depth=None), "rank_feature, field=url_length, boost=0.1"
+        )
 
         deserialized = RankFeature.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "rank_feature, field=url_length, boost=0.1")
+        self.assertEqual(
+            deserialized.line_repr(depth=None),
+            "rank_feature, field=url_length, boost=0.1",
+        )
 
     def test_script_clause(self):
         body = {
@@ -120,12 +129,12 @@ class SpecializedQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "script")
+        self.assertEqual(q.line_repr(depth=None), "script")
 
         deserialized = Script.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "script")
+        self.assertEqual(deserialized.line_repr(depth=None), "script")
 
     def test_wrapper_clause(self):
         body = {"query": "eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="}
@@ -134,12 +143,12 @@ class SpecializedQueriesTestCase(TestCase):
         q = Wrapper(query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0=")
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "wrapper")
+        self.assertEqual(q.line_repr(depth=None), "wrapper")
 
         deserialized = Wrapper.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "wrapper")
+        self.assertEqual(deserialized.line_repr(depth=None), "wrapper")
 
     def test_script_score_clause(self):
         b1 = ScriptScore(
@@ -160,10 +169,10 @@ class SpecializedQueriesTestCase(TestCase):
         )
         for b in (b1, b2, b3):
             self.assertEqual(len(b.children), 2)
-            self.assertEqual(b.tag, "script_score")
+            self.assertEqual(b.line_repr(depth=None), "script_score")
 
             query = next((c for c in b.children if isinstance(c, QueryP)))
-            self.assertEqual(query.tag, "query")
+            self.assertEqual(query.line_repr(depth=None), "query")
             self.assertEqual(query.body, {})
             self.assertEqual(len(query.children), 1)
             match = query.children[0]
@@ -172,7 +181,8 @@ class SpecializedQueriesTestCase(TestCase):
 
             script = next((c for c in b.children if isinstance(c, ScriptP)))
             self.assertEqual(
-                script.tag, 'script={"source": "doc[\'likes\'].value / 10 "}'
+                script.line_repr(depth=None),
+                'script={"source": "doc[\'likes\'].value / 10 "}',
             )
 
     def test_pinned_query_clause(self):
@@ -187,10 +197,10 @@ class SpecializedQueriesTestCase(TestCase):
         )
         for b in (b1, b2, b3):
             self.assertEqual(len(b.children), 2)
-            self.assertEqual(b.tag, "pinned")
+            self.assertEqual(b.line_repr(depth=None), "pinned")
 
             query = next((c for c in b.children if isinstance(c, Organic)))
-            self.assertEqual(query.tag, "organic")
+            self.assertEqual(query.line_repr(depth=None), "organic")
             self.assertEqual(query.body, {})
             self.assertEqual(len(query.children), 1)
             match = query.children[0]
@@ -198,4 +208,4 @@ class SpecializedQueriesTestCase(TestCase):
             self.assertEqual(match.field, "description")
 
             script = next((c for c in b.children if isinstance(c, IdsP)))
-            self.assertEqual(script.tag, "ids=[1, 23]")
+            self.assertEqual(script.line_repr(depth=None), "ids=[1, 23]")
