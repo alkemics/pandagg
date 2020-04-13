@@ -7,9 +7,6 @@ Principles
     This is a work in progress. Some sections still need to be furnished.
 
 
-**pandagg** is designed for both for "regular" code repository usage, and "interactive" usage (ipython or jupyter
-notebook usage with autocompletion features inspired by `pandas <https://github.com/pandas-dev/pandas>`_ design).
-
 This library focuses on two principles:
 
 * stick to the **tree** structure of Elasticsearch objects
@@ -27,16 +24,19 @@ Many Elasticsearch objects have a **tree** structure, ie they are built from a h
 * an `aggregation <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html>`_ (tree) is a hierarchy of aggregation clauses (nodes)
 * an aggregation response (tree) is a hierarchy of response buckets (nodes)
 
-This library aims to stick to that structure by providing a flexible syntax distinguishing **trees** and **nodes**.
+This library sticks to that structure by providing a flexible syntax distinguishing **trees** and **nodes**, **trees** all inherit from
+lighttree.Tree class, whereas nodes all inherit from lighttree.Node class.
+
 
 *****************
 Interactive usage
 *****************
 
+**pandagg** is designed for both for "regular" code repository usage, and "interactive" usage (ipython or jupyter
+notebook usage with autocompletion features inspired by `pandas <https://github.com/pandas-dev/pandas>`_ design).
+
 Some classes are not intended to be used elsewhere than in interactive mode (ipython), since their purpose is to serve
 auto-completion features and convenient representations.
-
-They won't serve you for any other usage than interactive ones.
 
 Namely:
 

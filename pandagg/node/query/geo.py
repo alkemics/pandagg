@@ -15,8 +15,7 @@ class GeoDistance(LeafQueryClause):
         b.update(body)
         super(GeoDistance, self).__init__(_name=_name, **b)
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "%s, field=%s" % (self.KEY, self.field)
 
     @classmethod

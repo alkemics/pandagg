@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import copy
 
 from builtins import str as text
-from six import iteritems
+from future.utils import iteritems
 import json
 
 from pandagg.node._node import Node
@@ -19,9 +19,9 @@ class QueryClause(Node):
     def __init__(self, _name=None, **body):
         super(QueryClause, self).__init__(identifier=_name)
         self.body = body
+        self._named = _name is not None
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return self.KEY
 
     @property
@@ -38,7 +38,7 @@ class QueryClause(Node):
 
     def serialize(self, named=False):
         b = copy.deepcopy(self.body)
-        if named:
+        if named and self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
@@ -77,8 +77,7 @@ class SingleFieldQueryClause(LeafQueryClause):
                 self.inner_body = {self.SHORT_TAG: body}
             super(LeafQueryClause, self).__init__(_name=_name, **{field: body})
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         base = "%s, field=%s" % (text(self.KEY), text(self.field))
         if self.inner_body:
             base += ", %s" % ", ".join(
@@ -94,7 +93,7 @@ class SingleFieldQueryClause(LeafQueryClause):
             return cls(**body)
         _name = body.pop("_name", None)
         assert len(body.keys()) == 1
-        k, v = next(iteritems(body))
+        k, v = next(iter(iteritems(body)))
         if cls.SHORT_TAG and not isinstance(v, dict):
             return cls(field=k, _name=_name, **{cls.SHORT_TAG: v})
         return cls(field=k, _name=_name, **v)
@@ -105,6 +104,5 @@ class MultiFieldsQueryClause(LeafQueryClause):
         self.fields = fields
         super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "%s, fields=%s" % (self.KEY, list(map(text, self.fields)))

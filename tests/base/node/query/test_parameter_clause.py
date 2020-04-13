@@ -27,7 +27,7 @@ class ParameterClausesTestCase(TestCase):
         )
         for f in (f1, f2, f3, f4):
             self.assertEqual(len(f.children), 2)
-            self.assertEqual(f.tag, "filter")
+            self.assertEqual(f.line_repr(depth=None), "filter")
 
             term = next((c for c in f.children if isinstance(c, Term)))
             self.assertEqual(term.serialize(), {"term": {"some_field": {"value": 1}}})

@@ -7,7 +7,9 @@
 
 from unittest import TestCase
 import pandas as pd
-from treelib.exceptions import MultipleRootError, NodeIDAbsentError
+from lighttree.exceptions import MultipleRootError, NotFoundNodeError
+from mock import patch
+
 from pandagg.tree.agg import Agg
 from pandagg.interactive.response import IResponse
 from pandagg.exceptions import (
@@ -25,7 +27,16 @@ from pandagg.utils import equal_queries
 from tests.base.mapping_example import MAPPING
 
 
+def to_id_set(nodes):
+    return {n.identifier for n in nodes}
+
+
 class AggTestCase(TestCase):
+    def setUp(self):
+        patcher = patch("uuid.uuid4", side_effect=range(1000))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_deserialize_nodes_with_subaggs(self):
         expected = {
             "genres": {
@@ -87,39 +98,40 @@ class AggTestCase(TestCase):
 
     def test_add_node_with_mapping(self):
         with_mapping = Agg(mapping=MAPPING)
-        self.assertEqual(len(with_mapping.nodes.keys()), 0)
+        self.assertEqual(len(with_mapping.list()), 0)
 
         # add regular node
-        with_mapping.add_node(Terms("workflow", field="workflow"))
-        self.assertEqual(len(with_mapping.nodes.keys()), 1)
+        with_mapping.insert_node(Terms("workflow", field="workflow"))
+        self.assertEqual(len(with_mapping.list()), 1)
 
         # try to add second root fill fail
         with self.assertRaises(MultipleRootError):
-            with_mapping.add_node(
+            with_mapping.insert_node(
                 Terms("classification_type", field="classification_type")
             )
 
         # try to add field aggregation on non-existing field will fail
         with self.assertRaises(AbsentMappingFieldError):
-            with_mapping.add_node(
-                node=Terms("imaginary_agg", field="imaginary_field"), pid="workflow"
+            with_mapping.insert_node(
+                node=Terms("imaginary_agg", field="imaginary_field"),
+                parent_id="workflow",
             )
-        self.assertEqual(len(with_mapping.nodes.keys()), 1)
+        self.assertEqual(len(with_mapping.list()), 1)
 
         # try to add aggregation on a non-compatible field will fail
         with self.assertRaises(InvalidOperationMappingFieldError):
-            with_mapping.add_node(
+            with_mapping.insert_node(
                 node=Avg("average_of_string", field="classification_type"),
-                pid="workflow",
+                parent_id="workflow",
             )
-        self.assertEqual(len(with_mapping.nodes.keys()), 1)
+        self.assertEqual(len(with_mapping.list()), 1)
 
         # add field aggregation on field passing through nested will automatically add nested
-        with_mapping.add_node(
+        with_mapping.insert_node(
             node=Avg("local_f1_score", field="local_metrics.performance.test.f1_score"),
-            pid="workflow",
+            parent_id="workflow",
         )
-        self.assertEqual(len(with_mapping.nodes.keys()), 3)
+        self.assertEqual(len(with_mapping.list()), 3)
         self.assertEqual(
             with_mapping.__str__(),
             """<Aggregation>
@@ -129,16 +141,16 @@ class AggTestCase(TestCase):
 """,
         )
         self.assertIn("nested_below_workflow", with_mapping)
-        nested_node = with_mapping["nested_below_workflow"]
+        nested_node = with_mapping.get("nested_below_workflow")
         self.assertEqual(nested_node.KEY, "nested")
         self.assertEqual(nested_node.path, "local_metrics")
 
         # add other agg requiring nested will reuse nested agg as parent
-        with_mapping.add_node(
+        with_mapping.insert_node(
             node=Avg(
                 "local_precision", field="local_metrics.performance.test.precision"
             ),
-            pid="workflow",
+            parent_id="workflow",
         )
         self.assertEqual(
             with_mapping.__str__(),
@@ -149,14 +161,15 @@ class AggTestCase(TestCase):
     └── [local_precision] avg
 """,
         )
-        self.assertEqual(len(with_mapping.nodes.keys()), 4)
+        self.assertEqual(len(with_mapping.list()), 4)
 
         # add under a nested parent a field aggregation that requires to be located under root will automatically
         # add reverse-nested
-        with_mapping.add_node(
-            node=Terms("language_terms", field="language"), pid="nested_below_workflow"
+        with_mapping.insert_node(
+            node=Terms("language_terms", field="language"),
+            parent_id="nested_below_workflow",
         )
-        self.assertEqual(len(with_mapping.nodes.keys()), 6)
+        self.assertEqual(len(with_mapping.list()), 6)
         self.assertEqual(
             with_mapping.__str__(),
             """<Aggregation>
@@ -171,13 +184,13 @@ class AggTestCase(TestCase):
 
     def test_add_node_without_mapping(self):
         without_mapping = Agg()
-        self.assertEqual(len(without_mapping.nodes.keys()), 0)
+        self.assertEqual(len(without_mapping.list()), 0)
 
         # add regular node
-        without_mapping.add_node(
+        without_mapping.insert_node(
             Terms("workflow_not_existing", field="field_not_existing")
         )
-        self.assertEqual(len(without_mapping.nodes.keys()), 1)
+        self.assertEqual(len(without_mapping.list()), 1)
 
     # TODO - finish these tests (reverse nested)
     def test_paste_tree_with_mapping(self):
@@ -194,7 +207,7 @@ class AggTestCase(TestCase):
                 }
             },
         )
-        self.assertEqual(set(initial_agg_1.nodes.keys()), {"week"})
+        self.assertEqual(to_id_set(initial_agg_1.list()), {"week"})
         pasted_agg_1 = Agg(
             from_={
                 "nested_below_week": {
@@ -211,13 +224,13 @@ class AggTestCase(TestCase):
             }
         )
         self.assertEqual(
-            set(pasted_agg_1.nodes.keys()),
+            to_id_set(pasted_agg_1.list()),
             {"nested_below_week", "local_metrics.field_class.name"},
         )
 
-        initial_agg_1.paste("week", pasted_agg_1)
+        initial_agg_1.insert_tree(pasted_agg_1, "week")
         self.assertEqual(
-            set(initial_agg_1.nodes.keys()),
+            to_id_set(initial_agg_1.list()),
             {"week", "nested_below_week", "local_metrics.field_class.name"},
         )
         self.assertEqual(
@@ -242,7 +255,7 @@ class AggTestCase(TestCase):
                 }
             },
         )
-        self.assertEqual(set(initial_agg_2.nodes.keys()), {"week"})
+        self.assertEqual(to_id_set(initial_agg_2.list()), {"week"})
         pasted_agg_2 = Agg(
             from_={
                 "local_metrics.field_class.name": {
@@ -251,12 +264,12 @@ class AggTestCase(TestCase):
             }
         )
         self.assertEqual(
-            set(pasted_agg_2.nodes.keys()), {"local_metrics.field_class.name"}
+            to_id_set(pasted_agg_2.list()), {"local_metrics.field_class.name"}
         )
 
-        initial_agg_2.paste("week", pasted_agg_2)
+        initial_agg_2.insert_tree(pasted_agg_2, "week")
         self.assertEqual(
-            set(initial_agg_2.nodes.keys()),
+            to_id_set(initial_agg_2.list()),
             {"week", "nested_below_week", "local_metrics.field_class.name"},
         )
         self.assertEqual(
@@ -268,7 +281,7 @@ class AggTestCase(TestCase):
 """,
         )
 
-    def test_paste_tree_without_mapping(self):
+    def test_insert_tree_without_mapping(self):
         # with explicit nested
         initial_agg_1 = Agg(
             mapping=None,
@@ -282,7 +295,7 @@ class AggTestCase(TestCase):
                 }
             },
         )
-        self.assertEqual(set(initial_agg_1.nodes.keys()), {"week"})
+        self.assertEqual({n.identifier for n in initial_agg_1.list()}, {"week"})
 
         pasted_agg_1 = Agg(
             from_={
@@ -300,13 +313,13 @@ class AggTestCase(TestCase):
             }
         )
         self.assertEqual(
-            set(pasted_agg_1.nodes.keys()),
+            to_id_set(pasted_agg_1.list()),
             {"nested_below_week", "local_metrics.field_class.name"},
         )
 
-        initial_agg_1.paste("week", pasted_agg_1)
+        initial_agg_1.insert_tree(pasted_agg_1, "week")
         self.assertEqual(
-            set(initial_agg_1.nodes.keys()),
+            to_id_set(initial_agg_1.list()),
             {"week", "nested_below_week", "local_metrics.field_class.name"},
         )
         self.assertEqual(
@@ -331,7 +344,7 @@ class AggTestCase(TestCase):
                 }
             },
         )
-        self.assertEqual(set(initial_agg_2.nodes.keys()), {"week"})
+        self.assertEqual(to_id_set(initial_agg_2.list()), {"week"})
 
         pasted_agg_2 = Agg(
             from_={
@@ -341,12 +354,12 @@ class AggTestCase(TestCase):
             }
         )
         self.assertEqual(
-            set(pasted_agg_2.nodes.keys()), {"local_metrics.field_class.name"}
+            to_id_set(pasted_agg_2.list()), {"local_metrics.field_class.name"}
         )
 
-        initial_agg_2.paste("week", pasted_agg_2)
+        initial_agg_2.insert_tree(pasted_agg_2, "week")
         self.assertEqual(
-            set(initial_agg_2.nodes.keys()), {"week", "local_metrics.field_class.name"}
+            to_id_set(initial_agg_2.list()), {"week", "local_metrics.field_class.name"}
         )
         self.assertEqual(
             initial_agg_2.__str__(),
@@ -455,15 +468,17 @@ class AggTestCase(TestCase):
         # single node
         agg = Agg()
         node = Terms(name="root_agg", field="some_field", size=10)
-        agg.add_node(node)
+        agg.insert_node(node)
         self.assertEqual(
             agg.query_dict(),
             {"root_agg": {"terms": {"field": "some_field", "size": 10}}},
         )
 
         # hierarchy
-        agg.add_node(Terms(name="other_name", field="other_field", size=30), "root_agg")
-        agg.add_node(
+        agg.insert_node(
+            Terms(name="other_name", field="other_field", size=30), "root_agg"
+        )
+        agg.insert_node(
             Avg(name="avg_some_other_field", field="some_other_field"), "root_agg"
         )
         self.assertEqual(
@@ -487,25 +502,24 @@ class AggTestCase(TestCase):
             },
         )
 
-    def test_parse_as_tree(self):
+    def test_parse_as_tree(self, *_):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        response = my_agg._serialize_response_as_tree(sample.ES_AGG_RESPONSE)
+        response = my_agg.serialize_response_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response, IResponse)
         self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_REPR)
-        # check that tree attributes are accessible
 
     def test_normalize_buckets(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
         self.assertTrue(
             equal_queries(
-                my_agg._serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
+                my_agg.serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
                 sample.EXPECTED_NORMALIZED_RESPONSE,
             )
         )
 
     def test_parse_as_tabular(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        index, index_names, values = my_agg._serialize_response_as_tabular(
+        index, index_names, values = my_agg.serialize_response_as_tabular(
             sample.ES_AGG_RESPONSE
         )
         self.assertEqual(
@@ -518,7 +532,7 @@ class AggTestCase(TestCase):
 
     def test_parse_as_dataframe(self):
         my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
-        df = my_agg._serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
+        df = my_agg.serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(
             set(df.index.names), {"classification_type", "global_metrics.field.name"}
@@ -559,15 +573,15 @@ class AggTestCase(TestCase):
             "global_metrics.field.name",
         )
 
-        with self.assertRaises(NodeIDAbsentError) as e:
+        with self.assertRaises(NotFoundNodeError) as e:
             my_agg._validate_aggs_parent_id("non-existing-node")
         self.assertEqual(
-            e.exception.args, ("Node 'non-existing-node' is not in the tree",)
+            e.exception.args, ("Node id <non-existing-node> doesn't exist in tree",)
         )
 
         # linear agg
-        my_agg.remove_node("avg_f1_micro")
-        my_agg.remove_node("avg_nb_classes")
+        my_agg.drop_node("avg_f1_micro")
+        my_agg.drop_node("avg_nb_classes")
         """
         <Aggregation>
         classification_type
@@ -948,15 +962,17 @@ class AggTestCase(TestCase):
         )
 
         self.assertEqual(agg._query.query_dict(), None)
-        self.assertEqual(
-            new_agg._query.query_dict(),
-            {
-                "bool": {
-                    "must": [
-                        {"range": {"other_field": {"gt": 2}}},
-                        {"term": {"another_field": {"value": "hi"}}},
-                        {"term": {"user": {"value": 1}}},
-                    ]
-                }
-            },
+        self.assertTrue(
+            equal_queries(
+                new_agg._query.query_dict(),
+                {
+                    "bool": {
+                        "must": [
+                            {"range": {"other_field": {"gt": 2}}},
+                            {"term": {"another_field": {"value": "hi"}}},
+                            {"term": {"user": {"value": 1}}},
+                        ]
+                    }
+                },
+            )
         )

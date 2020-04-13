@@ -3,22 +3,17 @@
 
 from __future__ import unicode_literals
 from pandagg.node._node import Node
-from pandagg.utils import PrettyNode
 
 
 class Bucket(Node):
 
     ROOT_NAME = "root"
 
-    def __init__(self, depth, value, key=None, level=None):
+    def __init__(self, value, key=None, level=None):
         self.value = value
         self.level = level if level is not None else self.ROOT_NAME
-        self.depth = depth
         self.key = key
-
-        super(Bucket, self).__init__(
-            tag=self.display_name, data=PrettyNode(pretty=self.display_name_with_value)
-        )
+        super(Bucket, self).__init__()
 
     @property
     def attr_name(self):
@@ -32,18 +27,14 @@ class Bucket(Node):
             return "%s_%s" % (self.level.replace(".", "_"), self.key)
         return self.level.replace(".", "_")
 
-    @property
-    def display_name(self):
-        if self.key is not None:
-            return "%s=%s" % (self.level, self.key)
-        return self.level
-
-    @property
-    def display_name_with_value(self):
+    def line_repr(self, **kwargs):
         REPR_SIZE = 60
-        # Determine how this node will be represented in tree representation.
-        s = self.display_name
+        s = self.level
+        if self.key is not None:
+            s += "=%s" % self.key
         if self.value is not None:
-            pad = max(REPR_SIZE - 4 * self.depth - len(s) - len(str(self.value)), 4)
+            pad = max(
+                REPR_SIZE - 4 * kwargs.get("depth") - len(s) - len(str(self.value)), 4
+            )
             s = s + " " * pad + str(self.value)
         return s

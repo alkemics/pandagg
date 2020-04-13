@@ -15,42 +15,40 @@ class ResponseTree(Tree):
     """Tree representation of an ES response. ES response format is determined by the aggregation query.
     """
 
-    def __init__(self, agg_tree, identifier=None):
+    def __init__(self, agg_tree):
         """
         :param agg_tree: instance of pandagg.agg.Agg from which this ES response originates
-        :param identifier: optional, tree identifier
         """
-        super(ResponseTree, self).__init__(identifier=identifier)
+        super(ResponseTree, self).__init__()
         self.agg_tree = agg_tree
 
-    def _clone(self, identifier, with_tree=False, deep=False):
-        return ResponseTree(agg_tree=self.agg_tree, identifier=identifier)
+    def _clone_init(self, with_tree=False, deep=False):
+        return ResponseTree(agg_tree=self.agg_tree)
 
     def parse_aggregation(self, raw_response):
-        """Build response tree from ES response
-        :param raw_response: ES aggregation response
+        """Build response tree from ElasticSearch aggregation response
+        :param raw_response: ElasticSearch aggregation response
         :return: self
 
         Note: if the root aggregation node can generate multiple buckets, a response root is crafted to avoid having
         multiple roots.
         """
-        root_node = self.agg_tree[self.agg_tree.root]
+        root_node = self.agg_tree.get(self.agg_tree.root)
+        pid = None
+
         if not isinstance(root_node, UniqueBucketAgg):
-            bucket = Bucket(value=None, depth=0)
-            self.add_node(bucket, None)
-            self._parse_node_with_children(
-                root_node, raw_response, pid=bucket.identifier
-            )
-        else:
-            self._parse_node_with_children(root_node, raw_response)
+            bucket = Bucket(value=None)
+            pid = bucket.identifier
+            self.insert_node(bucket, None)
+
+        self._parse_node_with_children(root_node, raw_response, pid=pid)
         return self
 
-    def _parse_node_with_children(self, agg_node, raw_response, pid=None, depth=0):
+    def _parse_node_with_children(self, agg_node, raw_response, pid=None):
         """Recursive method to parse ES raw response.
         :param agg_node: current aggregation, pandagg.nodes.AggNode instance
         :param raw_response: ES response at current level, dict
         :param pid: parent node identifier
-        :param depth: depth in tree
         """
         agg_raw_response = raw_response.get(agg_node.name)
         for key, raw_value in agg_node.extract_buckets(agg_raw_response):
@@ -58,15 +56,11 @@ class ResponseTree(Tree):
                 level=agg_node.name,
                 key=key,
                 value=agg_node.extract_bucket_value(raw_value),
-                depth=depth + 1,
             )
-            self.add_node(bucket, pid)
-            for child in self.agg_tree.children(agg_node.name):
+            self.insert_node(bucket, pid)
+            for child in self.agg_tree.children(agg_node.name, id_only=False):
                 self._parse_node_with_children(
-                    agg_node=child,
-                    raw_response=raw_value,
-                    depth=depth + 1,
-                    pid=bucket.identifier,
+                    agg_node=child, raw_response=raw_value, pid=bucket.identifier,
                 )
 
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
@@ -84,7 +78,7 @@ class ResponseTree(Tree):
             properties[bucket.level] = bucket.key
         if depth is not None:
             depth -= 1
-        parent = self.parent(bucket.identifier)
+        parent = self.parent(bucket.identifier, id_only=False)
         if bucket.level == end_level or depth == 0 or parent is None:
             return properties
         return self.bucket_properties(parent, properties, end_level, depth)
@@ -123,10 +117,11 @@ class ResponseTree(Tree):
         """
         tree_mapping = self.agg_tree.tree_mapping
 
-        selected_bucket = self[nid]
+        selected_bucket = self.get(nid)
         bucket_properties = self.bucket_properties(selected_bucket)
         agg_node_key_tuples = [
-            (self.agg_tree[level], key) for level, key in iteritems(bucket_properties)
+            (self.agg_tree.get(level), key)
+            for level, key in iteritems(bucket_properties)
         ]
 
         filters_per_nested_level = defaultdict(list)
@@ -144,8 +139,8 @@ class ResponseTree(Tree):
 
         all_nesteds = [
             n.identifier
-            for n in tree_mapping.filter_nodes(
-                lambda x: (x.KEY == "nested")
+            for n in tree_mapping.list(
+                filter_=lambda x: (x.KEY == "nested")
                 and any((i in x.identifier or "" for i in nested_with_conditions))
             )
         ]

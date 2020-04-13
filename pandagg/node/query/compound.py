@@ -21,29 +21,16 @@ class CompoundClause(QueryClause):
     >>> from pandagg.query import Bool, Term
     >>> query = Bool(
     >>>     filter=Term(field='some_path', value=3),
-    >>>     _name='term_agg',
+    >>>     _name='bool_id',
     >>> )
-    Yet, the children attribute will then be reset to None to avoid confusion since the real hierarchy is stored in the
-    bpointer/fpointer attributes inherited from treelib.Tree class.
-    """
-
-    """
     {
         "<query_type>" : {
             <query_body>
             <children_clauses>
         }
     }
-    >>>{
-    >>>    "bool" : {
-    >>>         # query body
-    >>>         "minimum_should_match": 1,
-    >>>         # children clauses
-    >>>         "should": [<q1>, <q2>],
-    >>>         "filter": [<q3>]
-    >>>    }
-    >>>}
     """
+
     DEFAULT_OPERATOR = NotImplementedError()
     PARAMS_WHITELIST = None
 

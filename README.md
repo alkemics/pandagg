@@ -106,7 +106,7 @@ pip install pandagg
 ```
 
 ## Dependencies
-**Hard dependency**: [treelib](https://pypi.org/project/treelib/): 1.6.1 or higher
+**Hard dependency**: [ligthtree](https://pypi.org/project/lighttree/): 0.0.2 or higher
 
 **Soft dependency**: to parse aggregation results as tabular dataframe: [pandas](https://github.com/pandas-dev/pandas/)
 
@@ -144,8 +144,6 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 
 ## Roadmap
 
-- choose simple example to showcase pandagg in readme
-- write sphinx documentation
 - implement CI workflow: python2/3 tests, coverage
 - nested fields: automatic handling and validation in `Query` instances
 - `Query.query`, `Agg.agg`, `Agg.groupby` methods: allow passing of `tree` instance, in addition to current `dict` and `node` syntaxes
@@ -156,4 +154,3 @@ saved in `children` attribute before tree deserialization
 - on aggregation `nodes`, ensure all allowed `fields` are listed
 - on aggregation response `tree`, use `Query` DSL to compute bucket filters
 - package versions for different ElasticSearch versions
-- remove `Bucket` `nodes` knowledge of their `depth` once [this `treelib` issue is resolved](https://github.com/caesar0301/treelib/issues/149)

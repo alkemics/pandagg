@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from lighttree import TreeBasedObj
 from pandagg.tree.query import Query
-from pandagg.interactive.abstract import TreeBasedObj
 
 
 class IResponse(TreeBasedObj):

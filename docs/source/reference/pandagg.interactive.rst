@@ -6,7 +6,6 @@ Submodules
 
 .. toctree::
 
-   pandagg.interactive.abstract
    pandagg.interactive.client
    pandagg.interactive.index
    pandagg.interactive.mapping

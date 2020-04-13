@@ -28,7 +28,9 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(
             node.serialize(), {"term": {"user": {"value": "Kimchy", "boost": 1}}}
         )
-        self.assertEqual(node.tag, 'term, field=user, boost=1, value="Kimchy"')
+        self.assertEqual(
+            node.line_repr(depth=None), 'term, field=user, boost=1, value="Kimchy"'
+        )
 
     def test_fuzzy_clause(self):
         body = {"user": {"value": "ki"}}
@@ -37,12 +39,14 @@ class TermLevelQueriesTestCase(TestCase):
         q = Fuzzy(field="user", value="ki")
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'fuzzy, field=user, value="ki"')
+        self.assertEqual(q.line_repr(depth=None), 'fuzzy, field=user, value="ki"')
 
         deserialized = Fuzzy.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'fuzzy, field=user, value="ki"')
+        self.assertEqual(
+            deserialized.line_repr(depth=None), 'fuzzy, field=user, value="ki"'
+        )
 
     def test_exists_clause(self):
         body = {"field": "user"}
@@ -51,12 +55,12 @@ class TermLevelQueriesTestCase(TestCase):
         q = Exists(field="user")
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "exists, field=user")
+        self.assertEqual(q.line_repr(depth=None), "exists, field=user")
 
         deserialized = Exists.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "exists, field=user")
+        self.assertEqual(deserialized.line_repr(depth=None), "exists, field=user")
 
     def test_ids_clause(self):
         body = {"values": [1, 4, 100]}
@@ -65,12 +69,12 @@ class TermLevelQueriesTestCase(TestCase):
         q = Ids(values=[1, 4, 100])
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "ids, values=[1, 4, 100]")
+        self.assertEqual(q.line_repr(depth=None), "ids, values=[1, 4, 100]")
 
         deserialized = Ids.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "ids, values=[1, 4, 100]")
+        self.assertEqual(deserialized.line_repr(depth=None), "ids, values=[1, 4, 100]")
 
     def test_prefix_clause(self):
         body = {"user": {"value": "ki"}}
@@ -79,12 +83,14 @@ class TermLevelQueriesTestCase(TestCase):
         q = Prefix(field="user", value="ki")
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'prefix, field=user, value="ki"')
+        self.assertEqual(q.line_repr(depth=None), 'prefix, field=user, value="ki"')
 
         deserialized = Prefix.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'prefix, field=user, value="ki"')
+        self.assertEqual(
+            deserialized.line_repr(depth=None), 'prefix, field=user, value="ki"'
+        )
 
     def test_range_clause(self):
         body = {"age": {"gte": 10, "lte": 20, "boost": 2}}
@@ -93,12 +99,17 @@ class TermLevelQueriesTestCase(TestCase):
         q = Range(field="age", gte=10, lte=20, boost=2)
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "range, field=age, boost=2, gte=10, lte=20")
+        self.assertEqual(
+            q.line_repr(depth=None), "range, field=age, boost=2, gte=10, lte=20"
+        )
 
         deserialized = Range.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, "range, field=age, boost=2, gte=10, lte=20")
+        self.assertEqual(
+            deserialized.line_repr(depth=None),
+            "range, field=age, boost=2, gte=10, lte=20",
+        )
 
     def test_regexp_clause(self):
         body = {
@@ -121,12 +132,12 @@ class TermLevelQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, tag)
+        self.assertEqual(q.line_repr(depth=None), tag)
 
         deserialized = Regexp.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, tag)
+        self.assertEqual(deserialized.line_repr(depth=None), tag)
 
     def test_term_clause(self):
         body = {"user": {"value": "Kimchy", "boost": 1}}
@@ -135,12 +146,17 @@ class TermLevelQueriesTestCase(TestCase):
         q = Term(field="user", value="Kimchy", boost=1)
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, 'term, field=user, boost=1, value="Kimchy"')
+        self.assertEqual(
+            q.line_repr(depth=None), 'term, field=user, boost=1, value="Kimchy"'
+        )
 
         deserialized = Term.deserialize(**body)
         self.assertEqual(deserialized.body, body)
         self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.tag, 'term, field=user, boost=1, value="Kimchy"')
+        self.assertEqual(
+            deserialized.line_repr(depth=None),
+            'term, field=user, boost=1, value="Kimchy"',
+        )
 
         # other format
         deserialized_2 = Term.deserialize(**{"user": "Kimchy"})
@@ -148,7 +164,9 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(
             deserialized_2.serialize(), {"term": {"user": {"value": "Kimchy"}}}
         )
-        self.assertEqual(deserialized_2.tag, 'term, field=user, value="Kimchy"')
+        self.assertEqual(
+            deserialized_2.line_repr(depth=None), 'term, field=user, value="Kimchy"'
+        )
 
     def test_terms_clause(self):
         body = {"user": ["kimchy", "elasticsearch"], "boost": 1}
@@ -157,13 +175,17 @@ class TermLevelQueriesTestCase(TestCase):
         q = Terms(field="user", terms=["kimchy", "elasticsearch"], boost=1)
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.tag, "terms, field=user, values=['kimchy', 'elasticsearch']")
+        self.assertEqual(
+            q.line_repr(depth=None),
+            "terms, field=user, values=['kimchy', 'elasticsearch']",
+        )
 
         deserialized = q.deserialize(**body)
         self.assertEqual(deserialized, expected)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag, "terms, field=user, values=['kimchy', 'elasticsearch']"
+            deserialized.line_repr(depth=None),
+            "terms, field=user, values=['kimchy', 'elasticsearch']",
         )
 
     def test_terms_set_clause(self):
@@ -183,7 +205,7 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag,
+            q.line_repr(depth=None),
             'terms_set, field=programming_languages, minimum_should_match_field="required_matches", terms=["c++", "java", "php"]',
         )
 
@@ -191,7 +213,7 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(deserialized, expected)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'terms_set, field=programming_languages, minimum_should_match_field="required_matches", terms=["c++", "java", "php"]',
         )
 
@@ -203,7 +225,7 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.tag,
+            q.line_repr(depth=None),
             'wildcard, field=user, boost=1.0, rewrite="constant_score", value="ki*y"',
         )
 
@@ -211,6 +233,6 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(deserialized, expected)
         self.assertEqual(deserialized.serialize(), expected)
         self.assertEqual(
-            deserialized.tag,
+            deserialized.line_repr(depth=None),
             'wildcard, field=user, boost=1.0, rewrite="constant_score", value="ki*y"',
         )

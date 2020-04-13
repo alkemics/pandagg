@@ -21,21 +21,21 @@ class CompoundQueriesTestCase(TestCase):
         b4 = Bool({"filter": {"term": {"some_field": {"value": 2}}}, "boost": 1.2})
         for b in (b1, b2, b3, b4):
             self.assertEqual(len(b.children), 2)
-            self.assertEqual(b.tag, "bool")
+            self.assertEqual(b.line_repr(depth=None), "bool")
 
             boost = next((c for c in b.children if isinstance(c, Boost)))
             self.assertEqual(boost.serialize(), {"boost": 1.2})
-            self.assertEqual(boost.tag, "boost=1.2")
+            self.assertEqual(boost.line_repr(depth=None), "boost=1.2")
 
             filter_ = next((c for c in b.children if isinstance(c, Filter)))
             self.assertEqual(len(filter_.children), 1)
-            self.assertEqual(filter_.tag, "filter")
+            self.assertEqual(filter_.line_repr(depth=None), "filter")
             t = filter_.children[0]
             self.assertIsInstance(t, Term)
             self.assertEqual(t.field, "some_field")
             self.assertEqual(t.body, {"some_field": {"value": 2}})
             self.assertEqual(t.serialize(), {"term": {"some_field": {"value": 2}}})
-            self.assertEqual(t.tag, "term, field=some_field, value=2")
+            self.assertEqual(t.line_repr(depth=None), "term, field=some_field, value=2")
 
     def test_boosting(self):
         b1 = Boosting(
@@ -59,18 +59,20 @@ class CompoundQueriesTestCase(TestCase):
         )
         for b in (b1, b2, b3):
             self.assertEqual(len(b.children), 3)
-            self.assertEqual(b.tag, "boosting")
+            self.assertEqual(b.line_repr(depth=None), "boosting")
 
             negative_boosting = next(
                 (c for c in b.children if isinstance(c, NegativeBoost))
             )
-            self.assertEqual(negative_boosting.tag, "negative_boost=0.5")
+            self.assertEqual(
+                negative_boosting.line_repr(depth=None), "negative_boost=0.5"
+            )
             self.assertEqual(negative_boosting.body, {"value": 0.5})
 
             positive = next((c for c in b.children if isinstance(c, Positive)))
             self.assertEqual(len(positive.children), 1)
             self.assertEqual(positive.serialize(), {"positive": {}})
-            self.assertEqual(positive.tag, "positive")
+            self.assertEqual(positive.line_repr(depth=None), "positive")
             positive_term = positive.children[0]
             self.assertIsInstance(positive_term, Term)
             self.assertEqual(positive_term.field, "text")
@@ -78,12 +80,14 @@ class CompoundQueriesTestCase(TestCase):
             self.assertEqual(
                 positive_term.serialize(), {"term": {"text": {"value": "apple"}}}
             )
-            self.assertEqual(positive_term.tag, 'term, field=text, value="apple"')
+            self.assertEqual(
+                positive_term.line_repr(depth=None), 'term, field=text, value="apple"'
+            )
 
             negative = next((c for c in b.children if isinstance(c, Negative)))
             self.assertEqual(len(negative.children), 1)
             self.assertEqual(negative.serialize(), {"negative": {}})
-            self.assertEqual(negative.tag, "negative")
+            self.assertEqual(negative.line_repr(depth=None), "negative")
             negative_term = negative.children[0]
             self.assertIsInstance(negative_term, Term)
             self.assertEqual(negative_term.field, "text")
@@ -95,6 +99,6 @@ class CompoundQueriesTestCase(TestCase):
                 {"term": {"text": {"value": "pie tart fruit crumble tree"}}},
             )
             self.assertEqual(
-                negative_term.tag,
+                negative_term.line_repr(depth=None),
                 'term, field=text, value="pie tart fruit crumble tree"',
             )

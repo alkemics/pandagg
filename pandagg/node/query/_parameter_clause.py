@@ -20,8 +20,7 @@ class SimpleParameter(ParameterClause):
     def __init__(self, value):
         super(SimpleParameter, self).__init__(value=value)
 
-    @property
-    def tag(self):
+    def line_repr(self, depth, **kwargs):
         return "%s=%s" % (self.KEY, json.dumps(self.body["value"]))
 
     @classmethod

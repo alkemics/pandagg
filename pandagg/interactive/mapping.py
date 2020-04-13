@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from lighttree import TreeBasedObj
 from pandagg.interactive._field_agg_factory import field_classes_per_name
-from pandagg.interactive.abstract import TreeBasedObj
 from pandagg.node.mapping.field_datatypes import Object
 from pandagg.tree.mapping import Mapping
 
@@ -69,7 +69,7 @@ class IMapping(TreeBasedObj):
 
     def _set_agg_property_if_required(self):
         if self._client is not None and not self._tree.children(self._tree.root):
-            field_node = self._tree[self._tree.root]
+            field_node = self._tree.get(self._tree.root)
             if field_node.KEY in field_classes_per_name:
                 self.a = field_classes_per_name[field_node.KEY](
                     mapping_tree=self._initial_tree,
@@ -79,4 +79,4 @@ class IMapping(TreeBasedObj):
                 )
 
     def __call__(self, *args, **kwargs):
-        return self._tree[self._tree.root]
+        return self._tree.get(self._tree.root)

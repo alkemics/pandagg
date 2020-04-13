@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from lighttree.interactive import Obj
 from pandagg.tree.mapping import Mapping
 from pandagg.interactive.mapping import IMapping
 from pandagg.tree.agg import Agg
-from pandagg.interactive.abstract import Obj
 
 
 class Index(Obj):
