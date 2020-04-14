@@ -6,8 +6,8 @@ from pandagg.tree.agg import Agg
 from pandagg.tree.response import ResponseTree
 from pandagg.interactive.response import IResponse
 from pandagg.utils import equal_queries
-from tests.base.mapping_example import MAPPING
-import tests.base.data_sample as sample
+from tests.testing_samples.mapping_example import MAPPING
+import tests.testing_samples.data_sample as sample
 
 
 class ResponseTestCase(TestCase):

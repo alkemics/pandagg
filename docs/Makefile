@@ -14,8 +14,8 @@ clean:
 	@rm -rf build
 
 api-doc:
-	@# T: notoc, e: separate module pages, f: rewrite
-	@sphinx-apidoc -o source/reference ../pandagg -Tfe
+	@# T: notoc, e: separate module pages, f: rewrite, d: max-depth
+	@sphinx-apidoc -o source/reference ../pandagg -Tfe -d 8
 
 build:
 	@mkdir -p build

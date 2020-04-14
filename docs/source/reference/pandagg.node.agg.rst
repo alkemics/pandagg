@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 8
 
    pandagg.node.agg.abstract
    pandagg.node.agg.bucket

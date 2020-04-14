@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 8
 
    pandagg.interactive
    pandagg.node
@@ -14,6 +15,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 8
 
    pandagg.agg
    pandagg.client

@@ -8,7 +8,7 @@ results.
 from pandagg.tree.agg import Agg
 from pandagg.node.agg.metric import Avg
 from pandagg.node.agg.bucket import Terms
-from tests.base.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPING
 
 
 EXPECTED_REPR = """<Aggregation>
@@ -166,38 +166,38 @@ ES_AGG_RESPONSE = {
 }
 
 EXPECTED_RESP_REPR = """root
-├── classification_type=multilabel                      1797
-│   ├── global_metrics.field.name=hazardpictograms       369
-│   │   ├── avg_f1_micro                                0.83
-│   │   └── avg_nb_classes                               5.2
-│   ├── global_metrics.field.name=islabeledby            369
-│   │   ├── avg_f1_micro                                0.81
-│   │   └── avg_nb_classes                             88.72
-│   ├── global_metrics.field.name=flavors                367
-│   │   ├── avg_f1_micro                                0.41
-│   │   └── avg_nb_classes                             27.57
-│   ├── global_metrics.field.name=hasnotableingredients    239
-│   │   ├── avg_f1_micro                                0.83
-│   │   └── avg_nb_classes                            107.82
-│   ├── global_metrics.field.name=allergentypelist       130
-│   │   ├── avg_f1_micro                                0.82
-│   │   └── avg_nb_classes                             65.59
-│   ├── global_metrics.field.name=ispracticecompatible    128
-│   │   ├── avg_f1_micro                                0.72
-│   │   └── avg_nb_classes                             18.71
-│   ├── global_metrics.field.name=gpc                    119
-│   │   ├── avg_f1_micro                                0.95
-│   │   └── avg_nb_classes                            183.21
-│   └── global_metrics.field.name=preservationmethods     76
-│       ├── avg_f1_micro                                 0.8
-│       └── avg_nb_classes                              9.97
-└── classification_type=multiclass                       568
-    ├── global_metrics.field.name=kind                   370
-    │   ├── avg_f1_micro                                0.89
-    │   └── avg_nb_classes                             206.5
-    └── global_metrics.field.name=gpc                    198
-        ├── avg_f1_micro                                0.93
-        └── avg_nb_classes                            211.12
+├── classification_type=multiclass                       568
+│   ├── global_metrics.field.name=gpc                    198
+│   │   ├── avg_f1_micro                                0.93
+│   │   └── avg_nb_classes                            211.12
+│   └── global_metrics.field.name=kind                   370
+│       ├── avg_f1_micro                                0.89
+│       └── avg_nb_classes                             206.5
+└── classification_type=multilabel                      1797
+    ├── global_metrics.field.name=allergentypelist       130
+    │   ├── avg_f1_micro                                0.82
+    │   └── avg_nb_classes                             65.59
+    ├── global_metrics.field.name=flavors                367
+    │   ├── avg_f1_micro                                0.41
+    │   └── avg_nb_classes                             27.57
+    ├── global_metrics.field.name=gpc                    119
+    │   ├── avg_f1_micro                                0.95
+    │   └── avg_nb_classes                            183.21
+    ├── global_metrics.field.name=hasnotableingredients    239
+    │   ├── avg_f1_micro                                0.83
+    │   └── avg_nb_classes                            107.82
+    ├── global_metrics.field.name=hazardpictograms       369
+    │   ├── avg_f1_micro                                0.83
+    │   └── avg_nb_classes                               5.2
+    ├── global_metrics.field.name=islabeledby            369
+    │   ├── avg_f1_micro                                0.81
+    │   └── avg_nb_classes                             88.72
+    ├── global_metrics.field.name=ispracticecompatible    128
+    │   ├── avg_f1_micro                                0.72
+    │   └── avg_nb_classes                             18.71
+    └── global_metrics.field.name=preservationmethods     76
+        ├── avg_f1_micro                                 0.8
+        └── avg_nb_classes                              9.97
 """
 EXPECTED_RESPONSE_REPR = """<IResponse>\n%s""" % EXPECTED_RESP_REPR
 EXPECTED_RESPONSE_TREE_REPR = """<ResponseTree>\n%s""" % EXPECTED_RESP_REPR

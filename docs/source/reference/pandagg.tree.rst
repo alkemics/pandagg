@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 8
 
    pandagg.tree.agg
    pandagg.tree.mapping

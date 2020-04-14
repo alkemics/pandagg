@@ -21,10 +21,10 @@ from pandagg.interactive.mapping import IMapping
 from pandagg.node.agg.bucket import DateHistogram, Terms, Filter
 from pandagg.node.agg.metric import Avg, Min
 
-import tests.base.data_sample as sample
+import tests.testing_samples.data_sample as sample
 from pandagg.utils import equal_queries
 
-from tests.base.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPING
 
 
 def to_id_set(nodes):

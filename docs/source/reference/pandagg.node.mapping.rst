@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 8
 
    pandagg.node.mapping.abstract
    pandagg.node.mapping.deserializer

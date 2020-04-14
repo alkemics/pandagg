@@ -9,7 +9,7 @@ from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.field_datatypes import Keyword, Object, Text, Nested, Integer
 from pandagg.tree.mapping import Mapping
-from tests.base.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
+from tests.testing_samples.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
 
 
 class MappingTreeTestCase(TestCase):
