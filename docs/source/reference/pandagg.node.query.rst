@@ -5,7 +5,7 @@ Submodules
 ----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 8
 
    pandagg.node.query.abstract
    pandagg.node.query.compound

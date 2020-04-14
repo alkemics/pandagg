@@ -5,7 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 8
 
    pandagg.node.agg
    pandagg.node.mapping
@@ -16,7 +16,7 @@ Submodules
 ----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 8
 
    pandagg.node.mixins
    pandagg.node.types
