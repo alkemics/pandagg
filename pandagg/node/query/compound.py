@@ -1,4 +1,4 @@
-from six import iteritems
+from future.utils import iteritems
 
 from pandagg.node.query._parameter_clause import (
     deserialize_parameter,
@@ -50,7 +50,7 @@ class CompoundClause(QueryClause):
         for child in children:
             if isinstance(child, dict):
                 assert len(child.keys()) == 1
-                key, value = next(iteritems(child))
+                key, value = next(iter(iteritems(child)))
                 if (
                     self.PARAMS_WHITELIST is not None
                     and key not in self.PARAMS_WHITELIST

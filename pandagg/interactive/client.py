@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from six import iteritems
+from future.utils import iteritems
 from elasticsearch import Elasticsearch as OriginalElasticSearch
 from pandagg.interactive.index import Index, Indices
 

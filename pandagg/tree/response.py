@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict, defaultdict
-from operator import attrgetter
 
-from six import iteritems
+from future.utils import iteritems
+
+from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
 from pandagg.node.agg.abstract import UniqueBucketAgg
-from pandagg.tree._tree import Tree
 from pandagg.utils import bool_if_required
 
 

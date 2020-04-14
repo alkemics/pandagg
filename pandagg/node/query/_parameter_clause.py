@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import json
-from six import iteritems
+from future.utils import iteritems
 
 from pandagg.node.query._leaf_clause import deserialize_leaf_clause
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause
@@ -161,7 +161,7 @@ class ParentParameterClause(ParameterClause):
         serialized_children = []
         for child in children:
             if isinstance(child, dict):
-                k, v = next(iteritems(child))
+                k, v = next(iter(iteritems(child)))
                 try:
                     serialized_children.append(deserialize_leaf_clause(k, v))
                 except Exception:
