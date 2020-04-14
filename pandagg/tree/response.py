@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict, defaultdict
+from operator import attrgetter
 
 from six import iteritems
 
@@ -154,5 +155,6 @@ class ResponseTree(Tree):
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level)
 
-    def show(self, data_property="pretty", **kwargs):
-        return super(ResponseTree, self).show(data_property=data_property)
+    def show(self, **kwargs):
+        kwargs["key"] = kwargs.get("key", lambda x: x.line_repr(depth=0))
+        return super(ResponseTree, self).show(**kwargs)

@@ -10,7 +10,7 @@ from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.field_datatypes import Keyword, Text, Nested, Object, Integer
 from pandagg.tree.mapping import Mapping
 
-from tests.base.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPING
 
 
 class IMappingTestCase(TestCase):

@@ -269,11 +269,7 @@ class Agg(Tree):
                 for c in new_agg.children(insert_below, id_only=False)
             ]
 
-        if (
-            isinstance(by, collections.Iterable)
-            and not isinstance(by, string_types)
-            and not isinstance(by, dict)
-        ):
+        if isinstance(by, (tuple, list)):
             for arg_el in by:
                 arg_el = Agg._deserialize_extended(arg_el, **kwargs)
                 new_agg._insert(arg_el, pid=insert_below)

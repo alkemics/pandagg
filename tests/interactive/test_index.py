@@ -8,7 +8,7 @@ from pandagg.tree.agg import Agg
 from pandagg.interactive.index import Index
 from pandagg.node.agg.metric import Avg
 
-from tests.base.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPING
 
 
 class IndexTestCase(TestCase):
