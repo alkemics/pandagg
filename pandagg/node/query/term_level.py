@@ -25,9 +25,9 @@ class Ids(LeafQueryClause):
         self.values = values
         super(Ids, self).__init__(_name=_name, values=values)
 
-    def serialize(self, named=False):
+    def serialize(self, with_name=True):
         b = {"values": self.values}
-        if named and self._named:
+        if with_name and self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 

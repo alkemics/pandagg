@@ -12,21 +12,19 @@ def deserialize_node(
     if accept_leaf:
         try:
             return deserialize_leaf_clause(k, body)
-        except Exception as e_l:
+        except Exception:
             pass
     if accept_compound:
         try:
             return deserialize_compound_clause(k, body)
-        except Exception as e_c:
+        except Exception:
             pass
     if accept_param:
         try:
             return deserialize_parameter(k, body)
-        except Exception as e_p:
+        except Exception:
             pass
-    if accept_compound:
-        raise e_c
-    if accept_leaf:
-        raise e_l
-    if accept_param:
-        raise e_p
+    raise ValueError(
+        'Could not deserialize: leaf(%s), compound(%s), param(%s) \nkey=%s\nbody=%s.' % (
+            accept_leaf, accept_compound, accept_param, k, body)
+    )

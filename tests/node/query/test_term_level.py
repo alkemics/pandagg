@@ -26,7 +26,7 @@ class TermLevelQueriesTestCase(TestCase):
 
         self.assertEqual(node.body, {"user": {"value": "Kimchy", "boost": 1}})
         self.assertEqual(
-            node.serialize(), {"term": {"user": {"value": "Kimchy", "boost": 1}}}
+            node.serialize(), {"term": {'_name': 'some_id', "user": {"value": "Kimchy", "boost": 1}}}
         )
         self.assertEqual(
             node.line_repr(depth=None), 'term, field=user, boost=1, value="Kimchy"'

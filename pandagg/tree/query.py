@@ -138,7 +138,7 @@ class Query(Tree):
                 )
         super(Query, self)._insert_node_below(node, parent_id)
 
-    def query_dict(self, from_=None, named=False):
+    def query_dict(self, from_=None, with_name=True):
         """Return None if no query clause.
         """
         if self.root is None:
@@ -146,11 +146,11 @@ class Query(Tree):
         from_ = self.root if from_ is None else from_
         node = self.get(from_)
         if isinstance(node, (LeafQueryClause, SimpleParameter)):
-            return node.serialize(named=named)
+            return node.serialize(with_name=True)
         serialized_children = []
         should_yield = False
         for child_node in self.children(node.identifier, id_only=False):
-            serialized_child = self.query_dict(from_=child_node.identifier, named=named)
+            serialized_child = self.query_dict(from_=child_node.identifier, with_name=with_name)
             if serialized_child is not None:
                 serialized_children.append(serialized_child)
                 if not isinstance(child_node, SimpleParameter):
@@ -160,7 +160,7 @@ class Query(Tree):
         if isinstance(node, CompoundClause):
             # {bool: {filter: ..., must: ...}
             body = {k: v for d in serialized_children for k, v in d.items()}
-            if named and node._named:
+            if with_name and node._named:
                 body["_name"] = node.name
             return {node.KEY: body}
         # parent parameter clause

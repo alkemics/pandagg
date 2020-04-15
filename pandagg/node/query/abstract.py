@@ -17,9 +17,9 @@ class QueryClause(Node):
     KEY = NotImplementedError()
 
     def __init__(self, _name=None, **body):
-        super(QueryClause, self).__init__(identifier=_name)
         self.body = body
         self._named = _name is not None
+        super(QueryClause, self).__init__(identifier=_name)
 
     def line_repr(self, depth, **kwargs):
         return self.KEY
@@ -36,9 +36,9 @@ class QueryClause(Node):
     def deserialize(cls, **body):
         return cls(**body)
 
-    def serialize(self, named=False):
+    def serialize(self, with_name=True):
         b = copy.deepcopy(self.body)
-        if named and self._named:
+        if with_name and self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
