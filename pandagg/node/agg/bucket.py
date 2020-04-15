@@ -12,7 +12,7 @@
 from builtins import str as text
 
 from operator import itemgetter
-from six import iteritems
+from future.utils import iteritems
 
 from pandagg.utils import bool_if_required
 from pandagg.node.types import NUMERIC_TYPES

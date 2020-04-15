@@ -23,7 +23,6 @@ install_requires = [
     "future",
     "lighttree==0.0.2",
     "elasticsearch>=7.1.0,<8.0.0",
-    "six>=1.13.0,<2.0.0",
 ]
 
 extras_require = {"test": tests_require, "pandas": ["pandas>=0.24.2"]}

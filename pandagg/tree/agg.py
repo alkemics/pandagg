@@ -4,11 +4,10 @@
 from __future__ import unicode_literals
 
 import copy
-import collections
 
 from builtins import str as text
 from elasticsearch import Elasticsearch
-from six import iteritems, string_types, python_2_unicode_compatible, iterkeys
+from future.utils import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
 from pandagg.tree._tree import Tree
 from pandagg.interactive.mapping import as_mapping

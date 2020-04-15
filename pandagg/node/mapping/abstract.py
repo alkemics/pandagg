@@ -3,7 +3,7 @@
 
 import copy
 import json
-from six import python_2_unicode_compatible, iteritems
+from future.utils import python_2_unicode_compatible, iteritems
 from builtins import str as text
 from pandagg.node._node import Node
 

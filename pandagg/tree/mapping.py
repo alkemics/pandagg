@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import copy
 
-from six import iteritems
+from future.utils import iteritems
 
 from lighttree.exceptions import NotFoundNodeError
 
@@ -60,7 +60,7 @@ class Mapping(Tree):
         self.insert_node(field, pid)
         for subfield in field.fields or []:
             if isinstance(subfield, dict):
-                name, body = next(iteritems(subfield))
+                name, body = next(iter(iteritems(subfield)))
                 self._insert_from_dict(
                     name=name, body=body, pid=field.identifier, is_subfield=True
                 )
@@ -70,7 +70,7 @@ class Mapping(Tree):
                 raise ValueError("Wrong type %s" % type(field))
         for subfield in field.properties or []:
             if isinstance(subfield, dict):
-                name, body = next(iteritems(subfield))
+                name, body = next(iter(iteritems(subfield)))
                 self._insert_from_dict(name=name, body=body, pid=field.identifier)
             elif isinstance(subfield, Field):
                 self._insert_from_node(subfield, pid=field.identifier)

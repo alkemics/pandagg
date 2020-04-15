@@ -1,4 +1,4 @@
-from six import iteritems
+from future.utils import iteritems
 
 from pandagg.node.agg.abstract import BucketAggNode, AggNode
 from .bucket import BUCKET_AGGS
@@ -13,7 +13,7 @@ def deserialize_agg(d):
         raise ValueError(
             "Invalid aggregation, expected one single key, got: %s" % d.keys()
         )
-    agg_name, agg_detail = next(iteritems(d))
+    agg_name, agg_detail = next(iter(iteritems(d)))
     meta = agg_detail.pop("meta", None)
     children_aggs = (
         agg_detail.pop("aggs", None) or agg_detail.pop("aggregations", None) or {}
@@ -22,7 +22,7 @@ def deserialize_agg(d):
         raise ValueError(
             "Invalid aggregation, expected one single key, got %s" % agg_detail.keys()
         )
-    agg_type, agg_body = next(iteritems(agg_detail))
+    agg_type, agg_body = next(iter(iteritems(agg_detail)))
     if agg_type not in AGGS.keys():
         raise NotImplementedError("Unknown aggregation type <%s>" % agg_type)
     agg_class = AGGS[agg_type]
