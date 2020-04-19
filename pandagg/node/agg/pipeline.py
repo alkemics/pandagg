@@ -85,21 +85,3 @@ class BucketSort(ScriptPipeline):
 class SerialDiff(Pipeline):
     KEY = "serial_diff"
     VALUE_ATTRS = ["value"]
-
-
-PIPELINE_AGGS = [
-    AvgBucket,
-    Derivative,
-    MaxBucket,
-    MinBucket,
-    SumBucket,
-    StatsBucket,
-    ExtendedStatsBucket,
-    PercentilesBucket,
-    MovingAvg,
-    CumulativeSum,
-    BucketScript,
-    BucketSelector,
-    BucketSort,
-    SerialDiff,
-]

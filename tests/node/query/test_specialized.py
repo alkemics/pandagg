@@ -26,15 +26,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'distance_feature, field=production_date, origin="now", pivot="7d"',
-        )
-
-        deserialized = DistanceFeature.deserialize(**body)
-        self.assertEqual(deserialized.body, body)
-        self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(
-            deserialized.line_repr(depth=None),
-            'distance_feature, field=production_date, origin="now", pivot="7d"',
+            'distance_feature, field="production_date", origin="now", pivot="7d"',
         )
 
     def test_more_like_this_clause(self):
@@ -58,14 +50,6 @@ class SpecializedQueriesTestCase(TestCase):
             q.line_repr(depth=None), "more_like_this, fields=['title', 'description']"
         )
 
-        deserialized = MoreLikeThis.deserialize(**body)
-        self.assertEqual(deserialized.body, body)
-        self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(
-            deserialized.line_repr(depth=None),
-            "more_like_this, fields=['title', 'description']",
-        )
-
     def test_percolate_clause(self):
         body = {
             "field": "query",
@@ -80,15 +64,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'percolate, field=query, document={"message": "A new bonsai tree in the office"}',
-        )
-
-        deserialized = Percolate.deserialize(**body)
-        self.assertEqual(deserialized.body, body)
-        self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(
-            deserialized.line_repr(depth=None),
-            'percolate, field=query, document={"message": "A new bonsai tree in the office"}',
+            'percolate, document={"message": "A new bonsai tree in the office"}, field="query"',
         )
 
     def test_rank_feature_clause(self):
@@ -99,15 +75,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
         self.assertEqual(
-            q.line_repr(depth=None), "rank_feature, field=url_length, boost=0.1"
-        )
-
-        deserialized = RankFeature.deserialize(**body)
-        self.assertEqual(deserialized.body, body)
-        self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(
-            deserialized.line_repr(depth=None),
-            "rank_feature, field=url_length, boost=0.1",
+            q.line_repr(depth=None), 'rank_feature, boost=0.1, field="url_length"'
         )
 
     def test_script_clause(self):
@@ -129,12 +97,10 @@ class SpecializedQueriesTestCase(TestCase):
         )
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.line_repr(depth=None), "script")
-
-        deserialized = Script.deserialize(**body)
-        self.assertEqual(deserialized.body, body)
-        self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.line_repr(depth=None), "script")
+        self.assertEqual(
+            q.line_repr(depth=None),
+            'script, script={"lang": "painless", "params": {"param1": 5}, "source": "doc[\'num1\'].value > params.param1"}',
+        )
 
     def test_wrapper_clause(self):
         body = {"query": "eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="}
@@ -143,12 +109,10 @@ class SpecializedQueriesTestCase(TestCase):
         q = Wrapper(query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0=")
         self.assertEqual(q.body, body)
         self.assertEqual(q.serialize(), expected)
-        self.assertEqual(q.line_repr(depth=None), "wrapper")
-
-        deserialized = Wrapper.deserialize(**body)
-        self.assertEqual(deserialized.body, body)
-        self.assertEqual(deserialized.serialize(), expected)
-        self.assertEqual(deserialized.line_repr(depth=None), "wrapper")
+        self.assertEqual(
+            q.line_repr(depth=None),
+            'wrapper, query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="',
+        )
 
     def test_script_score_clause(self):
         b1 = ScriptScore(
@@ -168,18 +132,18 @@ class SpecializedQueriesTestCase(TestCase):
             }
         )
         for b in (b1, b2, b3):
-            self.assertEqual(len(b.children), 2)
+            self.assertEqual(len(b._children), 2)
             self.assertEqual(b.line_repr(depth=None), "script_score")
 
-            query = next((c for c in b.children if isinstance(c, QueryP)))
+            query = next((c for c in b._children if isinstance(c, QueryP)))
             self.assertEqual(query.line_repr(depth=None), "query")
             self.assertEqual(query.body, {})
-            self.assertEqual(len(query.children), 1)
-            match = query.children[0]
+            self.assertEqual(len(query._children), 1)
+            match = query._children[0]
             self.assertIsInstance(match, Match)
             self.assertEqual(match.field, "message")
 
-            script = next((c for c in b.children if isinstance(c, ScriptP)))
+            script = next((c for c in b._children if isinstance(c, ScriptP)))
             self.assertEqual(
                 script.line_repr(depth=None),
                 'script={"source": "doc[\'likes\'].value / 10 "}',
@@ -196,16 +160,16 @@ class SpecializedQueriesTestCase(TestCase):
             {"ids": [1, 23], "organic": {"match": {"description": "brown shoes"}}}
         )
         for b in (b1, b2, b3):
-            self.assertEqual(len(b.children), 2)
+            self.assertEqual(len(b._children), 2)
             self.assertEqual(b.line_repr(depth=None), "pinned")
 
-            query = next((c for c in b.children if isinstance(c, Organic)))
+            query = next((c for c in b._children if isinstance(c, Organic)))
             self.assertEqual(query.line_repr(depth=None), "organic")
             self.assertEqual(query.body, {})
-            self.assertEqual(len(query.children), 1)
-            match = query.children[0]
+            self.assertEqual(len(query._children), 1)
+            match = query._children[0]
             self.assertIsInstance(match, Match)
             self.assertEqual(match.field, "description")
 
-            script = next((c for c in b.children if isinstance(c, IdsP)))
+            script = next((c for c in b._children if isinstance(c, IdsP)))
             self.assertEqual(script.line_repr(depth=None), "ids=[1, 23]")

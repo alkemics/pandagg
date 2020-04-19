@@ -10,7 +10,7 @@ class Nested(CompoundClause):
     def __init__(self, *args, **kwargs):
         super(Nested, self).__init__(*args, **kwargs)
         self.path = next(
-            (c.body["value"] for c in self.children if isinstance(c, Path))
+            (c.body["value"] for c in self._children if isinstance(c, Path))
         )
 
 

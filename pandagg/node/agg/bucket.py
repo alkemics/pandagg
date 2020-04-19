@@ -334,18 +334,3 @@ class DateRange(Range):
         super(DateRange, self).__init__(
             name=name, field=field, keyed=True, meta=meta, aggs=aggs, **body
         )
-
-
-BUCKET_AGGS = [
-    Terms,
-    Filters,
-    Histogram,
-    DateHistogram,
-    Global,
-    Filter,
-    Nested,
-    ReverseNested,
-    Range,
-    DateRange,
-    Missing,
-]

@@ -9,7 +9,6 @@ Submodules
 
    pandagg.node.query.abstract
    pandagg.node.query.compound
-   pandagg.node.query.deserializer
    pandagg.node.query.full_text
    pandagg.node.query.geo
    pandagg.node.query.joining

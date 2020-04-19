@@ -6,23 +6,84 @@ from __future__ import unicode_literals
 import copy
 
 from builtins import str as text
-from future.utils import iteritems
 import json
+
+from lighttree import Tree
 
 from pandagg.node._node import Node
 
+try:
+    import collections.abc as collections_abc  # only works on python 3.3+
+except ImportError:
+    import collections as collections_abc
+
 
 class QueryClause(Node):
-    NID_SIZE = 6
-    KEY = NotImplementedError()
+    _type_name = "query"
+    KEY = None
+    _variant = None  # leaf, compound, param, parent_param
 
-    def __init__(self, _name=None, **body):
-        super(QueryClause, self).__init__(identifier=_name)
+    def __init__(self, _name=None, _children=None, **body):
         self.body = body
         self._named = _name is not None
+        super(QueryClause, self).__init__(identifier=_name, _children=_children)
+
+    @classmethod
+    def _type_deserializer(cls, name_or_query, **params):
+        """Return QueryClause instance, with (if relevant) children nodes under the 'children' attribute."""
+        child_prefix = "_param_" if cls._variant == "compound" else None
+
+        # MatchAll()
+        if isinstance(name_or_query, QueryClause):
+            if params:
+                raise ValueError(
+                    "Q() cannot accept parameters when passing in a Query object."
+                )
+            return name_or_query
+
+        # {"match": {"title": "python"}}
+        # {"filter": MatchAll()}
+        if isinstance(name_or_query, collections_abc.Mapping):
+            if params:
+                raise ValueError("Q() cannot accept parameters when passing in a dict.")
+            if len(name_or_query) != 1:
+                raise ValueError(
+                    'Q() can only accept dict with a single query ({"match": {...}}). '
+                    "Instead it got (%r)" % name_or_query
+                )
+            name, body = name_or_query.copy().popitem()
+            klass = cls.get_dsl_class(name, child_prefix)
+            if klass._variant == "param":
+                return klass(body)
+            if isinstance(body, collections_abc.Mapping):
+                return klass(**body)
+            elif isinstance(body, (tuple, list)):
+                return klass(*body)
+            return klass(body)
+
+        # hack for now
+        if (
+            isinstance(name_or_query, Tree)
+            and name_or_query.__class__.__name__ == "Query"
+        ):
+            return name_or_query
+
+        # "match", title="python"
+        name_or_query = child_prefix + name_or_query
+        return cls.get_dsl_class(name_or_query)(**params)
 
     def line_repr(self, depth, **kwargs):
-        return self.KEY
+        if not self.body:
+            return self.KEY
+        return ", ".join([text(self.KEY), self._params_repr(self.body)])
+
+    @staticmethod
+    def _params_repr(params):
+        params = params or {}
+        return ", ".join(
+            "%s=%s" % (text(k), text(json.dumps(params[k], sort_keys=True)))
+            for k in sorted(params.keys())
+        )
 
     @property
     def name(self):
@@ -32,13 +93,9 @@ class QueryClause(Node):
     def _identifier_prefix(self):
         return "%s_" % self.KEY
 
-    @classmethod
-    def deserialize(cls, **body):
-        return cls(**body)
-
-    def serialize(self, named=False):
+    def serialize(self, with_name=True):
         b = copy.deepcopy(self.body)
-        if named and self._named:
+        if with_name and self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
@@ -61,42 +118,88 @@ class LeafQueryClause(QueryClause):
     pass
 
 
-class SingleFieldQueryClause(LeafQueryClause):
-    SHORT_TAG = None
-    FLAT = False
+class AbstractSingleFieldQueryClause(LeafQueryClause):
+    _FIELD_AT_BODY_ROOT = False
 
     def __init__(self, field, _name=None, **body):
         self.field = field
-        if self.FLAT:
-            self.inner_body = body
-            super(LeafQueryClause, self).__init__(field=field, _name=_name, **body)
+        if self._FIELD_AT_BODY_ROOT:
+            super(LeafQueryClause, self).__init__(_name=_name, field=field, **body)
         else:
-            if isinstance(body, dict):
-                self.inner_body = body
-            else:
-                self.inner_body = {self.SHORT_TAG: body}
-            super(LeafQueryClause, self).__init__(_name=_name, **{field: body})
+            super(LeafQueryClause, self).__init__(_name=_name, **body)
+
+
+class FlatFieldQueryClause(AbstractSingleFieldQueryClause):
+    """Query clause applied on one single field.
+    Example:
+
+    Exists:
+    {"exists": {"field": "user"}}
+    -> field = "user"
+    -> body = {"field": "user"}
+    q = Exists(field="user")
+
+    DistanceFeature:
+    {"distance_feature": {"field": "production_date", "pivot": "7d", "origin": "now"}}
+    -> field = "production_date"
+    -> body = {"field": "production_date", "pivot": "7d", "origin": "now"}
+    q = DistanceFeature(field="production_date", pivot="7d", origin="now")
+    """
+
+    _FIELD_AT_BODY_ROOT = True
+
+    def __init__(self, field, _name=None, **body):
+        self.field = field
+        super(FlatFieldQueryClause, self).__init__(_name=_name, field=field, **body)
+
+
+class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
+    """Clause with field used as key in clause body:
+
+    Term:
+    {"term": {"user": {"value": "Kimchy", "boost": 1}}}
+    -> field = "user"
+    -> body = {"user": {"value": "Kimchy", "boost": 1}}
+    q1 = Term(user={"value": "Kimchy", "boost": 1}})
+    q2 = Term(field="user", value="Kimchy", boost=1}})
+
+    Can accept a "_DEFAULT_PARAM" attribute specifying which is the equivalent key when inner body isn't a dict but a
+    raw value.
+    For Term:
+    _DEFAULT_PARAM = "value"
+    q = Term(user="Kimchy")
+    {"term": {"user": {"value": "Kimchy"}}}
+    -> field = "user"
+    -> body = {"term": {"user": {"value": "Kimchy"}}}
+    """
+
+    _DEFAULT_PARAM = None
+
+    def __init__(self, field=None, _name=None, **params):
+        if field is None:
+            # Term(item__id=32) or Term(item__id={'value': 32, 'boost': 1})
+            if len(params) != 1:
+                raise ValueError(
+                    "Invalid declaration for <%s> clause, got:\n%s"
+                    % (self.__class__.__name__, params)
+                )
+            field, value = self.expand__to_dot(params).copy().popitem()
+            params = value if isinstance(value, dict) else {self._DEFAULT_PARAM: value}
+        self.inner_body = params
+        super(KeyFieldQueryClause, self).__init__(
+            field=field, _name=_name, **{field: params}
+        )
 
     def line_repr(self, depth, **kwargs):
-        base = "%s, field=%s" % (text(self.KEY), text(self.field))
-        if self.inner_body:
-            base += ", %s" % ", ".join(
-                "%s=%s"
-                % (text(k), text(json.dumps(self.inner_body[k], sort_keys=True)))
-                for k in sorted(self.inner_body.keys())
-            )
-        return base
-
-    @classmethod
-    def deserialize(cls, **body):
-        if cls.FLAT:
-            return cls(**body)
-        _name = body.pop("_name", None)
-        assert len(body.keys()) == 1
-        k, v = next(iter(iteritems(body)))
-        if cls.SHORT_TAG and not isinstance(v, dict):
-            return cls(field=k, _name=_name, **{cls.SHORT_TAG: v})
-        return cls(field=k, _name=_name, **v)
+        if not self.inner_body:
+            return ", ".join([text(self.KEY), "field=%s" % text(self.field)])
+        return ", ".join(
+            [
+                text(self.KEY),
+                "field=%s" % text(self.field),
+                self._params_repr(self.inner_body),
+            ]
+        )
 
 
 class MultiFieldsQueryClause(LeafQueryClause):

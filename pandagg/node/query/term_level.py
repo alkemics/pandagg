@@ -1,5 +1,8 @@
-from .abstract import LeafQueryClause, SingleFieldQueryClause
-from builtins import str as text
+from .abstract import (
+    LeafQueryClause,
+    AbstractSingleFieldQueryClause,
+    KeyFieldQueryClause,
+)
 
 
 class Exists(LeafQueryClause):
@@ -13,8 +16,9 @@ class Exists(LeafQueryClause):
         return "%s, field=%s" % (self.KEY, self.field)
 
 
-class Fuzzy(SingleFieldQueryClause):
+class Fuzzy(KeyFieldQueryClause):
     KEY = "fuzzy"
+    _DEFAULT_PARAM = "value"
 
 
 class Ids(LeafQueryClause):
@@ -25,9 +29,9 @@ class Ids(LeafQueryClause):
         self.values = values
         super(Ids, self).__init__(_name=_name, values=values)
 
-    def serialize(self, named=False):
+    def serialize(self, with_name=True):
         b = {"values": self.values}
-        if named and self._named:
+        if with_name and self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
@@ -35,65 +39,47 @@ class Ids(LeafQueryClause):
         return "%s, values=%s" % (self.KEY, self.values)
 
 
-class Prefix(SingleFieldQueryClause):
+class Prefix(KeyFieldQueryClause):
     KEY = "prefix"
 
 
-class Range(SingleFieldQueryClause):
+class Range(KeyFieldQueryClause):
     KEY = "range"
 
 
-class Regexp(SingleFieldQueryClause):
+class Regexp(KeyFieldQueryClause):
     KEY = "regexp"
 
 
-class Term(SingleFieldQueryClause):
-    SHORT_TAG = "value"
+class Term(KeyFieldQueryClause):
     KEY = "term"
-
-    def __init__(self, field, value, _name=None, **body):
-        # only impact is setting value as required arg
-        if _name is not None:
-            body["_name"] = _name
-        super(Term, self).__init__(field=field, value=value, **body)
+    _DEFAULT_PARAM = "value"
 
 
-class Terms(LeafQueryClause):
+class Terms(AbstractSingleFieldQueryClause):
     KEY = "terms"
 
-    def __init__(self, field, terms, _name=None, **body):
-        self.field = field
-        self.terms = terms
+    def __init__(self, **body):
+        _name = body.pop("_name", None)
+        boost = body.pop("boost", None)
+        if len(body) != 1:
+            raise ValueError("Wrong declaration: %s" % body)
+        field, terms = self.expand__to_dot(body).popitem()
         b = {field: terms}
-        b.update(body)
-        super(Terms, self).__init__(_name=_name, **b)
-
-    def line_repr(self, depth, **kwargs):
-        return "%s, field=%s, values=%s" % (
-            self.KEY,
-            self.field,
-            list(map(text, self.terms)),
-        )
-
-    @classmethod
-    def deserialize(cls, **body):
-        allowed_params = {"boost"}
-        other_keys = set(body.keys()).difference(allowed_params)
-        assert len(other_keys) == 1
-        field_key = other_keys.pop()
-        field_value = body.pop(field_key)
-        return cls(field=field_key, terms=field_value, **body)
+        if boost is not None:
+            b["boost"] = boost
+        super(Terms, self).__init__(_name=_name, field=field, **b)
 
 
-class TermsSet(SingleFieldQueryClause):
+class TermsSet(KeyFieldQueryClause):
     KEY = "terms_set"
 
 
-class Type(SingleFieldQueryClause):
+class Type(KeyFieldQueryClause):
     KEY = "type"
 
 
-class Wildcard(SingleFieldQueryClause):
+class Wildcard(KeyFieldQueryClause):
     KEY = "wildcard"
 
 

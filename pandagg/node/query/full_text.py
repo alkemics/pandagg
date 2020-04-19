@@ -1,27 +1,27 @@
-from .abstract import LeafQueryClause, SingleFieldQueryClause, MultiFieldsQueryClause
+from .abstract import LeafQueryClause, KeyFieldQueryClause, MultiFieldsQueryClause
 
 
-class Intervals(SingleFieldQueryClause):
+class Intervals(KeyFieldQueryClause):
     KEY = "intervals"
 
 
-class Match(SingleFieldQueryClause):
-    SHORT_TAG = "query"
+class Match(KeyFieldQueryClause):
+    _DEFAULT_PARAM = "query"
     KEY = "match"
 
 
-class MatchBoolPrefix(SingleFieldQueryClause):
-    SHORT_TAG = "query"
+class MatchBoolPrefix(KeyFieldQueryClause):
+    _DEFAULT_PARAM = "query"
     KEY = "match_bool_prefix"
 
 
-class MatchPhrase(SingleFieldQueryClause):
-    SHORT_TAG = "query"
+class MatchPhrase(KeyFieldQueryClause):
+    _DEFAULT_PARAM = "query"
     KEY = "match_phrase"
 
 
-class MatchPhrasePrefix(SingleFieldQueryClause):
-    SHORT_TAG = "query"
+class MatchPhrasePrefix(KeyFieldQueryClause):
+    _DEFAULT_PARAM = "query"
     KEY = "match_phrase_prefix"
 
 
@@ -29,7 +29,7 @@ class MultiMatch(MultiFieldsQueryClause):
     KEY = "multi_match"
 
 
-class Common(SingleFieldQueryClause):
+class Common(KeyFieldQueryClause):
     KEY = "common"
 
 

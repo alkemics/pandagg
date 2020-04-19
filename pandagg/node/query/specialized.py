@@ -1,8 +1,7 @@
-from .abstract import LeafQueryClause, SingleFieldQueryClause, MultiFieldsQueryClause
+from .abstract import LeafQueryClause, FlatFieldQueryClause, MultiFieldsQueryClause
 
 
-class DistanceFeature(SingleFieldQueryClause):
-    FLAT = True
+class DistanceFeature(FlatFieldQueryClause):
     KEY = "distance_feature"
 
 
@@ -10,13 +9,11 @@ class MoreLikeThis(MultiFieldsQueryClause):
     KEY = "more_like_this"
 
 
-class Percolate(SingleFieldQueryClause):
-    FLAT = True
+class Percolate(FlatFieldQueryClause):
     KEY = "percolate"
 
 
-class RankFeature(SingleFieldQueryClause):
-    FLAT = True
+class RankFeature(FlatFieldQueryClause):
     KEY = "rank_feature"
 
 

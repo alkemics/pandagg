@@ -3,7 +3,6 @@
 # Inspired by https://python-guide-pt-br.readthedocs.io/fr/latest/writing/logging.html#logging-in-a-library
 # Set default logging handler to avoid "No handler found" warnings.
 
-from pandagg.interactive.client import Elasticsearch
 import logging
 
 try:  # Python 2.7+
