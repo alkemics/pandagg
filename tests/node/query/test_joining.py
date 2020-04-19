@@ -17,15 +17,15 @@ class JoiningQueriesTestCase(TestCase):
             {"query": {"term": {"some_nested_path.id": 2}}, "path": "some_nested_path"}
         )
         for i, n in enumerate((n1, n2, n3)):
-            self.assertEqual(len(n.children), 2)
+            self.assertEqual(len(n._children), 2)
             self.assertEqual(n.line_repr(depth=None), "nested")
             self.assertEqual(n.path, "some_nested_path")
 
-            q = next((c for c in n.children if isinstance(c, QueryP)))
+            q = next((c for c in n._children if isinstance(c, QueryP)))
             self.assertEqual(q.serialize(), {"query": {}})
             # ensure term query is present
-            self.assertEqual(len(q.children), 1)
-            self.assertIsInstance(q.children[0], Term, i)
+            self.assertEqual(len(q._children), 1)
+            self.assertIsInstance(q._children[0], Term, i)
 
-            p = next((c for c in n.children if isinstance(c, Path)))
+            p = next((c for c in n._children if isinstance(c, Path)))
             self.assertEqual(p.body["value"], "some_nested_path")

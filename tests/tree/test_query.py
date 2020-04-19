@@ -75,7 +75,12 @@ bool
         result_q = initial_q.bool(_name="root_bool", child="term_q", child_param="must")
         self.assertEqual(
             result_q.query_dict(),
-            {"bool": {"_name": "root_bool", "must": [{"term": {"_name": "term_q", "some_field": {"value": 2}}}]}},
+            {
+                "bool": {
+                    "_name": "root_bool",
+                    "must": [{"term": {"_name": "term_q", "some_field": {"value": 2}}}],
+                }
+            },
         )
 
         # above element (without declaring above: default behavior is wrapping at root)
@@ -85,10 +90,8 @@ bool
             result_q.query_dict(),
             {
                 "bool": {
-                    '_name': 'root_bool',
-                    "must": [
-                        {"term": {"_name": "term_q", "some_field": {"value": 2}}}
-                    ]
+                    "_name": "root_bool",
+                    "must": [{"term": {"_name": "term_q", "some_field": {"value": 2}}}],
                 }
             },
         )
@@ -108,23 +111,35 @@ bool
         )
         self.assertEqual(
             ordered(result_q.query_dict()),
-            ordered({
-                "bool": {
-                    "_name": "top_bool",
-                    "filter": [{"range": {"price": {"gte": 12}}}],
-                    "must": [
-                        {
-                            "bool": {
-                                "_name": "init_bool",
-                                "should": [
-                                    {"term": {"_name": "prod_term", "some_field": {"value": "prod"}}},
-                                    {"term": {"_name": "pizza_term", "other_field": {"value": "pizza"}}},
-                                ]
+            ordered(
+                {
+                    "bool": {
+                        "_name": "top_bool",
+                        "filter": [{"range": {"price": {"gte": 12}}}],
+                        "must": [
+                            {
+                                "bool": {
+                                    "_name": "init_bool",
+                                    "should": [
+                                        {
+                                            "term": {
+                                                "_name": "prod_term",
+                                                "some_field": {"value": "prod"},
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "_name": "pizza_term",
+                                                "other_field": {"value": "pizza"},
+                                            }
+                                        },
+                                    ],
+                                }
                             }
-                        }
-                    ],
+                        ],
+                    }
                 }
-            })
+            ),
         )
 
         # above element in existing bool query
@@ -145,23 +160,25 @@ bool
         )
         self.assertTrue(
             ordered(result_q.query_dict()),
-            ordered({
-                "bool": {
-                    "_name": "top_bool",
-                    "filter": [{"range": {"price": {"gte": 12}}}],
-                    "must": [
-                        {
-                            "bool": {
-                                "_name": "init_bool",
-                                "should": [
-                                    {"term": {"some_field": {"value": "prod"}}},
-                                    {"term": {"other_field": {"value": "pizza"}}},
-                                ]
+            ordered(
+                {
+                    "bool": {
+                        "_name": "top_bool",
+                        "filter": [{"range": {"price": {"gte": 12}}}],
+                        "must": [
+                            {
+                                "bool": {
+                                    "_name": "init_bool",
+                                    "should": [
+                                        {"term": {"some_field": {"value": "prod"}}},
+                                        {"term": {"other_field": {"value": "pizza"}}},
+                                    ],
+                                }
                             }
-                        }
-                    ],
+                        ],
+                    }
                 }
-            })
+            ),
         )
 
     def test_new_bool_below_node(self):
@@ -179,7 +196,7 @@ bool
                     "query": {
                         "bool": {
                             "_name": "bool_id",
-                            "filter": [{"term": {"some_nested.id": {"value": 2}}}]
+                            "filter": [{"term": {"some_nested.id": {"value": 2}}}],
                         }
                     },
                 }
@@ -211,13 +228,23 @@ bool
                             {
                                 "bool": {
                                     "_name": "below_bool",
-                                    "must": [{"term": {"new_field": {"value": 2}}}]
+                                    "must": [{"term": {"new_field": {"value": 2}}}],
                                 }
                             }
                         ],
                         "should": [
-                            {"term": {"_name": "prod_term", "some_field": {"value": "prod"}}},
-                            {"term": {"_name": "pizza_term", "other_field": {"value": "pizza"}}},
+                            {
+                                "term": {
+                                    "_name": "prod_term",
+                                    "some_field": {"value": "prod"},
+                                }
+                            },
+                            {
+                                "term": {
+                                    "_name": "pizza_term",
+                                    "other_field": {"value": "pizza"},
+                                }
+                            },
                         ],
                     }
                 },
@@ -349,11 +376,28 @@ bool
                 {
                     "bool": {
                         "_name": "init_bool",
-                        "filter": [{"range": {"_name": "price_range", "price": {"gte": 12}}}],
+                        "filter": [
+                            {"range": {"_name": "price_range", "price": {"gte": 12}}}
+                        ],
                         "should": [
-                            {"term": {"_name": "prod_term", "some_field": {"value": "prod"}}},
-                            {"term": {"_name": "pizza_term", "other_field": {"value": "pizza"}}},
-                            {"term": {"_name": "new_pizza_term", "other_field": {"value": "new_pizza"}}},
+                            {
+                                "term": {
+                                    "_name": "prod_term",
+                                    "some_field": {"value": "prod"},
+                                }
+                            },
+                            {
+                                "term": {
+                                    "_name": "pizza_term",
+                                    "other_field": {"value": "pizza"},
+                                }
+                            },
+                            {
+                                "term": {
+                                    "_name": "new_pizza_term",
+                                    "other_field": {"value": "new_pizza"},
+                                }
+                            },
                         ],
                     }
                 },
@@ -392,8 +436,18 @@ bool
                             {"range": {"_name": "high_price", "price": {"gte": 20}}}
                         ],
                         "should": [
-                            {"term": {"_name": "prod_term", "some_field": {"value": "prod"}}},
-                            {"term": {"_name": "pizza_term", "other_field": {"value": "pizza"}}},
+                            {
+                                "term": {
+                                    "_name": "prod_term",
+                                    "some_field": {"value": "prod"},
+                                }
+                            },
+                            {
+                                "term": {
+                                    "_name": "pizza_term",
+                                    "other_field": {"value": "pizza"},
+                                }
+                            },
                         ],
                         "minimum_should_match": 2,
                     }
@@ -525,7 +579,7 @@ bool
                         "should": [
                             {"term": {"some_field": {"value": 2}}},
                             {"term": {"other_field": {"value": 3}}},
-                        ]
+                        ],
                     }
                 },
             )
@@ -548,7 +602,7 @@ bool
                         "filter": [
                             {"term": {"some_field": {"value": 2}}},
                             {"term": {"other_field": {"value": 3}}},
-                        ]
+                        ],
                     }
                 },
             )
@@ -571,7 +625,7 @@ bool
                         "must_not": [
                             {"term": {"some_field": {"value": 2}}},
                             {"term": {"other_field": {"value": 3}}},
-                        ]
+                        ],
                     }
                 },
             )
@@ -1008,56 +1062,44 @@ bool
         )
         self.assertEqual(
             ordered(q5.query_dict()),
-            ordered({
-                "nested": {
-                    "_name": "nested_id",
-                    "path": "some_nested",
-                    "query": {
-                        "bool": {
-                            "_name": "bool_id",
-                            "must": [
-                                {
-                                    "range": {
-                                        "some_nested.creationYear": {
-                                            "gte": "2020"
+            ordered(
+                {
+                    "nested": {
+                        "_name": "nested_id",
+                        "path": "some_nested",
+                        "query": {
+                            "bool": {
+                                "_name": "bool_id",
+                                "must": [
+                                    {
+                                        "range": {
+                                            "some_nested.creationYear": {"gte": "2020"}
                                         }
-                                    }
-                                },
-                                {
-                                    "term": {
-                                        "some_nested.type": {
-                                            "value": 2
-                                        }
-                                    }
-                                },
-                                {
-                                    "range": {
-                                        "some_nested.price": {
-                                            "lte": 100
-                                        }
-                                    }
-                                }
-                            ]
-                        }
+                                    },
+                                    {"term": {"some_nested.type": {"value": 2}}},
+                                    {"range": {"some_nested.price": {"lte": 100}}},
+                                ],
+                            }
+                        },
                     }
                 }
-            })
+            ),
         )
 
     def test_query_unnamed_inserts(self):
 
         q = (
             Query()
-            .must(Terms("genres", terms=["Action", "Thriller"]))
+            .must(Terms(genres=["Action", "Thriller"]))
             .must(Range("rank", gte=7))
             .query(Nested(_name="nested_roles", path="roles"))
         )
 
         # we name the nested query that we would potentially use
         # but a compound clause (bool, nested etc..) without any children clauses is not serialized
-        self.assertTrue(
-            equal_queries(
-                q.query_dict(),
+        self.assertEqual(
+            ordered(q.query_dict()),
+            ordered(
                 {
                     "bool": {
                         "must": [
@@ -1065,8 +1107,8 @@ bool
                             {"range": {"rank": {"gte": 7}}},
                         ]
                     }
-                },
-            )
+                }
+            ),
         )
 
         # we declare that those clauses must be placed below 'nested_roles' condition

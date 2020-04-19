@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import copy
-
 from builtins import str as text
 
-from future.utils import iteritems, python_2_unicode_compatible
+from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
 from pandagg.interactive.mapping import as_mapping
@@ -14,7 +12,6 @@ from pandagg.node.query._parameter_clause import (
     SimpleParameter,
     ParameterClause,
     ParentParameterClause,
-    PARAMETERS,
 )
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.node.query.compound import (
@@ -25,7 +22,6 @@ from pandagg.node.query.compound import (
     DisMax,
     FunctionScore,
 )
-from pandagg.node.query.deserializer import deserialize_node
 from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
 from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
 
@@ -77,12 +73,12 @@ class Query(Tree):
             return from_
         if isinstance(from_, QueryClause):
             new = cls()
-            new._insert_from_node(query_node=from_)
+            new._insert_from_node_hierarchy(node=from_)
             return new
         if isinstance(from_, dict):
-            from_ = copy.deepcopy(from_)
             new = cls()
-            new._insert_from_dict(from_)
+            node = cls.node_class._type_deserializer(from_)
+            new._insert_from_node_hierarchy(node)
             return new
         else:
             raise ValueError("Unsupported type <%s>." % type(from_))
@@ -94,23 +90,6 @@ class Query(Tree):
             return self
         self.insert(parent_id=pid, item=inserted_tree)
         return self
-
-    def _insert_from_dict(self, body, pid=None):
-        if len(body.keys()) > 1:
-            raise ValueError(
-                "Invalid query format, got multiple keys, expected a single one: %s"
-                % (body.keys())
-            )
-        q_type, q_body = next(iter(iteritems(body)))
-        node = deserialize_node(q_type, q_body, accept_param=False)
-        self._insert_from_node(node, pid)
-
-    def _insert_from_node(self, query_node, parent_id=None):
-        """Insert in tree a node and all of its potential children (stored in .children)."""
-        self.insert_node(query_node, parent_id)
-        if hasattr(query_node, "children"):
-            for child_node in query_node.children or []:
-                self._insert(child_node, pid=query_node.identifier)
 
     def _insert_node_below(self, node, parent_id=None):
         """Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent."""
@@ -151,7 +130,9 @@ class Query(Tree):
         serialized_children = []
         should_yield = False
         for child_node in self.children(node.identifier, id_only=False):
-            serialized_child = self.query_dict(from_=child_node.identifier, with_name=with_name)
+            serialized_child = self.query_dict(
+                from_=child_node.identifier, with_name=with_name
+            )
             if serialized_child is not None:
                 serialized_children.append(serialized_child)
                 if not isinstance(child_node, SimpleParameter):
@@ -401,7 +382,7 @@ class Query(Tree):
 
     def _compound_param_insert(self, method_name, param_key, *args, **kwargs):
         mode = kwargs.pop("mode", ADD)
-        param_klass = PARAMETERS[param_key]
+        param_klass = self.node_class.get_dsl_class(param_key, "_param_")
         _name = kwargs.pop("_name", None)
         parent = kwargs.pop("parent", None)
         parent_param = kwargs.pop("parent_param", None)
@@ -465,7 +446,7 @@ class Query(Tree):
                 continue
             if mode == ADD:
                 for clause_node in new_compound.children(
-                        param_node.identifier, id_only=False
+                    param_node.identifier, id_only=False
                 ):
                     self.insert(
                         item=new_compound.subtree(clause_node.identifier),

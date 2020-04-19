@@ -26,11 +26,11 @@ class ParameterClausesTestCase(TestCase):
             ]
         )
         for f in (f1, f2, f3, f4):
-            self.assertEqual(len(f.children), 2)
+            self.assertEqual(len(f._children), 2)
             self.assertEqual(f.line_repr(depth=None), "filter")
 
-            term = next((c for c in f.children if isinstance(c, Term)))
+            term = next((c for c in f._children if isinstance(c, Term)))
             self.assertEqual(term.serialize(), {"term": {"some_field": {"value": 1}}})
 
-            range_ = next((c for c in f.children if isinstance(c, Range)))
+            range_ = next((c for c in f._children if isinstance(c, Range)))
             self.assertEqual(range_.serialize(), {"range": {"other_field": {"gte": 2}}})

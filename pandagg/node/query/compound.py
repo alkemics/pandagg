@@ -1,9 +1,6 @@
 from future.utils import iteritems
 
 from pandagg.node.query._parameter_clause import (
-    deserialize_parameter,
-    ParameterClause,
-    PARAMETERS,
     SimpleParameter,
     Must,
     Filter,
@@ -33,6 +30,7 @@ class CompoundClause(QueryClause):
 
     DEFAULT_OPERATOR = NotImplementedError()
     PARAMS_WHITELIST = None
+    _variant = "compound"
 
     def __init__(self, *args, **kwargs):
         _name = kwargs.pop("_name", None)
@@ -46,35 +44,7 @@ class CompoundClause(QueryClause):
                 children.extend(arg)
             else:
                 children.append(arg)
-        serialized_children = []
-        for child in children:
-            if isinstance(child, dict):
-                assert len(child.keys()) == 1
-                key, value = next(iter(iteritems(child)))
-                if (
-                    self.PARAMS_WHITELIST is not None
-                    and key not in self.PARAMS_WHITELIST
-                ):
-                    raise ValueError(
-                        "Unauthorized parameter <%s> under <%s> clause"
-                        % (key, self.KEY)
-                    )
-                serialized_child = deserialize_parameter(key, value)
-            else:
-                if not isinstance(child, ParameterClause):
-                    raise ValueError(
-                        "Unsupported <%s> clause type under compound clause of type <%s>"
-                        % (type(child), self.KEY)
-                    )
-                key = child.KEY
-                serialized_child = child
-            if self.PARAMS_WHITELIST is not None and key not in self.PARAMS_WHITELIST:
-                raise ValueError(
-                    "Unauthorized parameter <%s> under <%s> clause" % (key, self.KEY)
-                )
-            serialized_children.append(serialized_child)
-        self.children = serialized_children
-        super(CompoundClause, self).__init__(_name=_name)
+        super(CompoundClause, self).__init__(_name=_name, _children=children)
 
     @classmethod
     def operator(cls, key):
@@ -85,20 +55,17 @@ class CompoundClause(QueryClause):
                 "Child operator <%s> not permitted for compound query of type <%s>"
                 % (key, cls.__name__)
             )
-        return PARAMETERS[key]
+        return cls.get_dsl_class(key, "_param_")
 
     @classmethod
     def params(cls, parent_only=False):
         """Return map of key -> params that handle children leaves."""
         return {
-            p: PARAMETERS[p]
+            p: cls.get_dsl_class(p, "_param_")
             for p in cls.PARAMS_WHITELIST or []
-            if not parent_only or not issubclass(PARAMETERS[p], SimpleParameter)
+            if not parent_only
+            or not issubclass(cls.get_dsl_class(p, "_param_"), SimpleParameter)
         }
-
-    @classmethod
-    def deserialize(cls, *args, **body):
-        return cls(*args, **body)
 
 
 class Bool(CompoundClause):

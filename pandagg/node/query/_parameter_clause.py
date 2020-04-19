@@ -4,28 +4,22 @@
 from __future__ import unicode_literals
 
 import json
-from future.utils import iteritems
 
-from pandagg.node.query._leaf_clause import deserialize_leaf_clause
-from pandagg.node.query.abstract import QueryClause, LeafQueryClause
+from pandagg.node.query.abstract import QueryClause
 
 
 class ParameterClause(QueryClause):
-    KEY = NotImplementedError()
+    _prefix = "_param_"
 
 
 class SimpleParameter(ParameterClause):
-    KEY = NotImplementedError()
+    _variant = "param"
 
     def __init__(self, value):
         super(SimpleParameter, self).__init__(value=value)
 
     def line_repr(self, depth, **kwargs):
         return "%s=%s" % (self.KEY, json.dumps(self.body["value"]))
-
-    @classmethod
-    def deserialize(cls, value):
-        return cls(value)
 
     def serialize(self, with_name=True):
         return {self.KEY: self.body["value"]}
@@ -141,12 +135,10 @@ SIMPLE_PARAMETERS = [
 
 
 class ParentParameterClause(ParameterClause):
-    KEY = NotImplementedError()
     MULTIPLE = False
 
     def __init__(self, *args, **kwargs):
         children = []
-        _name = kwargs.pop("_name", None)
         if kwargs:
             children.append(kwargs)
         for arg in args:
@@ -158,27 +150,7 @@ class ParentParameterClause(ParameterClause):
             raise ValueError(
                 "%s clause does not accept multiple query clauses." % self.KEY
             )
-        serialized_children = []
-        for child in children:
-            if isinstance(child, dict):
-                k, v = next(iter(iteritems(child)))
-                try:
-                    serialized_children.append(deserialize_leaf_clause(k, v))
-                except Exception:
-                    # until metaclass is implemented
-                    serialized_children.append({k: v})
-            elif isinstance(child, LeafQueryClause):
-                serialized_children.append(child)
-            else:
-                # Compound - will be validated in query tree
-                serialized_children.append(child)
-
-        self.children = serialized_children
-        super(ParentParameterClause, self).__init__(_name=_name)
-
-    @classmethod
-    def deserialize(cls, *args, **body):
-        return cls(*args, **body)
+        super(ParentParameterClause, self).__init__(_children=children)
 
 
 class Filter(ParentParameterClause):
@@ -225,32 +197,3 @@ class QueryP(ParentParameterClause):
 class Should(ParentParameterClause):
     KEY = "should"
     MULTIPLE = True
-
-
-PARENT_PARAMETERS = [
-    Filter,
-    Must,
-    MustNot,
-    Negative,
-    Organic,
-    Positive,
-    Queries,
-    QueryP,
-    Should,
-]
-
-
-PARAMETERS = {p.KEY: p for p in PARENT_PARAMETERS + SIMPLE_PARAMETERS}
-
-
-def deserialize_parameter(key, body):
-    if key not in PARAMETERS.keys():
-        raise NotImplementedError("Unknown parameter type <%s>" % key)
-    klass = PARAMETERS[key]
-    if issubclass(klass, SimpleParameter):
-        return klass.deserialize(body)
-    if isinstance(body, (tuple, list)):
-        return klass.deserialize(*body)
-    if isinstance(body, QueryClause):
-        return klass.deserialize(body)
-    return klass.deserialize(**body)
