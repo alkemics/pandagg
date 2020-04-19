@@ -10,7 +10,8 @@ from pandagg.node._node import Node
 
 @python_2_unicode_compatible
 class Field(Node):
-    KEY = NotImplementedError()
+    _type_name = 'field'
+    KEY = None
     DISPLAY_PATTERN = "  %s"
 
     def __init__(self, name, is_subfield=False, **body):
@@ -23,6 +24,12 @@ class Field(Node):
         # rest of body
         self._body = body
         super(Field, self).__init__()
+
+    @classmethod
+    def _type_deserializer(cls, name, body, is_subfield=False):
+        type_ = body.get("type", "object")
+        klass = cls.get_dsl_class(type_)
+        return klass(name=name, is_subfield=is_subfield, **body)
 
     @staticmethod
     def _atomize(children):
@@ -47,14 +54,6 @@ class Field(Node):
     @property
     def _identifier_prefix(self):
         return self.name
-
-    @classmethod
-    def deserialize(cls, name, body, is_subfield=False):
-        if "type" in body and body["type"] != cls.KEY:
-            raise ValueError(
-                "Deserialization error for field <%s>: <%s>" % (cls.KEY, body)
-            )
-        return cls(name=name, is_subfield=is_subfield, **body)
 
     def body(self, with_children=False):
         b = copy.deepcopy(self._body)

@@ -68,10 +68,10 @@ class Query(Tree):
         return self
 
     @classmethod
-    def deserialize(cls, from_):
+    def deserialize(cls, from_, mapping=None):
         if isinstance(from_, Query):
             return from_
-        new = cls()
+        new = cls(mapping=mapping)
         node_hierarchy = cls.node_class._type_deserializer(from_)
         new._insert_from_node_hierarchy(node_hierarchy)
         return new

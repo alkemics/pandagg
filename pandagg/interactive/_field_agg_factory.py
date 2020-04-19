@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from operator import itemgetter
 
 from pandagg.node.agg.abstract import AggNode
 

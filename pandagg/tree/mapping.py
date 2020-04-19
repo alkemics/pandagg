@@ -7,7 +7,6 @@ from future.utils import iteritems
 from lighttree.exceptions import NotFoundNodeError
 
 from pandagg.node.mapping.abstract import Field
-from pandagg.node.mapping.deserializer import deserialize_field
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
@@ -51,7 +50,7 @@ class Mapping(Tree):
         return self.get(self.root).body(with_children=True)
 
     def _insert_from_dict(self, name, body, pid=None, is_subfield=False):
-        node = deserialize_field(name=name, body=body, is_subfield=is_subfield)
+        node = self.node_class._type_deserializer(name=name, body=body, is_subfield=is_subfield)
         self._insert_from_node(node, pid=pid)
 
     def _insert_from_node(self, field, pid=None, is_subfield=False):

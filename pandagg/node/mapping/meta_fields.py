@@ -60,6 +60,3 @@ class Meta(Field):
     """Application specific metadata."""
 
     KEY = "_meta"
-
-
-META_FIELDS = [Index, Type, Id, Source, Size, FieldNames, Ignored, Routing, Meta]
