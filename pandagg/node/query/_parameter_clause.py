@@ -109,31 +109,6 @@ class Type(SimpleParameter):
     KEY = "type"
 
 
-SIMPLE_PARAMETERS = [
-    Boost,
-    BoostMode,
-    FieldValueFactor,
-    Functions,
-    IdsP,
-    IgnoreUnmapped,
-    MaxBoost,
-    MaxChildren,
-    MinChildren,
-    MinimumShouldMatch,
-    MinScore,
-    NegativeBoost,
-    Path,
-    ParentType,
-    RandomScore,
-    Rewrite,
-    ScoreMode,
-    ScriptP,
-    ScriptScore,
-    TieBreaker,
-    Type,
-]
-
-
 class ParentParameterClause(ParameterClause):
     MULTIPLE = False
 

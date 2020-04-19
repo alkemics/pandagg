@@ -112,6 +112,3 @@ class FunctionScore(CompoundClause):
         "min_score",
     ]
     KEY = "function_score"
-
-
-COMPOUND_QUERIES = [Bool, Boosting, ConstantScore, FunctionScore, DisMax]
