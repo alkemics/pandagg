@@ -19,8 +19,9 @@ class AggNode(Node):
     Define a method to build aggregation request.
     """
 
-    KEY = NotImplementedError()
-    VALUE_ATTRS = NotImplementedError()
+    _type_name = "agg"
+    KEY = None
+    VALUE_ATTRS = None
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None
 
@@ -29,6 +30,37 @@ class AggNode(Node):
         super(AggNode, self).__init__(identifier=self.name)
         self.body = body
         self.meta = meta
+
+    @classmethod
+    def _type_deserializer(cls, d):
+        if len(d.keys()) > 1:
+            raise ValueError(
+                "Invalid aggregation, expected one single key, got: %s" % d.keys()
+            )
+        agg_name, agg_detail = next(iter(iteritems(d)))
+        meta = agg_detail.pop("meta", None)
+        children_aggs = (
+            agg_detail.pop("aggs", None) or agg_detail.pop("aggregations", None) or {}
+        )
+        if len(agg_detail.keys()) != 1:
+            raise ValueError(
+                "Invalid aggregation, expected one single key, got %s"
+                % agg_detail.keys()
+            )
+        agg_type, agg_body = next(iter(iteritems(agg_detail)))
+        agg_class = cls.get_dsl_class(agg_type)
+        if children_aggs and not issubclass(agg_class, BucketAggNode):
+            raise ValueError(
+                "Aggregation of type %s doesn't accept sub-aggregations, got <%s>."
+                % (agg_class.__name__, children_aggs)
+            )
+        if children_aggs:
+            if isinstance(children_aggs, dict):
+                children_aggs = [{k: v} for k, v in iteritems(children_aggs)]
+            elif isinstance(children_aggs, AggNode):
+                children_aggs = (children_aggs,)
+            agg_body["aggs"] = children_aggs
+        return agg_class(name=agg_name, meta=meta, **agg_body)
 
     def line_repr(self, depth, **kwargs):
         return "[%s] %s" % (text(self.name), text(self.KEY))
@@ -86,10 +118,6 @@ class AggNode(Node):
             return {attr_: response.get(attr_) for attr_ in attrs}
         return response.get(attrs[0])
 
-    @classmethod
-    def deserialize(cls, name, body, meta=None):
-        return cls(name=name, meta=meta, **body)
-
     def __str__(self):
         return "<{class_}, name={name}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
@@ -108,7 +136,7 @@ class AggNode(Node):
 class MetricAgg(AggNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
 
-    VALUE_ATTRS = NotImplementedError()
+    VALUE_ATTRS = None
 
     def extract_buckets(self, response_value):
         yield (None, response_value)
@@ -137,7 +165,7 @@ class BucketAggNode(AggNode):
     >>> )
     """
 
-    VALUE_ATTRS = NotImplementedError()
+    VALUE_ATTRS = None
 
     def __init__(self, name, meta=None, aggs=None, **body):
         super(BucketAggNode, self).__init__(name=name, meta=meta, **body)
@@ -174,7 +202,7 @@ class ShadowRoot(BucketAggNode):
 class UniqueBucketAgg(BucketAggNode):
     """Aggregations providing a single bucket."""
 
-    VALUE_ATTRS = NotImplementedError()
+    VALUE_ATTRS = None
 
     def extract_buckets(self, response_value):
         yield (None, response_value)
@@ -185,7 +213,7 @@ class UniqueBucketAgg(BucketAggNode):
 
 class MultipleBucketAgg(BucketAggNode):
 
-    VALUE_ATTRS = NotImplementedError()
+    VALUE_ATTRS = None
     IMPLICIT_KEYED = False
 
     def __init__(self, name, keyed=None, key_path="key", meta=None, aggs=None, **body):
@@ -224,7 +252,7 @@ class MultipleBucketAgg(BucketAggNode):
 class FieldOrScriptMetricAgg(MetricAgg):
     """Metric aggregation based on single field."""
 
-    VALUE_ATTRS = NotImplementedError()
+    VALUE_ATTRS = None
 
     def __init__(self, name, meta=None, **body):
         self.field = body.get("field")
@@ -234,7 +262,7 @@ class FieldOrScriptMetricAgg(MetricAgg):
 
 class Pipeline(UniqueBucketAgg):
 
-    VALUE_ATTRS = NotImplementedError()
+    VALUE_ATTRS = None
 
     def __init__(
         self, name, buckets_path, gap_policy=None, meta=None, aggs=None, **body
@@ -255,7 +283,7 @@ class Pipeline(UniqueBucketAgg):
 
 
 class ScriptPipeline(Pipeline):
-    KEY = NotImplementedError()
+    KEY = None
     VALUE_ATTRS = "value"
 
     def __init__(

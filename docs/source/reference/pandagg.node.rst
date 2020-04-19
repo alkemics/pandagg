@@ -18,7 +18,6 @@ Submodules
 .. toctree::
    :maxdepth: 8
 
-   pandagg.node.mixins
    pandagg.node.types
 
 Module contents

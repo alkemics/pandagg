@@ -2,7 +2,12 @@
 # -*- coding: utf-8 -*-
 from operator import itemgetter
 
-from pandagg.node.agg.deserializer import AGGS
+from pandagg.node.agg.abstract import AggNode
+
+# necessary to ensure that all agg nodes are registered in metaclass
+from pandagg.node.agg.bucket import *  # noqa
+from pandagg.node.agg.pipeline import *  # noqa
+from pandagg.node.agg.metric import *  # noqa
 from pandagg.node.types import MAPPING_TYPES
 
 
@@ -13,7 +18,7 @@ def list_available_aggs_on_field(field_type):
     """
     return [
         agg_class
-        for agg_class in AGGS.values()
+        for agg_class in AggNode._classes.values()
         if agg_class.valid_on_field_type(field_type)
     ]
 

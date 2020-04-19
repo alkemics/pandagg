@@ -9,10 +9,6 @@ from builtins import str as text
 from elasticsearch import Elasticsearch
 from future.utils import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
-from pandagg.tree._tree import Tree
-from pandagg.interactive.mapping import as_mapping
-from pandagg.interactive.response import IResponse
-from pandagg.node.agg.deserializer import deserialize_agg
 from pandagg.node.agg.abstract import (
     BucketAggNode,
     UniqueBucketAgg,
@@ -20,10 +16,13 @@ from pandagg.node.agg.abstract import (
     MetricAgg,
     ShadowRoot,
 )
+from pandagg.tree._tree import Tree
 from pandagg.node.agg.bucket import Terms, Nested, ReverseNested
 from pandagg.node.agg.pipeline import BucketSelector, BucketSort
 from pandagg.tree.query import Query
 from pandagg.tree.response import ResponseTree
+from pandagg.interactive.mapping import as_mapping
+from pandagg.interactive.response import IResponse
 
 
 @python_2_unicode_compatible
@@ -75,7 +74,7 @@ class Agg(Tree):
             self.insert_node(r)
             parent_id = r.name
         for k, v in iteritems(from_dict):
-            node = deserialize_agg({k: v})
+            node = self.node_class._type_deserializer({k: v})
             self._insert_from_node(node, parent_id=parent_id)
 
     def _insert_from_node(self, agg_node, parent_id=None):

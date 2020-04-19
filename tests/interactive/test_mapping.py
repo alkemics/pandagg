@@ -4,11 +4,11 @@
 from mock import Mock
 from unittest import TestCase
 
-from pandagg.interactive._field_agg_factory import field_classes_per_name
-from pandagg.interactive.mapping import IMapping
 from pandagg.node.mapping.abstract import Field
 from pandagg.node.mapping.field_datatypes import Keyword, Text, Nested, Object, Integer
 from pandagg.tree.mapping import Mapping
+from pandagg.interactive._field_agg_factory import field_classes_per_name
+from pandagg.interactive.mapping import IMapping
 
 from tests.testing_samples.mapping_example import MAPPING
 

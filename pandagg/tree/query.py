@@ -71,17 +71,10 @@ class Query(Tree):
     def deserialize(cls, from_):
         if isinstance(from_, Query):
             return from_
-        if isinstance(from_, QueryClause):
-            new = cls()
-            new._insert_from_node_hierarchy(node=from_)
-            return new
-        if isinstance(from_, dict):
-            new = cls()
-            node = cls.node_class._type_deserializer(from_)
-            new._insert_from_node_hierarchy(node)
-            return new
-        else:
-            raise ValueError("Unsupported type <%s>." % type(from_))
+        new = cls()
+        node_hierarchy = cls.node_class._type_deserializer(from_)
+        new._insert_from_node_hierarchy(node_hierarchy)
+        return new
 
     def _insert(self, from_, pid=None):
         inserted_tree = self.deserialize(from_=from_)

@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from elasticsearch.client import IndicesClient
 
-from pandagg import Elasticsearch
+from pandagg.client import Elasticsearch
 from mock import patch
 
 from pandagg.interactive.index import Index

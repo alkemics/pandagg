@@ -98,20 +98,3 @@ class ValueCount(FieldOrScriptMetricAgg):
     BLACKLISTED_MAPPING_TYPES = []
     VALUE_ATTRS = ["value"]
     KEY = "value_count"
-
-
-METRIC_AGGS = [
-    Avg,
-    Sum,
-    Max,
-    Min,
-    Cardinality,
-    Stats,
-    ExtendedStats,
-    Percentiles,
-    PercentileRanks,
-    GeoBound,
-    GeoCentroid,
-    TopHits,
-    ValueCount,
-]
