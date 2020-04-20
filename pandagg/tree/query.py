@@ -8,11 +8,8 @@ from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
 from pandagg.interactive.mapping import as_mapping
-from pandagg.node.query._parameter_clause import (
-    SimpleParameter,
-    ParameterClause,
-    ParentParameterClause,
-)
+
+from pandagg.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.node.query.compound import (
     CompoundClause,
@@ -24,6 +21,14 @@ from pandagg.node.query.compound import (
 )
 from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
 from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
+# necessary imports to ensure all clauses are loaded
+import pandagg.node.query.full_text as full_text  # noqa
+import pandagg.node.query.geo as geo  # noqa
+import pandagg.node.query.shape as shape  # noqa
+import pandagg.node.query.span as span  # noqa
+import pandagg.node.query.specialized as specialized  # noqa
+import pandagg.node.query.term_level as term_level  # noqa
+
 
 ADD = "add"
 REPLACE = "replace"

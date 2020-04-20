@@ -23,13 +23,3 @@ class Script(LeafQueryClause):
 
 class Wrapper(LeafQueryClause):
     KEY = "wrapper"
-
-
-SPECIALIZED_QUERIES = [
-    DistanceFeature,
-    MoreLikeThis,
-    Percolate,
-    RankFeature,
-    Script,
-    Wrapper,
-]

@@ -9,6 +9,12 @@ from builtins import str as text
 from elasticsearch import Elasticsearch
 from future.utils import iteritems, string_types, python_2_unicode_compatible, iterkeys
 
+from pandagg.tree._tree import Tree
+from pandagg.tree.query import Query
+from pandagg.tree.response import ResponseTree
+from pandagg.interactive.mapping import as_mapping
+from pandagg.interactive.response import IResponse
+
 from pandagg.node.agg.abstract import (
     BucketAggNode,
     UniqueBucketAgg,
@@ -16,13 +22,10 @@ from pandagg.node.agg.abstract import (
     MetricAgg,
     ShadowRoot,
 )
-from pandagg.tree._tree import Tree
 from pandagg.node.agg.bucket import Terms, Nested, ReverseNested
 from pandagg.node.agg.pipeline import BucketSelector, BucketSort
-from pandagg.tree.query import Query
-from pandagg.tree.response import ResponseTree
-from pandagg.interactive.mapping import as_mapping
-from pandagg.interactive.response import IResponse
+# necessary to ensure all agg nodes are registered in meta class
+import pandagg.node.agg.metric as metric  # noqa
 
 
 @python_2_unicode_compatible

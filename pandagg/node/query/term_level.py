@@ -41,6 +41,7 @@ class Ids(LeafQueryClause):
 
 class Prefix(KeyFieldQueryClause):
     KEY = "prefix"
+    _DEFAULT_PARAM = "value"
 
 
 class Range(KeyFieldQueryClause):
@@ -49,6 +50,7 @@ class Range(KeyFieldQueryClause):
 
 class Regexp(KeyFieldQueryClause):
     KEY = "regexp"
+    _DEFAULT_PARAM = "value"
 
 
 class Term(KeyFieldQueryClause):
@@ -73,26 +75,14 @@ class Terms(AbstractSingleFieldQueryClause):
 
 class TermsSet(KeyFieldQueryClause):
     KEY = "terms_set"
+    _DEFAULT_PARAM = 'terms'
 
 
 class Type(KeyFieldQueryClause):
     KEY = "type"
+    _DEFAULT_PARAM = 'value'
 
 
 class Wildcard(KeyFieldQueryClause):
     KEY = "wildcard"
-
-
-TERM_LEVEL_QUERIES = [
-    Exists,
-    Fuzzy,
-    Ids,
-    Prefix,
-    Range,
-    Regexp,
-    Term,
-    Terms,
-    TermsSet,
-    Type,
-    Wildcard,
-]
+    _DEFAULT_PARAM = 'value'
