@@ -75,14 +75,14 @@ class Terms(AbstractSingleFieldQueryClause):
 
 class TermsSet(KeyFieldQueryClause):
     KEY = "terms_set"
-    _DEFAULT_PARAM = 'terms'
+    _DEFAULT_PARAM = "terms"
 
 
 class Type(KeyFieldQueryClause):
     KEY = "type"
-    _DEFAULT_PARAM = 'value'
+    _DEFAULT_PARAM = "value"
 
 
 class Wildcard(KeyFieldQueryClause):
     KEY = "wildcard"
-    _DEFAULT_PARAM = 'value'
+    _DEFAULT_PARAM = "value"

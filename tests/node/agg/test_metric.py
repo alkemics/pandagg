@@ -47,19 +47,6 @@ class MetricAggNodesTestCase(TestCase):
         # test extract bucket value
         self.assertEqual(Avg.extract_bucket_value({"value": 75.0}), 75.0)
 
-        a = AggNode._type_deserializer({"avg_grade": {"avg": {"field": "grade"}}})
-        self.assertIsInstance(a, Avg)
-        self.assertEqual(a.name, "avg_grade")
-        self.assertEqual(a.field, "grade")
-
-        a_script = AggNode._type_deserializer(
-            {"avg_grade": {"avg": {"script": {"source": "doc.grade.value"}}}}
-        )
-        self.assertIsInstance(a_script, Avg)
-        self.assertEqual(a_script.name, "avg_grade")
-        self.assertEqual(a_script.field, None)
-        self.assertEqual(a_script.script, {"source": "doc.grade.value"})
-
     def test_top_hits(self):
         query = {
             "top_sales_hits": {

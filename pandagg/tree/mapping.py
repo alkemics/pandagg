@@ -50,7 +50,9 @@ class Mapping(Tree):
         return self.get(self.root).body(with_children=True)
 
     def _insert_from_dict(self, name, body, pid=None, is_subfield=False):
-        node = self.node_class._type_deserializer(name=name, body=body, is_subfield=is_subfield)
+        node = self.node_class._type_deserializer(
+            name=name, body=body, is_subfield=is_subfield
+        )
         self._insert_from_node(node, pid=pid)
 
     def _insert_from_node(self, field, pid=None, is_subfield=False):

@@ -5,9 +5,15 @@ from __future__ import unicode_literals
 from builtins import str as text
 
 import json
-from future.utils import iteritems
+from future.utils import iteritems, string_types
+from lighttree import Tree
 
 from pandagg.node._node import Node
+
+try:
+    import collections.abc as collections_abc  # only works on python 3.3+
+except ImportError:
+    import collections as collections_abc
 
 
 class AggNode(Node):
@@ -25,42 +31,84 @@ class AggNode(Node):
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None
 
-    def __init__(self, name, meta=None, **body):
+    def __init__(self, name, meta=None, aggs=None, **body):
         self.name = name
-        super(AggNode, self).__init__(identifier=self.name)
         self.body = body
         self.meta = meta
+        # _children must be Agg or AggNode instances
+        if aggs is not None:
+            if not isinstance(aggs, (list, tuple)):
+                raise ValueError("Got %s" % aggs)
+            if not all(isinstance(a, (AggNode, Tree)) for a in aggs):
+                raise ValueError("Got %s" % aggs)
+        super(AggNode, self).__init__(identifier=self.name, _children=aggs)
 
     @classmethod
-    def _type_deserializer(cls, d):
-        if len(d.keys()) > 1:
-            raise ValueError(
-                "Invalid aggregation, expected one single key, got: %s" % d.keys()
+    def _type_deserializer(cls, name_or_agg, **params):
+        """Return:
+        - either AggNode instance, with (if relevant) children nodes under the 'children' attribute.
+        - either Agg instance if provided
+        """
+        # hack for now
+        if isinstance(name_or_agg, Tree) and name_or_agg.__class__.__name__ == "Agg":
+            if params:
+                raise ValueError(
+                    "Cannot accept parameters when passing in an Agg object."
+                )
+            return name_or_agg
+
+        # Terms('per_name', field='name')
+        if isinstance(name_or_agg, AggNode):
+            if params:
+                raise ValueError(
+                    "Cannot accept parameters when passing in an AggNode object."
+                )
+            return name_or_agg
+        # [Terms('per_name', field='name'), Terms('per_type', field='type')]
+        if isinstance(name_or_agg, (tuple, list)):
+            if params:
+                raise ValueError(
+                    "Cannot accept parameters when passing in an multiple objects."
+                )
+            return ShadowRoot(aggs=name_or_agg)
+
+        # {"per_tag": {"terms": {"field": "tags"}, "aggs": {...}}}
+        # can be one or multiple aggs
+        if isinstance(name_or_agg, collections_abc.Mapping):
+            if params:
+                raise ValueError("A() cannot accept parameters when passing in a dict.")
+            if len(name_or_agg) == 0:
+                raise ValueError()
+            if len(name_or_agg) > 1:
+                return ShadowRoot(aggs=[{k: v} for k, v in iteritems(name_or_agg)])
+            # copy to avoid modifying in-place
+            name, agg = name_or_agg.copy().popitem()
+            agg = agg.copy()
+            # pop out nested aggs
+            aggs = agg.pop("aggs", None)
+            # pop out meta data
+            meta = agg.pop("meta", None)
+            # should be {"terms": {"field": "tags"}}
+            if len(agg) != 1:
+                raise ValueError(
+                    'A() can only accept dict with an aggregation ({"terms": {...}}). '
+                    "Instead it got (%r)" % name_or_agg
+                )
+
+            agg_type, params = agg.popitem()
+            return cls.get_dsl_class(agg_type)(
+                name=name, aggs=aggs, meta=meta, **params
             )
-        agg_name, agg_detail = next(iter(iteritems(d)))
-        meta = agg_detail.pop("meta", None)
-        children_aggs = (
-            agg_detail.pop("aggs", None) or agg_detail.pop("aggregations", None) or {}
-        )
-        if len(agg_detail.keys()) != 1:
-            raise ValueError(
-                "Invalid aggregation, expected one single key, got %s"
-                % agg_detail.keys()
+
+        if not isinstance(name_or_agg, string_types):
+            raise ValueError("Invalid")
+        # "tags", size=10  (by default apply a terms agg)
+        if "name" not in params:
+            return cls.get_dsl_class("terms")(
+                name=name_or_agg, field=name_or_agg, **params
             )
-        agg_type, agg_body = next(iter(iteritems(agg_detail)))
-        agg_class = cls.get_dsl_class(agg_type)
-        if children_aggs and not issubclass(agg_class, BucketAggNode):
-            raise ValueError(
-                "Aggregation of type %s doesn't accept sub-aggregations, got <%s>."
-                % (agg_class.__name__, children_aggs)
-            )
-        if children_aggs:
-            if isinstance(children_aggs, dict):
-                children_aggs = [{k: v} for k, v in iteritems(children_aggs)]
-            elif isinstance(children_aggs, AggNode):
-                children_aggs = (children_aggs,)
-            agg_body["aggs"] = children_aggs
-        return agg_class(name=agg_name, meta=meta, **agg_body)
+        # "terms", field="tags", name="per_tags"
+        return cls.get_dsl_class(name_or_agg)(**params)
 
     def line_repr(self, depth, **kwargs):
         return "[%s] %s" % (text(self.name), text(self.KEY))
@@ -168,16 +216,36 @@ class BucketAggNode(AggNode):
     VALUE_ATTRS = None
 
     def __init__(self, name, meta=None, aggs=None, **body):
-        super(BucketAggNode, self).__init__(name=name, meta=meta, **body)
-        aggs = aggs or []
+        atomized_aggs = []
         if aggs is None:
-            aggs = []
+            pass
         elif isinstance(aggs, dict):
-            aggs = [{k: v for k, v in iteritems(aggs)}]
-        elif not isinstance(aggs, (list, tuple)):
-            # allow "aggs" syntax with single node
-            aggs = (aggs,)
-        self.aggs = aggs
+            atomized_aggs = [{k: v for k, v in iteritems(aggs)}]
+        elif isinstance(aggs, (list, tuple)):
+            atomized_aggs = aggs
+        else:
+            atomized_aggs = (aggs,)
+
+        result_aggs = []
+        for atomized_agg in atomized_aggs:
+            if isinstance(atomized_agg, Tree):
+                ragg_root = atomized_agg.get(atomized_agg.root)
+                if isinstance(ragg_root, ShadowRoot):
+                    result_aggs.extend(
+                        [
+                            atomized_agg.subtree(cid)
+                            for cid in atomized_agg.children(ragg_root.name)
+                        ]
+                    )
+                else:
+                    result_aggs.append(atomized_agg)
+            elif isinstance(atomized_agg, ShadowRoot):
+                result_aggs.extend(atomized_agg._children)
+            else:
+                result_aggs.append(self._type_deserializer(atomized_agg))
+        super(BucketAggNode, self).__init__(
+            name=name, meta=meta, aggs=result_aggs, **body
+        )
 
     def extract_buckets(self, response_value):
         raise NotImplementedError()
@@ -192,8 +260,8 @@ class ShadowRoot(BucketAggNode):
 
     KEY = "shadow_root"
 
-    def __init__(self):
-        super(ShadowRoot, self).__init__("_")
+    def __init__(self, aggs):
+        super(ShadowRoot, self).__init__("_", aggs=aggs)
 
     def line_repr(self, depth, **kwargs):
         return "[%s]" % text(self.name)

@@ -25,8 +25,9 @@ class Node(OriginalNode):
     def __init__(self, identifier=None, _children=None):
         if identifier is None:
             identifier = self._craft_identifier()
-        self._children = self._deserialize_children(_children)
-        super(Node, self).__init__(identifier=identifier)
+        super(Node, self).__init__(
+            identifier=identifier, _children=self._deserialize_children(_children)
+        )
 
     @property
     def _identifier_prefix(self):

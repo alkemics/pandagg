@@ -10,7 +10,7 @@ from pandagg.node._node import Node
 
 @python_2_unicode_compatible
 class Field(Node):
-    _type_name = 'field'
+    _type_name = "field"
     KEY = None
     DISPLAY_PATTERN = "  %s"
 

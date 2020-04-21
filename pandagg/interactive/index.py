@@ -28,16 +28,14 @@ class Index(Obj):
             client=self.client, index_name=self.name, mapping=self.mapping
         ).query(query, validate=validate, **kwargs)
 
-    def groupby(self, by, insert_below=None, **kwargs):
+    def groupby(self, *args, **kwargs):
         return Agg(
             client=self.client, index_name=self.name, mapping=self.mapping
-        ).groupby(by, insert_below=insert_below, **kwargs)
+        ).groupby(*args, **kwargs)
 
-    def agg(
-        self, arg, insert_below=None, output=Agg.DEFAULT_OUTPUT, execute=True, **kwargs
-    ):
+    def agg(self, *args, **kwargs):
         return Agg(client=self.client, index_name=self.name, mapping=self.mapping).agg(
-            arg, insert_below=insert_below, execute=execute, output=output, **kwargs
+            *args, **kwargs
         )
 
 

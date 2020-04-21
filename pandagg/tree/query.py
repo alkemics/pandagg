@@ -9,7 +9,11 @@ from future.utils import python_2_unicode_compatible
 from pandagg.tree._tree import Tree
 from pandagg.interactive.mapping import as_mapping
 
-from pandagg.node.query._parameter_clause import SimpleParameter, ParameterClause, ParentParameterClause
+from pandagg.node.query._parameter_clause import (
+    SimpleParameter,
+    ParameterClause,
+    ParentParameterClause,
+)
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.node.query.compound import (
     CompoundClause,
@@ -21,6 +25,7 @@ from pandagg.node.query.compound import (
 )
 from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
 from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
+
 # necessary imports to ensure all clauses are loaded
 import pandagg.node.query.full_text as full_text  # noqa
 import pandagg.node.query.geo as geo  # noqa
@@ -44,15 +49,16 @@ class Query(Tree):
 
     node_class = QueryClause
 
-    def __init__(self, from_=None, mapping=None, client=None, index_name=None):
-        self.index_name = index_name
-        self.client = client
+    def __init__(self, *args, **kwargs):
+        self.index_name = kwargs.pop("index_name", None)
+        self.client = kwargs.pop("client", None)
         self.tree_mapping = None
+        mapping = kwargs.pop("mapping", None)
         if mapping is not None:
             self.set_mapping(mapping)
         super(Query, self).__init__()
-        if from_ is not None:
-            self._insert(from_)
+        if args or kwargs:
+            self._fill(*args, **kwargs)
 
     def _clone_init(self, deep=False):
         tree_mapping = self.tree_mapping
@@ -73,26 +79,30 @@ class Query(Tree):
         return self
 
     @classmethod
-    def deserialize(cls, from_, mapping=None):
-        if isinstance(from_, Query):
-            return from_
-        new = cls(mapping=mapping)
-        node_hierarchy = cls.node_class._type_deserializer(from_)
-        new._insert_from_node_hierarchy(node_hierarchy)
-        return new
+    def deserialize(cls, *args, **kwargs):
+        mapping = kwargs.pop("mapping", None)
+        if len(args) == 1 and isinstance(args[0], Query):
+            return args[0]
 
-    def _insert(self, from_, pid=None):
-        inserted_tree = self.deserialize(from_=from_)
-        if self.root is None:
-            self.merge(nid=pid, new_tree=inserted_tree)
+        new = cls(mapping=mapping)
+        return new._fill(*args, **kwargs)
+
+    def _fill(self, *args, **kwargs):
+        if args:
+            node_hierarchy = self.node_class._type_deserializer(*args, **kwargs)
+        elif kwargs:
+            node_hierarchy = self.node_class._type_deserializer(kwargs)
+        else:
             return self
-        self.insert(parent_id=pid, item=inserted_tree)
+        self.insert(node_hierarchy)
         return self
 
-    def _insert_node_below(self, node, parent_id=None):
+    def _insert_node_below(self, node, parent_id=None, with_children=True):
         """Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent."""
         if parent_id is None:
-            return super(Query, self)._insert_node_below(node, parent_id=parent_id)
+            return super(Query, self)._insert_node_below(
+                node, parent_id=parent_id, with_children=with_children
+            )
 
         pnode = self.get(parent_id)
         if isinstance(pnode, LeafQueryClause):
@@ -114,7 +124,9 @@ class Query(Tree):
                     "Expect a parameter clause of type %s under <%s> compound clause, got <%s>"
                     % (pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY)
                 )
-        super(Query, self)._insert_node_below(node, parent_id)
+        super(Query, self)._insert_node_below(
+            node=node, parent_id=parent_id, with_children=with_children
+        )
 
     def query_dict(self, from_=None, with_name=True):
         """Return None if no query clause.
@@ -150,11 +162,14 @@ class Query(Tree):
             return {node.KEY: serialized_children}
         return {node.KEY: serialized_children[0]}
 
-    def query(
-        self, q, parent=None, child=None, parent_param=None, child_param=None, mode=ADD
-    ):
+    def query(self, *args, **kwargs):
+        mode = kwargs.pop("mode", ADD)
+        parent = kwargs.pop("parent", None)
+        parent_param = kwargs.pop("parent_param", None)
+        child = kwargs.pop("child", None)
+        child_param = kwargs.pop("child_param", None)
         return self._insert_into(
-            q,
+            self.node_class._type_deserializer(*args, **kwargs),
             parent=parent,
             child=child,
             mode=mode,

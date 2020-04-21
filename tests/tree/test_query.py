@@ -23,7 +23,7 @@ class QueryTestCase(TestCase):
         self.addCleanup(patcher.stop)
 
     def test_term_query(self):
-        q = Query(from_=Term(field="some_field", value=2))
+        q = Query(Term(field="some_field", value=2))
         self.assertEqual(q.query_dict(), {"term": {"some_field": {"value": 2}}})
 
     def test_query_compound(self):
@@ -634,7 +634,7 @@ bool
 
     def test_deserialize_dict_query(self):
         # simple leaf
-        q = Query(from_={"term": {"some_field": {"value": 2}}})
+        q = Query({"term": {"some_field": {"value": 2}}})
         self.assertEqual(
             q.show(),
             """term, field=some_field, value=2
@@ -646,7 +646,7 @@ bool
         self.assertEqual(n.field, "some_field")
 
         # bool simple leaf
-        q = Query(from_={"bool": {"must_not": {"term": {"some_field": {"value": 2}}}}})
+        q = Query({"bool": {"must_not": {"term": {"some_field": {"value": 2}}}}})
         self.assertEqual(
             q.show(),
             """bool
@@ -664,7 +664,7 @@ bool
 
         # bool multiple leaves
         q = Query(
-            from_={
+            {
                 "bool": {
                     "must_not": [
                         {"term": {"some_field": {"value": 2}}},
@@ -700,7 +700,7 @@ bool
 
         # nested compound queries
         q = Query(
-            from_={
+            {
                 "nested": {
                     "path": "some_nested_path",
                     "query": {
