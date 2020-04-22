@@ -15,9 +15,9 @@ from tests.testing_samples.mapping_example import MAPPING
 
 class IMappingTestCase(TestCase):
     def test_mapping_aggregations(self):
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
         # check that leaves are expanded, based on 'field_name' attribute of nodes
-        mapping = IMapping(from_=mapping_tree, depth=1)
+        mapping = IMapping(mapping_tree, depth=1)
         for field_name in (
             "classification_type",
             "date",
@@ -59,14 +59,14 @@ class IMappingTestCase(TestCase):
             },
         }
 
-        mapping_tree = Mapping(from_=mapping_dict)
+        mapping_tree = Mapping(mapping_dict)
         client_mock = Mock(spec=["search"])
         index_name = "classification_report_index_name"
 
         # from dict
-        im1 = IMapping(client=client_mock, from_=mapping_dict, index_name=index_name)
+        im1 = IMapping(mapping_dict, client=client_mock, index_name=index_name)
         # from tree
-        im2 = IMapping(client=client_mock, from_=mapping_tree, index_name=index_name)
+        im2 = IMapping(mapping_tree, client=client_mock, index_name=index_name)
 
         # from nodes
         im3 = IMapping(
@@ -121,10 +121,10 @@ class IMappingTestCase(TestCase):
         }
         client_mock.search = Mock(return_value=es_response_mock)
 
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
         client_bound_mapping = IMapping(
+            mapping_tree,
             client=client_mock,
-            from_=mapping_tree,
             index_name="classification_report_index_name",
         )
 

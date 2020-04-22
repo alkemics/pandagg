@@ -20,7 +20,7 @@ class Index(Obj):
 
     def set_mapping(self, mapping):
         self.mapping = IMapping(
-            client=self.client, index_name=self.name, from_=Mapping(mapping), depth=1
+            Mapping(mapping), client=self.client, index_name=self.name, depth=1
         )
 
     def query(self, query, validate=False, **kwargs):

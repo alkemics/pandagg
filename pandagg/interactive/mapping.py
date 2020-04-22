@@ -3,7 +3,6 @@
 
 from lighttree import TreeBasedObj
 from pandagg.interactive._field_agg_factory import field_classes_per_name
-from pandagg.node.mapping.field_datatypes import Object
 from pandagg.tree.mapping import Mapping
 
 
@@ -24,28 +23,15 @@ class IMapping(TreeBasedObj):
 
     _NODE_PATH_ATTR = "name"
 
-    def __init__(
-        self,
-        from_=None,
-        properties=None,
-        dynamic=False,
-        client=None,
-        root_path=None,
-        depth=1,
-        initial_tree=None,
-        index_name=None,
-    ):
-        if from_ is not None and properties is not None:
-            raise ValueError('Can provide at most one of "from_" and "properties"')
-        if properties is not None:
-            from_ = Object(name="", properties=properties, dynamic=dynamic)
-        tree = Mapping.deserialize(from_)
-
-        self._client = client
-        self._index_name = index_name
-
+    def __init__(self, *args, **kwargs):
+        self._client = kwargs.pop("client", None)
+        self._index_name = kwargs.pop("index_name", None)
+        root_path = kwargs.pop("root_path", None)
+        depth = kwargs.pop("depth", 1)
+        initial_tree = kwargs.pop("initial_tree", None)
+        tree = Mapping(*args, **kwargs)
         super(IMapping, self).__init__(
-            tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree,
+            tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree
         )
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         self._set_agg_property_if_required()
@@ -59,8 +45,8 @@ class IMapping(TreeBasedObj):
 
     def _clone(self, nid, root_path, depth):
         return IMapping(
+            self._tree.subtree(nid),
             client=self._client,
-            from_=self._tree.subtree(nid),
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,

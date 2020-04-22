@@ -25,11 +25,6 @@ class MappingTreeTestCase(TestCase):
             node.__str__(),
             u"""<Mapping Field path.to.field> of type keyword:
 {
-    "fields": {
-        "searchable": {
-            "type": "text"
-        }
-    },
     "type": "keyword"
 }""",
         )
@@ -82,7 +77,7 @@ class MappingTreeTestCase(TestCase):
         )
 
         expected_repr = """<Mapping>
-                                                             {Object}
+_                                                              
 ├── classification_type                                       Keyword
 │   └── raw                                                 ~ Text
 └── local_metrics                                            [Nested]
@@ -95,12 +90,12 @@ class MappingTreeTestCase(TestCase):
             self.assertEqual(m.serialize(), mapping_dict, "failed at m%d" % (i + 1))
 
     def test_parse_tree_from_dict(self):
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
 
         self.assertEqual(mapping_tree.__str__(), EXPECTED_MAPPING_TREE_REPR)
 
     def test_nesteds_applied_at_field(self):
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
 
         self.assertEqual(mapping_tree.nested_at_field("classification_type"), None)
         self.assertEqual(mapping_tree.list_nesteds_at_field("classification_type"), [])
@@ -125,7 +120,7 @@ class MappingTreeTestCase(TestCase):
     @patch("uuid.uuid4")
     def test_resolve_path_to_id(self, uuid_mock):
         uuid_mock.side_effect = range(100)
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
         # do not resolve
         self.assertEqual(
             mapping_tree.resolve_path_to_id("global_metrics.non_existing_field"),
@@ -134,15 +129,15 @@ class MappingTreeTestCase(TestCase):
         # resolve
         self.assertEqual(
             mapping_tree.resolve_path_to_id("classification_type"),
-            "classification_type1",
+            "classification_type0",
         )
         self.assertEqual(
             mapping_tree.resolve_path_to_id("local_metrics.dataset.support_test"),
-            "support_test26",
+            "support_test23",
         )
 
     def test_mapping_type_of_field(self):
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
         with self.assertRaises(AbsentMappingFieldError):
             self.assertEqual(mapping_tree.mapping_type_of_field("yolo"), False)
 
@@ -158,7 +153,7 @@ class MappingTreeTestCase(TestCase):
         )
 
     def test_node_path(self):
-        mapping_tree = Mapping(from_=MAPPING)
+        mapping_tree = Mapping(MAPPING)
         # get node by path syntax
         node = mapping_tree.get("local_metrics.dataset.support_test")
         self.assertIsInstance(node, Field)

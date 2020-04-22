@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import copy
-
-from future.utils import iteritems
 
 from lighttree.exceptions import NotFoundNodeError
 
-from pandagg.node.mapping.abstract import Field
+from pandagg.node.mapping.abstract import Field, ShadowRoot, StringField, ComplexField
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
-from pandagg.node.mapping.field_datatypes import Object
 from pandagg.tree._tree import Tree
 
 
@@ -19,72 +15,40 @@ class Mapping(Tree):
 
     node_class = Field
 
-    def __init__(self, from_=None, properties=None, dynamic=False):
-        if from_ is not None and properties is not None:
-            raise ValueError('Can provide at most one of "from_" and "properties"')
-        if properties is not None:
-            from_ = Object(name="", properties=properties, dynamic=dynamic)
+    def __init__(self, *args, **kwargs):
         super(Mapping, self).__init__()
-        if from_ is not None:
-            self._insert(from_)
+        if (args and kwargs) or len(args) > 1:
+            raise ValueError()
+        if args:
+            arg = args[0]
+            if isinstance(arg, Mapping):
+                self.insert(arg)
+            else:
+                # {'dynamic': False, 'properties': ...}
+                self.insert(ShadowRoot(**arg))
+        elif kwargs:
+            self.insert(ShadowRoot(**kwargs))
 
-    @classmethod
-    def deserialize(cls, from_):
-        if isinstance(from_, Mapping):
-            return from_
-        if isinstance(from_, Field):
-            new = Mapping()
-            new._insert_from_node(field=from_)
-            return new
-        if isinstance(from_, dict):
-            from_ = copy.deepcopy(from_)
-            new = Mapping()
-            new._insert_from_dict(name="", body=from_)
-            return new
-        else:
-            raise ValueError("Unsupported type <%s>." % type(from_))
-
-    def serialize(self):
+    def serialize(self, from_=None, depth=None):
         if self.root is None:
             return None
-        return self.get(self.root).body(with_children=True)
-
-    def _insert_from_dict(self, name, body, pid=None, is_subfield=False):
-        node = self.node_class._type_deserializer(
-            name=name, body=body, is_subfield=is_subfield
-        )
-        self._insert_from_node(node, pid=pid)
-
-    def _insert_from_node(self, field, pid=None, is_subfield=False):
-        if is_subfield:
-            field.is_subfield = True
-        self.insert_node(field, pid)
-        for subfield in field.fields or []:
-            if isinstance(subfield, dict):
-                name, body = next(iter(iteritems(subfield)))
-                self._insert_from_dict(
-                    name=name, body=body, pid=field.identifier, is_subfield=True
+        from_ = self.root if from_ is None else from_
+        node = self.get(from_)
+        children_queries = {}
+        if depth is None or depth > 0:
+            if depth is not None:
+                depth -= 1
+            for child_node in self.children(node.identifier, id_only=False):
+                children_queries[child_node.name] = self.serialize(
+                    from_=child_node.identifier, depth=depth
                 )
-            elif isinstance(subfield, Field):
-                self._insert_from_node(subfield, pid=field.identifier, is_subfield=True)
-            else:
-                raise ValueError("Wrong type %s" % type(field))
-        for subfield in field.properties or []:
-            if isinstance(subfield, dict):
-                name, body = next(iter(iteritems(subfield)))
-                self._insert_from_dict(name=name, body=body, pid=field.identifier)
-            elif isinstance(subfield, Field):
-                self._insert_from_node(subfield, pid=field.identifier)
-            else:
-                raise ValueError("Wrong type %s" % type(field))
-
-    def _insert(self, from_, pid=None):
-        inserted_tree = self.deserialize(from_=from_)
-        if self.root is None:
-            self.merge(nid=pid, new_tree=inserted_tree)
-            return self
-        self.paste(nid=pid, new_tree=inserted_tree)
-        return self
+        serialized_node = node.body
+        if children_queries:
+            if isinstance(node, StringField):
+                serialized_node["fields"] = children_queries
+            elif isinstance(node, ComplexField):
+                serialized_node["properties"] = children_queries
+        return serialized_node
 
     def resolve_path_to_id(self, path):
         if path in self._nodes_map:
