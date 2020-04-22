@@ -4,6 +4,11 @@
 from lighttree.exceptions import NotFoundNodeError
 
 from pandagg.node.mapping.abstract import Field, ShadowRoot, StringField, ComplexField
+
+# necessary to ensure all Fields are registered in meta-class
+import pandagg.node.mapping.field_datatypes as fd  # noqa
+import pandagg.node.mapping.meta_fields as mf  # noqa
+
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,

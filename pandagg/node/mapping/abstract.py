@@ -121,5 +121,5 @@ class ShadowRoot(ComplexField):
 
     KEY = " "
 
-    def __init__(self, properties=None, dynamic=False):
-        super(ShadowRoot, self).__init__("_", dynamic=dynamic, properties=properties)
+    def __init__(self, properties=None, dynamic=False, **body):
+        super(ShadowRoot, self).__init__("_", dynamic=dynamic, properties=properties, **body)
