@@ -97,7 +97,7 @@ MAPPING = {
     },
 }
 
-EXPECTED_MAPPING_REPR = """                                                             {Object}
+EXPECTED_MAPPING_REPR = """_                                                              
 ├── classification_type                                       Keyword
 ├── date                                                      Date
 ├── global_metrics                                           {Object}

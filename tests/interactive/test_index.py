@@ -107,7 +107,6 @@ class IndexTestCase(TestCase):
                     field="global_metrics.performance.test.micro.f1_score",
                 ),
             ],
-            execute=False,
         )
         self.assertIsInstance(not_executed_agg, Agg)
         self.assertIs(not_executed_agg.client, client_mock)

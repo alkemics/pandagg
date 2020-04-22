@@ -107,7 +107,7 @@ class BucketAggNodesTestCase(TestCase):
             aggs=[Terms("some_terms_agg", field="some_path.id")],
         )
         self.assertEqual(nested_agg.get_filter(None), None)
-        self.assertEqual(len(nested_agg.aggs), 1)
+        self.assertEqual(len(nested_agg._children), 1)
 
         # test query dict
         self.assertEqual(nested_agg.query_dict(), {"nested": {"path": "nested_path"}})

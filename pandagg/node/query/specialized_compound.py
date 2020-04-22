@@ -12,6 +12,3 @@ class PinnedQuery(CompoundClause):
     DEFAULT_OPERATOR = Organic
     PARAMS_WHITELIST = ["ids", "organic"]
     KEY = "pinned"
-
-
-SPECIALIZED_COMPOUND_QUERIES = [ScriptScore, PinnedQuery]

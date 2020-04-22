@@ -28,7 +28,7 @@ class CompoundClause(QueryClause):
     }
     """
 
-    DEFAULT_OPERATOR = NotImplementedError()
+    DEFAULT_OPERATOR = None
     PARAMS_WHITELIST = None
     _variant = "compound"
 

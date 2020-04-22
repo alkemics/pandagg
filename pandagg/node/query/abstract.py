@@ -30,14 +30,28 @@ class QueryClause(Node):
 
     @classmethod
     def _type_deserializer(cls, name_or_query, **params):
-        """Return QueryClause instance, with (if relevant) children nodes under the 'children' attribute."""
+        """Return:
+        - either QueryClause instance, with (if relevant) children nodes under the 'children' attribute.
+        - either Query instance if provided
+        """
+        # hack for now
+        if (
+            isinstance(name_or_query, Tree)
+            and name_or_query.__class__.__name__ == "Query"
+        ):
+            if params:
+                raise ValueError(
+                    "Cannot accept parameters when passing in a Query object."
+                )
+            return name_or_query
+
         child_prefix = "_param_" if cls._variant == "compound" else None
 
         # MatchAll()
         if isinstance(name_or_query, QueryClause):
             if params:
                 raise ValueError(
-                    "Q() cannot accept parameters when passing in a Query object."
+                    "Cannot accept parameters when passing in a QueryClause object."
                 )
             return name_or_query
 
@@ -45,10 +59,10 @@ class QueryClause(Node):
         # {"filter": MatchAll()}
         if isinstance(name_or_query, collections_abc.Mapping):
             if params:
-                raise ValueError("Q() cannot accept parameters when passing in a dict.")
+                raise ValueError("Cannot accept parameters when passing in a dict.")
             if len(name_or_query) != 1:
                 raise ValueError(
-                    'Q() can only accept dict with a single query ({"match": {...}}). '
+                    'Can only accept dict with a single query ({"match": {...}}). '
                     "Instead it got (%r)" % name_or_query
                 )
             name, body = name_or_query.copy().popitem()
@@ -61,16 +75,8 @@ class QueryClause(Node):
                 return klass(*body)
             return klass(body)
 
-        # hack for now
-        if (
-            isinstance(name_or_query, Tree)
-            and name_or_query.__class__.__name__ == "Query"
-        ):
-            return name_or_query
-
         # "match", title="python"
-        name_or_query = child_prefix + name_or_query
-        return cls.get_dsl_class(name_or_query)(**params)
+        return cls.get_dsl_class(name_or_query, child_prefix)(**params)
 
     def line_repr(self, depth, **kwargs):
         if not self.body:

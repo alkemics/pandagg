@@ -14,7 +14,7 @@ class ResponseTestCase(TestCase):
     @patch("uuid.uuid4")
     def test_response_tree(self, uuid_mock):
         uuid_mock.side_effect = range(1000)
-        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         response_tree = ResponseTree(agg_tree=my_agg)
         response_tree.parse_aggregation(sample.ES_AGG_RESPONSE)
 
@@ -48,7 +48,7 @@ class ClientBoundResponseTestCase(TestCase):
         uuid_mock.side_effect = range(1000)
         client_mock = Mock(spec=["search"])
 
-        my_agg = Agg(mapping=MAPPING, from_=sample.EXPECTED_AGG_QUERY)
+        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(
             sample.ES_AGG_RESPONSE
         )

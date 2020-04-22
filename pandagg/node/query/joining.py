@@ -35,6 +35,3 @@ class HasParent(CompoundClause):
 
 class ParentId(CompoundClause):
     KEY = "parent_id"
-
-
-JOINING_QUERIES = [Nested, HasChild, HasParent, ParentId]

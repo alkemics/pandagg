@@ -20,7 +20,7 @@ class Index(Obj):
 
     def set_mapping(self, mapping):
         self.mapping = IMapping(
-            client=self.client, index_name=self.name, from_=Mapping(mapping), depth=1
+            Mapping(mapping), client=self.client, index_name=self.name, depth=1
         )
 
     def query(self, query, validate=False, **kwargs):
@@ -28,16 +28,14 @@ class Index(Obj):
             client=self.client, index_name=self.name, mapping=self.mapping
         ).query(query, validate=validate, **kwargs)
 
-    def groupby(self, by, insert_below=None, **kwargs):
+    def groupby(self, *args, **kwargs):
         return Agg(
             client=self.client, index_name=self.name, mapping=self.mapping
-        ).groupby(by, insert_below=insert_below, **kwargs)
+        ).groupby(*args, **kwargs)
 
-    def agg(
-        self, arg, insert_below=None, output=Agg.DEFAULT_OUTPUT, execute=True, **kwargs
-    ):
+    def agg(self, *args, **kwargs):
         return Agg(client=self.client, index_name=self.name, mapping=self.mapping).agg(
-            arg, insert_below=insert_below, execute=execute, output=output, **kwargs
+            *args, **kwargs
         )
 
 

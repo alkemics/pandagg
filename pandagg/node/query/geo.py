@@ -36,6 +36,3 @@ class GeoPolygone(KeyFieldQueryClause):
 
 class GeoShape(KeyFieldQueryClause):
     KEY = "geo_shape"
-
-
-GEO_QUERIES = [GeoBoundingBox, GeoDistance, GeoPolygone, GeoShape]

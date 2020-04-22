@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+from future.utils import string_types
 
 import json
 
@@ -113,18 +114,21 @@ class ParentParameterClause(ParameterClause):
     MULTIPLE = False
 
     def __init__(self, *args, **kwargs):
-        children = []
-        if kwargs:
-            children.append(kwargs)
-        for arg in args:
-            if isinstance(arg, (tuple, list)):
-                children.extend(arg)
-            else:
-                children.append(arg)
-        if not self.MULTIPLE and len(children) > 1:
-            raise ValueError(
-                "%s clause does not accept multiple query clauses." % self.KEY
-            )
+        if len(args) == 1 and isinstance(args[0], string_types):
+            children = [self._type_deserializer(*args, **kwargs)]
+        else:
+            children = []
+            if kwargs:
+                children.append(kwargs)
+            for arg in args:
+                if isinstance(arg, (tuple, list)):
+                    children.extend(arg)
+                else:
+                    children.append(arg)
+            if not self.MULTIPLE and len(children) > 1:
+                raise ValueError(
+                    "%s clause does not accept multiple query clauses." % self.KEY
+                )
         super(ParentParameterClause, self).__init__(_children=children)
 
 

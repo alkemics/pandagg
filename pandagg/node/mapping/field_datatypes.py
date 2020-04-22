@@ -1,62 +1,62 @@
 """https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html"""
 
-from .abstract import Field
+from .abstract import Field, StringField, ComplexField, NumericField
 
 
 # CORE DATATYPES
 # string
-class Text(Field):
+class Text(StringField):
     KEY = "text"
 
 
-class Keyword(Field):
+class Keyword(StringField):
     KEY = "keyword"
 
 
 # numeric
-class Long(Field):
+class Long(NumericField):
     KEY = "long"
 
 
-class Integer(Field):
+class Integer(NumericField):
     KEY = "integer"
 
 
-class Short(Field):
+class Short(NumericField):
     KEY = "short"
 
 
-class Byte(Field):
+class Byte(NumericField):
     KEY = "byte"
 
 
-class Double(Field):
+class Double(NumericField):
     KEY = "double"
 
 
-class Float(Field):
+class Float(NumericField):
     KEY = "float"
 
 
-class HalfFloat(Field):
+class HalfFloat(NumericField):
     KEY = "half_float"
 
 
-class ScaledFloat(Field):
+class ScaledFloat(NumericField):
     KEY = "scaled_float"
 
 
 # date
-class Date(Field):
+class Date(NumericField):
     KEY = "date"
 
 
-class DateNanos(Field):
+class DateNanos(NumericField):
     KEY = "date_nanos"
 
 
 # boolean
-class Boolean(Field):
+class Boolean(NumericField):
     KEY = "boolean"
 
 
@@ -87,14 +87,14 @@ class DateRange(Field):
 
 
 # COMPLEX DATATYPES
-class Object(Field):
+class Object(ComplexField):
     KEY = "object"
-    DISPLAY_PATTERN = " {%s}"
+    _display_pattern = " {%s}"
 
 
-class Nested(Field):
+class Nested(ComplexField):
     KEY = "nested"
-    DISPLAY_PATTERN = " [%s]"
+    _display_pattern = " [%s]"
 
 
 # GEO DATATYPES
