@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.agg import BucketSelector
+from pandagg.aggs import BucketSelector
 
 
 class PipelineAggNodesTestCase(TestCase):

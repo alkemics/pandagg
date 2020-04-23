@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from lighttree.interactive import Obj
 from pandagg.tree.mapping import Mapping
 from pandagg.interactive.mapping import IMapping
-from pandagg.tree.agg import Agg
+from pandagg.tree.aggs import Aggs
 
 
 class Index(Obj):
@@ -24,19 +24,19 @@ class Index(Obj):
         )
 
     def query(self, query, validate=False, **kwargs):
-        return Agg(
+        return Aggs(
             client=self.client, index_name=self.name, mapping=self.mapping
         ).query(query, validate=validate, **kwargs)
 
     def groupby(self, *args, **kwargs):
-        return Agg(
+        return Aggs(
             client=self.client, index_name=self.name, mapping=self.mapping
         ).groupby(*args, **kwargs)
 
-    def agg(self, *args, **kwargs):
-        return Agg(client=self.client, index_name=self.name, mapping=self.mapping).agg(
-            *args, **kwargs
-        )
+    def aggs(self, *args, **kwargs):
+        return Aggs(
+            client=self.client, index_name=self.name, mapping=self.mapping
+        ).aggs(*args, **kwargs)
 
 
 class Indices(Obj):

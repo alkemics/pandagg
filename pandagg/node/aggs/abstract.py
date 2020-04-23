@@ -203,7 +203,7 @@ class BucketAggNode(AggNode):
     - to build query to filter documents belonging to that bucket
 
     Note: the aggs attribute's only purpose is for children initiation with the following syntax:
-    >>> from pandagg.agg import Terms, Avg
+    >>> from pandagg.aggs import Terms, Avg
     >>> agg = Terms(
     >>>     name='term_agg',
     >>>     field='some_path',

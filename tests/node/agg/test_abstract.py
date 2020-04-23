@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.node.agg.abstract import AggNode
+from pandagg.node.aggs.abstract import AggNode
 
 
 class AbstractAggNodesTestCase(TestCase):

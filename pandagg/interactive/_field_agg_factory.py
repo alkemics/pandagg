@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.node.agg.abstract import AggNode
+from pandagg.node.aggs.abstract import AggNode
 
 # necessary to ensure that all agg nodes are registered in metaclass
-from pandagg.node.agg.bucket import *  # noqa
-from pandagg.node.agg.pipeline import *  # noqa
-from pandagg.node.agg.metric import *  # noqa
+from pandagg.node.aggs.bucket import *  # noqa
+from pandagg.node.aggs.pipeline import *  # noqa
+from pandagg.node.aggs.metric import *  # noqa
 from pandagg.node.types import MAPPING_TYPES
 
 from operator import itemgetter

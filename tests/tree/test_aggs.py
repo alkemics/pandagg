@@ -10,7 +10,7 @@ import pandas as pd
 from lighttree.exceptions import MultipleRootError, NotFoundNodeError
 from mock import patch
 
-from pandagg.tree.agg import Agg
+from pandagg.tree.aggs import Aggs
 from pandagg.interactive.response import IResponse
 from pandagg.exceptions import (
     AbsentMappingFieldError,
@@ -18,8 +18,8 @@ from pandagg.exceptions import (
 )
 from pandagg.tree.mapping import Mapping
 from pandagg.interactive.mapping import IMapping
-from pandagg.node.agg.bucket import DateHistogram, Terms, Filter
-from pandagg.node.agg.metric import Avg, Min
+from pandagg.node.aggs.bucket import DateHistogram, Terms, Filter
+from pandagg.node.aggs.metric import Avg, Min
 
 import tests.testing_samples.data_sample as sample
 from pandagg.utils import equal_queries
@@ -48,8 +48,8 @@ class AggTestCase(TestCase):
                 },
             }
         }
-        agg1 = Agg(expected)
-        agg2 = Agg(
+        agg1 = Aggs(expected)
+        agg2 = Aggs(
             Terms(
                 "genres",
                 field="genres",
@@ -59,7 +59,7 @@ class AggTestCase(TestCase):
                 ),
             )
         )
-        agg3 = Agg(
+        agg3 = Aggs(
             Terms(
                 "genres",
                 field="genres",
@@ -71,7 +71,7 @@ class AggTestCase(TestCase):
                 ],
             )
         )
-        agg4 = Agg(
+        agg4 = Aggs(
             Terms(
                 "genres",
                 field="genres",
@@ -83,7 +83,7 @@ class AggTestCase(TestCase):
                 },
             )
         )
-        agg5 = Agg(
+        agg5 = Aggs(
             {
                 "genres": {
                     "terms": {"field": "genres", "size": 3},
@@ -97,7 +97,7 @@ class AggTestCase(TestCase):
             self.assertEqual(a.query_dict(), expected)
 
     def test_add_node_with_mapping(self):
-        with_mapping = Agg(mapping=MAPPING)
+        with_mapping = Aggs(mapping=MAPPING)
         self.assertEqual(len(with_mapping.list()), 0)
 
         # add regular node
@@ -183,7 +183,7 @@ class AggTestCase(TestCase):
         )
 
     def test_add_node_without_mapping(self):
-        without_mapping = Agg()
+        without_mapping = Aggs()
         self.assertEqual(len(without_mapping.list()), 0)
 
         # add regular node
@@ -195,7 +195,7 @@ class AggTestCase(TestCase):
     # TODO - finish these tests (reverse nested)
     def test_paste_tree_with_mapping(self):
         # with explicit nested
-        initial_agg_1 = Agg(
+        initial_agg_1 = Aggs(
             {
                 "week": {
                     "date_histogram": {
@@ -208,7 +208,7 @@ class AggTestCase(TestCase):
             mapping=MAPPING,
         )
         self.assertEqual(to_id_set(initial_agg_1.list()), {"week"})
-        pasted_agg_1 = Agg(
+        pasted_agg_1 = Aggs(
             {
                 "nested_below_week": {
                     "nested": {"path": "local_metrics"},
@@ -243,7 +243,7 @@ class AggTestCase(TestCase):
         )
 
         # without explicit nested
-        initial_agg_2 = Agg(
+        initial_agg_2 = Aggs(
             {
                 "week": {
                     "date_histogram": {
@@ -256,7 +256,7 @@ class AggTestCase(TestCase):
             mapping=MAPPING,
         )
         self.assertEqual(to_id_set(initial_agg_2.list()), {"week"})
-        pasted_agg_2 = Agg(
+        pasted_agg_2 = Aggs(
             {
                 "local_metrics.field_class.name": {
                     "terms": {"field": "local_metrics.field_class.name", "size": 10}
@@ -283,7 +283,7 @@ class AggTestCase(TestCase):
 
     def test_insert_tree_without_mapping(self):
         # with explicit nested
-        initial_agg_1 = Agg(
+        initial_agg_1 = Aggs(
             {
                 "week": {
                     "date_histogram": {
@@ -297,7 +297,7 @@ class AggTestCase(TestCase):
         )
         self.assertEqual({n.identifier for n in initial_agg_1.list()}, {"week"})
 
-        pasted_agg_1 = Agg(
+        pasted_agg_1 = Aggs(
             {
                 "nested_below_week": {
                     "nested": {"path": "local_metrics"},
@@ -332,7 +332,7 @@ class AggTestCase(TestCase):
         )
 
         # without explicit nested (will NOT add nested)
-        initial_agg_2 = Agg(
+        initial_agg_2 = Aggs(
             {
                 "week": {
                     "date_histogram": {
@@ -346,7 +346,7 @@ class AggTestCase(TestCase):
         )
         self.assertEqual(to_id_set(initial_agg_2.list()), {"week"})
 
-        pasted_agg_2 = Agg(
+        pasted_agg_2 = Aggs(
             {
                 "local_metrics.field_class.name": {
                     "terms": {"field": "local_metrics.field_class.name", "size": 10}
@@ -370,23 +370,25 @@ class AggTestCase(TestCase):
         )
 
     def test_interpret_agg_string(self):
-        some_agg = Agg()
-        some_agg = some_agg.agg("some_field", insert_below=None)
+        some_agg = Aggs()
+        some_agg = some_agg.aggs("some_field", insert_below=None)
         self.assertEqual(
             some_agg.query_dict(), {"some_field": {"terms": {"field": "some_field"}}}
         )
 
         # with default size
-        some_agg = Agg()
-        some_agg = some_agg.agg("some_field", insert_below=None, size=10)
+        some_agg = Aggs()
+        some_agg = some_agg.aggs("some_field", insert_below=None, size=10)
         self.assertEqual(
             some_agg.query_dict(),
             {"some_field": {"terms": {"field": "some_field", "size": 10}}},
         )
 
         # with parent
-        some_agg = Agg({"root_agg_name": {"terms": {"field": "some_field", "size": 5}}})
-        some_agg = some_agg.agg("child_field", insert_below="root_agg_name")
+        some_agg = Aggs(
+            {"root_agg_name": {"terms": {"field": "some_field", "size": 5}}}
+        )
+        some_agg = some_agg.aggs("child_field", insert_below="root_agg_name")
         self.assertEqual(
             some_agg.query_dict(),
             {
@@ -398,11 +400,11 @@ class AggTestCase(TestCase):
         )
 
         # with required nested
-        some_agg = Agg(
+        some_agg = Aggs(
             {"term_workflow": {"terms": {"field": "workflow", "size": 5}}},
             mapping=MAPPING,
         )
-        some_agg = some_agg.agg(
+        some_agg = some_agg.aggs(
             "local_metrics.field_class.name", insert_below="term_workflow"
         )
         self.assertEqual(
@@ -426,18 +428,18 @@ class AggTestCase(TestCase):
 
     def test_interpret_node(self):
         node = Terms(name="some_name", field="some_field", size=10)
-        some_agg = Agg().agg(node, insert_below=None)
+        some_agg = Aggs().aggs(node, insert_below=None)
         self.assertEqual(
             some_agg.query_dict(),
             {"some_name": {"terms": {"field": "some_field", "size": 10}}},
         )
         # with parent with required nested
-        some_agg = Agg(
+        some_agg = Aggs(
             {"term_workflow": {"terms": {"field": "workflow", "size": 5}}},
             mapping=MAPPING,
         )
         node = Avg(name="min_local_f1", field="local_metrics.performance.test.f1_score")
-        some_agg = some_agg.agg(node, insert_below="term_workflow")
+        some_agg = some_agg.aggs(node, insert_below="term_workflow")
         self.assertEqual(
             some_agg.query_dict(),
             {
@@ -461,10 +463,10 @@ class AggTestCase(TestCase):
 
     def test_query_dict(self):
         # empty
-        self.assertEqual(Agg().query_dict(), {})
+        self.assertEqual(Aggs().query_dict(), {})
 
         # single node
-        agg = Agg()
+        agg = Aggs()
         node = Terms(name="root_agg", field="some_field", size=10)
         agg.insert_node(node)
         self.assertEqual(
@@ -501,13 +503,13 @@ class AggTestCase(TestCase):
         )
 
     def test_parse_as_tree(self, *_):
-        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         response = my_agg.serialize_response_as_tree(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(response, IResponse)
         self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_REPR)
 
     def test_normalize_buckets(self):
-        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         self.assertTrue(
             equal_queries(
                 my_agg.serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
@@ -516,7 +518,7 @@ class AggTestCase(TestCase):
         )
 
     def test_parse_as_tabular(self):
-        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         index, index_names, values = my_agg.serialize_response_as_tabular(
             sample.ES_AGG_RESPONSE
         )
@@ -529,7 +531,7 @@ class AggTestCase(TestCase):
         self.assertEqual(values, sample.EXPECTED_TABULAR_VALUES)
 
     def test_parse_as_dataframe(self):
-        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         df = my_agg.serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(
@@ -548,7 +550,7 @@ class AggTestCase(TestCase):
             ├── avg_f1_micro
             └── avg_nb_classes
         """
-        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
 
         with self.assertRaises(ValueError) as e:
             my_agg._validate_aggs_parent_id(pid=None)
@@ -590,7 +592,7 @@ class AggTestCase(TestCase):
         )
 
         # empty agg
-        agg = Agg()
+        agg = Aggs()
         self.assertEqual(agg._validate_aggs_parent_id(None), None)
 
         # TODO - pipeline aggregation under metric agg
@@ -602,9 +604,9 @@ class AggTestCase(TestCase):
         pass
 
     def test_mapping_from_init(self):
-        agg_from_dict_mapping = Agg(mapping=MAPPING)
-        agg_from_tree_mapping = Agg(mapping=Mapping(MAPPING))
-        agg_from_obj_mapping = Agg(mapping=IMapping(Mapping(MAPPING)))
+        agg_from_dict_mapping = Aggs(mapping=MAPPING)
+        agg_from_tree_mapping = Aggs(mapping=Mapping(MAPPING))
+        agg_from_obj_mapping = Aggs(mapping=IMapping(Mapping(MAPPING)))
         self.assertEqual(
             agg_from_dict_mapping.tree_mapping.__repr__(),
             agg_from_tree_mapping.tree_mapping.__repr__(),
@@ -613,14 +615,14 @@ class AggTestCase(TestCase):
             agg_from_dict_mapping.tree_mapping.__repr__(),
             agg_from_obj_mapping.tree_mapping.__repr__(),
         )
-        self.assertIsInstance(agg_from_dict_mapping, Agg)
-        self.assertIsInstance(agg_from_tree_mapping, Agg)
-        self.assertIsInstance(agg_from_obj_mapping, Agg)
+        self.assertIsInstance(agg_from_dict_mapping, Aggs)
+        self.assertIsInstance(agg_from_tree_mapping, Aggs)
+        self.assertIsInstance(agg_from_obj_mapping, Aggs)
 
     def test_set_mapping(self):
-        agg_from_dict_mapping = Agg().set_mapping(mapping=MAPPING)
-        agg_from_tree_mapping = Agg().set_mapping(mapping=Mapping(MAPPING))
-        agg_from_obj_mapping = Agg().set_mapping(
+        agg_from_dict_mapping = Aggs().set_mapping(mapping=MAPPING)
+        agg_from_tree_mapping = Aggs().set_mapping(mapping=Mapping(MAPPING))
+        agg_from_obj_mapping = Aggs().set_mapping(
             mapping=IMapping(Mapping(MAPPING), client=None)
         )
         self.assertEqual(
@@ -632,19 +634,19 @@ class AggTestCase(TestCase):
             agg_from_obj_mapping.tree_mapping.__repr__(),
         )
         # set mapping returns self
-        self.assertIsInstance(agg_from_dict_mapping, Agg)
-        self.assertIsInstance(agg_from_tree_mapping, Agg)
-        self.assertIsInstance(agg_from_obj_mapping, Agg)
+        self.assertIsInstance(agg_from_dict_mapping, Aggs)
+        self.assertIsInstance(agg_from_tree_mapping, Aggs)
+        self.assertIsInstance(agg_from_obj_mapping, Aggs)
 
     def test_init_from_dict(self):
-        my_agg = Agg(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         self.assertEqual(my_agg.query_dict(), sample.EXPECTED_AGG_QUERY)
         self.assertEqual(my_agg.__str__(), sample.EXPECTED_REPR)
 
     def test_init_from_node_hierarchy(self):
         node_hierarchy = sample.get_node_hierarchy()
 
-        agg = Agg(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING)
         self.assertEqual(agg.query_dict(), sample.EXPECTED_AGG_QUERY)
         self.assertEqual(agg.__str__(), sample.EXPECTED_REPR)
 
@@ -667,7 +669,7 @@ class AggTestCase(TestCase):
                 )
             ],
         )
-        agg = Agg(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING)
         self.assertEqual(
             agg.query_dict(),
             {
@@ -712,7 +714,7 @@ class AggTestCase(TestCase):
         self.assertEqual(agg.__str__(), sample.EXPECTED_REPR)
 
     def test_groupby_insert_below(self):
-        a1 = Agg(
+        a1 = Aggs(
             Terms("A", field="A", aggs=[Terms("B", field="B"), Terms("C", field="C")])
         )
         self.assertEqual(
@@ -759,7 +761,7 @@ class AggTestCase(TestCase):
         )
 
     def test_groupby_insert_above(self):
-        a1 = Agg(
+        a1 = Aggs(
             Terms("A", field="A", aggs=[Terms("B", field="B"), Terms("C", field="C")])
         )
         self.assertEqual(
@@ -819,7 +821,7 @@ class AggTestCase(TestCase):
         )
 
     def test_agg_insert_below(self):
-        a1 = Agg(
+        a1 = Aggs(
             Terms("A", field="A", aggs=[Terms("B", field="B"), Terms("C", field="C")])
         )
         self.assertEqual(
@@ -832,7 +834,7 @@ class AggTestCase(TestCase):
         )
 
         self.assertEqual(
-            a1.agg(Terms("D", field="D"), insert_below="A").__repr__(),
+            a1.aggs(Terms("D", field="D"), insert_below="A").__repr__(),
             """<Aggregation>
 [A] terms
 ├── [B] terms
@@ -841,7 +843,7 @@ class AggTestCase(TestCase):
 """,
         )
         self.assertEqual(
-            a1.agg(
+            a1.aggs(
                 [Terms("D", field="D"), Terms("E", field="E")], insert_below="A"
             ).__repr__(),
             """<Aggregation>
@@ -880,7 +882,7 @@ class AggTestCase(TestCase):
                 )
             ],
         )
-        agg = Agg(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING)
 
         self.assertEqual(agg.applied_nested_path_at_node("week"), None)
         for nid in (
@@ -916,7 +918,7 @@ class AggTestCase(TestCase):
                 )
             ],
         )
-        agg = Agg(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING)
         self.assertEqual(
             agg.deepest_linear_bucket_agg, "local_metrics.field_class.name"
         )
@@ -942,11 +944,11 @@ class AggTestCase(TestCase):
                 ),
             ],
         )
-        agg2 = Agg(node_hierarchy_2, mapping=MAPPING)
+        agg2 = Aggs(node_hierarchy_2, mapping=MAPPING)
         self.assertEqual(agg2.deepest_linear_bucket_agg, "week")
 
     def test_query(self):
-        agg = Agg(client=None, index_name="some_index")
+        agg = Aggs(client=None, index_name="some_index")
 
         new_agg = agg.query({"term": {"user": {"value": 1}}}).query(
             {

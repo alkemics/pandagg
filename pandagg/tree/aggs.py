@@ -14,22 +14,22 @@ from pandagg.tree.response import ResponseTree
 from pandagg.interactive.mapping import as_mapping
 from pandagg.interactive.response import IResponse
 
-from pandagg.node.agg.abstract import (
+from pandagg.node.aggs.abstract import (
     BucketAggNode,
     UniqueBucketAgg,
     AggNode,
     MetricAgg,
     ShadowRoot,
 )
-from pandagg.node.agg.bucket import Nested, ReverseNested
-from pandagg.node.agg.pipeline import BucketSelector, BucketSort
+from pandagg.node.aggs.bucket import Nested, ReverseNested
+from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
 
 # necessary to ensure all agg nodes are registered in meta class
-import pandagg.node.agg.metric as metric  # noqa
+import pandagg.node.aggs.metric as metric  # noqa
 
 
 @python_2_unicode_compatible
-class Agg(Tree):
+class Aggs(Tree):
     """Tree combination of aggregation nodes.
 
     Mapping declaration is optional, but doing so validates aggregation validity.
@@ -51,14 +51,14 @@ class Agg(Tree):
         self.tree_mapping = None
         if mapping is not None:
             self.set_mapping(mapping)
-        super(Agg, self).__init__()
+        super(Aggs, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
 
     @classmethod
     def deserialize(cls, *args, **kwargs):
         mapping = kwargs.pop("mapping", None)
-        if len(args) == 1 and isinstance(args[0], Agg):
+        if len(args) == 1 and isinstance(args[0], Aggs):
             return args[0]
 
         new = cls(mapping=mapping)
@@ -76,13 +76,13 @@ class Agg(Tree):
 
     def _clone_init(self, deep=False):
         if not deep:
-            return Agg(
+            return Aggs(
                 mapping=self.tree_mapping,
                 index_name=self.index_name,
                 client=self.client,
                 query=self._query,
             )
-        return Agg(
+        return Aggs(
             mapping=self.tree_mapping.clone(deep=deep)
             if self.tree_mapping is not None
             else None,
@@ -203,7 +203,7 @@ class Agg(Tree):
         :param insert_below: parent aggregation id under which these aggregations should be placed
         :param insert_above: aggregation id above which these aggregations should be placed
         :param kwargs: agg body arguments when using "string" syntax for terms aggregation
-        :rtype: pandagg.agg.Agg
+        :rtype: pandagg.aggs.Aggs
         """
         insert_below = kwargs.pop("insert_below", None)
         insert_above = kwargs.pop("insert_above", None)
@@ -259,7 +259,7 @@ class Agg(Tree):
             new_agg.insert_tree(parent_id=insert_below, new_tree=st)
         return new_agg
 
-    def agg(self, *args, **kwargs):
+    def aggs(self, *args, **kwargs):
         """Arrange passed aggregations in `arg` arguments "horizontally".
 
         Those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest linear
@@ -284,7 +284,7 @@ class Agg(Tree):
         :param arg: aggregation(s) clauses to insert "horizontally"
         :param insert_below: parent aggregation id under which these aggregations should be placed
         :param kwargs: agg body arguments when using "string" syntax for terms aggregation
-        :rtype: pandagg.agg.Agg
+        :rtype: pandagg.aggs.Aggs
         """
         insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))
         new_agg = self.clone(with_tree=True)
@@ -332,7 +332,7 @@ class Agg(Tree):
         """
         if isinstance(node, ShadowRoot):
             for child in node._children or []:
-                super(Agg, self)._insert_node_below(
+                super(Aggs, self)._insert_node_below(
                     child, parent_id=parent_id, with_children=with_children
                 )
             return
@@ -344,7 +344,7 @@ class Agg(Tree):
             or parent_id is None
             or not hasattr(node, "field")
         ):
-            return super(Agg, self)._insert_node_below(
+            return super(Aggs, self)._insert_node_below(
                 node, parent_id, with_children=with_children
             )
 
@@ -354,7 +354,7 @@ class Agg(Tree):
         required_nested_level = self.tree_mapping.nested_at_field(node.field)
         current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
-            return super(Agg, self)._insert_node_below(
+            return super(Aggs, self)._insert_node_below(
                 node, parent_id, with_children=with_children
             )
         if current_nested_level and (
@@ -371,13 +371,13 @@ class Agg(Tree):
                 None,
             )
             if child_reverse_nested:
-                return super(Agg, self)._insert_node_below(
+                return super(Aggs, self)._insert_node_below(
                     node, child_reverse_nested.identifier, with_children=with_children
                 )
             else:
                 rv_node = ReverseNested(name="reverse_nested_below_%s" % parent_id)
-                super(Agg, self).insert_node(rv_node, parent_id)
-                return super(Agg, self)._insert_node_below(
+                super(Aggs, self).insert_node(rv_node, parent_id)
+                return super(Aggs, self)._insert_node_below(
                     node, rv_node.identifier, with_children=with_children
                 )
 
@@ -406,9 +406,9 @@ class Agg(Tree):
                     else "nested_below_%s" % parent_id
                 )
                 nested_node = Nested(name=nested_node_name, path=nested_lvl)
-                super(Agg, self)._insert_node_below(nested_node, parent_id)
+                super(Aggs, self)._insert_node_below(nested_node, parent_id)
                 parent_id = nested_node.identifier
-        super(Agg, self)._insert_node_below(
+        super(Aggs, self)._insert_node_below(
             node, parent_id, with_children=with_children
         )
 

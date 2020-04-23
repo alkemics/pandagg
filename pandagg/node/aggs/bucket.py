@@ -16,7 +16,7 @@ from future.utils import iteritems
 
 from pandagg.utils import bool_if_required
 from pandagg.node.types import NUMERIC_TYPES
-from pandagg.node.agg.abstract import MultipleBucketAgg, UniqueBucketAgg
+from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
 
 
 class Global(UniqueBucketAgg):

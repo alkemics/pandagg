@@ -138,9 +138,9 @@ regular_syntax = {
     }
 }
 
-from pandagg.agg import Agg
+from pandagg.aggs import Aggs
 
-agg = Agg(regular_syntax)
+agg = Aggs(regular_syntax)
 
 assert agg.query_dict() == regular_syntax
 
@@ -153,9 +153,9 @@ agg
 # In[13]:
 
 
-from pandagg.agg import DateHistogram, Terms
+from pandagg.aggs import DateHistogram, Terms
 
-agg_dsl = Agg(
+agg_dsl = Aggs(
     Terms(
         "genres",
         field="genres",
@@ -166,7 +166,7 @@ agg_dsl = Agg(
 
 # or using groupby method: the listed aggregations will be placed from top to bottom:
 
-agg_variant = Agg().groupby(
+agg_variant = Aggs().groupby(
     [
         Terms("genres", field="genres", size=3),
         DateHistogram("movie_decade", field="year", fixed_interval="3650d"),
@@ -190,7 +190,7 @@ agg_dsl
 # In[14]:
 
 
-Agg().groupby(
+Aggs().groupby(
     [
         Terms("genres", field="genres", size=3),
         DateHistogram("movie_decade", field="year", fixed_interval="3650d"),
@@ -201,7 +201,7 @@ Agg().groupby(
 # In[15]:
 
 
-Agg().agg(
+Aggs().aggs(
     [
         Terms("genres", field="genres", size=3),
         DateHistogram("movie_decade", field="year", fixed_interval="3650d"),
@@ -221,7 +221,7 @@ Agg().agg(
 
 
 # taking again this example
-example_agg = Agg(regular_syntax)
+example_agg = Aggs(regular_syntax)
 example_agg
 
 
@@ -236,7 +236,7 @@ example_agg.groupby(["roles.role", "roles.gender"], insert_below="genres")
 
 
 # agg behaviour
-example_agg.agg(["roles.role", "roles.gender"], insert_below="genres")
+example_agg.aggs(["roles.role", "roles.gender"], insert_below="genres")
 
 
 # ### Aggregation execution and parsing
@@ -274,15 +274,15 @@ per_decate_genres.unstack().T.plot(figsize=(12, 12))
 
 
 from datetime import datetime
-from pandagg.agg import Agg, Avg, Min, Max
+from pandagg.aggs import Aggs, Avg, Min, Max
 from pandagg.query import Range
 
 
 # in groupby and agg methods,
 agg = (
-    Agg(client=client, index_name="movies", mapping=imdb_mapping)
+    Aggs(client=client, index_name="movies", mapping=imdb_mapping)
     .groupby(["roles.full_name.raw", "genres"], size=2)
-    .agg(
+    .aggs(
         [
             Avg("avg_rank", field="rank"),
             Min("min_date", field="year"),

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from pandagg.node.agg.abstract import FieldOrScriptMetricAgg, AggNode
-from pandagg.agg import Avg, TopHits
+from pandagg.node.aggs.abstract import FieldOrScriptMetricAgg, AggNode
+from pandagg.aggs import Avg, TopHits
 
 
 class MetricAggNodesTestCase(TestCase):

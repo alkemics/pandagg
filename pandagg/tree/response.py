@@ -8,7 +8,7 @@ from future.utils import iteritems
 from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
-from pandagg.node.agg.abstract import UniqueBucketAgg
+from pandagg.node.aggs.abstract import UniqueBucketAgg
 from pandagg.utils import bool_if_required
 
 
