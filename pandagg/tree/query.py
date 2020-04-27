@@ -60,6 +60,11 @@ class Query(Tree):
         if args or kwargs:
             self._fill(*args, **kwargs)
 
+    def __nonzero__(self):
+        return bool(self.to_dict())
+
+    __bool__ = __nonzero__
+
     def _clone_init(self, deep=False):
         tree_mapping = self.tree_mapping
         if deep and self.tree_mapping is not None:
@@ -128,7 +133,7 @@ class Query(Tree):
             node=node, parent_id=parent_id, with_children=with_children
         )
 
-    def query_dict(self, from_=None, with_name=True):
+    def to_dict(self, from_=None, with_name=True):
         """Return None if no query clause.
         """
         if self.root is None:
@@ -140,7 +145,7 @@ class Query(Tree):
         serialized_children = []
         should_yield = False
         for child_node in self.children(node.identifier, id_only=False):
-            serialized_child = self.query_dict(
+            serialized_child = self.to_dict(
                 from_=child_node.identifier, with_name=with_name
             )
             if serialized_child is not None:
@@ -256,7 +261,7 @@ class Query(Tree):
                 parent_param=parent_param,
                 child_param=child_param,
                 mode=mode,
-                **{parent_param_key: inserted.query_dict()}
+                **{parent_param_key: inserted.to_dict()}
             )
 
         # If a child is provided (only possible if inserted node is compound): place on top using child_param.
@@ -321,8 +326,8 @@ class Query(Tree):
             child_node = q.children(parent_operator_node.name, id_only=False)[0]
             child = child_node.name
             if isinstance(child_node, Bool):
-                return q.bool(must=inserted.query_dict(), _name=child, mode=mode)
-            return q.bool(must=inserted.query_dict(), child=child, mode=mode)
+                return q.bool(must=inserted.to_dict(), _name=child, mode=mode)
+            return q.bool(must=inserted.to_dict(), child=child, mode=mode)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
             q.insert_node(parent_operator_node, parent_id=parent)
@@ -474,6 +479,6 @@ class Query(Tree):
     def execute(self, index=None, **kwargs):
         if self.client is None:
             raise ValueError('Execution requires to specify "client" at __init__.')
-        body = {"query": self.query_dict()}
+        body = {"query": self.to_dict()}
         body.update(kwargs)
         return self.client.search(index=index or self.index_name, body=body)

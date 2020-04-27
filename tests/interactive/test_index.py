@@ -4,9 +4,9 @@ from elasticsearch import Elasticsearch
 from mock import Mock, patch
 from unittest import TestCase
 
-from pandagg.tree.agg import Agg
+from pandagg.tree.aggs import Aggs
 from pandagg.interactive.index import Index
-from pandagg.node.agg.metric import Avg
+from pandagg.node.aggs.metric import Avg
 
 from tests.testing_samples.mapping_example import MAPPING
 
@@ -22,18 +22,18 @@ class IndexTestCase(TestCase):
         grouped_agg = index.groupby(
             ["classification_type", "global_metrics.field.name"]
         )
-        self.assertIsInstance(grouped_agg, Agg)
+        self.assertIsInstance(grouped_agg, Aggs)
 
-        equivalent_agg = Agg().groupby(
+        equivalent_agg = Aggs().groupby(
             ["classification_type", "global_metrics.field.name"]
         )
-        self.assertEqual(grouped_agg.query_dict(), equivalent_agg.query_dict())
+        self.assertEqual(grouped_agg.to_dict(), equivalent_agg.to_dict())
         self.assertEqual(grouped_agg.__str__(), equivalent_agg.__str__())
 
     def test_index_agg(self):
         index = self.get_index()
 
-        agg = index.agg(
+        agg = index.aggs(
             [
                 Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                 Avg(
@@ -42,9 +42,9 @@ class IndexTestCase(TestCase):
                 ),
             ]
         )
-        self.assertIsInstance(agg, Agg)
+        self.assertIsInstance(agg, Aggs)
 
-        equivalent_agg = Agg().agg(
+        equivalent_agg = Aggs().aggs(
             [
                 Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                 Avg(
@@ -74,10 +74,10 @@ class IndexTestCase(TestCase):
         client_mock, index = self.get_client_bound_index()
 
         agg = index.query({"term": {"workflow": {"value": "some_workflow"}}})
-        self.assertIsInstance(agg, Agg)
+        self.assertIsInstance(agg, Aggs)
         self.assertIs(agg.client, client_mock)
         self.assertEqual(
-            agg._query.query_dict(), {"term": {"workflow": {"value": "some_workflow"}}}
+            agg._query.to_dict(), {"term": {"workflow": {"value": "some_workflow"}}}
         )
         self.assertEqual(agg.index_name, "my_index_name")
 
@@ -87,19 +87,19 @@ class IndexTestCase(TestCase):
         grouped_agg = index.groupby(
             ["classification_type", "global_metrics.field.name"]
         )
-        self.assertIsInstance(grouped_agg, Agg)
+        self.assertIsInstance(grouped_agg, Aggs)
         self.assertIs(grouped_agg.client, client_mock)
         self.assertEqual(grouped_agg.index_name, "my_index_name")
 
-        equivalent_agg = Agg().groupby(
+        equivalent_agg = Aggs().groupby(
             ["classification_type", "global_metrics.field.name"]
         )
-        self.assertEqual(grouped_agg.query_dict(), equivalent_agg.query_dict())
+        self.assertEqual(grouped_agg.to_dict(), equivalent_agg.to_dict())
 
     def test_client_bound_not_executed_agg(self):
         client_mock, index = self.get_client_bound_index()
 
-        not_executed_agg = index.agg(
+        not_executed_agg = index.aggs(
             [
                 Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                 Avg(
@@ -108,11 +108,11 @@ class IndexTestCase(TestCase):
                 ),
             ],
         )
-        self.assertIsInstance(not_executed_agg, Agg)
+        self.assertIsInstance(not_executed_agg, Aggs)
         self.assertIs(not_executed_agg.client, client_mock)
         self.assertEqual(not_executed_agg.index_name, "my_index_name")
 
-        equivalent_agg = Agg().agg(
+        equivalent_agg = Aggs().aggs(
             [
                 Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                 Avg(
@@ -121,9 +121,9 @@ class IndexTestCase(TestCase):
                 ),
             ]
         )
-        self.assertEqual(not_executed_agg.query_dict(), equivalent_agg.query_dict())
+        self.assertEqual(not_executed_agg.to_dict(), equivalent_agg.to_dict())
 
-    @patch.object(Agg, "serialize_response")
+    @patch.object(Aggs, "serialize_response")
     def test_client_bound_executed_agg(self, serialize_mock):
         # we test the execution, not agg query generation nor the parsing which are tested in test_aggs module
         client_mock, index = self.get_client_bound_index(
@@ -133,7 +133,7 @@ class IndexTestCase(TestCase):
 
         results = (
             index.query({"term": {"workflow": {"value": "some_workflow"}}})
-            .agg(
+            .aggs(
                 [
                     Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                     Avg(
@@ -144,7 +144,7 @@ class IndexTestCase(TestCase):
             )
             .execute()
         )
-        equivalent_agg = Agg().agg(
+        equivalent_agg = Aggs().aggs(
             [
                 Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                 Avg(
@@ -156,7 +156,7 @@ class IndexTestCase(TestCase):
         client_mock.search.assert_called_once()
         client_mock.search.assert_called_with(
             body={
-                "aggs": equivalent_agg.query_dict(),
+                "aggs": equivalent_agg.to_dict(),
                 "size": 0,
                 "query": {"term": {"workflow": {"value": "some_workflow"}}},
             },
@@ -165,7 +165,7 @@ class IndexTestCase(TestCase):
 
         serialize_mock.assert_called_once()
         serialize_mock.assert_called_with(
-            aggs="response_mock", output=Agg.DEFAULT_OUTPUT
+            aggs="response_mock", output=Aggs.DEFAULT_OUTPUT
         )
 
         self.assertEqual(results, "some_parsed_result")

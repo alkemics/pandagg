@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandagg.agg import BucketSelector
+from pandagg.aggs import BucketSelector
 
 
 class PipelineAggNodesTestCase(TestCase):
@@ -11,7 +11,7 @@ class PipelineAggNodesTestCase(TestCase):
 
         # test query dict
         self.assertEqual(
-            agg_node.query_dict(with_name=True),
+            agg_node.to_dict(with_name=True),
             {
                 "agg_name": {
                     "bucket_selector": {

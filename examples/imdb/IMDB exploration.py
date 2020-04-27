@@ -138,11 +138,11 @@ regular_syntax = {
     }
 }
 
-from pandagg.agg import Agg
+from pandagg.aggs import Aggs
 
-agg = Agg(regular_syntax)
+agg = Aggs(regular_syntax)
 
-assert agg.query_dict() == regular_syntax
+assert agg.to_dict() == regular_syntax
 
 agg
 
@@ -153,9 +153,9 @@ agg
 # In[13]:
 
 
-from pandagg.agg import DateHistogram, Terms
+from pandagg.aggs import DateHistogram, Terms
 
-agg_dsl = Agg(
+agg_dsl = Aggs(
     Terms(
         "genres",
         field="genres",
@@ -166,7 +166,7 @@ agg_dsl = Agg(
 
 # or using groupby method: the listed aggregations will be placed from top to bottom:
 
-agg_variant = Agg().groupby(
+agg_variant = Aggs().groupby(
     [
         Terms("genres", field="genres", size=3),
         DateHistogram("movie_decade", field="year", fixed_interval="3650d"),
@@ -174,8 +174,8 @@ agg_variant = Agg().groupby(
 )
 
 
-assert agg_dsl.query_dict() == agg_variant.query_dict()
-assert agg_dsl.query_dict() == regular_syntax
+assert agg_dsl.to_dict() == agg_variant.to_dict()
+assert agg_dsl.to_dict() == regular_syntax
 
 # decade = DateHistogram('movie_decade', field='year', fixed_interval='3650d')
 # per_decate_genres = movies.groupby(['genres', decade],size=3).execute()
@@ -190,7 +190,7 @@ agg_dsl
 # In[14]:
 
 
-Agg().groupby(
+Aggs().groupby(
     [
         Terms("genres", field="genres", size=3),
         DateHistogram("movie_decade", field="year", fixed_interval="3650d"),
@@ -201,7 +201,7 @@ Agg().groupby(
 # In[15]:
 
 
-Agg().agg(
+Aggs().aggs(
     [
         Terms("genres", field="genres", size=3),
         DateHistogram("movie_decade", field="year", fixed_interval="3650d"),
@@ -221,7 +221,7 @@ Agg().agg(
 
 
 # taking again this example
-example_agg = Agg(regular_syntax)
+example_agg = Aggs(regular_syntax)
 example_agg
 
 
@@ -236,7 +236,7 @@ example_agg.groupby(["roles.role", "roles.gender"], insert_below="genres")
 
 
 # agg behaviour
-example_agg.agg(["roles.role", "roles.gender"], insert_below="genres")
+example_agg.aggs(["roles.role", "roles.gender"], insert_below="genres")
 
 
 # ### Aggregation execution and parsing
@@ -274,15 +274,15 @@ per_decate_genres.unstack().T.plot(figsize=(12, 12))
 
 
 from datetime import datetime
-from pandagg.agg import Agg, Avg, Min, Max
+from pandagg.aggs import Aggs, Avg, Min, Max
 from pandagg.query import Range
 
 
 # in groupby and agg methods,
 agg = (
-    Agg(client=client, index_name="movies", mapping=imdb_mapping)
+    Aggs(client=client, index_name="movies", mapping=imdb_mapping)
     .groupby(["roles.full_name.raw", "genres"], size=2)
-    .agg(
+    .aggs(
         [
             Avg("avg_rank", field="rank"),
             Min("min_date", field="year"),
@@ -423,7 +423,7 @@ q = Query(
 
 
 # query computation
-q.query_dict() == expected_query
+q.to_dict() == expected_query
 
 
 # Suppose you want to expose a route to your customers with actionable filters, it is easy to add query clauses at specific places in your query by chaining your clauses:
@@ -451,7 +451,7 @@ my_query = (
     )
 )
 
-my_query.query_dict() == expected_query
+my_query.to_dict() == expected_query
 
 
 # ### Advanced query declaration using _named queries_
@@ -483,7 +483,7 @@ if rank_above is not None:
 # we name the nested query that we would potentially use
 q = q.query(Nested(_name="nested_roles", path="roles"))
 # a compound clause (bool, nested etc..) without any children clauses is not serialized
-assert q.query_dict() == {
+assert q.to_dict() == {
     "bool": {
         "must": [
             {"terms": {"genres": ["Action", "Thriller"]}},
@@ -499,7 +499,7 @@ if filter_role_gender is not None:
 if filter_role is not None:
     q = q.query(Term("roles.role", value=filter_role), parent="nested_roles")
 
-assert equal_queries(q.query_dict(), expected_query)
+assert equal_queries(q.to_dict(), expected_query)
 q
 
 

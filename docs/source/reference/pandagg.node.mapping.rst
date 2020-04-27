@@ -8,7 +8,6 @@ Submodules
    :maxdepth: 8
 
    pandagg.node.mapping.abstract
-   pandagg.node.mapping.deserializer
    pandagg.node.mapping.field_datatypes
    pandagg.node.mapping.meta_fields
 

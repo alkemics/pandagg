@@ -121,7 +121,7 @@ class AggNode(Node):
             return field_type not in cls.BLACKLISTED_MAPPING_TYPES
         return False
 
-    def query_dict(self, with_name=False):
+    def to_dict(self, with_name=False):
         """ElasticSearch aggregation queries follow this formatting::
 
             {
@@ -176,9 +176,9 @@ class AggNode(Node):
 
     def __eq__(self, other):
         if isinstance(other, AggNode):
-            return other.query_dict() == self.query_dict() and other.name == self.name
+            return other.to_dict() == self.to_dict() and other.name == self.name
         # make sure we still equal to a dict with the same data
-        return other == {self.name: self.query_dict()}
+        return other == {self.name: self.to_dict()}
 
 
 class MetricAgg(AggNode):
@@ -203,7 +203,7 @@ class BucketAggNode(AggNode):
     - to build query to filter documents belonging to that bucket
 
     Note: the aggs attribute's only purpose is for children initiation with the following syntax:
-    >>> from pandagg.agg import Terms, Avg
+    >>> from pandagg.aggs import Terms, Avg
     >>> agg = Terms(
     >>>     name='term_agg',
     >>>     field='some_path',

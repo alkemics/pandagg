@@ -24,12 +24,12 @@ class QueryTestCase(TestCase):
 
     def test_term_query(self):
         q = Query(Term(field="some_field", value=2))
-        self.assertEqual(q.query_dict(), {"term": {"some_field": {"value": 2}}})
+        self.assertEqual(q.to_dict(), {"term": {"some_field": {"value": 2}}})
 
     def test_query_compound(self):
         q = Query(Bool(filter=[Term(field="yolo", value=2)], boost=2))
         self.assertEqual(
-            q.query_dict(),
+            q.to_dict(),
             {"bool": {"boost": 2, "filter": [{"term": {"yolo": {"value": 2}}}]}},
         )
         self.assertEqual(
@@ -68,13 +68,13 @@ bool
     def test_new_bool_must_above_node(self):
         initial_q = Query()
         result_q = initial_q.filter(_name="root_bool")
-        self.assertEqual(result_q.query_dict(), None)
+        self.assertEqual(result_q.to_dict(), None)
 
         # above element (in filter? in must? in should?)
         initial_q = Query(Term(field="some_field", value=2, _name="term_q"))
         result_q = initial_q.bool(_name="root_bool", child="term_q", child_param="must")
         self.assertEqual(
-            result_q.query_dict(),
+            result_q.to_dict(),
             {
                 "bool": {
                     "_name": "root_bool",
@@ -87,7 +87,7 @@ bool
         initial_q = Query(Term(field="some_field", value=2, _name="term_q"))
         result_q = initial_q.bool(_name="root_bool", child_param="must")
         self.assertEqual(
-            result_q.query_dict(),
+            result_q.to_dict(),
             {
                 "bool": {
                     "_name": "root_bool",
@@ -110,7 +110,7 @@ bool
             child="init_bool", _name="top_bool", filter=Range(field="price", gte=12)
         )
         self.assertEqual(
-            ordered(result_q.query_dict()),
+            ordered(result_q.to_dict()),
             ordered(
                 {
                     "bool": {
@@ -159,7 +159,7 @@ bool
             filter=Range(field="price", gte=12),
         )
         self.assertTrue(
-            ordered(result_q.query_dict()),
+            ordered(result_q.to_dict()),
             ordered(
                 {
                     "bool": {
@@ -188,7 +188,7 @@ bool
             parent="nested_id", _name="bool_id", filter={"term": {"some_nested.id": 2}}
         )
         self.assertEqual(
-            result_q.query_dict(),
+            result_q.to_dict(),
             {
                 "nested": {
                     "_name": "nested_id",
@@ -220,7 +220,7 @@ bool
         )
         self.assertTrue(
             equal_queries(
-                result_q.query_dict(),
+                result_q.to_dict(),
                 {
                     "bool": {
                         "_name": "init_bool",
@@ -372,7 +372,7 @@ bool
         self.assertIn("price_range", result_q)
         self.assertTrue(
             equal_queries(
-                result_q.query_dict(),
+                result_q.to_dict(),
                 {
                     "bool": {
                         "_name": "init_bool",
@@ -428,7 +428,7 @@ bool
         self.assertNotIn("very_high_price", result_q)
         self.assertTrue(
             equal_queries(
-                result_q.query_dict(),
+                result_q.to_dict(),
                 {
                     "bool": {
                         "_name": "init_bool",
@@ -552,7 +552,7 @@ bool
             _name="nested_id",
         )
         self.assertEqual(
-            q1.query_dict(),
+            q1.to_dict(),
             {
                 "nested": {
                     "_name": "nested_id",
@@ -572,7 +572,7 @@ bool
         )
         self.assertTrue(
             equal_queries(
-                q1.query_dict(),
+                q1.to_dict(),
                 {
                     "bool": {
                         "_name": "created_bool",
@@ -595,7 +595,7 @@ bool
         )
         self.assertTrue(
             equal_queries(
-                q1.query_dict(),
+                q1.to_dict(),
                 {
                     "bool": {
                         "_name": "created_bool",
@@ -618,7 +618,7 @@ bool
         )
         self.assertTrue(
             equal_queries(
-                q1.query_dict(),
+                q1.to_dict(),
                 {
                     "bool": {
                         "_name": "created_bool",
@@ -658,7 +658,7 @@ bool
         n = q.get(q.root)
         self.assertIsInstance(n, Bool)
         self.assertEqual(
-            q.query_dict(),
+            q.to_dict(),
             {"bool": {"must_not": [{"term": {"some_field": {"value": 2}}}]}},
         )
 
@@ -686,7 +686,7 @@ bool
         self.assertIsInstance(n, Bool)
         self.assertTrue(
             equal_queries(
-                q.query_dict(),
+                q.to_dict(),
                 {
                     "bool": {
                         "must_not": [
@@ -730,7 +730,7 @@ bool
         self.assertIsInstance(n, Nested)
         self.assertTrue(
             equal_queries(
-                q.query_dict(),
+                q.to_dict(),
                 {
                     "nested": {
                         "path": "some_nested_path",
@@ -908,7 +908,7 @@ bool
         )
 
         self.assertEqual(
-            q.query_dict(),
+            q.to_dict(),
             {
                 "nested": {
                     "_name": "nested_id",
@@ -930,7 +930,7 @@ bool
 
         self.assertTrue(
             equal_queries(
-                q.query_dict(),
+                q.to_dict(),
                 {
                     "nested": {
                         "_name": "nested_id",
@@ -959,7 +959,7 @@ bool
             .should([Term(field="type", value=2)], _name="top")
         )
         self.assertEqual(
-            q.query_dict(),
+            q.to_dict(),
             {
                 "bool": {
                     "_name": "top",
@@ -1046,7 +1046,7 @@ bool
         }
         for i, q in enumerate((q1, q2, q3, q4)):
             self.assertTrue(
-                equal_queries(q.query_dict(), expected), "failed on %d" % (i + 1)
+                equal_queries(q.to_dict(), expected), "failed on %d" % (i + 1)
             )
 
         q5 = (
@@ -1061,7 +1061,7 @@ bool
             .must(Term(field="some_nested.type", value=2), _name="bool_id")
         )
         self.assertEqual(
-            ordered(q5.query_dict()),
+            ordered(q5.to_dict()),
             ordered(
                 {
                     "nested": {
@@ -1098,7 +1098,7 @@ bool
         # we name the nested query that we would potentially use
         # but a compound clause (bool, nested etc..) without any children clauses is not serialized
         self.assertEqual(
-            ordered(q.query_dict()),
+            ordered(q.to_dict()),
             ordered(
                 {
                     "bool": {
@@ -1118,7 +1118,7 @@ bool
 
         self.assertTrue(
             equal_queries(
-                q.query_dict(),
+                q.to_dict(),
                 {
                     "bool": {
                         "must": [

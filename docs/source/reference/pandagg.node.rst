@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 8
 
-   pandagg.node.agg
+   pandagg.node.aggs
    pandagg.node.mapping
    pandagg.node.query
    pandagg.node.response

@@ -1,6 +1,6 @@
-from pandagg.tree.agg import Agg
+from pandagg.tree.aggs import Aggs
 
-from pandagg.node.agg.bucket import (
+from pandagg.node.aggs.bucket import (
     MatchAll,
     Terms,
     Filters,
@@ -14,7 +14,7 @@ from pandagg.node.agg.bucket import (
     Missing,
 )
 
-from pandagg.node.agg.metric import (
+from pandagg.node.aggs.metric import (
     Avg,
     Max,
     Min,
@@ -30,7 +30,7 @@ from pandagg.node.agg.metric import (
     ValueCount,
 )
 
-from pandagg.node.agg.pipeline import (
+from pandagg.node.aggs.pipeline import (
     AvgBucket,
     Derivative,
     MaxBucket,
@@ -48,7 +48,7 @@ from pandagg.node.agg.pipeline import (
 )
 
 __all__ = [
-    "Agg",
+    "Aggs",
     "MatchAll",
     "Terms",
     "Filters",

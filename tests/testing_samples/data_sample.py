@@ -5,9 +5,9 @@
 results.
 """
 
-from pandagg.tree.agg import Agg
-from pandagg.node.agg.metric import Avg
-from pandagg.node.agg.bucket import Terms
+from pandagg.tree.aggs import Aggs
+from pandagg.node.aggs.metric import Avg
+from pandagg.node.aggs.bucket import Terms
 from tests.testing_samples.mapping_example import MAPPING
 
 
@@ -42,9 +42,9 @@ EXPECTED_AGG_QUERY = {
 
 def get_wrapper_declared_agg():
     return (
-        Agg(mapping=MAPPING)
+        Aggs(mapping=MAPPING)
         .groupby(["classification_type", "global_metrics.field.name"])
-        .agg(
+        .aggs(
             [
                 Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
                 Avg(

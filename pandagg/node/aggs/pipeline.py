@@ -4,7 +4,7 @@
 https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations-pipeline.html
 """
 
-from pandagg.node.agg.abstract import Pipeline, ScriptPipeline
+from pandagg.node.aggs.abstract import Pipeline, ScriptPipeline
 
 
 class AvgBucket(Pipeline):
