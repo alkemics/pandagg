@@ -3,7 +3,7 @@ from unittest import TestCase
 from mock import Mock, patch
 
 from pandagg.tree.aggs import Aggs
-from pandagg.tree.response import ResponseTree
+from pandagg.tree.response import AggsResponse
 from pandagg.interactive.response import IResponse
 from pandagg.utils import equal_queries
 from tests.testing_samples.mapping_example import MAPPING
@@ -15,7 +15,7 @@ class ResponseTestCase(TestCase):
     def test_response_tree(self, uuid_mock):
         uuid_mock.side_effect = range(1000)
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response_tree = ResponseTree(agg_tree=my_agg)
+        response_tree = AggsResponse(agg_tree=my_agg)
         response_tree.parse_aggregation(sample.ES_AGG_RESPONSE)
 
         self.assertEqual(response_tree.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
@@ -49,7 +49,7 @@ class ClientBoundResponseTestCase(TestCase):
         client_mock = Mock(spec=["search"])
 
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(
+        response_tree = AggsResponse(agg_tree=my_agg).parse_aggregation(
             sample.ES_AGG_RESPONSE
         )
 

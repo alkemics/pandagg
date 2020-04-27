@@ -6,6 +6,7 @@ from elasticsearch.helpers import scan
 from future.utils import string_types
 
 from pandagg.connections import get_connection
+from pandagg.tree.mapping import Mapping
 from pandagg.tree.query import Query
 from pandagg.tree.aggs import Aggs
 
@@ -86,16 +87,16 @@ class Request(object):
 
 
 class Search(Request):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, using=None, index=None, mapping=None):
         """
         Search request to elasticsearch.
 
         :arg using: `Elasticsearch` instance to use
         :arg index: limit the search to index
-        :arg doc_type: only query this type.
+        :arg mapping: mapping used for query validation
 
         All the parameters supplied (or omitted) at creation type can be later
-        overridden by methods (`using`, `index` and `doc_type` respectively).
+        overridden by methods (`using`, `index` and `mapping` respectively).
         """
 
         self._sort = []
@@ -105,11 +106,12 @@ class Search(Request):
         self._suggest = {}
         self._script_fields = {}
         # self._response_class = Response
-
-        self._aggs = Aggs()
-        self._query = Query()
-        self._post_filter = Query()
-        super(Search, self).__init__(*args, **kwargs)
+        mapping = Mapping(mapping)
+        self._mapping = mapping
+        self._aggs = Aggs(mapping=mapping)
+        self._query = Query(mapping=mapping)
+        self._post_filter = Query(mapping=mapping)
+        super(Search, self).__init__(using=using, index=index)
 
     def query(self, *args, **kwargs):
         s = self._clone()
@@ -223,6 +225,7 @@ class Search(Request):
         s._aggs = self._aggs.clone()
         s._query = self._query.clone()
         s._post_filter = self._post_filter.clone()
+        s._mapping = self._mapping.clone()
         return s
 
     def update_from_dict(self, d):

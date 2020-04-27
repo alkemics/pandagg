@@ -10,7 +10,7 @@ from future.utils import python_2_unicode_compatible, iterkeys
 
 from pandagg.tree._tree import Tree
 from pandagg.tree.query import Query
-from pandagg.tree.response import ResponseTree
+from pandagg.tree.response import AggsResponse
 from pandagg.interactive.mapping import as_mapping
 from pandagg.interactive.response import IResponse
 
@@ -612,7 +612,7 @@ class Aggs(Tree):
         return {"level": "root", "key": None, "value": None, "children": children}
 
     def serialize_response_as_tree(self, aggs):
-        response_tree = ResponseTree(self).parse_aggregation(aggs)
+        response_tree = AggsResponse(self).parse_aggregation(aggs)
         return IResponse(
             tree=response_tree,
             depth=1,

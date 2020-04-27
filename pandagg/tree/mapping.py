@@ -28,6 +28,8 @@ class Mapping(Tree):
             arg = args[0]
             if isinstance(arg, Mapping):
                 self.insert(arg)
+            elif arg is None:
+                pass
             else:
                 # {'dynamic': False, 'properties': ...}
                 self.insert(ShadowRoot(**arg))

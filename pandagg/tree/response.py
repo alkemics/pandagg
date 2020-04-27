@@ -12,7 +12,7 @@ from pandagg.node.aggs.abstract import UniqueBucketAgg
 from pandagg.utils import bool_if_required
 
 
-class ResponseTree(Tree):
+class AggsResponse(Tree):
     """Tree representation of an ES response. ES response format is determined by the aggregation query.
     """
 
@@ -20,11 +20,11 @@ class ResponseTree(Tree):
         """
         :param agg_tree: instance of pandagg.agg.Agg from which this ES response originates
         """
-        super(ResponseTree, self).__init__()
+        super(AggsResponse, self).__init__()
         self.agg_tree = agg_tree
 
     def _clone_init(self, with_tree=False, deep=False):
-        return ResponseTree(agg_tree=self.agg_tree)
+        return AggsResponse(agg_tree=self.agg_tree)
 
     def parse_aggregation(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
@@ -157,4 +157,4 @@ class ResponseTree(Tree):
 
     def show(self, **kwargs):
         kwargs["key"] = kwargs.get("key", lambda x: x.line_repr(depth=0))
-        return super(ResponseTree, self).show(**kwargs)
+        return super(AggsResponse, self).show(**kwargs)
