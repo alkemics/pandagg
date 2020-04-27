@@ -63,7 +63,7 @@ class MetricAggNodesTestCase(TestCase):
             _source={"includes": ["date", "price"]},
             size=1,
         )
-        self.assertEqual(top_hits.query_dict(with_name=True), query)
+        self.assertEqual(top_hits.to_dict(with_name=True), query)
 
         es_raw_answer = {
             "hits": {

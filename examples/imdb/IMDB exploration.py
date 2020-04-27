@@ -142,7 +142,7 @@ from pandagg.aggs import Aggs
 
 agg = Aggs(regular_syntax)
 
-assert agg.query_dict() == regular_syntax
+assert agg.to_dict() == regular_syntax
 
 agg
 
@@ -174,8 +174,8 @@ agg_variant = Aggs().groupby(
 )
 
 
-assert agg_dsl.query_dict() == agg_variant.query_dict()
-assert agg_dsl.query_dict() == regular_syntax
+assert agg_dsl.to_dict() == agg_variant.to_dict()
+assert agg_dsl.to_dict() == regular_syntax
 
 # decade = DateHistogram('movie_decade', field='year', fixed_interval='3650d')
 # per_decate_genres = movies.groupby(['genres', decade],size=3).execute()
@@ -423,7 +423,7 @@ q = Query(
 
 
 # query computation
-q.query_dict() == expected_query
+q.to_dict() == expected_query
 
 
 # Suppose you want to expose a route to your customers with actionable filters, it is easy to add query clauses at specific places in your query by chaining your clauses:
@@ -451,7 +451,7 @@ my_query = (
     )
 )
 
-my_query.query_dict() == expected_query
+my_query.to_dict() == expected_query
 
 
 # ### Advanced query declaration using _named queries_
@@ -483,7 +483,7 @@ if rank_above is not None:
 # we name the nested query that we would potentially use
 q = q.query(Nested(_name="nested_roles", path="roles"))
 # a compound clause (bool, nested etc..) without any children clauses is not serialized
-assert q.query_dict() == {
+assert q.to_dict() == {
     "bool": {
         "must": [
             {"terms": {"genres": ["Action", "Thriller"]}},
@@ -499,7 +499,7 @@ if filter_role_gender is not None:
 if filter_role is not None:
     q = q.query(Term("roles.role", value=filter_role), parent="nested_roles")
 
-assert equal_queries(q.query_dict(), expected_query)
+assert equal_queries(q.to_dict(), expected_query)
 q
 
 

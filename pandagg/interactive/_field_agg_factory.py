@@ -44,7 +44,7 @@ def aggregator_factory(agg_klass):
 
 def _operate(self, agg_node, index, execute, raw_output, query):
     index = index or self._index_name
-    aggregation = {agg_node.name: agg_node.query_dict()}
+    aggregation = {agg_node.name: agg_node.to_dict()}
     nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
     for nested in nesteds:
         aggregation = {nested: {"nested": {"path": nested}, "aggs": aggregation}}

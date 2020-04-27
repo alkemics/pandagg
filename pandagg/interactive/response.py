@@ -58,10 +58,10 @@ class IResponse(TreeBasedObj):
         """
         filter_query = self._query.query(self.get_bucket_filter())
         if not execute:
-            return filter_query.query_dict()
+            return filter_query.to_dict()
         body = {}
         if filter_query:
-            body["query"] = filter_query.query_dict()
+            body["query"] = filter_query.to_dict()
         if size is not None:
             body["size"] = size
         if _source is not None:

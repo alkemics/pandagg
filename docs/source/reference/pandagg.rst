@@ -17,11 +17,13 @@ Submodules
 .. toctree::
    :maxdepth: 8
 
-   pandagg.agg
+   pandagg.aggs
    pandagg.client
+   pandagg.connections
    pandagg.exceptions
    pandagg.mapping
    pandagg.query
+   pandagg.search
    pandagg.utils
 
 Module contents

@@ -55,6 +55,11 @@ class Aggs(Tree):
         if args or kwargs:
             self._fill(*args, **kwargs)
 
+    def __nonzero__(self):
+        return bool(self.to_dict())
+
+    __bool__ = __nonzero__
+
     @classmethod
     def deserialize(cls, *args, **kwargs):
         mapping = kwargs.pop("mapping", None)
@@ -296,7 +301,7 @@ class Aggs(Tree):
             new_agg.insert(deserialized, parent_id=insert_below)
         return new_agg
 
-    def query_dict(self, from_=None, depth=None, with_name=True):
+    def to_dict(self, from_=None, depth=None, with_name=True):
         if self.root is None:
             return {}
         from_ = self.root if from_ is None else from_
@@ -306,13 +311,13 @@ class Aggs(Tree):
             if depth is not None:
                 depth -= 1
             for child_node in self.children(node.name, id_only=False):
-                children_queries[child_node.name] = self.query_dict(
+                children_queries[child_node.name] = self.to_dict(
                     from_=child_node.name, depth=depth, with_name=False
                 )
         if isinstance(node, ShadowRoot):
             node_query_dict = children_queries
         else:
-            node_query_dict = node.query_dict()
+            node_query_dict = node.to_dict()
             if children_queries:
                 node_query_dict["aggs"] = children_queries
         if with_name:
@@ -638,7 +643,7 @@ class Aggs(Tree):
 
     def query(self, query, validate=False, **kwargs):
         new_query = self._query.query(query, **kwargs)
-        query_dict = new_query.query_dict()
+        query_dict = new_query.to_dict()
         if validate:
             validity = self.client.indices.validate_query(
                 index=self.index_name, body={"query": query_dict}
@@ -651,7 +656,7 @@ class Aggs(Tree):
 
     def _execute(self, aggregation, index=None):
         body = {"aggs": aggregation, "size": 0}
-        query = self._query.query_dict()
+        query = self._query.to_dict()
         if query:
             body["query"] = query
         return self.client.search(index=index, body=body)
@@ -660,7 +665,7 @@ class Aggs(Tree):
         if self.client is None:
             raise ValueError('Execution requires to specify "client" at __init__.')
         es_response = self._execute(
-            aggregation=self.query_dict(), index=index or self.index_name
+            aggregation=self.to_dict(), index=index or self.index_name
         )
         return self.serialize_response(
             aggs=es_response["aggregations"], output=output, **kwargs

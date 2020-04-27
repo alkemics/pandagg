@@ -22,15 +22,13 @@ class AbstractAggNodesTestCase(TestCase):
                 yield (None, response_value)
 
         node = CustomAgg(name="custom_agg_name", custom_body={"stuff": 2})
-        self.assertEqual(
-            node.query_dict(), {"custom_type": {"custom_body": {"stuff": 2}}}
-        )
+        self.assertEqual(node.to_dict(), {"custom_type": {"custom_body": {"stuff": 2}}})
 
         node = CustomAgg(
             name="custom_agg_name", custom_body={"stuff": 2}, meta="meta_stuff"
         )
         self.assertEqual(
-            node.query_dict(),
+            node.to_dict(),
             {"custom_type": {"custom_body": {"stuff": 2}}, "meta": "meta_stuff"},
         )
 

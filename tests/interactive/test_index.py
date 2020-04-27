@@ -27,7 +27,7 @@ class IndexTestCase(TestCase):
         equivalent_agg = Aggs().groupby(
             ["classification_type", "global_metrics.field.name"]
         )
-        self.assertEqual(grouped_agg.query_dict(), equivalent_agg.query_dict())
+        self.assertEqual(grouped_agg.to_dict(), equivalent_agg.to_dict())
         self.assertEqual(grouped_agg.__str__(), equivalent_agg.__str__())
 
     def test_index_agg(self):
@@ -77,7 +77,7 @@ class IndexTestCase(TestCase):
         self.assertIsInstance(agg, Aggs)
         self.assertIs(agg.client, client_mock)
         self.assertEqual(
-            agg._query.query_dict(), {"term": {"workflow": {"value": "some_workflow"}}}
+            agg._query.to_dict(), {"term": {"workflow": {"value": "some_workflow"}}}
         )
         self.assertEqual(agg.index_name, "my_index_name")
 
@@ -94,7 +94,7 @@ class IndexTestCase(TestCase):
         equivalent_agg = Aggs().groupby(
             ["classification_type", "global_metrics.field.name"]
         )
-        self.assertEqual(grouped_agg.query_dict(), equivalent_agg.query_dict())
+        self.assertEqual(grouped_agg.to_dict(), equivalent_agg.to_dict())
 
     def test_client_bound_not_executed_agg(self):
         client_mock, index = self.get_client_bound_index()
@@ -121,7 +121,7 @@ class IndexTestCase(TestCase):
                 ),
             ]
         )
-        self.assertEqual(not_executed_agg.query_dict(), equivalent_agg.query_dict())
+        self.assertEqual(not_executed_agg.to_dict(), equivalent_agg.to_dict())
 
     @patch.object(Aggs, "serialize_response")
     def test_client_bound_executed_agg(self, serialize_mock):
@@ -156,7 +156,7 @@ class IndexTestCase(TestCase):
         client_mock.search.assert_called_once()
         client_mock.search.assert_called_with(
             body={
-                "aggs": equivalent_agg.query_dict(),
+                "aggs": equivalent_agg.to_dict(),
                 "size": 0,
                 "query": {"term": {"workflow": {"value": "some_workflow"}}},
             },
