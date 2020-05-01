@@ -11,10 +11,8 @@ def as_mapping(mapping):
         return mapping
     elif isinstance(mapping, IMapping):
         return mapping._tree
-    elif isinstance(mapping, dict):
-        return Mapping(mapping)
     else:
-        raise NotImplementedError()
+        return Mapping(mapping)
 
 
 class IMapping(TreeBasedObj):

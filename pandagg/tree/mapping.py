@@ -36,6 +36,11 @@ class Mapping(Tree):
         elif kwargs:
             self.insert(ShadowRoot(**kwargs))
 
+    def __nonzero__(self):
+        return not self.is_empty()
+
+    __bool__ = __nonzero__
+
     def serialize(self, from_=None, depth=None):
         if self.root is None:
             return None

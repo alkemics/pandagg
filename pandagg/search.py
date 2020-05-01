@@ -6,6 +6,7 @@ from elasticsearch.helpers import scan
 from future.utils import string_types
 
 from pandagg.connections import get_connection
+from pandagg.response import Response
 from pandagg.tree.mapping import Mapping
 from pandagg.tree.query import Query
 from pandagg.tree.aggs import Aggs
@@ -105,7 +106,6 @@ class Search(Request):
         self._highlight_opts = {}
         self._suggest = {}
         self._script_fields = {}
-        # self._response_class = Response
         mapping = Mapping(mapping)
         self._mapping = mapping
         self._aggs = Aggs(mapping=mapping)
@@ -185,6 +185,16 @@ class Search(Request):
             s._params["from"] = n
             s._params["size"] = 1
             return s
+
+    def from_(self, from_):
+        s = self._clone()
+        s._params["from"] = from_
+        return s
+
+    def size(self, size):
+        s = self._clone()
+        s._params["size"] = size
+        return s
 
     @classmethod
     def from_dict(cls, d):
@@ -492,12 +502,9 @@ class Search(Request):
         """
         Execute the search and return an instance of ``Response`` wrapping all
         the data.
-
-        :arg ignore_cache: if set to ``True``, consecutive calls will hit
-            ES, while cached result will be ignored. Defaults to `False`
         """
         es = get_connection(self._using)
-        return es.search(index=self._index, body=self.to_dict())
+        return Response(es.search(index=self._index, body=self.to_dict()), search=self)
 
     def scan(self):
         """

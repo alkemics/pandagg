@@ -94,6 +94,8 @@ class Query(Tree):
 
     def _fill(self, *args, **kwargs):
         if args:
+            if not kwargs and len(args) == 1 and args[0] is None:
+                return self
             node_hierarchy = self.node_class._type_deserializer(*args, **kwargs)
         elif kwargs:
             node_hierarchy = self.node_class._type_deserializer(kwargs)
