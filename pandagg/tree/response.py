@@ -5,11 +5,12 @@ from collections import OrderedDict, defaultdict
 
 from future.utils import iteritems
 
+from pandagg.node.query.joining import Nested
 from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
 from pandagg.node.aggs.abstract import UniqueBucketAgg
-from pandagg.utils import bool_if_required
+from pandagg.tree.query import Query
 
 
 class AggsResponseTree(Tree):
@@ -97,7 +98,6 @@ class AggsResponseTree(Tree):
     ):
         """Recursive function to build bucket filters from highest to deepest nested conditions.
         """
-        # TODO - use Query DSL
         current_conditions = filters_per_nested_level.get(current_nested_path, [])
         nested_children = nid_to_children[current_nested_path]
         for nested_child in nested_children:
@@ -108,9 +108,12 @@ class AggsResponseTree(Tree):
             )
             if nested_child_conditions:
                 current_conditions.append(
-                    {"nested": {"path": nested_child, "query": nested_child_conditions}}
+                    Nested(path=nested_child, query=nested_child_conditions)
                 )
-        return bool_if_required(current_conditions)
+        q = Query()
+        for clause in current_conditions:
+            q = q.query(clause)
+        return q
 
     def get_bucket_filter(self, nid):
         """Build query filtering documents belonging to that bucket.
@@ -159,7 +162,7 @@ class AggsResponseTree(Tree):
             )
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
             nid_to_children[nearest_nested_parent].add(nested)
-        return self._build_filter(nid_to_children, filters_per_nested_level)
+        return self._build_filter(nid_to_children, filters_per_nested_level).to_dict()
 
     def show(self, **kwargs):
         kwargs["key"] = kwargs.get("key", lambda x: x.line_repr(depth=0))
