@@ -3,7 +3,7 @@ from unittest import TestCase
 from mock import Mock, patch
 
 from pandagg.tree.aggs import Aggs
-from pandagg.tree.response import ResponseTree
+from pandagg.tree.response import AggsResponseTree
 from pandagg.interactive.response import IResponse
 from pandagg.utils import equal_queries
 from tests.testing_samples.mapping_example import MAPPING
@@ -15,9 +15,9 @@ class ResponseTestCase(TestCase):
     def test_response_tree(self, uuid_mock):
         uuid_mock.side_effect = range(1000)
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response_tree = ResponseTree(agg_tree=my_agg)
-        response_tree.parse_aggregation(sample.ES_AGG_RESPONSE)
-
+        response_tree = AggsResponseTree(
+            data=sample.ES_AGG_RESPONSE, aggs=my_agg, index=None
+        )
         self.assertEqual(response_tree.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
         self.assertEqual(len(response_tree.list()), 33)
 
@@ -49,8 +49,8 @@ class ClientBoundResponseTestCase(TestCase):
         client_mock = Mock(spec=["search"])
 
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response_tree = ResponseTree(agg_tree=my_agg).parse_aggregation(
-            sample.ES_AGG_RESPONSE
+        response_tree = AggsResponseTree(
+            data=sample.ES_AGG_RESPONSE, aggs=my_agg, index=None
         )
 
         response = IResponse(
@@ -75,26 +75,9 @@ class ClientBoundResponseTestCase(TestCase):
         self.assertIs(allergentypelist._initial_tree, response._tree)
 
         # test filter query used to list documents belonging to bucket
-        self.assertEqual(
-            allergentypelist.get_bucket_filter(),
-            {
-                "bool": {
-                    "must": [
-                        {
-                            "term": {
-                                "global_metrics.field.name": {
-                                    "value": "allergentypelist"
-                                }
-                            }
-                        },
-                        {"term": {"classification_type": {"value": "multilabel"}}},
-                    ]
-                }
-            },
-        )
         self.assertTrue(
             equal_queries(
-                allergentypelist.list_documents(execute=False),
+                allergentypelist.get_bucket_filter(),
                 {
                     "bool": {
                         "must": [

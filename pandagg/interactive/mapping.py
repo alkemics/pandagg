@@ -6,17 +6,6 @@ from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.tree.mapping import Mapping
 
 
-def as_mapping(mapping):
-    if isinstance(mapping, Mapping):
-        return mapping
-    elif isinstance(mapping, IMapping):
-        return mapping._tree
-    elif isinstance(mapping, dict):
-        return Mapping(mapping)
-    else:
-        raise NotImplementedError()
-
-
 class IMapping(TreeBasedObj):
     """Interactive wrapper upon mapping tree.
     """

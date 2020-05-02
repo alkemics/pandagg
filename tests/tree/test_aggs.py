@@ -6,23 +6,19 @@
 # =============================================================================
 
 from unittest import TestCase
-import pandas as pd
 from lighttree.exceptions import MultipleRootError, NotFoundNodeError
 from mock import patch
 
 from pandagg.tree.aggs import Aggs
-from pandagg.interactive.response import IResponse
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
 from pandagg.tree.mapping import Mapping
-from pandagg.interactive.mapping import IMapping
 from pandagg.node.aggs.bucket import DateHistogram, Terms, Filter
 from pandagg.node.aggs.metric import Avg, Min
 
 import tests.testing_samples.data_sample as sample
-from pandagg.utils import equal_queries
 
 from tests.testing_samples.mapping_example import MAPPING
 
@@ -501,46 +497,6 @@ class AggTestCase(TestCase):
             },
         )
 
-    def test_parse_as_tree(self, *_):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response = my_agg.serialize_response_as_tree(sample.ES_AGG_RESPONSE)
-        self.assertIsInstance(response, IResponse)
-        self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_REPR)
-
-    def test_normalize_buckets(self):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        self.assertTrue(
-            equal_queries(
-                my_agg.serialize_response_as_normalized(sample.ES_AGG_RESPONSE),
-                sample.EXPECTED_NORMALIZED_RESPONSE,
-            )
-        )
-
-    def test_parse_as_tabular(self):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        index, index_names, values = my_agg.serialize_response_as_tabular(
-            sample.ES_AGG_RESPONSE
-        )
-        self.assertEqual(
-            index_names, ["classification_type", "global_metrics.field.name"]
-        )
-        self.assertEqual(len(index), len(values))
-        self.assertEqual(len(index), 10)
-        self.assertEqual(index, sample.EXPECTED_TABULAR_INDEX)
-        self.assertEqual(values, sample.EXPECTED_TABULAR_VALUES)
-
-    def test_parse_as_dataframe(self):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        df = my_agg.serialize_response_as_dataframe(sample.ES_AGG_RESPONSE)
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(
-            set(df.index.names), {"classification_type", "global_metrics.field.name"}
-        )
-        self.assertEqual(
-            set(df.columns), {"avg_f1_micro", "avg_nb_classes", "doc_count"}
-        )
-        self.assertEqual(df.shape, (len(sample.EXPECTED_TABULAR_INDEX), 3))
-
     def test_validate_aggs_parent_id(self):
         """
         <Aggregation>
@@ -605,37 +561,15 @@ class AggTestCase(TestCase):
     def test_mapping_from_init(self):
         agg_from_dict_mapping = Aggs(mapping=MAPPING)
         agg_from_tree_mapping = Aggs(mapping=Mapping(MAPPING))
-        agg_from_obj_mapping = Aggs(mapping=IMapping(Mapping(MAPPING)))
-        self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.__repr__(),
-            agg_from_tree_mapping.tree_mapping.__repr__(),
-        )
-        self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.__repr__(),
-            agg_from_obj_mapping.tree_mapping.__repr__(),
-        )
         self.assertIsInstance(agg_from_dict_mapping, Aggs)
         self.assertIsInstance(agg_from_tree_mapping, Aggs)
-        self.assertIsInstance(agg_from_obj_mapping, Aggs)
-
-    def test_set_mapping(self):
-        agg_from_dict_mapping = Aggs().set_mapping(mapping=MAPPING)
-        agg_from_tree_mapping = Aggs().set_mapping(mapping=Mapping(MAPPING))
-        agg_from_obj_mapping = Aggs().set_mapping(
-            mapping=IMapping(Mapping(MAPPING), client=None)
+        self.assertEqual(
+            agg_from_dict_mapping.mapping.__repr__(),
+            agg_from_tree_mapping.mapping.__repr__(),
         )
         self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.__repr__(),
-            agg_from_tree_mapping.tree_mapping.__repr__(),
+            agg_from_dict_mapping.to_dict(), agg_from_tree_mapping.to_dict()
         )
-        self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.__repr__(),
-            agg_from_obj_mapping.tree_mapping.__repr__(),
-        )
-        # set mapping returns self
-        self.assertIsInstance(agg_from_dict_mapping, Aggs)
-        self.assertIsInstance(agg_from_tree_mapping, Aggs)
-        self.assertIsInstance(agg_from_obj_mapping, Aggs)
 
     def test_init_from_dict(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
@@ -945,33 +879,3 @@ class AggTestCase(TestCase):
         )
         agg2 = Aggs(node_hierarchy_2, mapping=MAPPING)
         self.assertEqual(agg2.deepest_linear_bucket_agg, "week")
-
-    def test_query(self):
-        agg = Aggs(client=None, index_name="some_index")
-
-        new_agg = agg.query({"term": {"user": {"value": 1}}}).query(
-            {
-                "bool": {
-                    "must": [
-                        {"range": {"other_field": {"gt": 2}}},
-                        {"term": {"another_field": {"value": "hi"}}},
-                    ]
-                }
-            }
-        )
-
-        self.assertEqual(agg._query.to_dict(), None)
-        self.assertTrue(
-            equal_queries(
-                new_agg._query.to_dict(),
-                {
-                    "bool": {
-                        "must": [
-                            {"range": {"other_field": {"gt": 2}}},
-                            {"term": {"another_field": {"value": "hi"}}},
-                            {"term": {"user": {"value": 1}}},
-                        ]
-                    }
-                },
-            )
-        )

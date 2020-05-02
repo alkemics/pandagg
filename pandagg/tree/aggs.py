@@ -3,22 +3,16 @@
 
 from __future__ import unicode_literals
 
-import copy
 
 from builtins import str as text
-from future.utils import python_2_unicode_compatible, iterkeys
+from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.query import Query
-from pandagg.tree.response import ResponseTree
-from pandagg.interactive.mapping import as_mapping
-from pandagg.interactive.response import IResponse
+from pandagg.tree.mapping import Mapping
 
 from pandagg.node.aggs.abstract import (
     BucketAggNode,
-    UniqueBucketAgg,
     AggNode,
-    MetricAgg,
     ShadowRoot,
 )
 from pandagg.node.aggs.bucket import Nested, ReverseNested
@@ -36,21 +30,10 @@ class Aggs(Tree):
     """
 
     node_class = AggNode
-    DEFAULT_OUTPUT = "dataframe"
     _crafted_root_name = "root"
 
     def __init__(self, *args, **kwargs):
-        self.index_name = kwargs.pop("index_name", None)
-        self.client = kwargs.pop("client", None)
-        self.tree_mapping = None
-        mapping = kwargs.pop("mapping", None)
-        if mapping is not None:
-            self.set_mapping(mapping)
-        query = kwargs.pop("query", None)
-        self._query = Query(query) if query else Query()
-        self.tree_mapping = None
-        if mapping is not None:
-            self.set_mapping(mapping)
+        self.mapping = Mapping(kwargs.pop("mapping", None))
         super(Aggs, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
@@ -80,31 +63,7 @@ class Aggs(Tree):
         return self
 
     def _clone_init(self, deep=False):
-        if not deep:
-            return Aggs(
-                mapping=self.tree_mapping,
-                index_name=self.index_name,
-                client=self.client,
-                query=self._query,
-            )
-        return Aggs(
-            mapping=self.tree_mapping.clone(deep=deep)
-            if self.tree_mapping is not None
-            else None,
-            index_name=self.index_name,
-            client=copy.deepcopy(self.client),
-            query=self._query.clone(deep=deep) if self._query is not None else None,
-        )
-
-    def bind(self, client, index_name=None):
-        self.client = client
-        if index_name is not None:
-            self.index_name = index_name
-        return self
-
-    def set_mapping(self, mapping):
-        self.tree_mapping = as_mapping(mapping)
-        return self
+        return Aggs(mapping=self.mapping.clone(deep=deep))
 
     def _is_eligible_grouping_node(self, nid):
         node = self.get(nid)
@@ -293,7 +252,7 @@ class Aggs(Tree):
         """
         insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))
         new_agg = self.clone(with_tree=True)
-        deserialized = self.deserialize(*args, mapping=self.tree_mapping, **kwargs)
+        deserialized = self.deserialize(*args, mapping=self.mapping, **kwargs)
         deserialized_root = deserialized.get(deserialized.root)
         if isinstance(deserialized_root, ShadowRoot):
             new_agg.merge(deserialized, nid=insert_below)
@@ -315,7 +274,7 @@ class Aggs(Tree):
                     from_=child_node.name, depth=depth, with_name=False
                 )
         if isinstance(node, ShadowRoot):
-            node_query_dict = children_queries
+            return children_queries
         else:
             node_query_dict = node.to_dict()
             if children_queries:
@@ -345,7 +304,7 @@ class Aggs(Tree):
         if (
             isinstance(node, Nested)
             or isinstance(node, ReverseNested)
-            or self.tree_mapping is None
+            or not self.mapping
             or parent_id is None
             or not hasattr(node, "field")
         ):
@@ -353,10 +312,10 @@ class Aggs(Tree):
                 node, parent_id, with_children=with_children
             )
 
-        self.tree_mapping.validate_agg_node(node)
+        self.mapping.validate_agg_node(node)
 
         # from deepest to highest
-        required_nested_level = self.tree_mapping.nested_at_field(node.field)
+        required_nested_level = self.mapping.nested_at_field(node.field)
         current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
             return super(Aggs, self)._insert_node_below(
@@ -387,7 +346,7 @@ class Aggs(Tree):
                 )
 
         # requires nested - apply all required nested fields
-        for nested_lvl in reversed(self.tree_mapping.list_nesteds_at_field(node.field)):
+        for nested_lvl in reversed(self.mapping.list_nesteds_at_field(node.field)):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
@@ -415,260 +374,6 @@ class Aggs(Tree):
                 parent_id = nested_node.identifier
         super(Aggs, self)._insert_node_below(
             node, parent_id, with_children=with_children
-        )
-
-    def validate_tree(self, exc=False):
-        """Validate tree definition against defined mapping.
-        :param exc: if set to True, will raise exception if tree is invalid
-        :return: boolean
-        """
-        if self.tree_mapping is None:
-            return True
-        for agg_node in self.list():
-            # path for 'nested'/'reverse-nested', field for metric aggregations
-            if not self.tree_mapping.validate_agg_node(agg_node, exc=exc):
-                return False
-        return True
-
-    def _parse_group_by(
-        self, response, row=None, agg_name=None, until=None, row_as_tuple=False
-    ):
-        """Recursive parsing of succession of unique child bucket aggregations.
-
-        Yields each row for which last bucket aggregation generated buckets.
-        """
-        if not row:
-            row = [] if row_as_tuple else {}
-        agg_name = self.root if agg_name is None else agg_name
-        if agg_name in response:
-            agg_node = self.get(agg_name)
-            for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
-                child_name = next(
-                    (child.name for child in self.children(agg_name, id_only=False)),
-                    None,
-                )
-                sub_row = copy.deepcopy(row)
-                # aggs generating a single bucket don't require to be listed in grouping keys
-                if not isinstance(agg_node, UniqueBucketAgg):
-                    if row_as_tuple:
-                        sub_row.append(key)
-                    else:
-                        sub_row[agg_name] = key
-                if child_name and agg_name != until:
-                    # yield children
-                    for sub_row, sub_raw_bucket in self._parse_group_by(
-                        row=sub_row,
-                        response=raw_bucket,
-                        agg_name=child_name,
-                        until=until,
-                        row_as_tuple=row_as_tuple,
-                    ):
-                        yield sub_row, sub_raw_bucket
-                else:
-                    # end real yield
-                    if row_as_tuple:
-                        sub_row = tuple(sub_row)
-                    yield sub_row, raw_bucket
-
-    def _normalize_buckets(self, agg_response, agg_name=None):
-        """Recursive function to parse aggregation response as a normalized entities.
-        Each response bucket is represented as a dict with keys (key, level, value, children)::
-
-            {
-                "level": "owner.id",
-                "key": 35,
-                "value": 235,
-                "children": [
-                ]
-            }
-        """
-        agg_name = agg_name or self.root
-        agg_node = self.get(agg_name)
-        agg_children = self.children(agg_node.name, id_only=False)
-        for key, raw_bucket in agg_node.extract_buckets(agg_response[agg_name]):
-            result = {
-                "level": agg_name,
-                "key": key,
-                "value": agg_node.extract_bucket_value(raw_bucket),
-            }
-            normalized_children = [
-                normalized_child
-                for child in agg_children
-                for normalized_child in self._normalize_buckets(
-                    agg_name=child.name, agg_response=raw_bucket
-                )
-            ]
-            if normalized_children:
-                result["children"] = normalized_children
-            yield result
-
-    def serialize_response_as_tabular(
-        self, aggs, row_as_tuple=False, grouped_by=None, normalize_children=True,
-    ):
-        """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
-        reached, and using children aggregations of grouping level as values for each of generated groups (columns).
-
-        Suppose an aggregation of this shape (A & B bucket aggregations)::
-
-            A──> B──> C1
-                 ├──> C2
-                 └──> C3
-
-        With grouped_by='B', breakdown ElasticSearch response (tree structure), into a tabular structure of this shape::
-
-                                  C1     C2    C3
-            A           B
-            wood        blue      10     4     0
-                        red       7      5     2
-            steel       blue      1      9     0
-                        red       23     4     2
-
-        :param aggs: ElasticSearch response
-        :param row_as_tuple: if True, level-key samples are returned as tuples, else in a dictionnary
-        :param grouped_by: name of the aggregation node used as last grouping level
-        :param normalize_children: if True, normalize columns buckets
-        :return: index, index_names, values
-        """
-        grouped_by = (
-            self.deepest_linear_bucket_agg if grouped_by is None else grouped_by
-        )
-        if grouped_by not in self:
-            raise ValueError(
-                "Cannot group by <%s>, agg node does not exist" % grouped_by
-            )
-
-        index_values = self._parse_group_by(
-            response=aggs, row_as_tuple=row_as_tuple, until=grouped_by
-        )
-        index_values_l = list(index_values)
-        if not index_values_l:
-            return [], [], []
-        index, values = zip(*index_values_l)
-
-        grouping_agg = self.get(grouped_by)
-        grouping_agg_children = self.children(grouped_by, id_only=False)
-
-        index_names = [
-            a.name
-            for a in self.ancestors(grouping_agg.name, id_only=False, from_root=True)
-            + [grouping_agg]
-            if not isinstance(a, UniqueBucketAgg)
-        ]
-
-        def serialize_columns(row_data):
-            # extract value (usually 'doc_count') of grouping agg node
-            result = {
-                grouping_agg.VALUE_ATTRS[0]: grouping_agg.extract_bucket_value(row_data)
-            }
-            if not grouping_agg_children:
-                return result
-            # extract values of children, one columns per child
-            for child in grouping_agg_children:
-                if not normalize_children:
-                    result[child.name] = row_data[child.name]
-                    continue
-                if isinstance(child, (UniqueBucketAgg, MetricAgg)):
-                    result[child.name] = child.extract_bucket_value(
-                        row_data[child.name]
-                    )
-                else:
-                    result[child.name] = next(
-                        self._normalize_buckets(row_data, child.name), None
-                    )
-            return result
-
-        serialized_values = list(map(serialize_columns, values))
-        return index, index_names, serialized_values
-
-    def serialize_response_as_dataframe(
-        self, aggs, grouped_by=None, normalize_children=True
-    ):
-        try:
-            import pandas as pd
-        except ImportError:
-            raise ImportError(
-                'Using dataframe output format requires to install pandas. Please install "pandas" or '
-                "use another output format."
-            )
-        index, index_names, values = self.serialize_response_as_tabular(
-            aggs=aggs,
-            row_as_tuple=True,
-            grouped_by=grouped_by,
-            normalize_children=normalize_children,
-        )
-        if not index:
-            return pd.DataFrame()
-        if len(index[0]) == 0:
-            index = (None,) * len(index)
-        else:
-            index = pd.MultiIndex.from_tuples(index, names=index_names)
-        return pd.DataFrame(index=index, data=values)
-
-    def serialize_response_as_normalized(self, aggs):
-        children = []
-        for k in sorted(iterkeys(aggs)):
-            for child in self._normalize_buckets(aggs, k):
-                children.append(child)
-        return {"level": "root", "key": None, "value": None, "children": children}
-
-    def serialize_response_as_tree(self, aggs):
-        response_tree = ResponseTree(self).parse_aggregation(aggs)
-        return IResponse(
-            tree=response_tree,
-            depth=1,
-            client=self.client,
-            index_name=self.index_name,
-            query=self._query,
-        )
-
-    def serialize_response(self, aggs, output, **kwargs):
-        """
-        :param aggs: aggregation response, dict
-        :param output: output format, one of "raw", "tree", "normalized_tree", "dict_rows", "dataframe"
-        :param kwargs: serialization kwargs
-        :return:
-        """
-        if output == "raw":
-            return aggs
-        elif output == "tree":
-            return self.serialize_response_as_tree(aggs)
-        elif output == "normalized_tree":
-            return self.serialize_response_as_normalized(aggs)
-        elif output == "dict_rows":
-            return self.serialize_response_as_tabular(aggs, **kwargs)
-        elif output == "dataframe":
-            return self.serialize_response_as_dataframe(aggs, **kwargs)
-        else:
-            raise NotImplementedError("Unkown %s output format." % output)
-
-    def query(self, query, validate=False, **kwargs):
-        new_query = self._query.query(query, **kwargs)
-        query_dict = new_query.to_dict()
-        if validate:
-            validity = self.client.indices.validate_query(
-                index=self.index_name, body={"query": query_dict}
-            )
-            if not validity["valid"]:
-                raise ValueError("Wrong query: %s\n%s" % (query, validity))
-        new_agg = self.clone(with_tree=True)
-        new_agg._query = new_query
-        return new_agg
-
-    def _execute(self, aggregation, index=None):
-        body = {"aggs": aggregation, "size": 0}
-        query = self._query.to_dict()
-        if query:
-            body["query"] = query
-        return self.client.search(index=index, body=body)
-
-    def execute(self, index=None, output=DEFAULT_OUTPUT, **kwargs):
-        if self.client is None:
-            raise ValueError('Execution requires to specify "client" at __init__.')
-        es_response = self._execute(
-            aggregation=self.to_dict(), index=index or self.index_name
-        )
-        return self.serialize_response(
-            aggs=es_response["aggregations"], output=output, **kwargs
         )
 
     def __str__(self):

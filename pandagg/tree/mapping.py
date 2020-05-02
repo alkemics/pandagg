@@ -28,11 +28,18 @@ class Mapping(Tree):
             arg = args[0]
             if isinstance(arg, Mapping):
                 self.insert(arg)
+            elif arg is None:
+                pass
             else:
                 # {'dynamic': False, 'properties': ...}
                 self.insert(ShadowRoot(**arg))
         elif kwargs:
             self.insert(ShadowRoot(**kwargs))
+
+    def __nonzero__(self):
+        return not self.is_empty()
+
+    __bool__ = __nonzero__
 
     def serialize(self, from_=None, depth=None):
         if self.root is None:
@@ -71,9 +78,6 @@ class Mapping(Tree):
 
     def get(self, key):
         return super(Mapping, self).get(self.resolve_path_to_id(key))
-
-    def _clone(self, with_tree=False, deep=False):
-        return Mapping(from_=self if with_tree else None)
 
     def validate_agg_node(self, agg_node, exc=True):
         """Ensure if node has field or path that it exists in mapping, and that required aggregation type

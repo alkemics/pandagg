@@ -43,34 +43,14 @@ class IResponse(TreeBasedObj):
 
     def get_bucket_filter(self):
         """Build filters to select documents belonging to that bucket"""
-        return self._initial_tree.get_bucket_filter(self._tree.root)
+        bucket_filter = self._initial_tree.get_bucket_filter(self._tree.root)
+        return self._query.query(bucket_filter).to_dict()
 
-    def list_documents(
-        self, size=None, execute=True, _source=None, compact=False, **kwargs
-    ):
+    def list_documents(self, **body):
         """Return ES aggregation query to list documents belonging to given bucket.
-        :param size: number of returned documents (ES default: 20)
-        :param execute: if set to False, return aggregation query
-        :param _source: list of desired documents attributes
-        :param compact: provide more compact ES response
-        :param kwargs: query arguments passed to aggregation body
         :return:
         """
-        filter_query = self._query.query(self.get_bucket_filter())
-        if not execute:
-            return filter_query.to_dict()
-        body = {}
+        filter_query = self.get_bucket_filter()
         if filter_query:
-            body["query"] = filter_query.to_dict()
-        if size is not None:
-            body["size"] = size
-        if _source is not None:
-            body["_source"] = _source
-        body.update(kwargs)
-        response = self._client.search(index=self._index_name, body=body)
-        if not compact:
-            return response
-        return {
-            "total": response["hits"]["total"],
-            "hits": list(map(lambda x: x["_source"], response["hits"]["hits"])),
-        }
+            body["query"] = filter_query
+        return self._client.search(index=self._index_name, body=body)

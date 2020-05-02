@@ -200,7 +200,7 @@ EXPECTED_RESP_REPR = """root
         └── avg_nb_classes                              9.97
 """
 EXPECTED_RESPONSE_REPR = """<IResponse>\n%s""" % EXPECTED_RESP_REPR
-EXPECTED_RESPONSE_TREE_REPR = """<ResponseTree>\n%s""" % EXPECTED_RESP_REPR
+EXPECTED_RESPONSE_TREE_REPR = """<AggsResponseTree>\n%s""" % EXPECTED_RESP_REPR
 
 
 EXPECTED_NORMALIZED_RESPONSE = {

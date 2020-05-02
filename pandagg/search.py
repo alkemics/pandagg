@@ -6,6 +6,8 @@ from elasticsearch.helpers import scan
 from future.utils import string_types
 
 from pandagg.connections import get_connection
+from pandagg.response import Response
+from pandagg.tree.mapping import Mapping
 from pandagg.tree.query import Query
 from pandagg.tree.aggs import Aggs
 
@@ -86,16 +88,16 @@ class Request(object):
 
 
 class Search(Request):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, using=None, index=None, mapping=None):
         """
         Search request to elasticsearch.
 
         :arg using: `Elasticsearch` instance to use
         :arg index: limit the search to index
-        :arg doc_type: only query this type.
+        :arg mapping: mapping used for query validation
 
         All the parameters supplied (or omitted) at creation type can be later
-        overridden by methods (`using`, `index` and `doc_type` respectively).
+        overridden by methods (`using`, `index` and `mapping` respectively).
         """
 
         self._sort = []
@@ -104,12 +106,12 @@ class Search(Request):
         self._highlight_opts = {}
         self._suggest = {}
         self._script_fields = {}
-        # self._response_class = Response
-
-        self._aggs = Aggs()
-        self._query = Query()
-        self._post_filter = Query()
-        super(Search, self).__init__(*args, **kwargs)
+        mapping = Mapping(mapping)
+        self._mapping = mapping
+        self._aggs = Aggs(mapping=mapping)
+        self._query = Query(mapping=mapping)
+        self._post_filter = Query(mapping=mapping)
+        super(Search, self).__init__(using=using, index=index)
 
     def query(self, *args, **kwargs):
         s = self._clone()
@@ -184,6 +186,16 @@ class Search(Request):
             s._params["size"] = 1
             return s
 
+    def from_(self, from_):
+        s = self._clone()
+        s._params["from"] = from_
+        return s
+
+    def size(self, size):
+        s = self._clone()
+        s._params["size"] = size
+        return s
+
     @classmethod
     def from_dict(cls, d):
         """
@@ -223,6 +235,7 @@ class Search(Request):
         s._aggs = self._aggs.clone()
         s._query = self._query.clone()
         s._post_filter = self._post_filter.clone()
+        s._mapping = self._mapping.clone()
         return s
 
     def update_from_dict(self, d):
@@ -489,12 +502,9 @@ class Search(Request):
         """
         Execute the search and return an instance of ``Response`` wrapping all
         the data.
-
-        :arg ignore_cache: if set to ``True``, consecutive calls will hit
-            ES, while cached result will be ignored. Defaults to `False`
         """
         es = get_connection(self._using)
-        return es.search(index=self._index, body=self.to_dict())
+        return Response(es.search(index=self._index, body=self.to_dict()), search=self)
 
     def scan(self):
         """

@@ -12,21 +12,28 @@ from pandagg.node.aggs.abstract import UniqueBucketAgg
 from pandagg.utils import bool_if_required
 
 
-class ResponseTree(Tree):
+class AggsResponseTree(Tree):
     """Tree representation of an ES response. ES response format is determined by the aggregation query.
     """
 
-    def __init__(self, agg_tree):
+    def __init__(self, data, aggs, index):
         """
-        :param agg_tree: instance of pandagg.agg.Agg from which this ES response originates
+        :param aggs: instance of pandagg.agg.Agg from which this ES response originates
         """
-        super(ResponseTree, self).__init__()
-        self.agg_tree = agg_tree
+        super(AggsResponseTree, self).__init__()
+        self.__aggs = aggs
+        self.__index = index
+        self.__data = data
+        self._parse_aggregation(data)
 
     def _clone_init(self, with_tree=False, deep=False):
-        return ResponseTree(agg_tree=self.agg_tree)
+        return AggsResponseTree(
+            data=self.__data.copy(),
+            aggs=self.__aggs.clone(deep=deep),
+            index=self.__index,
+        )
 
-    def parse_aggregation(self, raw_response):
+    def _parse_aggregation(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
         :param raw_response: ElasticSearch aggregation response
         :return: self
@@ -34,7 +41,7 @@ class ResponseTree(Tree):
         Note: if the root aggregation node can generate multiple buckets, a response root is crafted to avoid having
         multiple roots.
         """
-        root_node = self.agg_tree.get(self.agg_tree.root)
+        root_node = self.__aggs.get(self.__aggs.root)
         pid = None
 
         if not isinstance(root_node, UniqueBucketAgg):
@@ -59,7 +66,7 @@ class ResponseTree(Tree):
                 value=agg_node.extract_bucket_value(raw_value),
             )
             self.insert_node(bucket, pid)
-            for child in self.agg_tree.children(agg_node.name, id_only=False):
+            for child in self.__aggs.children(agg_node.name, id_only=False):
                 self._parse_node_with_children(
                     agg_node=child, raw_response=raw_value, pid=bucket.identifier,
                 )
@@ -116,13 +123,12 @@ class ResponseTree(Tree):
               └── Nested_B              <- filter on B
 
         """
-        tree_mapping = self.agg_tree.tree_mapping
+        tree_mapping = self.__aggs.mapping
 
         selected_bucket = self.get(nid)
         bucket_properties = self.bucket_properties(selected_bucket)
         agg_node_key_tuples = [
-            (self.agg_tree.get(level), key)
-            for level, key in iteritems(bucket_properties)
+            (self.__aggs.get(level), key) for level, key in iteritems(bucket_properties)
         ]
 
         filters_per_nested_level = defaultdict(list)
@@ -131,7 +137,7 @@ class ResponseTree(Tree):
             level_agg_filter = agg_node.get_filter(key)
             # remove unnecessary match_all filters
             if level_agg_filter is not None and "match_all" not in level_agg_filter:
-                current_nested = self.agg_tree.applied_nested_path_at_node(
+                current_nested = self.__aggs.applied_nested_path_at_node(
                     agg_node.identifier
                 )
                 filters_per_nested_level[current_nested].append(level_agg_filter)
@@ -157,4 +163,4 @@ class ResponseTree(Tree):
 
     def show(self, **kwargs):
         kwargs["key"] = kwargs.get("key", lambda x: x.line_repr(depth=0))
-        return super(ResponseTree, self).show(**kwargs)
+        return super(AggsResponseTree, self).show(**kwargs)

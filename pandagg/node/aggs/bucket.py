@@ -36,11 +36,9 @@ class Filter(UniqueBucketAgg):
     KEY = "filter"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, name, filter, meta=None, aggs=None, **body):
-        self.filter = filter
-        super(Filter, self).__init__(
-            name=name, meta=meta, aggs=aggs, filter=filter, **body
-        )
+    def __init__(self, name, filter, meta=None, aggs=None):
+        self.filter = filter.copy()
+        super(Filter, self).__init__(name=name, meta=meta, aggs=aggs, **filter)
 
     def get_filter(self, key):
         return self.filter

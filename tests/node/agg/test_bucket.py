@@ -77,9 +77,7 @@ class BucketAggNodesTestCase(TestCase):
         self.assertEqual(filter_agg.get_filter(None), {"term": {"some_path": 1}})
 
         # test query dict
-        self.assertEqual(
-            filter_agg.to_dict(), {"filter": {"filter": {"term": {"some_path": 1}}}}
-        )
+        self.assertEqual(filter_agg.to_dict(), {"filter": {"term": {"some_path": 1}}})
 
     def test_nested(self):
         es_raw_response = {"doc_count": 12, "sub_aggs": {}}

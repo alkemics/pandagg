@@ -18,11 +18,12 @@ Submodules
    :maxdepth: 8
 
    pandagg.aggs
-   pandagg.client
    pandagg.connections
+   pandagg.discovery
    pandagg.exceptions
    pandagg.mapping
    pandagg.query
+   pandagg.response
    pandagg.search
    pandagg.utils
 
