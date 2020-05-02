@@ -112,10 +112,8 @@ pip install pandagg
 
 ## Motivations
 
-`pandagg` only focuses on read operations (queries and aggregations), a 
-high level python client [elasticsearch-dsl](https://github.com/elastic/elasticsearch-dsl-py) already exists for ElasticSearch, 
-but despite many qualities, in some cases its api was not always convenient when dealing with deeply 
-nested queries and aggregations.
+`pandagg` is inspired by the official high level python client [elasticsearch-dsl](https://github.com/elastic/elasticsearch-dsl-py),
+and is intended to make it more convenient to deal with deeply nested queries and aggregations.
 
 The fundamental difference between those libraries is how they deal with the tree structure of aggregation queries
 and their responses.
@@ -137,6 +135,19 @@ In ***pandagg***, all **nodes** are agnostic about which are their parents/child
 of storing this structure. It is thus possible to add/update/remove aggregation **nodes** or **sub-trees** in
 specific locations of the initial **tree**, thus allowing more flexible ways to build your queries.
 
+Another difference is about how the response class. ***pandagg*** will favor "explicit" attributes and methods, rather
+than automatically generated attributes (except for classes whose purpose is exclusively interactive).
+
+### Disclaimers
+***pandagg*** is not as mature as the official client, and some interfaces might change.
+
+It does not ensure retro-compatible with previous versions of elasticsearch (intended to work with >=7). It is part
+of the roadmap to tag ***pandagg*** versions according to the ElasticSearch versions they are related to (ie ***pandagg***
+be v7.1.4 would work with ElasticSearch v7.X.X).
+
+It doesn't provide yet all functionalities provided by the official client (for instance ORM like insert/updates, index
+operations etc..). Primary focus of ***pandagg*** was on read operations.
+
 ## Contributing
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome.
@@ -147,7 +158,5 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 - implement CI workflow: python2/3 tests, coverage
 - documentation; explain challenges induced by nested `nodes` syntaxes: for instance why are nested query clauses
 saved in `children` attribute before tree deserialization
-- extend test coverage on `named` queries serialization
 - on aggregation `nodes`, ensure all allowed `fields` are listed
-- on aggregation response `tree`, use `Query` DSL to compute bucket filters
 - package versions for different ElasticSearch versions

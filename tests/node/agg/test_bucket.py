@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from pandagg.aggs import Terms, Filter, Filters, DateHistogram, Nested, Range
 from pandagg.node.aggs.bucket import Histogram
+from pandagg.utils import ordered
 
 
 class BucketAggNodesTestCase(TestCase):
@@ -153,33 +154,40 @@ class BucketAggNodesTestCase(TestCase):
         )
         expected_others_filter = {
             "bool": {
-                "must_not": {
-                    "bool": {
-                        "should": [
-                            {"term": {"some_path": 1}},
-                            {"term": {"some_path": 2}},
-                        ]
+                "must_not": [
+                    {
+                        "bool": {
+                            "should": [
+                                {"term": {"some_path": {"value": 1}}},
+                                {"term": {"some_path": {"value": 2}}},
+                            ]
+                        }
                     }
-                }
+                ]
             }
         }
-        self.assertEqual(filters_agg.get_filter("_other_"), expected_others_filter)
         self.assertEqual(
-            filters_agg.get_filter("neither_one_nor_two"), expected_others_filter
+            ordered(filters_agg.get_filter("_other_")), ordered(expected_others_filter)
+        )
+        self.assertEqual(
+            ordered(filters_agg.get_filter("neither_one_nor_two")),
+            ordered(expected_others_filter),
         )
 
         self.assertEqual(
-            filters_agg.to_dict(),
-            {
-                "filters": {
+            ordered(filters_agg.to_dict()),
+            ordered(
+                {
                     "filters": {
-                        "first_bucket": {"term": {"some_path": 1}},
-                        "second_bucket": {"term": {"some_path": 2}},
-                    },
-                    "other_bucket": True,
-                    "other_bucket_key": "neither_one_nor_two",
+                        "filters": {
+                            "first_bucket": {"term": {"some_path": 1}},
+                            "second_bucket": {"term": {"some_path": 2}},
+                        },
+                        "other_bucket": True,
+                        "other_bucket_key": "neither_one_nor_two",
+                    }
                 }
-            },
+            ),
         )
 
     def test_range(self):
