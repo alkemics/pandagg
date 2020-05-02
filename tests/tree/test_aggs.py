@@ -564,8 +564,8 @@ class AggTestCase(TestCase):
         self.assertIsInstance(agg_from_dict_mapping, Aggs)
         self.assertIsInstance(agg_from_tree_mapping, Aggs)
         self.assertEqual(
-            agg_from_dict_mapping.tree_mapping.__repr__(),
-            agg_from_tree_mapping.tree_mapping.__repr__(),
+            agg_from_dict_mapping.mapping.__repr__(),
+            agg_from_tree_mapping.mapping.__repr__(),
         )
         self.assertEqual(
             agg_from_dict_mapping.to_dict(), agg_from_tree_mapping.to_dict()

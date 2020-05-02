@@ -145,12 +145,9 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 ## Roadmap
 
 - implement CI workflow: python2/3 tests, coverage
-- nested fields: automatic handling and validation in `Query` instances
-- `Query.query`, `Agg.agg`, `Agg.groupby` methods: allow passing of `tree` instance, in addition to current `dict` and `node` syntaxes
 - documentation; explain challenges induced by nested `nodes` syntaxes: for instance why are nested query clauses
 saved in `children` attribute before tree deserialization
 - extend test coverage on `named` queries serialization
-- evaluate interest and tradeoffs of using metaclasses like similarly to `elasticsearch-dsl` library to declare `node` classes
 - on aggregation `nodes`, ensure all allowed `fields` are listed
 - on aggregation response `tree`, use `Query` DSL to compute bucket filters
 - package versions for different ElasticSearch versions

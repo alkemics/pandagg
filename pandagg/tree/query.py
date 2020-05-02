@@ -7,7 +7,6 @@ from builtins import str as text
 from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
-from pandagg.interactive.mapping import as_mapping
 
 from pandagg.node.query._parameter_clause import (
     SimpleParameter,
@@ -33,7 +32,7 @@ import pandagg.node.query.shape as shape  # noqa
 import pandagg.node.query.span as span  # noqa
 import pandagg.node.query.specialized as specialized  # noqa
 import pandagg.node.query.term_level as term_level  # noqa
-
+from pandagg.tree.mapping import Mapping
 
 ADD = "add"
 REPLACE = "replace"
@@ -44,18 +43,14 @@ REPLACE_ALL = "replace_all"
 class Query(Tree):
     """Tree combination of query nodes.
 
-    Mapping declaration is optional, but doing so validates query validity.
+    Mapping declaration is optional, but doing so validates query validity and automatically inserts nested clauses
+    when necessary.
     """
 
     node_class = QueryClause
 
     def __init__(self, *args, **kwargs):
-        self.index_name = kwargs.pop("index_name", None)
-        self.client = kwargs.pop("client", None)
-        self.tree_mapping = None
-        mapping = kwargs.pop("mapping", None)
-        if mapping is not None:
-            self.set_mapping(mapping)
+        self.mapping = Mapping(kwargs.pop("mapping", None))
         super(Query, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
@@ -66,22 +61,7 @@ class Query(Tree):
     __bool__ = __nonzero__
 
     def _clone_init(self, deep=False):
-        tree_mapping = self.tree_mapping
-        if deep and self.tree_mapping is not None:
-            tree_mapping = self.tree_mapping.clone(with_tree=True, deep=deep)
-        return Query(
-            client=self.client, index_name=self.index_name, mapping=tree_mapping
-        )
-
-    def bind(self, client, index_name=None):
-        self.client = client
-        if index_name is not None:
-            self.index_name = index_name
-        return self
-
-    def set_mapping(self, mapping):
-        self.tree_mapping = as_mapping(mapping)
-        return self
+        return Query(mapping=self.mapping.clone(with_tree=True, deep=deep))
 
     @classmethod
     def deserialize(cls, *args, **kwargs):
@@ -263,7 +243,7 @@ class Query(Tree):
                 parent_param=parent_param,
                 child_param=child_param,
                 mode=mode,
-                **{parent_param_key: inserted.to_dict()}
+                **{parent_param_key: inserted}
             )
 
         # If a child is provided (only possible if inserted node is compound): place on top using child_param.
@@ -328,8 +308,8 @@ class Query(Tree):
             child_node = q.children(parent_operator_node.name, id_only=False)[0]
             child = child_node.name
             if isinstance(child_node, Bool):
-                return q.bool(must=inserted.to_dict(), _name=child, mode=mode)
-            return q.bool(must=inserted.to_dict(), child=child, mode=mode)
+                return q.bool(must=inserted, _name=child, mode=mode)
+            return q.bool(must=inserted, child=child, mode=mode)
         if parent_operator_node is None:
             parent_operator_node = parent_operator()
             q.insert_node(parent_operator_node, parent_id=parent)
@@ -477,10 +457,3 @@ class Query(Tree):
 
     def __str__(self):
         return "<Query>\n%s" % text(self.show())
-
-    def execute(self, index=None, **kwargs):
-        if self.client is None:
-            raise ValueError('Execution requires to specify "client" at __init__.')
-        body = {"query": self.to_dict()}
-        body.update(kwargs)
-        return self.client.search(index=index or self.index_name, body=body)

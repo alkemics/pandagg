@@ -27,7 +27,11 @@ class AggsResponseTree(Tree):
         self._parse_aggregation(data)
 
     def _clone_init(self, with_tree=False, deep=False):
-        return AggsResponseTree(data=self.__data, aggs=self.__aggs, index=self.__index)
+        return AggsResponseTree(
+            data=self.__data.copy(),
+            aggs=self.__aggs.clone(deep=deep),
+            index=self.__index,
+        )
 
     def _parse_aggregation(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
@@ -119,7 +123,7 @@ class AggsResponseTree(Tree):
               └── Nested_B              <- filter on B
 
         """
-        tree_mapping = self.__aggs.tree_mapping
+        tree_mapping = self.__aggs.mapping
 
         selected_bucket = self.get(nid)
         bucket_properties = self.bucket_properties(selected_bucket)

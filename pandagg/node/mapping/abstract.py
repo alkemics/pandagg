@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import copy
 import json
 from future.utils import python_2_unicode_compatible, iteritems
 from builtins import str as text
@@ -69,7 +68,7 @@ class Field(Node):
 
     @property
     def body(self):
-        b = copy.deepcopy(self._body)
+        b = self._body.copy()
         if self.KEY in ("object", " "):
             return b
         b["type"] = self.KEY

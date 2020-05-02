@@ -3,8 +3,6 @@
 
 from __future__ import unicode_literals
 
-import copy
-
 from builtins import str as text
 import json
 
@@ -100,7 +98,7 @@ class QueryClause(Node):
         return "%s_" % self.KEY
 
     def serialize(self, with_name=True):
-        b = copy.deepcopy(self.body)
+        b = self.body.copy()
         if with_name and self._named:
             b["_name"] = self.name
         return {self.KEY: b}

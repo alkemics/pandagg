@@ -79,9 +79,6 @@ class Mapping(Tree):
     def get(self, key):
         return super(Mapping, self).get(self.resolve_path_to_id(key))
 
-    def _clone(self, with_tree=False, deep=False):
-        return Mapping(from_=self if with_tree else None)
-
     def validate_agg_node(self, agg_node, exc=True):
         """Ensure if node has field or path that it exists in mapping, and that required aggregation type
         if allowed on this kind of field.

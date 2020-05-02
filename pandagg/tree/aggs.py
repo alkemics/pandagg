@@ -33,7 +33,7 @@ class Aggs(Tree):
     _crafted_root_name = "root"
 
     def __init__(self, *args, **kwargs):
-        self.tree_mapping = Mapping(kwargs.pop("mapping", None))
+        self.mapping = Mapping(kwargs.pop("mapping", None))
         super(Aggs, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
@@ -63,7 +63,7 @@ class Aggs(Tree):
         return self
 
     def _clone_init(self, deep=False):
-        return Aggs(mapping=self.tree_mapping.clone(deep=deep))
+        return Aggs(mapping=self.mapping.clone(deep=deep))
 
     def _is_eligible_grouping_node(self, nid):
         node = self.get(nid)
@@ -252,7 +252,7 @@ class Aggs(Tree):
         """
         insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))
         new_agg = self.clone(with_tree=True)
-        deserialized = self.deserialize(*args, mapping=self.tree_mapping, **kwargs)
+        deserialized = self.deserialize(*args, mapping=self.mapping, **kwargs)
         deserialized_root = deserialized.get(deserialized.root)
         if isinstance(deserialized_root, ShadowRoot):
             new_agg.merge(deserialized, nid=insert_below)
@@ -304,7 +304,7 @@ class Aggs(Tree):
         if (
             isinstance(node, Nested)
             or isinstance(node, ReverseNested)
-            or not self.tree_mapping
+            or not self.mapping
             or parent_id is None
             or not hasattr(node, "field")
         ):
@@ -312,10 +312,10 @@ class Aggs(Tree):
                 node, parent_id, with_children=with_children
             )
 
-        self.tree_mapping.validate_agg_node(node)
+        self.mapping.validate_agg_node(node)
 
         # from deepest to highest
-        required_nested_level = self.tree_mapping.nested_at_field(node.field)
+        required_nested_level = self.mapping.nested_at_field(node.field)
         current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
             return super(Aggs, self)._insert_node_below(
@@ -346,7 +346,7 @@ class Aggs(Tree):
                 )
 
         # requires nested - apply all required nested fields
-        for nested_lvl in reversed(self.tree_mapping.list_nesteds_at_field(node.field)):
+        for nested_lvl in reversed(self.mapping.list_nesteds_at_field(node.field)):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
@@ -375,19 +375,6 @@ class Aggs(Tree):
         super(Aggs, self)._insert_node_below(
             node, parent_id, with_children=with_children
         )
-
-    def validate_tree(self, exc=False):
-        """Validate tree definition against defined mapping.
-        :param exc: if set to True, will raise exception if tree is invalid
-        :return: boolean
-        """
-        if self.tree_mapping is None:
-            return True
-        for agg_node in self.list():
-            # path for 'nested'/'reverse-nested', field for metric aggregations
-            if not self.tree_mapping.validate_agg_node(agg_node, exc=exc):
-                return False
-        return True
 
     def __str__(self):
         return "<Aggregation>\n%s" % text(self.show())

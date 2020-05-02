@@ -3,7 +3,6 @@
 
 from __future__ import unicode_literals
 
-import copy
 from builtins import str as text
 
 from future.utils import iterkeys
@@ -125,7 +124,7 @@ class Aggregations:
                     ),
                     None,
                 )
-                sub_row = copy.deepcopy(row)
+                sub_row = row.copy()
                 # aggs generating a single bucket don't require to be listed in grouping keys
                 if not isinstance(agg_node, UniqueBucketAgg):
                     if row_as_tuple:
