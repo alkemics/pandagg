@@ -202,6 +202,7 @@ class Aggregations:
         row_as_tuple=False,
         grouped_by=None,
         expand_columns=True,
+        expand_sep='|',
         normalize=True,
         with_single_bucket_groups=False,
     ):
@@ -260,13 +261,14 @@ class Aggregations:
                     normalize=normalize,
                     total_agg=grouping_agg,
                     expand_columns=expand_columns,
+                    expand_sep=expand_sep,
                 ),
             )
             for row_index, row_values in index_values
         ]
         return index_names, rows
 
-    def serialize_columns(self, row_data, normalize, expand_columns, total_agg=None):
+    def serialize_columns(self, row_data, normalize, expand_columns, expand_sep, total_agg=None):
         # extract value (usually 'doc_count') of grouping agg node
         result = {}
         if total_agg is not None and not isinstance(total_agg, ShadowRoot):
@@ -285,7 +287,7 @@ class Aggregations:
                 result[child.name] = child.extract_bucket_value(row_data[child.name])
             elif expand_columns:
                 for key, bucket in child.extract_buckets(row_data[child.name]):
-                    result["%s|%s" % (child.name, key)] = child.extract_bucket_value(
+                    result["%s%s%s" % (child.name, expand_sep, key)] = child.extract_bucket_value(
                         bucket
                     )
             elif normalize:

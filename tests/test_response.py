@@ -11,7 +11,7 @@ from pandagg.response import Response, Hits, Hit, Aggregations
 from pandagg.tree.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
-from pandagg.utils import equal_queries, ordered
+from pandagg.utils import ordered
 from tests.testing_samples.mapping_example import MAPPING
 
 
