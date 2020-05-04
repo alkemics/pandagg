@@ -11,7 +11,7 @@ from pandagg.response import Response, Hits, Hit, Aggregations
 from pandagg.tree.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
-from pandagg.utils import equal_queries
+from pandagg.utils import equal_queries, ordered
 from tests.testing_samples.mapping_example import MAPPING
 
 
@@ -129,25 +129,49 @@ class AggregationsResponseTestCase(TestCase):
             client=None,
             query=None,
         ).serialize_as_normalized()
-        self.assertTrue(equal_queries(response, sample.EXPECTED_NORMALIZED_RESPONSE,))
+        self.assertEqual(
+            ordered(response), ordered(sample.EXPECTED_NORMALIZED_RESPONSE)
+        )
 
     def test_parse_as_tabular(self):
         # with single agg at root
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        index, index_names, values = Aggregations(
+        index_names, index_values = Aggregations(
             data=sample.ES_AGG_RESPONSE,
             aggs=my_agg,
             index=None,
             client=None,
             query=None,
-        ).serialize_as_tabular()
+        ).serialize_as_tabular(row_as_tuple=True)
+
         self.assertEqual(
             index_names, ["classification_type", "global_metrics.field.name"]
         )
-        self.assertEqual(len(index), len(values))
-        self.assertEqual(len(index), 10)
-        self.assertEqual(index, sample.EXPECTED_TABULAR_INDEX)
-        self.assertEqual(values, sample.EXPECTED_TABULAR_VALUES)
+        self.assertEqual(
+            index_values,
+            [
+                (
+                    ("multilabel", "ispracticecompatible"),
+                    {"avg_f1_micro": 0.72, "avg_nb_classes": 18.71, "doc_count": 128},
+                ),
+                (
+                    ("multilabel", "gpc"),
+                    {"avg_f1_micro": 0.95, "avg_nb_classes": 183.21, "doc_count": 119},
+                ),
+                (
+                    ("multilabel", "preservationmethods"),
+                    {"avg_f1_micro": 0.8, "avg_nb_classes": 9.97, "doc_count": 76},
+                ),
+                (
+                    ("multiclass", "kind"),
+                    {"avg_f1_micro": 0.89, "avg_nb_classes": 206.5, "doc_count": 370},
+                ),
+                (
+                    ("multiclass", "gpc"),
+                    {"avg_f1_micro": 0.93, "avg_nb_classes": 211.12, "doc_count": 198},
+                ),
+            ],
+        )
 
     def test_parse_as_dataframe(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
@@ -165,4 +189,24 @@ class AggregationsResponseTestCase(TestCase):
         self.assertEqual(
             set(df.columns), {"avg_f1_micro", "avg_nb_classes", "doc_count"}
         )
-        self.assertEqual(df.shape, (len(sample.EXPECTED_TABULAR_INDEX), 3))
+        self.assertEqual(
+            df.index.to_list(),
+            [
+                ("multilabel", "ispracticecompatible"),
+                ("multilabel", "gpc"),
+                ("multilabel", "preservationmethods"),
+                ("multiclass", "kind"),
+                ("multiclass", "gpc"),
+            ],
+        )
+
+        self.assertEqual(
+            df.to_dict(orient="rows"),
+            [
+                {"avg_f1_micro": 0.72, "avg_nb_classes": 18.71, "doc_count": 128},
+                {"avg_f1_micro": 0.95, "avg_nb_classes": 183.21, "doc_count": 119},
+                {"avg_f1_micro": 0.8, "avg_nb_classes": 9.97, "doc_count": 76},
+                {"avg_f1_micro": 0.89, "avg_nb_classes": 206.5, "doc_count": 370},
+                {"avg_f1_micro": 0.93, "avg_nb_classes": 211.12, "doc_count": 198},
+            ],
+        )

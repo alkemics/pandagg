@@ -84,36 +84,6 @@ ES_AGG_RESPONSE = {
                 "global_metrics.field.name": {
                     "buckets": [
                         {
-                            "avg_f1_micro": {"value": 0.83},
-                            "avg_nb_classes": {"value": 5.20},
-                            "doc_count": 369,
-                            "key": "hazardpictograms",
-                        },
-                        {
-                            "avg_f1_micro": {"value": 0.81},
-                            "avg_nb_classes": {"value": 88.72},
-                            "doc_count": 369,
-                            "key": "islabeledby",
-                        },
-                        {
-                            "avg_f1_micro": {"value": 0.41},
-                            "avg_nb_classes": {"value": 27.57},
-                            "doc_count": 367,
-                            "key": "flavors",
-                        },
-                        {
-                            "avg_f1_micro": {"value": 0.83},
-                            "avg_nb_classes": {"value": 107.82},
-                            "doc_count": 239,
-                            "key": "hasnotableingredients",
-                        },
-                        {
-                            "avg_f1_micro": {"value": 0.82},
-                            "avg_nb_classes": {"value": 65.59},
-                            "doc_count": 130,
-                            "key": "allergentypelist",
-                        },
-                        {
                             "avg_f1_micro": {"value": 0.72},
                             "avg_nb_classes": {"value": 18.71},
                             "doc_count": 128,
@@ -174,24 +144,9 @@ EXPECTED_RESP_REPR = """root
 │       ├── avg_f1_micro                                0.89
 │       └── avg_nb_classes                             206.5
 └── classification_type=multilabel                      1797
-    ├── global_metrics.field.name=allergentypelist       130
-    │   ├── avg_f1_micro                                0.82
-    │   └── avg_nb_classes                             65.59
-    ├── global_metrics.field.name=flavors                367
-    │   ├── avg_f1_micro                                0.41
-    │   └── avg_nb_classes                             27.57
     ├── global_metrics.field.name=gpc                    119
     │   ├── avg_f1_micro                                0.95
     │   └── avg_nb_classes                            183.21
-    ├── global_metrics.field.name=hasnotableingredients    239
-    │   ├── avg_f1_micro                                0.83
-    │   └── avg_nb_classes                            107.82
-    ├── global_metrics.field.name=hazardpictograms       369
-    │   ├── avg_f1_micro                                0.83
-    │   └── avg_nb_classes                               5.2
-    ├── global_metrics.field.name=islabeledby            369
-    │   ├── avg_f1_micro                                0.81
-    │   └── avg_nb_classes                             88.72
     ├── global_metrics.field.name=ispracticecompatible    128
     │   ├── avg_f1_micro                                0.72
     │   └── avg_nb_classes                             18.71
@@ -207,51 +162,6 @@ EXPECTED_NORMALIZED_RESPONSE = {
     "children": [
         {
             "children": [
-                {
-                    "children": [
-                        {"key": None, "level": "avg_nb_classes", "value": 5.2},
-                        {"key": None, "level": "avg_f1_micro", "value": 0.83},
-                    ],
-                    "key": "hazardpictograms",
-                    "level": "global_metrics.field.name",
-                    "value": 369,
-                },
-                {
-                    "children": [
-                        {"key": None, "level": "avg_nb_classes", "value": 88.72},
-                        {"key": None, "level": "avg_f1_micro", "value": 0.81},
-                    ],
-                    "key": "islabeledby",
-                    "level": "global_metrics.field.name",
-                    "value": 369,
-                },
-                {
-                    "children": [
-                        {"key": None, "level": "avg_nb_classes", "value": 27.57},
-                        {"key": None, "level": "avg_f1_micro", "value": 0.41},
-                    ],
-                    "key": "flavors",
-                    "level": "global_metrics.field.name",
-                    "value": 367,
-                },
-                {
-                    "children": [
-                        {"key": None, "level": "avg_nb_classes", "value": 107.82},
-                        {"key": None, "level": "avg_f1_micro", "value": 0.83},
-                    ],
-                    "key": "hasnotableingredients",
-                    "level": "global_metrics.field.name",
-                    "value": 239,
-                },
-                {
-                    "children": [
-                        {"key": None, "level": "avg_nb_classes", "value": 65.59},
-                        {"key": None, "level": "avg_f1_micro", "value": 0.82},
-                    ],
-                    "key": "allergentypelist",
-                    "level": "global_metrics.field.name",
-                    "value": 130,
-                },
                 {
                     "children": [
                         {"key": None, "level": "avg_nb_classes", "value": 18.71},
@@ -314,44 +224,3 @@ EXPECTED_NORMALIZED_RESPONSE = {
     "level": "root",
     "value": None,
 }
-
-EXPECTED_TABULAR_INDEX = (
-    {
-        "classification_type": "multilabel",
-        "global_metrics.field.name": "hazardpictograms",
-    },
-    {"classification_type": "multilabel", "global_metrics.field.name": "islabeledby"},
-    {"classification_type": "multilabel", "global_metrics.field.name": "flavors"},
-    {
-        "classification_type": "multilabel",
-        "global_metrics.field.name": "hasnotableingredients",
-    },
-    {
-        "classification_type": "multilabel",
-        "global_metrics.field.name": "allergentypelist",
-    },
-    {
-        "classification_type": "multilabel",
-        "global_metrics.field.name": "ispracticecompatible",
-    },
-    {"classification_type": "multilabel", "global_metrics.field.name": "gpc"},
-    {
-        "classification_type": "multilabel",
-        "global_metrics.field.name": "preservationmethods",
-    },
-    {"classification_type": "multiclass", "global_metrics.field.name": "kind"},
-    {"classification_type": "multiclass", "global_metrics.field.name": "gpc"},
-)
-
-EXPECTED_TABULAR_VALUES = [
-    {"avg_f1_micro": 0.83, "avg_nb_classes": 5.2, u"doc_count": 369},
-    {"avg_f1_micro": 0.81, "avg_nb_classes": 88.72, u"doc_count": 369},
-    {"avg_f1_micro": 0.41, "avg_nb_classes": 27.57, u"doc_count": 367},
-    {"avg_f1_micro": 0.83, "avg_nb_classes": 107.82, u"doc_count": 239},
-    {"avg_f1_micro": 0.82, "avg_nb_classes": 65.59, u"doc_count": 130},
-    {"avg_f1_micro": 0.72, "avg_nb_classes": 18.71, u"doc_count": 128},
-    {"avg_f1_micro": 0.95, "avg_nb_classes": 183.21, u"doc_count": 119},
-    {"avg_f1_micro": 0.8, "avg_nb_classes": 9.97, u"doc_count": 76},
-    {"avg_f1_micro": 0.89, "avg_nb_classes": 206.5, u"doc_count": 370},
-    {"avg_f1_micro": 0.93, "avg_nb_classes": 211.12, u"doc_count": 198},
-]
