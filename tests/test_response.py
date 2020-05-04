@@ -132,6 +132,7 @@ class AggregationsResponseTestCase(TestCase):
         self.assertTrue(equal_queries(response, sample.EXPECTED_NORMALIZED_RESPONSE,))
 
     def test_parse_as_tabular(self):
+        # with single agg at root
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         index, index_names, values = Aggregations(
             data=sample.ES_AGG_RESPONSE,

@@ -224,8 +224,8 @@ class Search(Request):
         of all the underlying objects. Used internally by most state modifying
         APIs.
         """
-        s = super(Search, self)._clone()
-
+        s = self.__class__(using=self._using, index=self._index, mapping=self._mapping)
+        s._params = self._params.copy()
         s._sort = self._sort[:]
         s._source = copy.copy(self._source) if self._source is not None else None
         s._highlight = self._highlight.copy()
@@ -245,13 +245,13 @@ class Search(Request):
         """
         d = d.copy()
         if "query" in d:
-            self.query._proxied = Query(d.pop("query"))
+            self._query  = Query(d.pop("query"))
         if "post_filter" in d:
-            self.post_filter._proxied = Query(d.pop("post_filter"))
+            self._post_filter = Query(d.pop("post_filter"))
 
         aggs = d.pop("aggs", d.pop("aggregations", {}))
         if aggs:
-            self.aggs._proxied = Aggs(aggs)
+            self._aggs = Aggs(aggs)
         if "sort" in d:
             self._sort = d.pop("sort")
         if "_source" in d:

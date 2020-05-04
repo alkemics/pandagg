@@ -15,8 +15,8 @@ class ResponseTestCase(TestCase):
     def test_response_tree(self, uuid_mock):
         uuid_mock.side_effect = range(1000)
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response_tree = AggsResponseTree(
-            data=sample.ES_AGG_RESPONSE, aggs=my_agg, index=None
+        response_tree = AggsResponseTree(aggs=my_agg, index=None).parse(
+            sample.ES_AGG_RESPONSE
         )
         self.assertEqual(response_tree.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
         self.assertEqual(len(response_tree.list()), 33)
@@ -49,8 +49,8 @@ class ClientBoundResponseTestCase(TestCase):
         client_mock = Mock(spec=["search"])
 
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-        response_tree = AggsResponseTree(
-            data=sample.ES_AGG_RESPONSE, aggs=my_agg, index=None
+        response_tree = AggsResponseTree(aggs=my_agg, index=None).parse(
+            sample.ES_AGG_RESPONSE
         )
 
         response = IResponse(
