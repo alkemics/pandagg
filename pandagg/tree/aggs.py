@@ -67,6 +67,8 @@ class Aggs(Tree):
 
     def _is_eligible_grouping_node(self, nid):
         node = self.get(nid)
+        if isinstance(node, ShadowRoot):
+            return False
         if not isinstance(node, BucketAggNode):
             return False
         # special aggregations not returning anything

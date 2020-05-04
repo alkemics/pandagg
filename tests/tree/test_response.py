@@ -19,23 +19,22 @@ class ResponseTestCase(TestCase):
             sample.ES_AGG_RESPONSE
         )
         self.assertEqual(response_tree.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
-        self.assertEqual(len(response_tree.list()), 33)
+        self.assertEqual(len(response_tree.list()), 18)
 
-        multilabel_allergenlist_bucket = next(
+        multilabel_gpc_bucket = next(
             (
                 b
                 for b in response_tree.list()
-                if b.level == "global_metrics.field.name"
-                and b.key == "allergentypelist"
+                if b.level == "global_metrics.field.name" and b.key == "gpc"
             )
         )
 
         # bucket properties will give parents levels and keys
         self.assertEqual(
-            response_tree.bucket_properties(multilabel_allergenlist_bucket),
+            response_tree.bucket_properties(multilabel_gpc_bucket),
             OrderedDict(
                 [
-                    ("global_metrics.field.name", "allergentypelist"),
+                    ("global_metrics.field.name", "gpc"),
                     ("classification_type", "multilabel"),
                 ]
             ),
@@ -69,25 +68,19 @@ class ClientBoundResponseTestCase(TestCase):
         self.assertIsInstance(multilabel, IResponse)
         self.assertIs(multilabel._initial_tree, response._tree)
 
-        self.assertIn("global_metrics_field_name_allergentypelist", dir(multilabel))
-        allergentypelist = multilabel.global_metrics_field_name_allergentypelist
-        self.assertIsInstance(allergentypelist, IResponse)
-        self.assertIs(allergentypelist._initial_tree, response._tree)
+        self.assertIn("global_metrics_field_name_gpc", dir(multilabel))
+        gpc = multilabel.global_metrics_field_name_gpc
+        self.assertIsInstance(gpc, IResponse)
+        self.assertIs(gpc._initial_tree, response._tree)
 
         # test filter query used to list documents belonging to bucket
         self.assertTrue(
             equal_queries(
-                allergentypelist.get_bucket_filter(),
+                gpc.get_bucket_filter(),
                 {
                     "bool": {
                         "must": [
-                            {
-                                "term": {
-                                    "global_metrics.field.name": {
-                                        "value": "allergentypelist"
-                                    }
-                                }
-                            },
+                            {"term": {"global_metrics.field.name": {"value": "gpc"}}},
                             {"term": {"classification_type": {"value": "multilabel"}}},
                             {"term": {"some_field": {"value": 1}}},
                         ]

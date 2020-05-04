@@ -229,19 +229,10 @@ class Aggregations:
         :return: index, index_names, values
         """
         grouping_agg = self._grouping_agg(grouped_by)
-        if grouping_agg is None or isinstance(grouping_agg, ShadowRoot):
-            index = ((None,),) if row_as_tuple else ({},)
-            values = (self.data,)
-            index_names = [""]
+        if grouping_agg is None:
+            index_values = [(tuple() if row_as_tuple else dict(), self.data)]
+            index_names = []
         else:
-            index_values = list(
-                self._parse_group_by(
-                    response=self.data,
-                    row_as_tuple=row_as_tuple,
-                    until=grouping_agg.name,
-                    with_single_bucket_groups=with_single_bucket_groups,
-                )
-            )
             index_names = [
                 a.name
                 for a in self.__aggs.ancestors(
@@ -250,20 +241,30 @@ class Aggregations:
                 + [grouping_agg]
                 if not isinstance(a, UniqueBucketAgg) or with_single_bucket_groups
             ]
-            if not index_values:
-                return [], [], []
-            index, values = zip(*index_values)
-
-        serialized_values = [
-            self.serialize_columns(
-                v,
-                normalize=normalize,
-                total_agg=grouping_agg,
-                expand_columns=expand_columns,
+            index_values = list(
+                self._parse_group_by(
+                    response=self.data,
+                    row_as_tuple=row_as_tuple,
+                    until=grouping_agg.name,
+                    with_single_bucket_groups=with_single_bucket_groups,
+                )
             )
-            for v in values
+            if not index_values:
+                return [], []
+
+        rows = [
+            (
+                row_index,
+                self.serialize_columns(
+                    row_values,
+                    normalize=normalize,
+                    total_agg=grouping_agg,
+                    expand_columns=expand_columns,
+                ),
+            )
+            for row_index, row_values in index_values
         ]
-        return index, index_names, serialized_values
+        return index_names, rows
 
     def serialize_columns(self, row_data, normalize, expand_columns, total_agg=None):
         # extract value (usually 'doc_count') of grouping agg node
@@ -305,12 +306,13 @@ class Aggregations:
                 'Using dataframe output format requires to install pandas. Please install "pandas" or '
                 "use another output format."
             )
-        index, index_names, values = self.serialize_as_tabular(
+        index_names, index_values = self.serialize_as_tabular(
             row_as_tuple=True,
             grouped_by=grouped_by,
             normalize=normalize_children,
             with_single_bucket_groups=with_single_bucket_groups,
         )
+        index, values = zip(*index_values)
         if not index:
             return pd.DataFrame()
         if len(index[0]) == 0:

@@ -245,7 +245,7 @@ class Search(Request):
         """
         d = d.copy()
         if "query" in d:
-            self._query  = Query(d.pop("query"))
+            self._query = Query(d.pop("query"))
         if "post_filter" in d:
             self._post_filter = Query(d.pop("post_filter"))
 
