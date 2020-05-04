@@ -255,7 +255,19 @@ class BucketAggNode(AggNode):
         raise NotImplementedError()
 
 
-class ShadowRoot(BucketAggNode):
+class UniqueBucketAgg(BucketAggNode):
+    """Aggregations providing a single bucket."""
+
+    VALUE_ATTRS = None
+
+    def extract_buckets(self, response_value):
+        yield None, response_value
+
+    def get_filter(self, key):
+        raise NotImplementedError()
+
+
+class ShadowRoot(UniqueBucketAgg):
     """Not a real aggregation."""
 
     KEY = "shadow_root"
@@ -263,20 +275,15 @@ class ShadowRoot(BucketAggNode):
     def __init__(self, aggs):
         super(ShadowRoot, self).__init__("_", aggs=aggs)
 
+    @classmethod
+    def extract_bucket_value(cls, response, value_as_dict=False):
+        return None
+
     def line_repr(self, depth, **kwargs):
         return "[%s]" % text(self.name)
 
-
-class UniqueBucketAgg(BucketAggNode):
-    """Aggregations providing a single bucket."""
-
-    VALUE_ATTRS = None
-
-    def extract_buckets(self, response_value):
-        yield (None, response_value)
-
     def get_filter(self, key):
-        raise NotImplementedError()
+        return None
 
 
 class MultipleBucketAgg(BucketAggNode):

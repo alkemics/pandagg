@@ -159,4 +159,5 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 - documentation; explain challenges induced by nested `nodes` syntaxes: for instance why are nested query clauses
 saved in `children` attribute before tree deserialization
 - on aggregation `nodes`, ensure all allowed `fields` are listed
+- expand functionalities: proper ORM similar to elasticsearch-dsl Document classes, index managing operations
 - package versions for different ElasticSearch versions

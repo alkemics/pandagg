@@ -9,7 +9,7 @@ from pandagg.node.query.joining import Nested
 from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
-from pandagg.node.aggs.abstract import UniqueBucketAgg
+from pandagg.node.aggs.abstract import UniqueBucketAgg, ShadowRoot
 from pandagg.tree.query import Query
 
 
@@ -17,24 +17,18 @@ class AggsResponseTree(Tree):
     """Tree representation of an ES response. ES response format is determined by the aggregation query.
     """
 
-    def __init__(self, data, aggs, index):
+    def __init__(self, aggs, index):
         """
         :param aggs: instance of pandagg.agg.Agg from which this ES response originates
         """
         super(AggsResponseTree, self).__init__()
         self.__aggs = aggs
         self.__index = index
-        self.__data = data
-        self._parse_aggregation(data)
 
-    def _clone_init(self, with_tree=False, deep=False):
-        return AggsResponseTree(
-            data=self.__data.copy(),
-            aggs=self.__aggs.clone(deep=deep),
-            index=self.__index,
-        )
+    def _clone_init(self, deep=False):
+        return AggsResponseTree(aggs=self.__aggs.clone(deep=deep), index=self.__index,)
 
-    def _parse_aggregation(self, raw_response):
+    def parse(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
         :param raw_response: ElasticSearch aggregation response
         :return: self
@@ -59,7 +53,11 @@ class AggsResponseTree(Tree):
         :param raw_response: ES response at current level, dict
         :param pid: parent node identifier
         """
-        agg_raw_response = raw_response.get(agg_node.name)
+        agg_raw_response = (
+            raw_response
+            if isinstance(agg_node, ShadowRoot)
+            else raw_response.get(agg_node.name)
+        )
         for key, raw_value in agg_node.extract_buckets(agg_raw_response):
             bucket = Bucket(
                 level=agg_node.name,

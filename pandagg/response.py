@@ -8,7 +8,7 @@ from builtins import str as text
 from future.utils import iterkeys
 
 from pandagg.interactive.response import IResponse
-from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg
+from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, ShadowRoot
 from pandagg.tree.response import AggsResponseTree
 
 
@@ -105,7 +105,13 @@ class Aggregations:
         return self.data[key]
 
     def _parse_group_by(
-        self, response, row=None, agg_name=None, until=None, row_as_tuple=False
+        self,
+        response,
+        row=None,
+        agg_name=None,
+        until=None,
+        row_as_tuple=False,
+        with_single_bucket_groups=False,
     ):
         """Recursive parsing of succession of unique child bucket aggregations.
 
@@ -126,7 +132,10 @@ class Aggregations:
                 )
                 sub_row = row.copy()
                 # aggs generating a single bucket don't require to be listed in grouping keys
-                if not isinstance(agg_node, UniqueBucketAgg):
+                if (
+                    not isinstance(agg_node, UniqueBucketAgg)
+                    or with_single_bucket_groups
+                ):
                     if row_as_tuple:
                         sub_row.append(key)
                     else:
@@ -189,7 +198,12 @@ class Aggregations:
         return self.__aggs.get(name)
 
     def serialize_as_tabular(
-        self, row_as_tuple=False, grouped_by=None, normalize_children=True,
+        self,
+        row_as_tuple=False,
+        grouped_by=None,
+        expand_columns=True,
+        normalize=True,
+        with_single_bucket_groups=False,
     ):
         """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
         reached, and using children aggregations of grouping level as values for each of generated groups (columns).
@@ -211,72 +225,79 @@ class Aggregations:
 
         :param row_as_tuple: if True, level-key samples are returned as tuples, else in a dictionnary
         :param grouped_by: name of the aggregation node used as last grouping level
-        :param normalize_children: if True, normalize columns buckets
+        :param normalize: if True, normalize columns buckets
         :return: index, index_names, values
         """
-        grouped_by = (
-            self.__aggs.deepest_linear_bucket_agg if grouped_by is None else grouped_by
-        )
-        if grouped_by is not None:
-            if grouped_by not in self.__aggs:
-                raise ValueError(
-                    "Cannot group by <%s>, agg node does not exist" % grouped_by
-                )
+        grouping_agg = self._grouping_agg(grouped_by)
+        if grouping_agg is None or isinstance(grouping_agg, ShadowRoot):
+            index = ((None,),) if row_as_tuple else ({},)
+            values = (self.data,)
+            index_names = [""]
+        else:
             index_values = list(
                 self._parse_group_by(
-                    response=self.data, row_as_tuple=row_as_tuple, until=grouped_by
+                    response=self.data,
+                    row_as_tuple=row_as_tuple,
+                    until=grouping_agg.name,
+                    with_single_bucket_groups=with_single_bucket_groups,
                 )
             )
-        elif row_as_tuple:
-            index_values = [((None,), self.data)]
-        else:
-            index_values = [({}, self.data)]
+            index_names = [
+                a.name
+                for a in self.__aggs.ancestors(
+                    grouping_agg.name, id_only=False, from_root=True
+                )
+                + [grouping_agg]
+                if not isinstance(a, UniqueBucketAgg) or with_single_bucket_groups
+            ]
+            if not index_values:
+                return [], [], []
+            index, values = zip(*index_values)
 
-        if not index_values:
-            return [], [], []
-        index, values = zip(*index_values)
-
-        grouping_agg = self.__aggs.get(grouped_by)
-        grouping_agg_children = self.__aggs.children(grouped_by, id_only=False)
-
-        index_names = [
-            a.name
-            for a in self.__aggs.ancestors(
-                grouping_agg.name, id_only=False, from_root=True
+        serialized_values = [
+            self.serialize_columns(
+                v,
+                normalize=normalize,
+                total_agg=grouping_agg,
+                expand_columns=expand_columns,
             )
-            + [grouping_agg]
-            if not isinstance(a, UniqueBucketAgg)
+            for v in values
         ]
-
-        def serialize_columns(row_data, gr_agg=None):
-            # extract value (usually 'doc_count') of grouping agg node
-            result = {}
-            if gr_agg:
-                result[gr_agg.VALUE_ATTRS[0]] = gr_agg.extract_bucket_value(row_data)
-
-            if not grouping_agg_children:
-                return result
-            # extract values of children, one columns per child
-            for child in grouping_agg_children:
-                if not normalize_children:
-                    result[child.name] = row_data[child.name]
-                    continue
-                if isinstance(child, (UniqueBucketAgg, MetricAgg)):
-                    result[child.name] = child.extract_bucket_value(
-                        row_data[child.name]
-                    )
-                else:
-                    result[child.name] = next(
-                        self._normalize_buckets(row_data, child.name), None
-                    )
-            return result
-
-        serialized_values = list(
-            map(lambda v: serialize_columns(v, gr_agg=grouping_agg), values)
-        )
         return index, index_names, serialized_values
 
-    def serialize_as_dataframe(self, grouped_by=None, normalize_children=True):
+    def serialize_columns(self, row_data, normalize, expand_columns, total_agg=None):
+        # extract value (usually 'doc_count') of grouping agg node
+        result = {}
+        if total_agg is not None and not isinstance(total_agg, ShadowRoot):
+            result[total_agg.VALUE_ATTRS[0]] = total_agg.extract_bucket_value(row_data)
+            grouping_agg_children = self.__aggs.children(
+                total_agg.identifier, id_only=False
+            )
+        else:
+            grouping_agg_children = self.__aggs.children(
+                self.__aggs.root, id_only=False
+            )
+
+        # extract values of children, one columns per child
+        for child in grouping_agg_children:
+            if isinstance(child, (UniqueBucketAgg, MetricAgg)):
+                result[child.name] = child.extract_bucket_value(row_data[child.name])
+            elif expand_columns:
+                for key, bucket in child.extract_buckets(row_data[child.name]):
+                    result["%s|%s" % (child.name, key)] = child.extract_bucket_value(
+                        bucket
+                    )
+            elif normalize:
+                result[child.name] = next(
+                    self._normalize_buckets(row_data, child.name), None
+                )
+            else:
+                result[child.name] = row_data[child.name]
+        return result
+
+    def serialize_as_dataframe(
+        self, grouped_by=None, normalize_children=True, with_single_bucket_groups=False
+    ):
         try:
             import pandas as pd
         except ImportError:
@@ -287,7 +308,8 @@ class Aggregations:
         index, index_names, values = self.serialize_as_tabular(
             row_as_tuple=True,
             grouped_by=grouped_by,
-            normalize_children=normalize_children,
+            normalize=normalize_children,
+            with_single_bucket_groups=with_single_bucket_groups,
         )
         if not index:
             return pd.DataFrame()
@@ -305,7 +327,7 @@ class Aggregations:
         return {"level": "root", "key": None, "value": None, "children": children}
 
     def serialize_as_tree(self):
-        return AggsResponseTree(data=self.data, aggs=self.__aggs, index=self.__index)
+        return AggsResponseTree(aggs=self.__aggs, index=self.__index).parse(self.data)
 
     def serialize_as_interactive_tree(self):
         return IResponse(
