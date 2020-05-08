@@ -103,11 +103,13 @@ class AggNode(Node):
         if not isinstance(name_or_agg, string_types):
             raise ValueError("Invalid")
         # "tags", size=10  (by default apply a terms agg)
-        if "name" not in params:
+        if "name" not in params and "field" not in params:
             return cls.get_dsl_class("terms")(
                 name=name_or_agg, field=name_or_agg, **params
             )
         # "terms", field="tags", name="per_tags"
+        if "name" not in params:
+            raise ValueError("Aggregation expects a 'name'. Got %s." % params)
         return cls.get_dsl_class(name_or_agg)(**params)
 
     def line_repr(self, depth, **kwargs):

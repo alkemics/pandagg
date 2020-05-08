@@ -11,13 +11,6 @@ from pandagg.node.aggs.bucket import Terms
 from tests.testing_samples.mapping_example import MAPPING
 
 
-EXPECTED_REPR = """<Aggregation>
-[classification_type] terms
-└── [global_metrics.field.name] terms
-    ├── [avg_f1_micro] avg
-    └── [avg_nb_classes] avg
-"""
-
 EXPECTED_AGG_QUERY = {
     "classification_type": {
         "aggs": {
