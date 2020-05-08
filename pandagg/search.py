@@ -186,12 +186,12 @@ class Search(Request):
             s._params["size"] = 1
             return s
 
-    def from_(self, from_):
-        s = self._clone()
-        s._params["from"] = from_
-        return s
-
     def size(self, size):
+        """Equivalent to::
+
+            s = Search().params(size=size)
+
+        """
         s = self._clone()
         s._params["size"] = size
         return s

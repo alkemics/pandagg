@@ -66,9 +66,8 @@ class Aggs(Tree):
         return Aggs(mapping=self.mapping.clone(deep=deep))
 
     def _is_eligible_grouping_node(self, nid):
+        """Return whether node can be used as grouping node."""
         node = self.get(nid)
-        if isinstance(node, ShadowRoot):
-            return False
         if not isinstance(node, BucketAggNode):
             return False
         # special aggregations not returning anything

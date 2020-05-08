@@ -24,50 +24,46 @@ def list_available_aggs_on_field(field_type):
     ]
 
 
-def field_klass_init(self, mapping_tree, client, field, index_name):
+def field_klass_init(self, mapping_tree, client, field, index):
     self._mapping_tree = mapping_tree
     self._client = client
     self._field = field
-    self._index_name = index_name
+    self._index = index
 
 
 def aggregator_factory(agg_klass):
-    def aggregator(
-        self, index=None, execute=True, raw_output=False, query=None, **kwargs
-    ):
+    def aggregator(self, index=None, raw_output=False, query=None, **kwargs):
         node = agg_klass(name="%s_agg" % agg_klass.KEY, field=self._field, **kwargs)
-        return self._operate(node, index, execute, raw_output, query)
+        return self._operate(node, index, raw_output, query)
 
     aggregator.__doc__ = agg_klass.__init__.__doc__ or agg_klass.__doc__
     return aggregator
 
 
-def _operate(self, agg_node, index, execute, raw_output, query):
-    index = index or self._index_name
+def _operate(self, agg_node, index, raw_output, query):
+    index = index or self._index
     aggregation = {agg_node.name: agg_node.to_dict()}
     nesteds = self._mapping_tree.list_nesteds_at_field(self._field) or []
     for nested in nesteds:
         aggregation = {nested: {"nested": {"path": nested}, "aggs": aggregation}}
 
-    if self._client is not None and execute:
-        body = {"aggs": aggregation, "size": 0}
-        if query is not None:
-            body["query"] = query
-        raw_response = self._client.search(index=index, body=body)["aggregations"]
-        for nested in nesteds:
-            raw_response = raw_response[nested]
-        result = list(agg_node.extract_buckets(raw_response[agg_node.name]))
+    body = {"aggs": aggregation, "size": 0}
+    if query is not None:
+        body["query"] = query
+    raw_response = self._client.search(index=index, body=body)["aggregations"]
+    for nested in nesteds:
+        raw_response = raw_response[nested]
+    result = list(agg_node.extract_buckets(raw_response[agg_node.name]))
 
-        if raw_output:
-            return result
-        try:
-            import pandas as pd
-        except ImportError:
-            return result
-        keys = map(itemgetter(0), result)
-        raw_values = map(itemgetter(1), result)
-        return pd.DataFrame(index=keys, data=raw_values)
-    return aggregation
+    if raw_output:
+        return result
+    try:
+        import pandas as pd
+    except ImportError:
+        return result
+    keys = map(itemgetter(0), result)
+    raw_values = map(itemgetter(1), result)
+    return pd.DataFrame(index=keys, data=raw_values)
 
 
 def field_type_klass_factory(field_type):

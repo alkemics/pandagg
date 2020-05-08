@@ -14,7 +14,7 @@ class IMapping(TreeBasedObj):
 
     def __init__(self, *args, **kwargs):
         self._client = kwargs.pop("client", None)
-        self._index_name = kwargs.pop("index_name", None)
+        self._index = kwargs.pop("index", None)
         root_path = kwargs.pop("root_path", None)
         depth = kwargs.pop("depth", 1)
         initial_tree = kwargs.pop("initial_tree", None)
@@ -25,13 +25,6 @@ class IMapping(TreeBasedObj):
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         self._set_agg_property_if_required()
 
-    def _bind(self, client, index_name=None):
-        self._client = client
-        if index_name is not None:
-            self._index_name = index_name
-        self._set_agg_property_if_required()
-        return self
-
     def _clone(self, nid, root_path, depth):
         return IMapping(
             self._tree.subtree(nid),
@@ -39,7 +32,7 @@ class IMapping(TreeBasedObj):
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,
-            index_name=self._index_name,
+            index=self._index,
         )
 
     def _set_agg_property_if_required(self):
@@ -50,7 +43,7 @@ class IMapping(TreeBasedObj):
                     mapping_tree=self._initial_tree,
                     client=self._client,
                     field=self._initial_tree.node_path(field_node.identifier),
-                    index_name=self._index_name,
+                    index=self._index,
                 )
 
     def __call__(self, *args, **kwargs):

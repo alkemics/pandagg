@@ -50,10 +50,10 @@ class AggNode(Node):
         - either Agg instance if provided
         """
         # hack for now
-        if isinstance(name_or_agg, Tree) and name_or_agg.__class__.__name__ == "Agg":
+        if isinstance(name_or_agg, Tree) and name_or_agg.__class__.__name__ == "Aggs":
             if params:
                 raise ValueError(
-                    "Cannot accept parameters when passing in an Agg object."
+                    "Cannot accept parameters when passing in an Aggs object."
                 )
             return name_or_agg
 

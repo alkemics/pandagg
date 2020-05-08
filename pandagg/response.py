@@ -189,12 +189,22 @@ class Aggregations:
             yield result
 
     def _grouping_agg(self, name=None):
-        """return agg node or None"""
-        name = self.__aggs.deepest_linear_bucket_agg if name is None else name
+        """Return aggregation node that used as grouping node."""
+        # if provided
+        if name is not None:
+            if name not in self.__aggs:
+                raise ValueError("Cannot group by <%s>, agg node does not exist" % name)
+            if not self.__aggs._is_eligible_grouping_node(name):
+                raise ValueError(
+                    "Cannot group by <%s>, not a valid grouping aggregation" % name
+                )
+            return self.__aggs.get(name)
+
+        if isinstance(self.__aggs.get(self.__aggs.root), ShadowRoot):
+            return None
+        name = self.__aggs.deepest_linear_bucket_agg
         if name is None:
             return None
-        if name not in self.__aggs:
-            raise ValueError("Cannot group by <%s>, agg node does not exist" % name)
         return self.__aggs.get(name)
 
     def serialize_as_tabular(
@@ -202,7 +212,7 @@ class Aggregations:
         row_as_tuple=False,
         grouped_by=None,
         expand_columns=True,
-        expand_sep='|',
+        expand_sep="|",
         normalize=True,
         with_single_bucket_groups=False,
     ):
@@ -268,7 +278,9 @@ class Aggregations:
         ]
         return index_names, rows
 
-    def serialize_columns(self, row_data, normalize, expand_columns, expand_sep, total_agg=None):
+    def serialize_columns(
+        self, row_data, normalize, expand_columns, expand_sep, total_agg=None
+    ):
         # extract value (usually 'doc_count') of grouping agg node
         result = {}
         if total_agg is not None and not isinstance(total_agg, ShadowRoot):
@@ -287,9 +299,9 @@ class Aggregations:
                 result[child.name] = child.extract_bucket_value(row_data[child.name])
             elif expand_columns:
                 for key, bucket in child.extract_buckets(row_data[child.name]):
-                    result["%s%s%s" % (child.name, expand_sep, key)] = child.extract_bucket_value(
-                        bucket
-                    )
+                    result[
+                        "%s%s%s" % (child.name, expand_sep, key)
+                    ] = child.extract_bucket_value(bucket)
             elif normalize:
                 result[child.name] = next(
                     self._normalize_buckets(row_data, child.name), None

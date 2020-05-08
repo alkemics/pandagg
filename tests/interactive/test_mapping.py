@@ -64,9 +64,9 @@ class IMappingTestCase(TestCase):
         index_name = "classification_report_index_name"
 
         # from dict
-        im1 = IMapping(mapping_dict, client=client_mock, index_name=index_name)
+        im1 = IMapping(mapping_dict, client=client_mock, index=index_name)
         # from tree
-        im2 = IMapping(mapping_tree, client=client_mock, index_name=index_name)
+        im2 = IMapping(mapping_tree, client=client_mock, index=index_name)
 
         # from nodes
         im3 = IMapping(
@@ -89,13 +89,13 @@ class IMappingTestCase(TestCase):
             },
             dynamic=False,
             client=client_mock,
-            index_name=index_name,
+            index=index_name,
         )
         for i, m in enumerate((im1, im2, im3)):
             self.assertEqual(
                 m._tree.serialize(), mapping_dict, "failed at m%d" % (i + 1)
             )
-            self.assertEqual(m._index_name, index_name)
+            self.assertEqual(m._index, index_name)
             self.assertIs(m._client, client_mock)
 
     def test_client_bound(self):
@@ -123,9 +123,7 @@ class IMappingTestCase(TestCase):
 
         mapping_tree = Mapping(MAPPING)
         client_bound_mapping = IMapping(
-            mapping_tree,
-            client=client_mock,
-            index_name="classification_report_index_name",
+            mapping_tree, client=client_mock, index="classification_report_index_name",
         )
 
         workflow_field = client_bound_mapping.workflow
