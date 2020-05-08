@@ -23,7 +23,10 @@ class Mapping(Tree):
     def __init__(self, *args, **kwargs):
         super(Mapping, self).__init__()
         if (args and kwargs) or len(args) > 1:
-            raise ValueError()
+            raise ValueError(
+                "Invalid mapping declaration. Got:\n*args: %s\n**kwargs: %s"
+                % (args, kwargs)
+            )
         if args:
             arg = args[0]
             if isinstance(arg, Mapping):

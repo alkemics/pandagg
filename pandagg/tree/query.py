@@ -173,13 +173,7 @@ class Query(Tree):
         child=None,
         child_param=None,
     ):
-        """Insert node in query.
-        :param inserted:
-        :param mode:
-        :param parent:
-        :param parent_param:
-        :param child:
-        :param child_param:
+        """Insert element (node or tree) in query.
 
         If compound query with existing identifier: merge according to mode (place in-between parent and child).
         If no parent nor child is provided, place on top (wrapped in bool-must if necessary).

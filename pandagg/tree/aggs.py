@@ -3,8 +3,8 @@
 
 from __future__ import unicode_literals
 
+import json
 
-from builtins import str as text
 from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
@@ -66,9 +66,8 @@ class Aggs(Tree):
         return Aggs(mapping=self.mapping.clone(deep=deep))
 
     def _is_eligible_grouping_node(self, nid):
+        """Return whether node can be used as grouping node."""
         node = self.get(nid)
-        if isinstance(node, ShadowRoot):
-            return False
         if not isinstance(node, BucketAggNode):
             return False
         # special aggregations not returning anything
@@ -121,7 +120,6 @@ class Aggs(Tree):
             return pid
         leaves = self.leaves(id_only=False)
         # root
-        # TODO
         if len(leaves) == 0:
             return None
 
@@ -133,8 +131,7 @@ class Aggs(Tree):
         return leaves[0].identifier
 
     def groupby(self, *args, **kwargs):
-        """Arrange passed aggregations in `by` arguments "vertically" (nested manner), above or below another agg
-        clause.
+        r"""Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
 
         Given the initial aggregation::
 
@@ -165,10 +162,48 @@ class Aggs(Tree):
             A──> B      : KO, ambiguous, must precise either A, B or C
             └──> C
 
-        :param by: aggregation(s) clauses to insert "vertically"
-        :param insert_below: parent aggregation id under which these aggregations should be placed
-        :param insert_above: aggregation id above which these aggregations should be placed
-        :param kwargs: agg body arguments when using "string" syntax for terms aggregation
+
+        Accepted declarations for single aggregation:
+
+        Official DSL like:
+
+        >>> Aggs().groupby('terms', name='per_user_id', field='user_id')
+        {"terms_on_my_field":{"terms":{"field":"some_field"}}}
+
+        Passing a dict:
+
+        >>> Aggs().groupby({"terms_on_my_field":{"terms":{"field":"some_field"}}})
+        {"terms_on_my_field":{"terms":{"field":"some_field"}}}
+
+
+        Using DSL class:
+
+        >>> from pandagg.aggs import Terms
+        >>> Aggs().groupby(Terms('terms_on_my_field', field='some_field'))
+        {"terms_on_my_field":{"terms":{"field":"some_field"}}}
+
+        Shortcut syntax for terms aggregation: creates a terms aggregation, using field as aggregation name
+
+        >>> Aggs().groupby('some_field')
+        {"some_field":{"terms":{"field":"some_field"}}}
+
+        Using a Aggs object:
+
+        >>> Aggs().groupby(Aggs('terms', name='per_user_id', field='user_id'))
+        {"terms_on_my_field":{"terms":{"field":"some_field"}}}
+
+        Accepted declarations for multiple aggregations:
+
+
+        :Keyword Arguments:
+            * *insert_below* (``string``) --
+              Parent aggregation name under which these aggregations should be placed
+            * *insert_above* (``string``) --
+              Aggregation name above which these aggregations should be placed
+
+            * remaining kwargs:
+              Used as body in aggregation
+
         :rtype: pandagg.aggs.Aggs
         """
         insert_below = kwargs.pop("insert_below", None)
@@ -183,12 +218,16 @@ class Aggs(Tree):
         # groupby({}, {})
         if len(args) > 1:
             if kwargs:
-                raise ValueError()
+                raise ValueError(
+                    "Kwargs not allowed when passing multiple aggregations in args."
+                )
             inserted_aggs = [self.deserialize(arg) for arg in args]
         # groupby([{}, {}])
         elif len(args) == 1 and isinstance(args[0], (list, tuple)):
             if kwargs:
-                raise ValueError()
+                raise ValueError(
+                    "Kwargs not allowed when passing multiple aggregations in args."
+                )
             inserted_aggs = [self.deserialize(arg) for arg in args[0]]
         # groupby({})
         # groupby(Terms())
@@ -379,4 +418,4 @@ class Aggs(Tree):
         )
 
     def __str__(self):
-        return "<Aggregation>\n%s" % text(self.show())
+        return json.dumps(self.to_dict(), indent=2)

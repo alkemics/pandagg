@@ -2,43 +2,52 @@ import json
 from os.path import join
 from elasticsearch import Elasticsearch, helpers
 from examples.imdb.conf import ES_HOST, DATA_DIR
+from pandagg.node.mapping.field_datatypes import (
+    Keyword,
+    Text,
+    Date,
+    Float,
+    Nested,
+    Integer,
+)
+from pandagg.tree.mapping import Mapping
 
 index_name = "movies"
-mapping = {
-    "properties": {
-        "movie_id": {"type": "integer"},
-        "name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-        "year": {"type": "date", "format": "yyyy"},
-        "rank": {"type": "float"},
-        # array
-        "genres": {"type": "keyword"},
-        # nested
-        "roles": {
-            "type": "nested",
-            "properties": {
-                "role": {"type": "keyword"},
-                "actor_id": {"type": "integer"},
-                "gender": {"type": "keyword"},
-                "first_name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-                "last_name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-                "full_name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-            },
-        },
-        # nested
-        "directors": {
-            "type": "nested",
-            "properties": {
-                "director_id": {"type": "integer"},
-                "first_name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-                "last_name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-                "full_name": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
-                "genres": {"type": "keyword"},
-            },
-        },
-        "nb_directors": {"type": "integer"},
-        "nb_roles": {"type": "integer"},
-    }
-}
+mapping = Mapping(
+    properties=[
+        Keyword("movie_id"),
+        Text("name", fields=Keyword("raw")),
+        Date("year"),
+        Float("rank"),
+        Keyword("genres"),
+        Nested(
+            "roles",
+            properties=[
+                Keyword("role"),
+                Keyword("actor_id"),
+                Keyword("gender"),
+                Text("first_name", copy_to="roles.full_name", fields=Keyword("raw")),
+                Text("last_name", copy_to="roles.full_name", fields=Keyword("raw")),
+                Text("full_name"),
+            ],
+        ),
+        Nested(
+            "directors",
+            properties=[
+                Keyword("role"),
+                Keyword("director_id"),
+                Keyword("gender"),
+                Text(
+                    "first_name", copy_to="directors.full_name", fields=Keyword("raw")
+                ),
+                Text("last_name", copy_to="directors.full_name", fields=Keyword("raw")),
+                Text("full_name"),
+            ],
+        ),
+        Integer("nb_directors"),
+        Integer("nb_roles"),
+    ]
+).to_dict()
 
 
 def bulk_index(client, docs):

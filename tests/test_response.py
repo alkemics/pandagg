@@ -11,7 +11,7 @@ from pandagg.response import Response, Hits, Hit, Aggregations
 from pandagg.tree.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
-from pandagg.utils import equal_queries, ordered
+from pandagg.utils import ordered
 from tests.testing_samples.mapping_example import MAPPING
 
 
@@ -170,6 +170,47 @@ class AggregationsResponseTestCase(TestCase):
                     ("multiclass", "gpc"),
                     {"avg_f1_micro": 0.93, "avg_nb_classes": 211.12, "doc_count": 198},
                 ),
+            ],
+        )
+
+    def test_parse_as_tabular_multiple_roots(self):
+        # with multiple aggs at root
+        my_agg = Aggs(
+            {
+                "classification_type": {"terms": {"field": "classification_type"}},
+                "avg_f1_score": {
+                    "avg": {"field": "global_metrics.performance.test.micro.f1_score"}
+                },
+            }
+        )
+
+        raw_response = {
+            "classification_type": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": [
+                    {"key": "multiclass", "doc_count": 439},
+                    {"key": "multilabel", "doc_count": 433},
+                ],
+            },
+            "avg_f1_score": {"value": 0.815},
+        }
+        index_names, index_values = Aggregations(
+            data=raw_response, aggs=my_agg, index=None, client=None, query=None,
+        ).serialize_as_tabular(row_as_tuple=True, expand_sep=" || ")
+
+        self.assertEqual(index_names, [])
+        self.assertEqual(
+            index_values,
+            [
+                (
+                    (),
+                    {
+                        "avg_f1_score": 0.815,
+                        "classification_type || multiclass": 439,
+                        "classification_type || multilabel": 433,
+                    },
+                )
             ],
         )
 

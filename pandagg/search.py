@@ -118,35 +118,49 @@ class Search(Request):
         s._query = s._query.query(*args, **kwargs)
         return s
 
+    query.__doc__ = Query.query.__doc__
+
     def filter(self, *args, **kwargs):
         s = self._clone()
         s._query = s._query.filter(*args, **kwargs)
         return s
+
+    filter.__doc__ = Query.filter.__doc__
 
     def must_not(self, *args, **kwargs):
         s = self._clone()
         s._query = s._query.must_not(*args, **kwargs)
         return s
 
+    must_not.__doc__ = Query.must_not.__doc__
+
     def should(self, *args, **kwargs):
         s = self._clone()
         s._query = s._query.should(*args, **kwargs)
         return s
+
+    should.__doc__ = Query.should.__doc__
 
     def must(self, *args, **kwargs):
         s = self._clone()
         s._query = s._query.must(*args, **kwargs)
         return s
 
+    must.__doc__ = Query.must.__doc__
+
     def aggs(self, *args, **kwargs):
         s = self._clone()
         s._aggs = s._aggs.aggs(*args, **kwargs)
         return s
 
+    aggs.__doc__ = Aggs.aggs.__doc__
+
     def groupby(self, *args, **kwargs):
         s = self._clone()
         s._aggs = s._aggs.groupby(*args, **kwargs)
         return s
+
+    groupby.__doc__ = Aggs.groupby.__doc__
 
     def __iter__(self):
         """
@@ -186,12 +200,12 @@ class Search(Request):
             s._params["size"] = 1
             return s
 
-    def from_(self, from_):
-        s = self._clone()
-        s._params["from"] = from_
-        return s
-
     def size(self, size):
+        """Equivalent to::
+
+            s = Search().params(size=size)
+
+        """
         s = self._clone()
         s._params["size"] = size
         return s

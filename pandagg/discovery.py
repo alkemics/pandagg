@@ -37,7 +37,7 @@ class Index:
         self.name = name
         self.settings = settings
         self._mapping = mapping
-        self.mapping = IMapping(mapping, client=client, index_name=name)
+        self.mapping = IMapping(mapping, client=client, index=name)
         self.aliases = aliases
 
     def search(self):

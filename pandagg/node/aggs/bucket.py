@@ -34,9 +34,17 @@ class Filter(UniqueBucketAgg):
     KEY = "filter"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, name, filter, meta=None, aggs=None):
-        self.filter = filter.copy()
-        super(Filter, self).__init__(name=name, meta=meta, aggs=aggs, **filter)
+    def __init__(self, name, filter=None, meta=None, aggs=None, **kwargs):
+        if (filter is not None) != (not kwargs):
+            raise ValueError(
+                'Filter aggregation requires exactly one of "filter" or "kwargs"'
+            )
+        if filter:
+            filter_ = filter.copy()
+        else:
+            filter_ = kwargs.copy()
+        self.filter = filter_
+        super(Filter, self).__init__(name=name, meta=meta, aggs=aggs, **filter_)
 
     def get_filter(self, key):
         return self.filter
