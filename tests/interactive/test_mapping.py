@@ -92,9 +92,7 @@ class IMappingTestCase(TestCase):
             index=index_name,
         )
         for i, m in enumerate((im1, im2, im3)):
-            self.assertEqual(
-                m._tree.serialize(), mapping_dict, "failed at m%d" % (i + 1)
-            )
+            self.assertEqual(m._tree.to_dict(), mapping_dict, "failed at m%d" % (i + 1))
             self.assertEqual(m._index, index_name)
             self.assertIs(m._client, client_mock)
 

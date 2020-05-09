@@ -201,7 +201,8 @@ class Search(Request):
             return s
 
     def size(self, size):
-        """Equivalent to::
+        """
+        Equivalent to::
 
             s = Search().params(size=size)
 

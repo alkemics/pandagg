@@ -24,9 +24,45 @@ import pandagg.node.aggs.metric as metric  # noqa
 
 @python_2_unicode_compatible
 class Aggs(Tree):
-    """Tree combination of aggregation nodes.
+    """
+    Combination of aggregation clauses. This class provides handful methods to build an aggregation (see
+    :func:`~pandagg.tree.aggs.Aggs.aggs` and :func:`~pandagg.tree.aggs.Aggs.groupby`), and is used as well
+    to parse aggregations response in handy formats.
 
-    Mapping declaration is optional, but doing so validates aggregation validity.
+    Mapping declaration is optional, but doing so validates aggregation validity and automatically handles missing
+    nested clauses.
+
+    All following syntaxes are identical:
+
+    From a dict:
+
+    >>> Aggs({"per_user":{"terms":{"field":"user"}}})
+
+    Using shortcut declaration: first argument is the aggregation type, other arguments are aggregation body parameters:
+
+    >>> Aggs('terms', name='per_user', field='user')
+
+    Using DSL class:
+
+    >>> from pandagg.aggs import Terms
+    >>> Aggs(Terms('per_user', field='user'))
+
+    Dict and DSL class syntaxes allow to provide multiple clauses aggregations:
+
+    >>> Aggs({"per_user":{"terms":{"field":"user"}, "aggs": {"avg_age": {"avg": {"field": "age"}}}}})
+
+    With is similar to:
+
+    >>> from pandagg.aggs import Terms, Avg
+    >>> Aggs(Terms('per_user', field='user', aggs=Avg('avg_age', field='age')))
+
+    :Keyword Arguments:
+        * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
+          Mapping of requested indice(s). Providing it will validate aggregations validity, and add required nested
+          clauses if missing.
+
+        * remaining kwargs:
+          Used as body in aggregation
     """
 
     node_class = AggNode
@@ -77,7 +113,8 @@ class Aggs(Tree):
 
     @property
     def deepest_linear_bucket_agg(self):
-        """Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
+        """
+        Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
         neither has siblings, nor has an ancestor with siblings.
         """
         if not self.root or not self._is_eligible_grouping_node(self.root):
@@ -101,7 +138,8 @@ class Aggs(Tree):
         return last_bucket_agg_name
 
     def _validate_aggs_parent_id(self, pid):
-        """If pid is not None, ensure that pid belongs to tree, and that it refers to a bucket aggregation.
+        """
+        If pid is not None, ensure that pid belongs to tree, and that it refers to a bucket aggregation.
 
         Else, if not provided, return deepest bucket aggregation if there is no ambiguity (linear aggregations).
         KO: non-ambiguous::
@@ -131,7 +169,8 @@ class Aggs(Tree):
         return leaves[0].identifier
 
     def groupby(self, *args, **kwargs):
-        r"""Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
+        r"""
+        Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
 
         Given the initial aggregation::
 
@@ -140,12 +179,12 @@ class Aggs(Tree):
 
         If `insert_below` = 'A'::
 
-            A──> by──> B
+            A──> new──> B
                   └──> C
 
         If `insert_above` = 'B'::
 
-            A──> by──> B
+            A──> new──> B
             └──> C
 
         `by` argument accepts single occurrence or sequence of following formats:
@@ -163,11 +202,10 @@ class Aggs(Tree):
             └──> C
 
 
-        Accepted declarations for single aggregation:
+        Accepted all Aggs.__init__ syntaxes
 
-        Official DSL like:
-
-        >>> Aggs().groupby('terms', name='per_user_id', field='user_id')
+        >>> Aggs()\
+        >>> .groupby('terms', name='per_user_id', field='user_id')
         {"terms_on_my_field":{"terms":{"field":"some_field"}}}
 
         Passing a dict:
@@ -265,30 +303,47 @@ class Aggs(Tree):
         return new_agg
 
     def aggs(self, *args, **kwargs):
-        """Arrange passed aggregations in `arg` arguments "horizontally".
+        """
+        Arrange passed aggregations "horizontally".
 
-        Those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest linear
-        bucket aggregation if there is no ambiguity:
+        Given the initial aggregation::
+
+            A──> B
+            └──> C
+
+        If passing multiple aggregations with `insert_below` = 'A'::
+
+            A──> B
+            └──> C
+            └──> new1
+            └──> new2
+
+        Note: those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest
+        linear bucket aggregation if there is no ambiguity:
 
         OK::
 
-            A──> B ─> C ─> arg
+            A──> B ─> C ─> new
 
         KO::
 
             A──> B
             └──> C
 
-        `arg` argument accepts single occurrence or sequence of following formats:
+        `args` accepts single occurrence or sequence of following formats:
 
         * string (for terms agg concise declaration)
         * regular Elasticsearch dict syntax
         * AggNode instance (for instance Terms, Filters etc)
 
 
-        :param arg: aggregation(s) clauses to insert "horizontally"
-        :param insert_below: parent aggregation id under which these aggregations should be placed
-        :param kwargs: agg body arguments when using "string" syntax for terms aggregation
+        :Keyword Arguments:
+            * *insert_below* (``string``) --
+              Parent aggregation name under which these aggregations should be placed
+
+            * remaining kwargs:
+              Used as body in aggregation
+
         :rtype: pandagg.aggs.Aggs
         """
         insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))

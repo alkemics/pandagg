@@ -30,7 +30,7 @@ class ParameterClausesTestCase(TestCase):
             self.assertEqual(f.line_repr(depth=None), "filter")
 
             term = next((c for c in f._children if isinstance(c, Term)))
-            self.assertEqual(term.serialize(), {"term": {"some_field": {"value": 1}}})
+            self.assertEqual(term.to_dict(), {"term": {"some_field": {"value": 1}}})
 
             range_ = next((c for c in f._children if isinstance(c, Range)))
-            self.assertEqual(range_.serialize(), {"range": {"other_field": {"gte": 2}}})
+            self.assertEqual(range_.to_dict(), {"range": {"other_field": {"gte": 2}}})

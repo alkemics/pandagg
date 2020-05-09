@@ -23,7 +23,7 @@ class SpecializedQueriesTestCase(TestCase):
 
         q = DistanceFeature(field="production_date", pivot="7d", origin="now")
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
             'distance_feature, field="production_date", origin="now", pivot="7d"',
@@ -45,7 +45,7 @@ class SpecializedQueriesTestCase(TestCase):
             max_query_terms=12,
         )
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None), "more_like_this, fields=['title', 'description']"
         )
@@ -61,7 +61,7 @@ class SpecializedQueriesTestCase(TestCase):
             field="query", document={"message": "A new bonsai tree in the office"}
         )
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
             'percolate, document={"message": "A new bonsai tree in the office"}, field="query"',
@@ -73,7 +73,7 @@ class SpecializedQueriesTestCase(TestCase):
 
         q = RankFeature(field="url_length", boost=0.1)
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None), 'rank_feature, boost=0.1, field="url_length"'
         )
@@ -96,7 +96,7 @@ class SpecializedQueriesTestCase(TestCase):
             }
         )
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
             'script, script={"lang": "painless", "params": {"param1": 5}, "source": "doc[\'num1\'].value > params.param1"}',
@@ -108,7 +108,7 @@ class SpecializedQueriesTestCase(TestCase):
 
         q = Wrapper(query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0=")
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
             'wrapper, query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="',

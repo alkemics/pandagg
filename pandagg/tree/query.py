@@ -123,7 +123,7 @@ class Query(Tree):
         from_ = self.root if from_ is None else from_
         node = self.get(from_)
         if isinstance(node, (LeafQueryClause, SimpleParameter)):
-            return node.serialize(with_name=True)
+            return node.to_dict(with_name=True)
         serialized_children = []
         should_yield = False
         for child_node in self.children(node.identifier, id_only=False):

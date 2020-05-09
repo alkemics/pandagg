@@ -79,7 +79,7 @@ class FullTextQueriesTestCase(TestCase):
         )
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'intervals, field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, {"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": "big bad"}}]}}, {"match": {"query": "wolf"}}], "max_gaps": 0, "ordered": true}',
@@ -93,7 +93,7 @@ class FullTextQueriesTestCase(TestCase):
         q2 = Match(message={"query": "this is a test", "operator": "and"})
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'match, field=message, operator="and", query="this is a test"',
@@ -103,7 +103,7 @@ class FullTextQueriesTestCase(TestCase):
         q3 = Match(message="this is a test")
         self.assertEqual(q3.body, {"message": {"query": "this is a test"}})
         self.assertEqual(
-            q3.serialize(), {"match": {"message": {"query": "this is a test"}}}
+            q3.to_dict(), {"match": {"message": {"query": "this is a test"}}}
         )
         self.assertEqual(
             q3.line_repr(depth=None), 'match, field=message, query="this is a test"'
@@ -117,7 +117,7 @@ class FullTextQueriesTestCase(TestCase):
         q2 = MatchBoolPrefix(message={"query": "quick brown f", "analyzer": "keyword"})
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'match_bool_prefix, field=message, analyzer="keyword", query="quick brown f"',
@@ -127,7 +127,7 @@ class FullTextQueriesTestCase(TestCase):
         q3 = MatchBoolPrefix(message="quick brown f")
         self.assertEqual(q3.body, {"message": {"query": "quick brown f"}})
         self.assertEqual(
-            q3.serialize(),
+            q3.to_dict(),
             {"match_bool_prefix": {"message": {"query": "quick brown f"}}},
         )
         self.assertEqual(
@@ -145,7 +145,7 @@ class FullTextQueriesTestCase(TestCase):
         q2 = MatchPhrase(message={"query": "this is a test", "analyzer": "my_analyzer"})
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'match_phrase, field=message, analyzer="my_analyzer", query="this is a test"',
@@ -155,7 +155,7 @@ class FullTextQueriesTestCase(TestCase):
         q3 = MatchPhrase(message="this is a test")
         self.assertEqual(q3.body, {"message": {"query": "this is a test"}})
         self.assertEqual(
-            q3.serialize(), {"match_phrase": {"message": {"query": "this is a test"}}},
+            q3.to_dict(), {"match_phrase": {"message": {"query": "this is a test"}}},
         )
         self.assertEqual(
             q3.line_repr(depth=None),
@@ -174,7 +174,7 @@ class FullTextQueriesTestCase(TestCase):
         )
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'match_phrase_prefix, field=message, analyzer="my_analyzer", query="this is a test"',
@@ -192,7 +192,7 @@ class FullTextQueriesTestCase(TestCase):
             fields=["subject", "message"], query="this is a test", type="best_fields"
         )
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None), "multi_match, fields=['subject', 'message']"
         )
@@ -203,7 +203,7 @@ class FullTextQueriesTestCase(TestCase):
 
         q = QueryString(query="(new york city) OR (big apple)", default_field="content")
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
             'query_string, default_field="content", query="(new york city) OR (big apple)"',
@@ -217,7 +217,7 @@ class FullTextQueriesTestCase(TestCase):
             query="(new york city) OR (big apple)", default_field="content"
         )
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
             'simple_string, default_field="content", query="(new york city) OR (big apple)"',

@@ -22,7 +22,10 @@ class JoiningQueriesTestCase(TestCase):
             self.assertEqual(n.path, "some_nested_path")
 
             q = next((c for c in n._children if isinstance(c, QueryP)))
-            self.assertEqual(q.serialize(), {"query": {}})
+            self.assertEqual(
+                q.to_dict(),
+                {"query": [{"term": {"some_nested_path.id": {"value": 2}}}]},
+            )
             # ensure term query is present
             self.assertEqual(len(q._children), 1)
             self.assertIsInstance(q._children[0], Term, i)

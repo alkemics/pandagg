@@ -59,11 +59,24 @@ class CompoundQueriesTestCase(TestCase):
             filter=[{"term": {"some_field": 2}}],
         )
         for b in (b1, b2, b3, b4, b5, b6, b7):
+            self.assertEqual(
+                b.to_dict(),
+                {
+                    "bool": {
+                        "boost": 1.2,
+                        "filter": [{"term": {"some_field": {"value": 2}}}],
+                        "should": [
+                            {"range": {"other": {"gte": 1}}},
+                            {"term": {"some": {"value": 3}}},
+                        ],
+                    }
+                },
+            )
             self.assertEqual(len(b._children), 3)
             self.assertEqual(b.line_repr(depth=None), "bool")
 
             boost = next((c for c in b._children if isinstance(c, Boost)))
-            self.assertEqual(boost.serialize(), {"boost": 1.2})
+            self.assertEqual(boost.to_dict(), {"boost": 1.2})
             self.assertEqual(boost.line_repr(depth=None), "boost=1.2")
 
             filter_ = next((c for c in b._children if isinstance(c, Filter)))
@@ -111,14 +124,17 @@ class CompoundQueriesTestCase(TestCase):
 
             positive = next((c for c in b._children if isinstance(c, Positive)))
             self.assertEqual(len(positive._children), 1)
-            self.assertEqual(positive.serialize(), {"positive": {}})
+            self.assertEqual(
+                positive.to_dict(),
+                {"positive": [{"term": {"text": {"value": "apple"}}}]},
+            )
             self.assertEqual(positive.line_repr(depth=None), "positive")
             positive_term = positive._children[0]
             self.assertIsInstance(positive_term, Term)
             self.assertEqual(positive_term.field, "text")
             self.assertEqual(positive_term.body, {"text": {"value": "apple"}})
             self.assertEqual(
-                positive_term.serialize(), {"term": {"text": {"value": "apple"}}}
+                positive_term.to_dict(), {"term": {"text": {"value": "apple"}}}
             )
             self.assertEqual(
                 positive_term.line_repr(depth=None), 'term, field=text, value="apple"'
@@ -126,7 +142,14 @@ class CompoundQueriesTestCase(TestCase):
 
             negative = next((c for c in b._children if isinstance(c, Negative)))
             self.assertEqual(len(negative._children), 1)
-            self.assertEqual(negative.serialize(), {"negative": {}})
+            self.assertEqual(
+                negative.to_dict(),
+                {
+                    "negative": [
+                        {"term": {"text": {"value": "pie tart fruit crumble tree"}}}
+                    ]
+                },
+            )
             self.assertEqual(negative.line_repr(depth=None), "negative")
             negative_term = negative._children[0]
             self.assertIsInstance(negative_term, Term)
@@ -135,7 +158,7 @@ class CompoundQueriesTestCase(TestCase):
                 negative_term.body, {"text": {"value": "pie tart fruit crumble tree"}}
             )
             self.assertEqual(
-                negative_term.serialize(),
+                negative_term.to_dict(),
                 {"term": {"text": {"value": "pie tart fruit crumble tree"}}},
             )
             self.assertEqual(

@@ -97,7 +97,7 @@ class QueryClause(Node):
     def _identifier_prefix(self):
         return "%s_" % self.KEY
 
-    def serialize(self, with_name=True):
+    def to_dict(self, with_name=True):
         b = self.body.copy()
         if with_name and self._named:
             b["_name"] = self.name
@@ -113,9 +113,9 @@ class QueryClause(Node):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return other.serialize() == self.serialize()
+            return other.to_dict() == self.to_dict()
         # make sure we still equal to a dict with the same data
-        return other == self.serialize()
+        return other == self.to_dict()
 
 
 class LeafQueryClause(QueryClause):
