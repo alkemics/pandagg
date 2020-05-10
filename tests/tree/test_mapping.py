@@ -87,7 +87,7 @@ _
 """
         for i, m in enumerate((m1, m2,)):
             self.assertEqual(m.__repr__(), expected_repr, "failed at m%d" % (i + 1))
-            self.assertEqual(m.serialize(), mapping_dict, "failed at m%d" % (i + 1))
+            self.assertEqual(m.to_dict(), mapping_dict, "failed at m%d" % (i + 1))
 
     def test_parse_tree_from_dict(self):
         mapping_tree = Mapping(MAPPING)

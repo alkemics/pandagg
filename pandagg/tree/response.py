@@ -14,12 +14,13 @@ from pandagg.tree.query import Query
 
 
 class AggsResponseTree(Tree):
-    """Tree representation of an ES response. ES response format is determined by the aggregation query.
+    """Tree representation of an ElasticSearch response.
     """
 
     def __init__(self, aggs, index):
         """
-        :param aggs: instance of pandagg.agg.Agg from which this ES response originates
+        :param aggs: instance of pandagg.agg.Agg from which this Elasticsearch response originates.
+        :param index: indice(s) on which aggregation was computed.
         """
         super(AggsResponseTree, self).__init__()
         self.__aggs = aggs
@@ -30,11 +31,12 @@ class AggsResponseTree(Tree):
 
     def parse(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
-        :param raw_response: ElasticSearch aggregation response
-        :return: self
 
         Note: if the root aggregation node can generate multiple buckets, a response root is crafted to avoid having
         multiple roots.
+
+        :param raw_response: ElasticSearch aggregation response
+        :return: self
         """
         root_node = self.__aggs.get(self.__aggs.root)
         pid = None
@@ -49,6 +51,7 @@ class AggsResponseTree(Tree):
 
     def _parse_node_with_children(self, agg_node, raw_response, pid=None):
         """Recursive method to parse ES raw response.
+
         :param agg_node: current aggregation, pandagg.nodes.AggNode instance
         :param raw_response: ES response at current level, dict
         :param pid: parent node identifier
@@ -73,6 +76,7 @@ class AggsResponseTree(Tree):
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
         """Recursive method returning a given bucket's properties in the form of an ordered dictionnary.
         Travel from current bucket through all ancestors until reaching root.
+
         :param bucket: instance of pandagg.buckets.buckets.Bucket
         :param properties: OrderedDict accumulator of 'level' -> 'key'
         :param end_level: optional parameter to specify until which level properties are fetched

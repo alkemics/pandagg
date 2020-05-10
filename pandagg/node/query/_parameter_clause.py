@@ -22,7 +22,7 @@ class SimpleParameter(ParameterClause):
     def line_repr(self, depth, **kwargs):
         return "%s=%s" % (self.KEY, json.dumps(self.body["value"]))
 
-    def serialize(self, with_name=True):
+    def to_dict(self, with_name=True):
         return {self.KEY: self.body["value"]}
 
 
@@ -130,6 +130,9 @@ class ParentParameterClause(ParameterClause):
                     "%s clause does not accept multiple query clauses." % self.KEY
                 )
         super(ParentParameterClause, self).__init__(_children=children)
+
+    def to_dict(self, with_name=True):
+        return {self.KEY: [n.to_dict() for n in self._children]}
 
 
 class Filter(ParentParameterClause):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 import os
 
@@ -21,7 +21,7 @@ tests_require = [
 
 install_requires = [
     "future",
-    "lighttree==0.0.2",
+    "lighttree==0.0.3",
     "elasticsearch>=7.1.0,<8.0.0",
 ]
 

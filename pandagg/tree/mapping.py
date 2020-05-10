@@ -44,7 +44,7 @@ class Mapping(Tree):
 
     __bool__ = __nonzero__
 
-    def serialize(self, from_=None, depth=None):
+    def to_dict(self, from_=None, depth=None):
         if self.root is None:
             return None
         from_ = self.root if from_ is None else from_
@@ -54,7 +54,7 @@ class Mapping(Tree):
             if depth is not None:
                 depth -= 1
             for child_node in self.children(node.identifier, id_only=False):
-                children_queries[child_node.name] = self.serialize(
+                children_queries[child_node.name] = self.to_dict(
                     from_=child_node.identifier, depth=depth
                 )
         serialized_node = node.body

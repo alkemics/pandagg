@@ -28,7 +28,7 @@ class GeoQueriesTestCase(TestCase):
         )
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'geo_bounding_box, field=pin.location, bottom_right={"lat": 40.01, "lon": -71.12}, top_left={"lat": 40.73, "lon": -74.1}',
@@ -44,7 +44,7 @@ class GeoQueriesTestCase(TestCase):
         q2 = GeoPolygone(person__location={"points": [[-70, 40], [-80, 30], [-90, 20]]})
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 "geo_polygon, field=person.location, points=[[-70, 40], [-80, 30], [-90, 20]]",
@@ -56,7 +56,7 @@ class GeoQueriesTestCase(TestCase):
 
         q = GeoDistance(pin__location="drm3btev3e86", distance="12km")
         self.assertEqual(q.body, body)
-        self.assertEqual(q.serialize(), expected)
+        self.assertEqual(q.to_dict(), expected)
         self.assertEqual(q.line_repr(depth=None), "geo_distance, field=pin.location")
 
     def test_geo_shape(self):
@@ -87,7 +87,7 @@ class GeoQueriesTestCase(TestCase):
         )
         for q in (q1, q2):
             self.assertEqual(q.body, body)
-            self.assertEqual(q.serialize(), expected)
+            self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
                 'geo_shape, field=location, relation="within", shape={"coordinates": [[13.0, 53.0], [14.0, 52.0]], "type": "envelope"}',

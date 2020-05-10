@@ -92,41 +92,36 @@ class AggTestCase(TestCase):
             self.assertEqual(a.to_dict(), expected)
 
     def test_add_node_with_mapping(self):
-        with_mapping = Aggs(mapping=MAPPING)
+        with_mapping = Aggs(mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(len(with_mapping.list()), 0)
 
         # add regular node
-        with_mapping.insert_node(Terms("workflow", field="workflow"))
-        self.assertEqual(len(with_mapping.list()), 1)
-
-        # try to add second root fill fail
-        with self.assertRaises(MultipleRootError):
-            with_mapping.insert_node(
-                Terms("classification_type", field="classification_type")
-            )
+        with_mapping = with_mapping.aggs(Terms("workflow", field="workflow"))
+        self.assertEqual(
+            with_mapping.to_dict(), {"workflow": {"terms": {"field": "workflow"}}}
+        )
 
         # try to add field aggregation on non-existing field will fail
         with self.assertRaises(AbsentMappingFieldError):
-            with_mapping.insert_node(
-                node=Terms("imaginary_agg", field="imaginary_field"),
-                parent_id="workflow",
+            with_mapping.aggs(
+                Terms("imaginary_agg", field="imaginary_field"),
+                insert_below="workflow",
             )
         self.assertEqual(len(with_mapping.list()), 1)
 
         # try to add aggregation on a non-compatible field will fail
         with self.assertRaises(InvalidOperationMappingFieldError):
-            with_mapping.insert_node(
-                node=Avg("average_of_string", field="classification_type"),
-                parent_id="workflow",
+            with_mapping.aggs(
+                Avg("average_of_string", field="classification_type"),
+                insert_below="workflow",
             )
         self.assertEqual(len(with_mapping.list()), 1)
 
         # add field aggregation on field passing through nested will automatically add nested
-        with_mapping.insert_node(
-            node=Avg("local_f1_score", field="local_metrics.performance.test.f1_score"),
-            parent_id="workflow",
+        with_mapping = with_mapping.aggs(
+            Avg("local_f1_score", field="local_metrics.performance.test.f1_score"),
+            insert_below="workflow",
         )
-        self.assertEqual(len(with_mapping.list()), 3)
         self.assertEqual(
             with_mapping.to_dict(),
             {
@@ -153,11 +148,9 @@ class AggTestCase(TestCase):
         self.assertEqual(nested_node.path, "local_metrics")
 
         # add other agg requiring nested will reuse nested agg as parent
-        with_mapping.insert_node(
-            node=Avg(
-                "local_precision", field="local_metrics.performance.test.precision"
-            ),
-            parent_id="workflow",
+        with_mapping = with_mapping.aggs(
+            Avg("local_precision", field="local_metrics.performance.test.precision"),
+            insert_below="workflow",
         )
         self.assertEqual(
             with_mapping.to_dict(),
@@ -188,9 +181,9 @@ class AggTestCase(TestCase):
 
         # add under a nested parent a field aggregation that requires to be located under root will automatically
         # add reverse-nested
-        with_mapping.insert_node(
-            node=Terms("language_terms", field="language"),
-            parent_id="nested_below_workflow",
+        with_mapping = with_mapping.aggs(
+            Terms("language_terms", field="language"),
+            insert_below="nested_below_workflow",
         )
         self.assertEqual(len(with_mapping.list()), 6)
         self.assertEqual(
@@ -316,6 +309,7 @@ class AggTestCase(TestCase):
                 }
             },
             mapping=MAPPING,
+            nested_autocorrect=True,
         )
         self.assertEqual(to_id_set(initial_agg_2.list()), {"week"})
         pasted_agg_2 = Aggs(
@@ -460,6 +454,7 @@ class AggTestCase(TestCase):
         some_agg = Aggs(
             {"term_workflow": {"terms": {"field": "workflow", "size": 5}}},
             mapping=MAPPING,
+            nested_autocorrect=True,
         )
         some_agg = some_agg.aggs(
             "local_metrics.field_class.name", insert_below="term_workflow"
@@ -494,6 +489,7 @@ class AggTestCase(TestCase):
         some_agg = Aggs(
             {"term_workflow": {"terms": {"field": "workflow", "size": 5}}},
             mapping=MAPPING,
+            nested_autocorrect=True,
         )
         node = Avg(name="min_local_f1", field="local_metrics.performance.test.f1_score")
         some_agg = some_agg.aggs(node, insert_below="term_workflow")
@@ -598,7 +594,7 @@ class AggTestCase(TestCase):
                 )
             ],
         )
-        agg = Aggs(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(
             agg.to_dict(),
             {
@@ -919,7 +915,7 @@ class AggTestCase(TestCase):
                 )
             ],
         )
-        agg = Aggs(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
 
         self.assertEqual(agg.applied_nested_path_at_node("week"), None)
         for nid in (
@@ -955,7 +951,7 @@ class AggTestCase(TestCase):
                 )
             ],
         )
-        agg = Aggs(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(
             agg.deepest_linear_bucket_agg, "local_metrics.field_class.name"
         )
@@ -981,5 +977,5 @@ class AggTestCase(TestCase):
                 ),
             ],
         )
-        agg2 = Aggs(node_hierarchy_2, mapping=MAPPING)
+        agg2 = Aggs(node_hierarchy_2, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(agg2.deepest_linear_bucket_agg, "week")

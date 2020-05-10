@@ -12,20 +12,22 @@ from pandagg.node.query.abstract import QueryClause
 
 
 class CompoundClause(QueryClause):
-    """Compound clauses can encapsulate other query clauses.
+    """Compound clauses can encapsulate other query clauses::
+
+        {
+            "<query_type>" : {
+                <query_body>
+                <children_clauses>
+            }
+        }
 
     Note: the children attribute's only purpose is for initiation with the following syntax:
+
     >>> from pandagg.query import Bool, Term
     >>> query = Bool(
     >>>     filter=Term(field='some_path', value=3),
     >>>     _name='bool_id',
     >>> )
-    {
-        "<query_type>" : {
-            <query_body>
-            <children_clauses>
-        }
-    }
     """
 
     DEFAULT_OPERATOR = None
@@ -66,6 +68,12 @@ class CompoundClause(QueryClause):
             if not parent_only
             or not issubclass(cls.get_dsl_class(p, "_param_"), SimpleParameter)
         }
+
+    def to_dict(self, with_name=True):
+        d = {}
+        for c in self._children:
+            d.update(c.to_dict())
+        return {self.KEY: d}
 
 
 class Bool(CompoundClause):
