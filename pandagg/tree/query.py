@@ -41,16 +41,29 @@ REPLACE_ALL = "replace_all"
 
 @python_2_unicode_compatible
 class Query(Tree):
-    """Tree combination of query nodes.
+    r"""Combination of query clauses.
 
     Mapping declaration is optional, but doing so validates query validity and automatically inserts nested clauses
     when necessary.
+
+    :Keyword Arguments:
+        * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
+          Mapping of requested indice(s). Providing it will add validation features, and add required nested
+          clauses if missing.
+
+        * *nested_autocorrect* (``bool``) --
+          In case of missing nested clauses in query, if True, automatically add missing nested clauses, else raise
+          error.
+
+        * remaining kwargs:
+          Used as body in query clauses.
     """
 
     node_class = QueryClause
 
     def __init__(self, *args, **kwargs):
         self.mapping = Mapping(kwargs.pop("mapping", None))
+        self.nested_autocorrect = kwargs.pop("nested_autocorrect", False)
         super(Query, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
@@ -61,7 +74,10 @@ class Query(Tree):
     __bool__ = __nonzero__
 
     def _clone_init(self, deep=False):
-        return Query(mapping=self.mapping.clone(with_tree=True, deep=deep))
+        return Query(
+            mapping=self.mapping.clone(with_tree=True, deep=deep),
+            nested_autocorrect=self.nested_autocorrect,
+        )
 
     @classmethod
     def deserialize(cls, *args, **kwargs):
@@ -86,34 +102,60 @@ class Query(Tree):
 
     def _insert_node_below(self, node, parent_id=None, with_children=True):
         """Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent."""
-        if parent_id is None:
-            return super(Query, self)._insert_node_below(
-                node, parent_id=parent_id, with_children=with_children
-            )
+        if parent_id is not None:
+            pnode = self.get(parent_id)
+            if isinstance(pnode, LeafQueryClause):
+                raise ValueError(
+                    "Cannot add clause under leaf query clause <%s>" % pnode.KEY
+                )
+            if isinstance(pnode, ParentParameterClause):
+                if isinstance(node, ParameterClause):
+                    raise ValueError(
+                        "Cannot add parameter clause <%s> under another paramter clause <%s>"
+                        % (pnode.KEY, node.KEY)
+                    )
+            if isinstance(pnode, CompoundClause):
+                if (
+                    not isinstance(node, ParameterClause)
+                    or node.KEY not in pnode.PARAMS_WHITELIST
+                ):
+                    raise ValueError(
+                        "Expect a parameter clause of type %s under <%s> compound clause, got <%s>"
+                        % (pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY)
+                    )
 
-        pnode = self.get(parent_id)
-        if isinstance(pnode, LeafQueryClause):
-            raise ValueError(
-                "Cannot add clause under leaf query clause <%s>" % pnode.KEY
+        # automatic handling of nested clauses
+        if isinstance(node, Nested) or not self.mapping or not hasattr(node, "field"):
+            return super(Query, self)._insert_node_below(
+                node=node, parent_id=parent_id, with_children=with_children
             )
-        if isinstance(pnode, ParentParameterClause):
-            if isinstance(node, ParameterClause):
-                raise ValueError(
-                    "Cannot add parameter clause <%s> under another paramter clause <%s>"
-                    % (pnode.KEY, node.KEY)
-                )
-        if isinstance(pnode, CompoundClause):
-            if (
-                not isinstance(node, ParameterClause)
-                or node.KEY not in pnode.PARAMS_WHITELIST
-            ):
-                raise ValueError(
-                    "Expect a parameter clause of type %s under <%s> compound clause, got <%s>"
-                    % (pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY)
-                )
-        super(Query, self)._insert_node_below(
-            node=node, parent_id=parent_id, with_children=with_children
-        )
+        required_nested_level = self.mapping.nested_at_field(node.field)
+        if self.is_empty():
+            current_nested_level = None
+        else:
+            current_nested_level = self.applied_nested_path_at_node(parent_id)
+        if not self.nested_autocorrect:
+            raise ValueError(
+                "Invalid %s query clause on %s field. Invalid nested: expected %s, current %s."
+                % (node.KEY, node.field, required_nested_level, current_nested_level)
+            )
+        if current_nested_level == required_nested_level:
+            return super(Query, self)._insert_node_below(
+                node=node, parent_id=parent_id, with_children=with_children
+            )
+        # requires nested - apply all required nested fields
+        for nested_lvl in self.mapping.list_nesteds_at_field(node.field):
+            if current_nested_level != nested_lvl:
+                node = Nested(path=nested_lvl, query=node)
+        super(Query, self)._insert_node_below(node, parent_id, with_children=True)
+
+    def applied_nested_path_at_node(self, nid):
+        # from current node to root
+        for id_ in [nid] + self.ancestors(nid):
+            node = self.get(id_)
+            if isinstance(node, Nested):
+                return node.path
+        return None
 
     def to_dict(self, from_=None, with_name=True):
         """Return None if no query clause.

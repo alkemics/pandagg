@@ -24,7 +24,7 @@ import pandagg.node.aggs.metric as metric  # noqa
 
 @python_2_unicode_compatible
 class Aggs(Tree):
-    """
+    r"""
     Combination of aggregation clauses. This class provides handful methods to build an aggregation (see
     :func:`~pandagg.tree.aggs.Aggs.aggs` and :func:`~pandagg.tree.aggs.Aggs.groupby`), and is used as well
     to parse aggregations response in handy formats.
@@ -61,6 +61,10 @@ class Aggs(Tree):
           Mapping of requested indice(s). Providing it will validate aggregations validity, and add required nested
           clauses if missing.
 
+        * *nested_autocorrect* (``bool``) --
+          In case of missing nested clauses in aggregation, if True, automatically add missing nested clauses, else
+          raise error.
+
         * remaining kwargs:
           Used as body in aggregation
     """
@@ -70,6 +74,7 @@ class Aggs(Tree):
 
     def __init__(self, *args, **kwargs):
         self.mapping = Mapping(kwargs.pop("mapping", None))
+        self.nested_autocorrect = kwargs.pop("nested_autocorrect", False)
         super(Aggs, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
@@ -78,15 +83,6 @@ class Aggs(Tree):
         return bool(self.to_dict())
 
     __bool__ = __nonzero__
-
-    @classmethod
-    def deserialize(cls, *args, **kwargs):
-        mapping = kwargs.pop("mapping", None)
-        if len(args) == 1 and isinstance(args[0], Aggs):
-            return args[0]
-
-        new = cls(mapping=mapping)
-        return new._fill(*args, **kwargs)
 
     def _fill(self, *args, **kwargs):
         if args:
@@ -99,7 +95,10 @@ class Aggs(Tree):
         return self
 
     def _clone_init(self, deep=False):
-        return Aggs(mapping=self.mapping.clone(deep=deep))
+        return Aggs(
+            mapping=self.mapping.clone(deep=deep),
+            nested_autocorrect=self.nested_autocorrect,
+        )
 
     def _is_eligible_grouping_node(self, nid):
         """Return whether node can be used as grouping node."""
@@ -259,19 +258,19 @@ class Aggs(Tree):
                 raise ValueError(
                     "Kwargs not allowed when passing multiple aggregations in args."
                 )
-            inserted_aggs = [self.deserialize(arg) for arg in args]
+            inserted_aggs = [Aggs(arg) for arg in args]
         # groupby([{}, {}])
         elif len(args) == 1 and isinstance(args[0], (list, tuple)):
             if kwargs:
                 raise ValueError(
                     "Kwargs not allowed when passing multiple aggregations in args."
                 )
-            inserted_aggs = [self.deserialize(arg) for arg in args[0]]
+            inserted_aggs = [Aggs(arg) for arg in args[0]]
         # groupby({})
         # groupby(Terms())
         # groupby('terms', name='per_tag', field='tag')
         else:
-            inserted_aggs = [self.deserialize(*args, **kwargs)]
+            inserted_aggs = [Aggs(*args, **kwargs)]
 
         if insert_above is not None:
             parent = new_agg.parent(insert_above, id_only=False)
@@ -303,7 +302,7 @@ class Aggs(Tree):
         return new_agg
 
     def aggs(self, *args, **kwargs):
-        """
+        r"""
         Arrange passed aggregations "horizontally".
 
         Given the initial aggregation::
@@ -348,7 +347,7 @@ class Aggs(Tree):
         """
         insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))
         new_agg = self.clone(with_tree=True)
-        deserialized = self.deserialize(*args, mapping=self.mapping, **kwargs)
+        deserialized = Aggs(*args, **kwargs)
         deserialized_root = deserialized.get(deserialized.root)
         if isinstance(deserialized_root, ShadowRoot):
             new_agg.merge(deserialized, nid=insert_below)
@@ -390,7 +389,7 @@ class Aggs(Tree):
     def _insert_node_below(self, node, parent_id, with_children=True):
         """If mapping is provided, nested aggregations are automatically applied.
         """
-        if isinstance(node, ShadowRoot):
+        if isinstance(node, ShadowRoot) and parent_id is not None:
             for child in node._children or []:
                 super(Aggs, self)._insert_node_below(
                     child, parent_id=parent_id, with_children=with_children
@@ -401,7 +400,6 @@ class Aggs(Tree):
             isinstance(node, Nested)
             or isinstance(node, ReverseNested)
             or not self.mapping
-            or parent_id is None
             or not hasattr(node, "field")
         ):
             return super(Aggs, self)._insert_node_below(
@@ -412,10 +410,19 @@ class Aggs(Tree):
 
         # from deepest to highest
         required_nested_level = self.mapping.nested_at_field(node.field)
-        current_nested_level = self.applied_nested_path_at_node(parent_id)
+
+        if self.is_empty():
+            current_nested_level = None
+        else:
+            current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
             return super(Aggs, self)._insert_node_below(
                 node, parent_id, with_children=with_children
+            )
+        if not self.nested_autocorrect:
+            raise ValueError(
+                "Invalid %s agg on %s field. Invalid nested: expected %s, current %s."
+                % (node.KEY, node.field, required_nested_level, current_nested_level)
             )
         if current_nested_level and (
             required_nested_level or "" in current_nested_level

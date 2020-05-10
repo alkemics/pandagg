@@ -1086,6 +1086,28 @@ bool
             ),
         )
 
+    def test_autonested(self):
+        q = Query(
+            mapping={
+                "properties": {
+                    "actors": {
+                        "type": "nested",
+                        "properties": {"id": {"type": "keyword"}},
+                    }
+                }
+            },
+            nested_autocorrect=True,
+        )
+        self.assertEqual(
+            q.query("term", actors__id=2).to_dict(),
+            {
+                "nested": {
+                    "path": "actors",
+                    "query": {"term": {"actors.id": {"value": 2}}},
+                }
+            },
+        )
+
     def test_query_unnamed_inserts(self):
 
         q = (
