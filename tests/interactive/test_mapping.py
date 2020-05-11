@@ -70,7 +70,7 @@ class IMappingTestCase(TestCase):
 
         # from nodes
         im3 = IMapping(
-            properties={
+            properties=[
                 Keyword("classification_type", fields=[Text("raw")]),
                 Nested(
                     "local_metrics",
@@ -86,7 +86,7 @@ class IMappingTestCase(TestCase):
                         )
                     ],
                 ),
-            },
+            ],
             dynamic=False,
             client=client_mock,
             index=index_name,

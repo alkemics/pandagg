@@ -30,6 +30,9 @@ class Response:
         )
         self.profile = data.get("profile")
 
+    def __iter__(self):
+        return iter(self.hits)
+
     @property
     def success(self):
         return (
@@ -55,6 +58,9 @@ class Hits:
 
     def __len__(self):
         return len(self.hits)
+
+    def __iter__(self):
+        return iter(self.hits)
 
     def _total_repr(self):
         if not isinstance(self.total, dict):

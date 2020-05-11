@@ -386,14 +386,12 @@ class Aggs(Tree):
                 return node.path
         return None
 
-    def _insert_node_below(self, node, parent_id, with_children=True):
+    def _insert_node_below(self, node, parent_id):
         """If mapping is provided, nested aggregations are automatically applied.
         """
         if isinstance(node, ShadowRoot) and parent_id is not None:
             for child in node._children or []:
-                super(Aggs, self)._insert_node_below(
-                    child, parent_id=parent_id, with_children=with_children
-                )
+                super(Aggs, self)._insert_node_below(child, parent_id=parent_id)
             return
         # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
         if (
@@ -402,9 +400,7 @@ class Aggs(Tree):
             or not self.mapping
             or not hasattr(node, "field")
         ):
-            return super(Aggs, self)._insert_node_below(
-                node, parent_id, with_children=with_children
-            )
+            return super(Aggs, self)._insert_node_below(node, parent_id)
 
         self.mapping.validate_agg_node(node)
 
@@ -416,9 +412,7 @@ class Aggs(Tree):
         else:
             current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
-            return super(Aggs, self)._insert_node_below(
-                node, parent_id, with_children=with_children
-            )
+            return super(Aggs, self)._insert_node_below(node, parent_id)
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s agg on %s field. Invalid nested: expected %s, current %s."
@@ -439,13 +433,13 @@ class Aggs(Tree):
             )
             if child_reverse_nested:
                 return super(Aggs, self)._insert_node_below(
-                    node, child_reverse_nested.identifier, with_children=with_children
+                    node, child_reverse_nested.identifier
                 )
             else:
                 rv_node = ReverseNested(name="reverse_nested_below_%s" % parent_id)
                 super(Aggs, self).insert_node(rv_node, parent_id)
                 return super(Aggs, self)._insert_node_below(
-                    node, rv_node.identifier, with_children=with_children
+                    node, rv_node.identifier
                 )
 
         # requires nested - apply all required nested fields
@@ -475,9 +469,7 @@ class Aggs(Tree):
                 nested_node = Nested(name=nested_node_name, path=nested_lvl)
                 super(Aggs, self)._insert_node_below(nested_node, parent_id)
                 parent_id = nested_node.identifier
-        super(Aggs, self)._insert_node_below(
-            node, parent_id, with_children=with_children
-        )
+        super(Aggs, self)._insert_node_below(node, parent_id)
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)

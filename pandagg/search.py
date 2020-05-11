@@ -6,6 +6,7 @@ from elasticsearch.helpers import scan
 from future.utils import string_types
 
 from pandagg.connections import get_connection
+from pandagg.node.query.compound import Bool
 from pandagg.response import Response
 from pandagg.tree.mapping import Mapping
 from pandagg.tree.query import Query
@@ -36,6 +37,9 @@ class Request(object):
             s = Search()
             s = s.params(routing='user-1', preference='local')
         """
+        from_ = kwargs.pop("from_", None)
+        if from_ is not None:
+            kwargs["from"] = from_
         s = self._clone()
         s._params.update(kwargs)
         return s
@@ -85,6 +89,9 @@ class Request(object):
         s = self.__class__(using=self._using, index=self._index)
         s._params = self._params.copy()
         return s
+
+    def __copy__(self):
+        return self._clone()
 
 
 class Search(Request):
@@ -148,6 +155,17 @@ class Search(Request):
 
     must.__doc__ = Query.must.__doc__
 
+    def exclude(self, *args, **kwargs):
+        """Must not wrapped in filter context."""
+        s = self._clone()
+        s._query = s._query.filter(Bool(must_not=[Query(*args, **kwargs)]))
+        return s
+
+    def post_filter(self, *args, **kwargs):
+        s = self._clone()
+        s._post_filter = s._post_filter.query(*args, **kwargs)
+        return s
+
     def aggs(self, *args, **kwargs):
         s = self._clone()
         s._aggs = s._aggs.aggs(*args, **kwargs)
@@ -164,7 +182,7 @@ class Search(Request):
 
     def __iter__(self):
         """
-        Iterate over the hits.
+        Iterate over the hits. Return iterable of ``pandagg.response.Hit``.
         """
         return iter(self.execute())
 
@@ -601,6 +619,13 @@ class MultiSearch(Request):
         """
         es = get_connection(self._using)
         return es.msearch(index=self._index, body=self.to_dict(), **self._params)
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Search)
+            and other._index == self._index
+            and other.to_dict() == self.to_dict()
+        )
 
     def __repr__(self):
         return json.dumps(self.to_dict(), indent=2)

@@ -57,7 +57,7 @@ class MappingTreeTestCase(TestCase):
 
         m2 = Mapping(
             dynamic=False,
-            properties={
+            properties=[
                 Keyword("classification_type", fields=[Text("raw")]),
                 Nested(
                     "local_metrics",
@@ -73,7 +73,7 @@ class MappingTreeTestCase(TestCase):
                         )
                     ],
                 ),
-            },
+            ],
         )
 
         expected_repr = """<Mapping>

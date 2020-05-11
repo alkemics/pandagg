@@ -100,7 +100,7 @@ class Query(Tree):
         self.insert(node_hierarchy)
         return self
 
-    def _insert_node_below(self, node, parent_id=None, with_children=True):
+    def _insert_node_below(self, node, parent_id=None):
         """Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent."""
         if parent_id is not None:
             pnode = self.get(parent_id)
@@ -127,7 +127,7 @@ class Query(Tree):
         # automatic handling of nested clauses
         if isinstance(node, Nested) or not self.mapping or not hasattr(node, "field"):
             return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id, with_children=with_children
+                node=node, parent_id=parent_id
             )
         required_nested_level = self.mapping.nested_at_field(node.field)
         if self.is_empty():
@@ -141,13 +141,13 @@ class Query(Tree):
             )
         if current_nested_level == required_nested_level:
             return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id, with_children=with_children
+                node=node, parent_id=parent_id
             )
         # requires nested - apply all required nested fields
         for nested_lvl in self.mapping.list_nesteds_at_field(node.field):
             if current_nested_level != nested_lvl:
                 node = Nested(path=nested_lvl, query=node)
-        super(Query, self)._insert_node_below(node, parent_id, with_children=True)
+        super(Query, self)._insert_node_below(node, parent_id)
 
     def applied_nested_path_at_node(self, nid):
         # from current node to root

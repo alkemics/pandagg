@@ -179,7 +179,7 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
 
     _DEFAULT_PARAM = None
 
-    def __init__(self, field=None, _name=None, **params):
+    def __init__(self, field=None, _name=None, _expand__to_dot=True, **params):
         if field is None:
             # Term(item__id=32) or Term(item__id={'value': 32, 'boost': 1})
             if len(params) != 1:
@@ -187,7 +187,10 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
                     "Invalid declaration for <%s> clause, got:\n%s"
                     % (self.__class__.__name__, params)
                 )
-            field, value = self.expand__to_dot(params).copy().popitem()
+            if _expand__to_dot:
+                field, value = self.expand__to_dot(params).copy().popitem()
+            else:
+                field, value = params.copy().popitem()
             params = value if isinstance(value, dict) else {self._DEFAULT_PARAM: value}
         self.inner_body = params
         super(KeyFieldQueryClause, self).__init__(

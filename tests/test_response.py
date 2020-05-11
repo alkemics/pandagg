@@ -106,6 +106,11 @@ class ResponseTestCase(TestCase):
             "<Response> took 42ms, success: True, total result 34, contains 2 hits",
         )
 
+        hits = list(iter(r))
+        self.assertEqual(len(hits), 2)
+        for hit in hits:
+            self.assertIsInstance(hit, Hit)
+
 
 class AggregationsResponseTestCase(TestCase):
     def test_parse_as_tree(self, *_):
