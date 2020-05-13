@@ -134,14 +134,14 @@ class Query(Tree):
             current_nested_level = None
         else:
             current_nested_level = self.applied_nested_path_at_node(parent_id)
+        if current_nested_level == required_nested_level:
+            return super(Query, self)._insert_node_below(
+                node=node, parent_id=parent_id
+            )
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s query clause on %s field. Invalid nested: expected %s, current %s."
                 % (node.KEY, node.field, required_nested_level, current_nested_level)
-            )
-        if current_nested_level == required_nested_level:
-            return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id
             )
         # requires nested - apply all required nested fields
         for nested_lvl in self.mapping.list_nesteds_at_field(node.field):
