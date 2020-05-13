@@ -127,6 +127,13 @@ class Search(Request):
 
     query.__doc__ = Query.query.__doc__
 
+    def bool(self, *args, **kwargs):
+        s = self._clone()
+        s._query = s._query.bool(*args, **kwargs)
+        return s
+
+    bool.__doc__ = Query.bool.__doc__
+
     def filter(self, *args, **kwargs):
         s = self._clone()
         s._query = s._query.filter(*args, **kwargs)
@@ -562,6 +569,13 @@ class Search(Request):
         es = get_connection(self._using)
 
         return es.delete_by_query(index=self._index, body=self.to_dict())
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Search)
+            and other._index == self._index
+            and other.to_dict() == self.to_dict()
+        )
 
     def __repr__(self):
         return json.dumps(self.to_dict(), indent=2)

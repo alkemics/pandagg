@@ -438,9 +438,7 @@ class Aggs(Tree):
             else:
                 rv_node = ReverseNested(name="reverse_nested_below_%s" % parent_id)
                 super(Aggs, self).insert_node(rv_node, parent_id)
-                return super(Aggs, self)._insert_node_below(
-                    node, rv_node.identifier
-                )
+                return super(Aggs, self)._insert_node_below(node, rv_node.identifier)
 
         # requires nested - apply all required nested fields
         for nested_lvl in reversed(self.mapping.list_nesteds_at_field(node.field)):

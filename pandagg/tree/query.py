@@ -126,18 +126,14 @@ class Query(Tree):
 
         # automatic handling of nested clauses
         if isinstance(node, Nested) or not self.mapping or not hasattr(node, "field"):
-            return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id
-            )
+            return super(Query, self)._insert_node_below(node=node, parent_id=parent_id)
         required_nested_level = self.mapping.nested_at_field(node.field)
         if self.is_empty():
             current_nested_level = None
         else:
             current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
-            return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id
-            )
+            return super(Query, self)._insert_node_below(node=node, parent_id=parent_id)
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s query clause on %s field. Invalid nested: expected %s, current %s."
