@@ -324,3 +324,10 @@ class DateRange(Range):
         super(DateRange, self).__init__(
             name=name, field=field, keyed=True, meta=meta, aggs=aggs, **body
         )
+
+
+class Composite(MultipleBucketAgg):
+    KEY = "composite"
+
+    def get_filter(self, key):
+        raise NotImplementedError()
