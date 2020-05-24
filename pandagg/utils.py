@@ -24,12 +24,8 @@ class DslMeta(type):
             return
 
         key = cls.KEY
-        if key is not None and hasattr(cls, "_prefix"):
-            key = "%s%s" % (cls._prefix, key)
 
         if key is None:
-            # abstract base class, register it's shortcut
-            cls._types[cls._type_name] = cls._type_deserializer
             # and create a registry for subclasses
             if not hasattr(cls, "_classes"):
                 cls._classes = {}

@@ -1,5 +1,5 @@
 from pandagg.interactive.mapping import Mapping, IMapping
-from pandagg.node.mapping.field_datatypes import (
+from pandagg.tree.mapping.field_datatypes import (
     Text,
     Keyword,
     Long,
@@ -40,7 +40,7 @@ from pandagg.node.mapping.field_datatypes import (
     Shape,
     Histogram,
 )
-from pandagg.node.mapping.meta_fields import (
+from pandagg.tree.mapping.meta_fields import (
     Index,
     Type,
     Id,

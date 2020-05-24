@@ -21,7 +21,7 @@ tests_require = [
 
 install_requires = [
     "future",
-    "lighttree==0.0.4",
+    "lighttree==0.0.5",
     "elasticsearch>=7.1.0,<8.0.0",
 ]
 

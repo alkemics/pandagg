@@ -6,11 +6,11 @@ from elasticsearch.helpers import scan
 from future.utils import string_types
 
 from pandagg.connections import get_connection
-from pandagg.node.query.compound import Bool
+from pandagg.query import Bool
 from pandagg.response import Response
-from pandagg.tree.mapping import Mapping
-from pandagg.tree.query import Query
-from pandagg.tree.aggs import Aggs
+from pandagg.tree.mapping.mapping import Mapping
+from pandagg.tree.query.abstract import Query
+from pandagg.tree.aggs.aggs import Aggs
 
 
 class Request(object):

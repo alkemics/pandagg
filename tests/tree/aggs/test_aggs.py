@@ -9,13 +9,12 @@ from unittest import TestCase
 from lighttree.exceptions import MultipleRootError, NotFoundNodeError
 from mock import patch
 
-from pandagg.tree.aggs import Aggs
+from pandagg.tree.aggs.aggs import Aggs
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
-from pandagg.node.aggs.bucket import DateHistogram, Terms, Filter
-from pandagg.node.aggs.metric import Avg, Min
+from pandagg.aggs import DateHistogram, Terms, Filter, Avg, Min
 
 import tests.testing_samples.data_sample as sample
 
@@ -219,16 +218,6 @@ class AggTestCase(TestCase):
                 }
             },
         )
-
-    def test_add_node_without_mapping(self):
-        without_mapping = Aggs()
-        self.assertEqual(len(without_mapping.list()), 0)
-
-        # add regular node
-        without_mapping.insert_node(
-            Terms("workflow_not_existing", field="field_not_existing")
-        )
-        self.assertEqual(len(without_mapping.list()), 1)
 
     # TODO - finish these tests (reverse nested)
     def test_paste_tree_with_mapping(self):

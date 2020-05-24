@@ -5,8 +5,8 @@ from mock import Mock
 from unittest import TestCase
 
 from pandagg.node.mapping.abstract import Field
-from pandagg.node.mapping.field_datatypes import Keyword, Text, Nested, Object, Integer
-from pandagg.tree.mapping import Mapping
+from pandagg.mapping import Keyword, Text, Nested, Object, Integer
+from pandagg.tree.mapping.mapping import Mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.interactive.mapping import IMapping
 
@@ -29,10 +29,24 @@ class IMappingTestCase(TestCase):
         ):
             self.assertTrue(hasattr(mapping, field_name))
 
-        workflow = mapping.workflow
-        # Check that calling a tree will return its root node.
-        workflow_node = workflow()
-        self.assertTrue(isinstance(workflow_node, Field))
+        dataset = mapping.global_metrics.dataset
+        self.assertEqual(dataset.__repr__(), """<IMapping subpart: global_metrics.dataset>
+_
+├── nb_classes                                                Integer
+└── support_train                                             Integer
+""")
+        self.assertEqual(dataset(), """{
+  "dynamic": false,
+  "properties": {
+    "nb_classes": {
+      "type": "integer"
+    },
+    "support_train": {
+      "type": "integer"
+    }
+  }
+}""")
+
 
     def test_imapping_init(self):
 

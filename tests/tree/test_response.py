@@ -2,7 +2,7 @@ from collections import OrderedDict
 from unittest import TestCase
 from mock import Mock, patch
 
-from pandagg.tree.aggs import Aggs
+from pandagg.tree.aggs.aggs import Aggs
 from pandagg.tree.response import AggsResponseTree
 from pandagg.interactive.response import IResponse
 from pandagg.utils import equal_queries

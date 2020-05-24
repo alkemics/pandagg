@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from future.utils import iteritems, string_types
 from lighttree.exceptions import NotFoundNodeError
 
-from pandagg.node.mapping.abstract import Field, ShadowRoot, StringField, ComplexField
+from pandagg.node.mapping.abstract import Field, ComplexField
 
-# necessary to ensure all Fields are registered in meta-class
-import pandagg.node.mapping.field_datatypes as fd  # noqa
-import pandagg.node.mapping.meta_fields as mf  # noqa
 
 from pandagg.exceptions import (
     AbsentMappingFieldError,
@@ -18,33 +16,104 @@ from pandagg.tree._tree import Tree
 
 class Mapping(Tree):
 
+    _type_name = "mapping_tree"
     node_class = Field
+    KEY = None
 
     def __init__(self, *args, **kwargs):
         super(Mapping, self).__init__()
-        if (args and kwargs) or len(args) > 1:
+        if not kwargs and not args:
+            return
+        if len(args) > 1:
             raise ValueError(
                 "Invalid mapping declaration. Got:\n*args: %s\n**kwargs: %s"
                 % (args, kwargs)
             )
+
         if args:
             arg = args[0]
-            if isinstance(arg, Mapping):
+            if arg is None:
+                return
+            if isinstance(arg, (Mapping, Field)):
+                # Keyword
                 self.insert(arg)
-            elif arg is None:
-                pass
+                return
+            if isinstance(arg, dict):
+                # {"properties": {}}
+                name = kwargs.pop("name", "")
+                kwargs = arg.copy()
+            elif isinstance(arg, string_types):
+                # Nested("actors", properties=...)
+                name = arg
             else:
-                # {'dynamic': False, 'properties': ...}
-                self.insert(ShadowRoot(**arg))
-        elif kwargs:
-            self.insert(ShadowRoot(**kwargs))
+                raise ValueError(
+                    "Wrong declaration: args %s, kwargs %s" % (args, kwargs)
+                )
+        else:
+            name = kwargs.pop("name", "")
+
+        # {'dynamic': False, 'properties': ...}
+        properties = kwargs.pop("properties", None)
+        fields = kwargs.pop("fields", None)
+        is_subfield = kwargs.pop("is_subfield", None)
+
+        if is_subfield and (properties or fields):
+            raise ValueError("Invalid declaration")
+
+        key = "object" if self.KEY is None else self.KEY
+        node = self.get_node_dsl_class(key)(name, **kwargs)
+        if is_subfield:
+            node.is_subfield = True
+        self.insert(node)
+        if isinstance(properties, dict):
+            # dict syntax
+            for name, body in iteritems(properties):
+                type_ = body.get("type", "object")
+                sub_node = self.get_dsl_class(type_)(
+                    name=name, is_subfield=is_subfield, **body
+                )
+                self.insert(sub_node, node.identifier)
+        elif properties is None:
+            pass
+        else:
+            # node syntax
+            if not isinstance(properties, (list, tuple)):
+                properties = (properties,)
+            for p in properties:
+                if not isinstance(p, (Field, Mapping)):
+                    raise ValueError("Wrong mapping property: %s" % type(p))
+                self.insert(p, node.identifier)
+
+        if isinstance(fields, dict):
+            # dict syntax
+            for name, body in iteritems(fields):
+                type_ = body.get("type", "object")
+                sub_node = self.get_dsl_class(type_)(
+                    name=name, is_subfield=True, **body
+                )
+                self.insert(sub_node, node.identifier)
+        elif fields is None:
+            pass
+        else:
+            # node syntax
+            if not isinstance(fields, (list, tuple)):
+                fields = (fields,)
+            for f in fields:
+                if isinstance(f, Field):
+                    f.is_subfield = True
+                    self.insert(f, node.identifier)
+                elif isinstance(f, Mapping):
+                    f.get(f.root).is_subfield = True
+                    self.insert(f, node.identifier)
+                else:
+                    raise ValueError("Wrong mapping field: %s" % type(f))
 
     def __nonzero__(self):
         return not self.is_empty()
 
     __bool__ = __nonzero__
 
-    def to_dict(self, from_=None, depth=None):
+    def to_dict(self, from_=None, depth=None, root=True):
         if self.root is None:
             return None
         from_ = self.root if from_ is None else from_
@@ -55,14 +124,16 @@ class Mapping(Tree):
                 depth -= 1
             for child_node in self.children(node.identifier, id_only=False):
                 children_queries[child_node.name] = self.to_dict(
-                    from_=child_node.identifier, depth=depth
+                    from_=child_node.identifier, depth=depth, root=False
                 )
         serialized_node = node.body
         if children_queries:
-            if isinstance(node, StringField):
-                serialized_node["fields"] = children_queries
-            elif isinstance(node, ComplexField):
+            if isinstance(node, ComplexField):
                 serialized_node["properties"] = children_queries
+            elif isinstance(node, Field):
+                serialized_node["fields"] = children_queries
+        if root:
+            serialized_node.pop("type", None)
         return serialized_node
 
     def resolve_path_to_id(self, path):

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import json
 
 from lighttree import TreeBasedObj
+from pandagg.tree.mapping.mapping import Mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name
-from pandagg.tree.mapping import Mapping
 
 
 class IMapping(TreeBasedObj):
@@ -47,4 +48,4 @@ class IMapping(TreeBasedObj):
                 )
 
     def __call__(self, *args, **kwargs):
-        return self._tree.get(self._tree.root)
+        return json.dumps(self._tree.to_dict(root=False), indent=2, sort_keys=True)

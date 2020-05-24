@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from lighttree import TreeBasedObj
-from pandagg.tree.query import Query
+from pandagg.tree.query.abstract import Query
 
 
 class IResponse(TreeBasedObj):

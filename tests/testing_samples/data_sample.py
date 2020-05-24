@@ -5,9 +5,7 @@
 results.
 """
 
-from pandagg.tree.aggs import Aggs
-from pandagg.node.aggs.metric import Avg
-from pandagg.node.aggs.bucket import Terms
+from pandagg.aggs import Aggs, Avg, Terms
 from tests.testing_samples.mapping_example import MAPPING
 
 

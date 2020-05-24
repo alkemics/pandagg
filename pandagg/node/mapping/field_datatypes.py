@@ -1,15 +1,15 @@
 """https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html"""
 
-from .abstract import Field, StringField, ComplexField, NumericField
+from .abstract import Field, ComplexField, NumericField
 
 
 # CORE DATATYPES
 # string
-class Text(StringField):
+class Text(Field):
     KEY = "text"
 
 
-class Keyword(StringField):
+class Keyword(Field):
     KEY = "keyword"
 
 

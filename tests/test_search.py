@@ -1,18 +1,20 @@
 from copy import deepcopy
 
-from pandagg.node.query.compound import Bool
-from pandagg.node.query.full_text import Match
+from mock import patch
+
 from pandagg.search import Search
-
-
-from unittest import TestCase
-
-from pandagg.tree.aggs import Aggs
-from pandagg.tree.query import Query
+from pandagg.aggs import Aggs
+from pandagg.query import Query, Bool, Match
 from pandagg.utils import ordered
+from tests import PandaggTestCase
 
 
-class SearchTestCase(TestCase):
+class SearchTestCase(PandaggTestCase):
+    def setUp(self):
+        patcher = patch("uuid.uuid4", side_effect=range(1000))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_expand__to_dot_is_respected(self):
         s = Search().query("match", a__b=42, _expand__to_dot=False)
 
@@ -71,7 +73,7 @@ class SearchTestCase(TestCase):
     def test_aggs_allow_two_metric(self):
         s = Search()
 
-        s = s.aggs([Aggs("max", name="a", field="a"), Aggs("max", name="b", field="b")])
+        s = s.aggs([Aggs("a", "max", field="a"), Aggs("b", "max", field="b")])
 
         self.assertEqual(
             s.to_dict(),
@@ -141,8 +143,8 @@ class SearchTestCase(TestCase):
             size=10
         )
 
-        s = s.aggs("terms", name="per_tag", field="f").aggs(
-            "max", name="max_score", field="score"
+        s = s.aggs("per_tag", "terms", field="f").aggs(
+            "max_score", "max", field="score"
         )
         d = {
             "aggs": {
@@ -170,8 +172,8 @@ class SearchTestCase(TestCase):
             )
             .post_filter("terms", tags=["prague", "czech"])
             .script_fields(more_attendees="doc['attendees'].value + 42")
-            .aggs("terms", name="per_country", field="country")
-            .aggs("avg", field="attendees", name="avg_attendees")
+            .aggs("per_country", "terms", field="country")
+            .aggs("avg_attendees", "avg", field="attendees")
             .bool(minimum_should_match=2)
             .highlight_options(order="score")
             .highlight("title", "body", fragment_size=50)

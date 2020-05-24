@@ -1,11 +1,17 @@
-from unittest import TestCase
+from pandagg.node.aggs import (
+    Terms,
+    Filter,
+    Filters,
+    DateHistogram,
+    Nested,
+    Range,
+    Histogram,
+)
 
-from pandagg.aggs import Terms, Filter, Filters, DateHistogram, Nested, Range
-from pandagg.node.aggs.bucket import Histogram
-from pandagg.utils import ordered
+from tests import PandaggTestCase
 
 
-class BucketAggNodesTestCase(TestCase):
+class BucketAggNodesTestCase(PandaggTestCase):
     def test_terms(self):
         es_raw_response = {
             "doc_count_error_upper_bound": 0,
@@ -100,13 +106,8 @@ class BucketAggNodesTestCase(TestCase):
         self.assertEqual(Nested.extract_bucket_value({"doc_count": 12}), 12)
 
         # test get_filter
-        nested_agg = Nested(
-            name="some_agg",
-            path="nested_path",
-            aggs=[Terms("some_terms_agg", field="some_path.id")],
-        )
+        nested_agg = Nested(name="some_agg", path="nested_path",)
         self.assertEqual(nested_agg.get_filter(None), None)
-        self.assertEqual(len(nested_agg._children), 1)
 
         # test query dict
         self.assertEqual(nested_agg.to_dict(), {"nested": {"path": "nested_path"}})
@@ -154,40 +155,33 @@ class BucketAggNodesTestCase(TestCase):
         )
         expected_others_filter = {
             "bool": {
-                "must_not": [
-                    {
-                        "bool": {
-                            "should": [
-                                {"term": {"some_path": {"value": 1}}},
-                                {"term": {"some_path": {"value": 2}}},
-                            ]
-                        }
-                    }
-                ]
-            }
-        }
-        self.assertEqual(
-            ordered(filters_agg.get_filter("_other_")), ordered(expected_others_filter)
-        )
-        self.assertEqual(
-            ordered(filters_agg.get_filter("neither_one_nor_two")),
-            ordered(expected_others_filter),
-        )
-
-        self.assertEqual(
-            ordered(filters_agg.to_dict()),
-            ordered(
-                {
-                    "filters": {
-                        "filters": {
-                            "first_bucket": {"term": {"some_path": 1}},
-                            "second_bucket": {"term": {"some_path": 2}},
-                        },
-                        "other_bucket": True,
-                        "other_bucket_key": "neither_one_nor_two",
+                "must_not": {
+                    "bool": {
+                        "should": [
+                            {"term": {"some_path": 1}},
+                            {"term": {"some_path": 2}},
+                        ]
                     }
                 }
-            ),
+            }
+        }
+        self.assertQueryEqual(filters_agg.get_filter("_other_"), expected_others_filter)
+        self.assertQueryEqual(
+            filters_agg.get_filter("neither_one_nor_two"), expected_others_filter
+        )
+
+        self.assertQueryEqual(
+            filters_agg.to_dict(),
+            {
+                "filters": {
+                    "filters": {
+                        "first_bucket": {"term": {"some_path": 1}},
+                        "second_bucket": {"term": {"some_path": 2}},
+                    },
+                    "other_bucket": True,
+                    "other_bucket_key": "neither_one_nor_two",
+                }
+            },
         )
 
     def test_range(self):
