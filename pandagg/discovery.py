@@ -30,7 +30,7 @@ def discover(using, index="*"):
 
 
 @python_2_unicode_compatible
-class Index:
+class Index(object):
     def __init__(self, name, settings, mapping, aliases, client=None):
         super(Index, self).__init__()
         self.client = client
@@ -42,6 +42,9 @@ class Index:
 
     def search(self):
         return Search(using=self.client, mapping=self._mapping, index=self.name)
+
+    def __str__(self):
+        return self.__repr__()
 
     def __repr__(self):
         return "<Index '%s'>" % self.name

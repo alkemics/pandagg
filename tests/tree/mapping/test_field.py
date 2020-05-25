@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
 from pandagg.mapping import Object, Keyword, Text, Integer
 from unittest import TestCase
 

@@ -22,14 +22,7 @@ class MappingTreeTestCase(TestCase):
         tree = Keyword(name="path.to.field", fields={"searchable": {"type": "text"}})
         self.assertEqual(
             tree.to_dict(root=False),
-            {
-  "type": "keyword",
-  "fields": {
-    "searchable": {
-      "type": "text"
-    }
-  }
-},
+            {"type": "keyword", "fields": {"searchable": {"type": "text"}}},
         )
 
     def test_deserialization(self):

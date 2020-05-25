@@ -30,12 +30,17 @@ class IMappingTestCase(TestCase):
             self.assertTrue(hasattr(mapping, field_name))
 
         dataset = mapping.global_metrics.dataset
-        self.assertEqual(dataset.__repr__(), """<IMapping subpart: global_metrics.dataset>
+        self.assertEqual(
+            dataset.__repr__(),
+            """<IMapping subpart: global_metrics.dataset>
 _
 ├── nb_classes                                                Integer
 └── support_train                                             Integer
-""")
-        self.assertEqual(dataset(), """{
+""",
+        )
+        self.assertEqual(
+            dataset(),
+            """{
   "dynamic": false,
   "properties": {
     "nb_classes": {
@@ -45,8 +50,8 @@ _
       "type": "integer"
     }
   }
-}""")
-
+}""",
+        )
 
     def test_imapping_init(self):
 
