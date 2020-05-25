@@ -118,6 +118,7 @@ class Aggregations:
         row=None,
         agg_name=None,
         until=None,
+        ancestors=None,
         row_as_tuple=False,
         with_single_bucket_groups=False,
     ):
@@ -125,21 +126,15 @@ class Aggregations:
 
         Yields each row for which last bucket aggregation generated buckets.
         """
+        if ancestors is None:
+            ancestors = self.__aggs.ancestors(until, id_only=True)
         if not row:
             row = [] if row_as_tuple else {}
         agg_name = self.__aggs.root if agg_name is None else agg_name
         if agg_name in response:
             agg_node = self.__aggs.get(agg_name)
             for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
-                child_name = next(
-                    (
-                        child.name
-                        for child in self.__aggs.children(agg_name, id_only=False)
-                    ),
-                    None,
-                )
                 sub_row = copy.copy(row)
-                # aggs generating a single bucket don't require to be listed in grouping keys
                 if (
                     not isinstance(agg_node, UniqueBucketAgg)
                     or with_single_bucket_groups
@@ -148,21 +143,24 @@ class Aggregations:
                         sub_row.append(key)
                     else:
                         sub_row[agg_name] = key
-                if child_name and agg_name != until:
-                    # yield children
-                    for sub_row, sub_raw_bucket in self._parse_group_by(
-                        row=sub_row,
-                        response=raw_bucket,
-                        agg_name=child_name,
-                        until=until,
-                        row_as_tuple=row_as_tuple,
-                    ):
-                        yield sub_row, sub_raw_bucket
-                else:
+                if agg_name == until:
                     # end real yield
                     if row_as_tuple:
-                        sub_row = tuple(sub_row)
-                    yield sub_row, raw_bucket
+                        yield tuple(sub_row), raw_bucket
+                    else:
+                        yield sub_row, raw_bucket
+                elif agg_name in ancestors:
+                    # yield children
+                    for child in self.__aggs.children(agg_name, id_only=False):
+                        for nrow, nraw_bucket in self._parse_group_by(
+                            row=sub_row,
+                            response=raw_bucket,
+                            agg_name=child.name,
+                            until=until,
+                            row_as_tuple=row_as_tuple,
+                            ancestors=ancestors,
+                        ):
+                            yield nrow, nraw_bucket
 
     def _normalize_buckets(self, agg_response, agg_name=None):
         """Recursive function to parse aggregation response as a normalized entities.
