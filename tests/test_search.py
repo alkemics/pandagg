@@ -269,7 +269,7 @@ class SearchTestCase(PandaggTestCase):
 
         # make sure we haven't modified anything in place
         self.assertEqual(d, d2)
-        self.assertEqual(d, s.to_dict())
+        self.assertQueryEqual(d, s.to_dict())
 
     def test_from_dict_doesnt_need_query(self):
         s = Search.from_dict({"size": 5})

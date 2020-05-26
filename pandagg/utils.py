@@ -45,9 +45,13 @@ def ordered(obj):
     if isinstance(obj, dict):
         return sorted((k, ordered(v)) for k, v in obj.items())
     if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
+        try:
+            return sorted(ordered(x) for x in obj)
+        except:
+            # can only happen on sort query parameter, for instance, where order matters
+            # ['title', {'category': {'order': 'desc'}}, '_score']
+            pass
+    return obj
 
 
 def equal_queries(d1, d2):
