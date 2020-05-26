@@ -467,7 +467,7 @@ class AggTestCase(TestCase):
             },
         )
 
-    def test_interpret_node(self):
+    def test_aggs(self):
         node = Terms(name="some_name", field="some_field", size=10)
         some_agg = Aggs().aggs(node, insert_below=None)
         self.assertEqual(
@@ -500,6 +500,36 @@ class AggTestCase(TestCase):
                     },
                     "terms": {"field": "workflow", "size": 5},
                 }
+            },
+        )
+
+    def test_aggs_at_root(self):
+        a = (
+            Aggs()
+            .aggs("one", "terms", field="terms_one")
+            .aggs("two", "terms", field="terms_two", at_root=True)
+        )
+        self.assertEqual(
+            a.to_dict(),
+            {
+                "one": {"terms": {"field": "terms_one"}},
+                "two": {"terms": {"field": "terms_two"}},
+            },
+        )
+
+        # not at root: default behavior
+        a = (
+            Aggs()
+            .aggs("one", "terms", field="terms_one")
+            .aggs("two", "terms", field="terms_two")
+        )
+        self.assertEqual(
+            a.to_dict(),
+            {
+                "one": {
+                    "terms": {"field": "terms_one"},
+                    "aggs": {"two": {"terms": {"field": "terms_two"}}},
+                },
             },
         )
 
@@ -644,6 +674,42 @@ class AggTestCase(TestCase):
     def test_agg_init(self):
         agg = sample.get_wrapper_declared_agg()
         self.assertEqual(agg.to_dict(), sample.EXPECTED_AGG_QUERY)
+
+    def test_groupby_args_syntax(self):
+        a = Aggs().groupby("some_name", "terms", field="some_field")
+        self.assertEqual(a.to_dict(), {"some_name": {"terms": {"field": "some_field"}}})
+
+    def test_groupby_at_root(self):
+        a = (
+            Aggs()
+            .groupby("one", "terms", field="terms_one")
+            .groupby("two", "terms", field="terms_two", at_root=True)
+        )
+        self.assertEqual(
+            a.to_dict(),
+            {
+                "two": {
+                    "terms": {"field": "terms_two"},
+                    "aggs": {"one": {"terms": {"field": "terms_one"}}},
+                },
+            },
+        )
+
+        # not at root: default behavior
+        a = (
+            Aggs()
+            .groupby("one", "terms", field="terms_one")
+            .groupby("two", "terms", field="terms_two")
+        )
+        self.assertEqual(
+            a.to_dict(),
+            {
+                "one": {
+                    "terms": {"field": "terms_one"},
+                    "aggs": {"two": {"terms": {"field": "terms_two"}}},
+                },
+            },
+        )
 
     def test_groupby_insert_below(self):
         a1 = Aggs(

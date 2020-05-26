@@ -269,7 +269,7 @@ class Aggs(Tree):
 
         Using a Aggs object:
 
-        >>> Aggs().groupby(Aggs('terms', name='per_user_id', field='user_id'))
+        >>> Aggs().groupby(Aggs('per_user_id', 'terms', field='user_id'))
         {"terms_on_my_field":{"terms":{"field":"some_field"}}}
 
         Accepted declarations for multiple aggregations:
@@ -280,6 +280,8 @@ class Aggs(Tree):
               Parent aggregation name under which these aggregations should be placed
             * *insert_above* (``string``) --
               Aggregation name above which these aggregations should be placed
+            * *at_root* (``string``) --
+              Insert aggregations at root of aggregation query
 
             * remaining kwargs:
               Used as body in aggregation
@@ -288,15 +290,32 @@ class Aggs(Tree):
         """
         insert_below = kwargs.pop("insert_below", None)
         insert_above = kwargs.pop("insert_above", None)
-        if insert_below is not None and insert_above is not None:
+        at_root = kwargs.pop("at_root", None)
+        if (
+            sum(
+                (
+                    insert_below is not None,
+                    insert_above is not None,
+                    at_root is not None,
+                )
+            )
+            > 1
+        ):
             raise ValueError(
-                'Must define at most one of "insert_above" and "insert_below", got both.'
+                'Must define at most one of "insert_above" or "insert_below" or "at_root".'
             )
 
         new_agg = self.clone(with_tree=True)
+        if at_root is not None:
+            if not new_agg.is_empty():
+                existing_root = new_agg.get(new_agg.root)
+                if isinstance(existing_root, ShadowRoot):
+                    insert_below = existing_root.identifier
+                else:
+                    insert_above = existing_root.identifier
 
-        # groupby({}, {})
-        if len(args) > 1:
+        # groupby({}, {}), but not groupby("some_field", "terms", field="yolo")
+        if len(args) > 2 or (len(args) > 1 and not isinstance(args[0], string_types)):
             if kwargs:
                 raise ValueError(
                     "Kwargs not allowed when passing multiple aggregations in args."
@@ -382,14 +401,33 @@ class Aggs(Tree):
         :Keyword Arguments:
             * *insert_below* (``string``) --
               Parent aggregation name under which these aggregations should be placed
+            * *at_root* (``string``) --
+              Insert aggregations at root of aggregation query
 
             * remaining kwargs:
               Used as body in aggregation
 
         :rtype: pandagg.aggs.Aggs
         """
-        insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))
+        insert_below = kwargs.pop("insert_below", None)
+        at_root = kwargs.pop("at_root", None)
         new_agg = self.clone(with_tree=True)
+        if at_root is None:
+            insert_below = self._validate_aggs_parent_id(insert_below)
+        else:
+            if insert_below is not None:
+                raise ValueError(
+                    "Should provide at most one of 'at_root' and 'insert_below'."
+                )
+            if not new_agg.is_empty():
+                existing_root = new_agg.get(new_agg.root)
+                if isinstance(existing_root, ShadowRoot):
+                    insert_below = existing_root.identifier
+                else:
+                    new_root = ShadowRoot()
+                    new_agg._insert_node_above(new_root, existing_root.identifier)
+                    insert_below = new_root.identifier
+
         deserialized = Aggs(*args, **kwargs)
         deserialized_root = deserialized.get(deserialized.root)
         if isinstance(deserialized_root, ShadowRoot):
