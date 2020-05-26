@@ -24,12 +24,8 @@ class DslMeta(type):
             return
 
         key = cls.KEY
-        if key is not None and hasattr(cls, "_prefix"):
-            key = "%s%s" % (cls._prefix, key)
 
         if key is None:
-            # abstract base class, register it's shortcut
-            cls._types[cls._type_name] = cls._type_deserializer
             # and create a registry for subclasses
             if not hasattr(cls, "_classes"):
                 cls._classes = {}
@@ -49,9 +45,13 @@ def ordered(obj):
     if isinstance(obj, dict):
         return sorted((k, ordered(v)) for k, v in obj.items())
     if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
+        try:
+            return sorted(ordered(x) for x in obj)
+        except:
+            # can only happen on sort query parameter, for instance, where order matters
+            # ['title', {'category': {'order': 'desc'}}, '_score']
+            pass
+    return obj
 
 
 def equal_queries(d1, d2):

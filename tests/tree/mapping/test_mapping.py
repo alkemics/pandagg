@@ -7,8 +7,7 @@ from mock import patch
 
 from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.node.mapping.abstract import Field
-from pandagg.node.mapping.field_datatypes import Keyword, Object, Text, Nested, Integer
-from pandagg.tree.mapping import Mapping
+from pandagg.mapping import Keyword, Object, Text, Nested, Integer, Mapping
 from tests.testing_samples.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
 
 
@@ -19,14 +18,11 @@ class MappingTreeTestCase(TestCase):
      - it has the right representation.
     """
 
-    def test_node_repr(self):
-        node = Keyword(name="path.to.field", fields={"searchable": {"type": "text"}})
+    def test_keyword_with_fields(self):
+        tree = Keyword(name="path.to.field", fields={"searchable": {"type": "text"}})
         self.assertEqual(
-            node.__str__(),
-            u"""<Mapping Field path.to.field> of type keyword:
-{
-    "type": "keyword"
-}""",
+            tree.to_dict(root=False),
+            {"type": "keyword", "fields": {"searchable": {"type": "text"}}},
         )
 
     def test_deserialization(self):
@@ -57,7 +53,7 @@ class MappingTreeTestCase(TestCase):
 
         m2 = Mapping(
             dynamic=False,
-            properties={
+            properties=[
                 Keyword("classification_type", fields=[Text("raw")]),
                 Nested(
                     "local_metrics",
@@ -73,11 +69,11 @@ class MappingTreeTestCase(TestCase):
                         )
                     ],
                 ),
-            },
+            ],
         )
 
         expected_repr = """<Mapping>
-_                                                              
+_
 ├── classification_type                                       Keyword
 │   └── raw                                                 ~ Text
 └── local_metrics                                            [Nested]
@@ -129,11 +125,11 @@ _
         # resolve
         self.assertEqual(
             mapping_tree.resolve_path_to_id("classification_type"),
-            "classification_type0",
+            "classification_type1",
         )
         self.assertEqual(
             mapping_tree.resolve_path_to_id("local_metrics.dataset.support_test"),
-            "support_test23",
+            "support_test26",
         )
 
     def test_mapping_type_of_field(self):

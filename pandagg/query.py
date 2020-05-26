@@ -1,6 +1,6 @@
-from pandagg.tree.query import Query
-from pandagg.node.query.shape import Shape
-from pandagg.node.query.term_level import (
+from pandagg.tree.query.abstract import Query
+from pandagg.tree.query.shape import Shape
+from pandagg.tree.query.term_level import (
     Exists,
     Fuzzy,
     Ids,
@@ -13,7 +13,7 @@ from pandagg.node.query.term_level import (
     Type,
     Wildcard,
 )
-from pandagg.node.query.full_text import (
+from pandagg.tree.query.full_text import (
     Intervals,
     Match,
     MatchBoolPrefix,
@@ -24,16 +24,16 @@ from pandagg.node.query.full_text import (
     QueryString,
     SimpleQueryString,
 )
-from pandagg.node.query.compound import (
+from pandagg.tree.query.compound import (
     Bool,
     Boosting,
     ConstantScore,
     FunctionScore,
     DisMax,
 )
-from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
-from pandagg.node.query.geo import GeoShape, GeoPolygone, GeoDistance, GeoBoundingBox
-from pandagg.node.query.specialized import (
+from pandagg.tree.query.joining import Nested, HasChild, HasParent, ParentId
+from pandagg.tree.query.geo import GeoShape, GeoPolygone, GeoDistance, GeoBoundingBox
+from pandagg.tree.query.specialized import (
     DistanceFeature,
     MoreLikeThis,
     Percolate,
@@ -41,7 +41,7 @@ from pandagg.node.query.specialized import (
     Script,
     Wrapper,
 )
-from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
+from pandagg.tree.query.specialized_compound import ScriptScore, PinnedQuery
 
 __all__ = [
     "Query",

@@ -8,7 +8,7 @@ import pandas as pd
 from pandagg.search import Search
 from pandagg.tree.response import AggsResponseTree
 from pandagg.response import Response, Hits, Hit, Aggregations
-from pandagg.tree.aggs import Aggs
+from pandagg.tree.aggs.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
 from pandagg.utils import ordered
@@ -105,6 +105,11 @@ class ResponseTestCase(TestCase):
             r.__repr__(),
             "<Response> took 42ms, success: True, total result 34, contains 2 hits",
         )
+
+        hits = list(iter(r))
+        self.assertEqual(len(hits), 2)
+        for hit in hits:
+            self.assertIsInstance(hit, Hit)
 
 
 class AggregationsResponseTestCase(TestCase):

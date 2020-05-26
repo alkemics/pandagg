@@ -6,75 +6,19 @@ from __future__ import unicode_literals
 from builtins import str as text
 import json
 
-from lighttree import Tree
-
 from pandagg.node._node import Node
-
-try:
-    import collections.abc as collections_abc  # only works on python 3.3+
-except ImportError:
-    import collections as collections_abc
 
 
 class QueryClause(Node):
     _type_name = "query"
     KEY = None
-    _variant = None  # leaf, compound, param, parent_param
 
-    def __init__(self, _name=None, _children=None, **body):
+    def __init__(self, **body):
+        body = body.copy()
+        _name = body.pop("_name", None)
         self.body = body
         self._named = _name is not None
-        super(QueryClause, self).__init__(identifier=_name, _children=_children)
-
-    @classmethod
-    def _type_deserializer(cls, name_or_query, **params):
-        """Return:
-        - either QueryClause instance, with (if relevant) children nodes under the 'children' attribute.
-        - either Query instance if provided
-        """
-        # hack for now
-        if (
-            isinstance(name_or_query, Tree)
-            and name_or_query.__class__.__name__ == "Query"
-        ):
-            if params:
-                raise ValueError(
-                    "Cannot accept parameters when passing in a Query object."
-                )
-            return name_or_query
-
-        child_prefix = "_param_" if cls._variant == "compound" else None
-
-        # MatchAll()
-        if isinstance(name_or_query, QueryClause):
-            if params:
-                raise ValueError(
-                    "Cannot accept parameters when passing in a QueryClause object."
-                )
-            return name_or_query
-
-        # {"match": {"title": "python"}}
-        # {"filter": MatchAll()}
-        if isinstance(name_or_query, collections_abc.Mapping):
-            if params:
-                raise ValueError("Cannot accept parameters when passing in a dict.")
-            if len(name_or_query) != 1:
-                raise ValueError(
-                    'Can only accept dict with a single query ({"match": {...}}). '
-                    "Instead it got (%r)" % name_or_query
-                )
-            name, body = name_or_query.copy().popitem()
-            klass = cls.get_dsl_class(name, child_prefix)
-            if klass._variant == "param":
-                return klass(body)
-            if isinstance(body, collections_abc.Mapping):
-                return klass(**body)
-            elif isinstance(body, (tuple, list)):
-                return klass(*body)
-            return klass(body)
-
-        # "match", title="python"
-        return cls.get_dsl_class(name_or_query, child_prefix)(**params)
+        super(QueryClause, self).__init__(identifier=_name)
 
     def line_repr(self, depth, **kwargs):
         if not self.body:
@@ -167,19 +111,19 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
     q1 = Term(user={"value": "Kimchy", "boost": 1}})
     q2 = Term(field="user", value="Kimchy", boost=1}})
 
-    Can accept a "_DEFAULT_PARAM" attribute specifying which is the equivalent key when inner body isn't a dict but a
+    Can accept a "_implicit_param" attribute specifying which is the equivalent key when inner body isn't a dict but a
     raw value.
     For Term:
-    _DEFAULT_PARAM = "value"
+    _implicit_param = "value"
     q = Term(user="Kimchy")
     {"term": {"user": {"value": "Kimchy"}}}
     -> field = "user"
     -> body = {"term": {"user": {"value": "Kimchy"}}}
     """
 
-    _DEFAULT_PARAM = None
+    _implicit_param = None
 
-    def __init__(self, field=None, _name=None, **params):
+    def __init__(self, field=None, _name=None, _expand__to_dot=True, **params):
         if field is None:
             # Term(item__id=32) or Term(item__id={'value': 32, 'boost': 1})
             if len(params) != 1:
@@ -187,8 +131,11 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
                     "Invalid declaration for <%s> clause, got:\n%s"
                     % (self.__class__.__name__, params)
                 )
-            field, value = self.expand__to_dot(params).copy().popitem()
-            params = value if isinstance(value, dict) else {self._DEFAULT_PARAM: value}
+            if _expand__to_dot:
+                field, value = self.expand__to_dot(params).copy().popitem()
+            else:
+                field, value = params.copy().popitem()
+            params = value if isinstance(value, dict) else {self._implicit_param: value}
         self.inner_body = params
         super(KeyFieldQueryClause, self).__init__(
             field=field, _name=_name, **{field: params}
@@ -213,3 +160,7 @@ class MultiFieldsQueryClause(LeafQueryClause):
 
     def line_repr(self, depth, **kwargs):
         return "%s, fields=%s" % (self.KEY, list(map(text, self.fields)))
+
+
+class ParentParameterClause(QueryClause):
+    MULTIPLE = False

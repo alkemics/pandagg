@@ -2,10 +2,10 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.node.query._parameter_clause import QueryP, ScriptP, Organic, IdsP
+from pandagg.node.query._parameter_clause import QueryP, Organic
 from pandagg.node.query.full_text import Match
 from pandagg.node.query.specialized import Wrapper
-from pandagg.query import (
+from pandagg.node.query import (
     DistanceFeature,
     MoreLikeThis,
     Percolate,
@@ -113,63 +113,3 @@ class SpecializedQueriesTestCase(TestCase):
             q.line_repr(depth=None),
             'wrapper, query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="',
         )
-
-    def test_script_score_clause(self):
-        b1 = ScriptScore(
-            query=Match(field="message", value="elasticsearch"),
-            script={"source": "doc['likes'].value / 10 "},
-        )
-
-        b2 = ScriptScore(
-            query={"match": {"message": "elasticsearch"}},
-            script={"source": "doc['likes'].value / 10 "},
-        )
-
-        b3 = ScriptScore(
-            {
-                "query": {"match": {"message": "elasticsearch"}},
-                "script": {"source": "doc['likes'].value / 10 "},
-            }
-        )
-        for b in (b1, b2, b3):
-            self.assertEqual(len(b._children), 2)
-            self.assertEqual(b.line_repr(depth=None), "script_score")
-
-            query = next((c for c in b._children if isinstance(c, QueryP)))
-            self.assertEqual(query.line_repr(depth=None), "query")
-            self.assertEqual(query.body, {})
-            self.assertEqual(len(query._children), 1)
-            match = query._children[0]
-            self.assertIsInstance(match, Match)
-            self.assertEqual(match.field, "message")
-
-            script = next((c for c in b._children if isinstance(c, ScriptP)))
-            self.assertEqual(
-                script.line_repr(depth=None),
-                'script={"source": "doc[\'likes\'].value / 10 "}',
-            )
-
-    def test_pinned_query_clause(self):
-        b1 = PinnedQuery(
-            ids=[1, 23], organic=Match(field="description", value="brown shoes")
-        )
-
-        b2 = PinnedQuery(ids=[1, 23], organic={"match": {"description": "brown shoes"}})
-
-        b3 = PinnedQuery(
-            {"ids": [1, 23], "organic": {"match": {"description": "brown shoes"}}}
-        )
-        for b in (b1, b2, b3):
-            self.assertEqual(len(b._children), 2)
-            self.assertEqual(b.line_repr(depth=None), "pinned")
-
-            query = next((c for c in b._children if isinstance(c, Organic)))
-            self.assertEqual(query.line_repr(depth=None), "organic")
-            self.assertEqual(query.body, {})
-            self.assertEqual(len(query._children), 1)
-            match = query._children[0]
-            self.assertIsInstance(match, Match)
-            self.assertEqual(match.field, "description")
-
-            script = next((c for c in b._children if isinstance(c, IdsP)))
-            self.assertEqual(script.line_repr(depth=None), "ids=[1, 23]")

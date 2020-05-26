@@ -5,21 +5,18 @@ from __future__ import unicode_literals
 
 import json
 
-from future.utils import python_2_unicode_compatible
+from future.utils import python_2_unicode_compatible, iteritems, string_types
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mapping import Mapping
+from pandagg.tree.mapping.mapping import Mapping
 
 from pandagg.node.aggs.abstract import (
     BucketAggNode,
     AggNode,
     ShadowRoot,
 )
-from pandagg.node.aggs.bucket import Nested, ReverseNested
+from pandagg.node.aggs.bucket import Nested, ReverseNested, Terms
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
-
-# necessary to ensure all agg nodes are registered in meta class
-import pandagg.node.aggs.metric as metric  # noqa
 
 
 @python_2_unicode_compatible
@@ -85,14 +82,60 @@ class Aggs(Tree):
     __bool__ = __nonzero__
 
     def _fill(self, *args, **kwargs):
-        if args:
-            node_hierarchy = self.node_class._type_deserializer(*args, **kwargs)
-        elif kwargs:
-            node_hierarchy = self.node_class._type_deserializer(kwargs)
-        else:
-            return self
-        self.insert(node_hierarchy)
-        return self
+        if not args or len(args) > 2:
+            raise ValueError()
+        if len(args) == 2:
+            # Aggs("my_term_agg", "terms", field="some_field")
+            agg_name, agg_type = args
+            sub_aggs = kwargs.pop("aggs", None) or kwargs.pop("aggregations", None)
+            agg_node = self.get_node_dsl_class(agg_type)(agg_name, **kwargs)
+            self.insert_node(agg_node)
+            if sub_aggs:
+                self.insert(Aggs(sub_aggs), parent_id=agg_node.identifier)
+            return
+
+        arg = args[0]
+
+        if isinstance(arg, string_types):
+            # Aggs("classification_type") -> {"classification_type": {"terms": {"field": "classification_type"}}}
+            self.insert(Terms(arg, field=arg, **kwargs))
+            return
+
+        if kwargs:
+            raise ValueError("Unexpected kwargs %s" % kwargs)
+
+        if isinstance(arg, dict):
+            # Aggs({"my_term_agg": {"terms": {"field": "some_field"}}, "my_filters_agg": {"filters": {...}}})
+            pid = None
+            if len(arg.keys()) > 1:
+                shadow_root = ShadowRoot()
+                self.insert_node(shadow_root)
+                pid = shadow_root.identifier
+            for agg_name, v in iteritems(arg):
+                v = v.copy()
+                sub_aggs = v.pop("aggs", None) or v.pop("aggregations", None)
+                if len(v.keys()) != 1:
+                    raise ValueError("Invalid aggregation: %s" % v)
+                agg_type, agg_body = v.copy().popitem()
+                agg_node = self.get_node_dsl_class(agg_type)(agg_name, **agg_body)
+                self.insert_node(agg_node, parent_id=pid)
+                if sub_aggs:
+                    self.insert(Aggs(sub_aggs), parent_id=agg_node.identifier)
+            return
+
+        # Aggs([Terms("my_term_agg", field="some_field"), Filters(...)])
+        # Aggs(Terms("my_term_agg", field="some_field"))
+        if not isinstance(arg, (tuple, list)):
+            arg = (arg,)
+        pid = None
+        if len(arg) > 1:
+            shadow_root = ShadowRoot()
+            self.insert_node(shadow_root)
+            pid = shadow_root.identifier
+        for ar in arg:
+            if not isinstance(ar, (AggNode, Aggs)):
+                raise ValueError("Invalid type %s, %s" % (type(ar), ar))
+            self.insert(ar, parent_id=pid)
 
     def _clone_init(self, deep=False):
         return Aggs(
@@ -226,7 +269,7 @@ class Aggs(Tree):
 
         Using a Aggs object:
 
-        >>> Aggs().groupby(Aggs('terms', name='per_user_id', field='user_id'))
+        >>> Aggs().groupby(Aggs('per_user_id', 'terms', field='user_id'))
         {"terms_on_my_field":{"terms":{"field":"some_field"}}}
 
         Accepted declarations for multiple aggregations:
@@ -237,6 +280,8 @@ class Aggs(Tree):
               Parent aggregation name under which these aggregations should be placed
             * *insert_above* (``string``) --
               Aggregation name above which these aggregations should be placed
+            * *at_root* (``string``) --
+              Insert aggregations at root of aggregation query
 
             * remaining kwargs:
               Used as body in aggregation
@@ -245,15 +290,32 @@ class Aggs(Tree):
         """
         insert_below = kwargs.pop("insert_below", None)
         insert_above = kwargs.pop("insert_above", None)
-        if insert_below is not None and insert_above is not None:
+        at_root = kwargs.pop("at_root", None)
+        if (
+            sum(
+                (
+                    insert_below is not None,
+                    insert_above is not None,
+                    at_root is not None,
+                )
+            )
+            > 1
+        ):
             raise ValueError(
-                'Must define at most one of "insert_above" and "insert_below", got both.'
+                'Must define at most one of "insert_above" or "insert_below" or "at_root".'
             )
 
         new_agg = self.clone(with_tree=True)
+        if at_root is not None:
+            if not new_agg.is_empty():
+                existing_root = new_agg.get(new_agg.root)
+                if isinstance(existing_root, ShadowRoot):
+                    insert_below = existing_root.identifier
+                else:
+                    insert_above = existing_root.identifier
 
-        # groupby({}, {})
-        if len(args) > 1:
+        # groupby({}, {}), but not groupby("some_field", "terms", field="yolo")
+        if len(args) > 2 or (len(args) > 1 and not isinstance(args[0], string_types)):
             if kwargs:
                 raise ValueError(
                     "Kwargs not allowed when passing multiple aggregations in args."
@@ -339,14 +401,33 @@ class Aggs(Tree):
         :Keyword Arguments:
             * *insert_below* (``string``) --
               Parent aggregation name under which these aggregations should be placed
+            * *at_root* (``string``) --
+              Insert aggregations at root of aggregation query
 
             * remaining kwargs:
               Used as body in aggregation
 
         :rtype: pandagg.aggs.Aggs
         """
-        insert_below = self._validate_aggs_parent_id(kwargs.pop("insert_below", None))
+        insert_below = kwargs.pop("insert_below", None)
+        at_root = kwargs.pop("at_root", None)
         new_agg = self.clone(with_tree=True)
+        if at_root is None:
+            insert_below = self._validate_aggs_parent_id(insert_below)
+        else:
+            if insert_below is not None:
+                raise ValueError(
+                    "Should provide at most one of 'at_root' and 'insert_below'."
+                )
+            if not new_agg.is_empty():
+                existing_root = new_agg.get(new_agg.root)
+                if isinstance(existing_root, ShadowRoot):
+                    insert_below = existing_root.identifier
+                else:
+                    new_root = ShadowRoot()
+                    new_agg._insert_node_above(new_root, existing_root.identifier)
+                    insert_below = new_root.identifier
+
         deserialized = Aggs(*args, **kwargs)
         deserialized_root = deserialized.get(deserialized.root)
         if isinstance(deserialized_root, ShadowRoot):
@@ -386,15 +467,17 @@ class Aggs(Tree):
                 return node.path
         return None
 
-    def _insert_node_below(self, node, parent_id, with_children=True):
+    def _insert_tree_below(self, new_tree, parent_id, deep):
+        nroot = new_tree.get(new_tree.root)
+        if isinstance(nroot, ShadowRoot) and not self.is_empty():
+            return super(Aggs, self).merge(new_tree, nid=parent_id, deep=deep)
+        return super(Aggs, self)._insert_tree_below(
+            new_tree, parent_id=parent_id, deep=deep
+        )
+
+    def _insert_node_below(self, node, parent_id):
         """If mapping is provided, nested aggregations are automatically applied.
         """
-        if isinstance(node, ShadowRoot) and parent_id is not None:
-            for child in node._children or []:
-                super(Aggs, self)._insert_node_below(
-                    child, parent_id=parent_id, with_children=with_children
-                )
-            return
         # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
         if (
             isinstance(node, Nested)
@@ -402,9 +485,7 @@ class Aggs(Tree):
             or not self.mapping
             or not hasattr(node, "field")
         ):
-            return super(Aggs, self)._insert_node_below(
-                node, parent_id, with_children=with_children
-            )
+            return super(Aggs, self)._insert_node_below(node, parent_id)
 
         self.mapping.validate_agg_node(node)
 
@@ -416,9 +497,7 @@ class Aggs(Tree):
         else:
             current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
-            return super(Aggs, self)._insert_node_below(
-                node, parent_id, with_children=with_children
-            )
+            return super(Aggs, self)._insert_node_below(node, parent_id)
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s agg on %s field. Invalid nested: expected %s, current %s."
@@ -439,14 +518,12 @@ class Aggs(Tree):
             )
             if child_reverse_nested:
                 return super(Aggs, self)._insert_node_below(
-                    node, child_reverse_nested.identifier, with_children=with_children
+                    node, child_reverse_nested.identifier
                 )
             else:
                 rv_node = ReverseNested(name="reverse_nested_below_%s" % parent_id)
                 super(Aggs, self).insert_node(rv_node, parent_id)
-                return super(Aggs, self)._insert_node_below(
-                    node, rv_node.identifier, with_children=with_children
-                )
+                return super(Aggs, self)._insert_node_below(node, rv_node.identifier)
 
         # requires nested - apply all required nested fields
         for nested_lvl in reversed(self.mapping.list_nesteds_at_field(node.field)):
@@ -475,9 +552,55 @@ class Aggs(Tree):
                 nested_node = Nested(name=nested_node_name, path=nested_lvl)
                 super(Aggs, self)._insert_node_below(nested_node, parent_id)
                 parent_id = nested_node.identifier
-        super(Aggs, self)._insert_node_below(
-            node, parent_id, with_children=with_children
-        )
+        super(Aggs, self)._insert_node_below(node, parent_id)
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)
+
+
+class AbstractLeafAgg(Aggs):
+    KEY = None
+
+    """Allow following syntax::
+
+    >>> a = Avg("my_terms_agg", field="yolo")
+    """
+
+    def __init__(self, *args, **kwargs):
+        mapping = kwargs.pop("mapping", None)
+        nested_autocorrect = kwargs.pop("nested_autocorrect", None)
+        super(AbstractLeafAgg, self).__init__(
+            mapping=mapping, nested_autocorrect=nested_autocorrect
+        )
+        node = self.get_node_dsl_class(self.KEY)(*args, **kwargs)
+        self.insert_node(node)
+
+
+class AbstractParentAgg(Aggs):
+    KEY = None
+
+    """Allow following syntax::
+
+    >>> a = Terms("my_terms_agg", field="yolo", aggs={...})
+    """
+
+    def __init__(self, *args, **kwargs):
+        mapping = kwargs.pop("mapping", None)
+        nested_autocorrect = kwargs.pop("nested_autocorrect", None)
+        aggs = kwargs.pop("aggs", None)
+        super(AbstractParentAgg, self).__init__(
+            mapping=mapping, nested_autocorrect=nested_autocorrect
+        )
+        node = self.get_node_dsl_class(self.KEY)(*args, **kwargs)
+        self.insert_node(node)
+
+        if aggs:
+            if isinstance(aggs, dict):
+                self.insert(Aggs(aggs), parent_id=node.identifier)
+                return
+            if not isinstance(aggs, (list, tuple)):
+                aggs = (aggs,)
+            for agg in aggs:
+                if not isinstance(agg, (AggNode, Aggs)):
+                    raise ValueError("Unsupported type %s" % type(agg))
+                self.insert(agg, node.identifier)

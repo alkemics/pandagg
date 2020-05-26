@@ -10,7 +10,7 @@ from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
 from pandagg.node.aggs.abstract import UniqueBucketAgg, ShadowRoot
-from pandagg.tree.query import Query
+from pandagg.tree.query.abstract import Query
 
 
 class AggsResponseTree(Tree):

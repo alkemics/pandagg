@@ -6,22 +6,22 @@ class Intervals(KeyFieldQueryClause):
 
 
 class Match(KeyFieldQueryClause):
-    _DEFAULT_PARAM = "query"
+    _implicit_param = "query"
     KEY = "match"
 
 
 class MatchBoolPrefix(KeyFieldQueryClause):
-    _DEFAULT_PARAM = "query"
+    _implicit_param = "query"
     KEY = "match_bool_prefix"
 
 
 class MatchPhrase(KeyFieldQueryClause):
-    _DEFAULT_PARAM = "query"
+    _implicit_param = "query"
     KEY = "match_phrase"
 
 
 class MatchPhrasePrefix(KeyFieldQueryClause):
-    _DEFAULT_PARAM = "query"
+    _implicit_param = "query"
     KEY = "match_phrase_prefix"
 
 

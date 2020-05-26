@@ -4,34 +4,14 @@ from __future__ import unicode_literals
 
 from builtins import str as text
 
-from future.utils import python_2_unicode_compatible
+from future.utils import python_2_unicode_compatible, iteritems, string_types
+
+from pandagg.node.query._parameter_clause import ParentParameterClause
+from pandagg.node.query.abstract import QueryClause, LeafQueryClause
+from pandagg.node.query.compound import CompoundClause, Bool as BoolNode
+from pandagg.node.query.joining import Nested
 
 from pandagg.tree._tree import Tree
-
-from pandagg.node.query._parameter_clause import (
-    SimpleParameter,
-    ParameterClause,
-    ParentParameterClause,
-)
-from pandagg.node.query.abstract import QueryClause, LeafQueryClause
-from pandagg.node.query.compound import (
-    CompoundClause,
-    Bool,
-    Boosting,
-    ConstantScore,
-    DisMax,
-    FunctionScore,
-)
-from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
-from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
-
-# necessary imports to ensure all clauses are loaded
-import pandagg.node.query.full_text as full_text  # noqa
-import pandagg.node.query.geo as geo  # noqa
-import pandagg.node.query.shape as shape  # noqa
-import pandagg.node.query.span as span  # noqa
-import pandagg.node.query.specialized as specialized  # noqa
-import pandagg.node.query.term_level as term_level  # noqa
 from pandagg.tree.mapping import Mapping
 
 ADD = "add"
@@ -59,6 +39,8 @@ class Query(Tree):
           Used as body in query clauses.
     """
 
+    _type_name = "query_tree"
+    KEY = None
     node_class = QueryClause
 
     def __init__(self, *args, **kwargs):
@@ -80,27 +62,54 @@ class Query(Tree):
         )
 
     @classmethod
-    def deserialize(cls, *args, **kwargs):
-        mapping = kwargs.pop("mapping", None)
-        if len(args) == 1 and isinstance(args[0], Query):
-            return args[0]
+    def _from_dict(cls, d):
+        """return Query, from dict"""
+        # {"nested": {"path": "xxx", "query": {"term": {"some_field": "234"}}}}
+        if not len(d.keys()) == 1:
+            raise ValueError("Wrong declaration, got %s" % d.keys())
+        vk, vv = d.copy().popitem()
+        return cls._get_dsl_class_from_tree_or_node(vk, **vv)
 
-        new = cls(mapping=mapping)
-        return new._fill(*args, **kwargs)
+    @classmethod
+    def _get_dsl_class_from_tree_or_node(cls, key, **body):
+        # either a compound query clause -> search among trees
+        if key in cls._classes:
+            return cls.get_dsl_class(key)(**body)
+        # either a simple query clause -> search among nodes
+        elif key in cls.node_class._classes:
+            return Query(cls.node_class.get_dsl_class(key)(**body))
+        else:
+            raise ValueError("Unkown clause %s" % key)
 
     def _fill(self, *args, **kwargs):
-        if args:
-            if not kwargs and len(args) == 1 and args[0] is None:
-                return self
-            node_hierarchy = self.node_class._type_deserializer(*args, **kwargs)
-        elif kwargs:
-            node_hierarchy = self.node_class._type_deserializer(kwargs)
-        else:
-            return self
-        self.insert(node_hierarchy)
-        return self
+        if kwargs:
+            # only allowed when using special syntax: Query("term", my__field=23)
+            if len(args) != 1:
+                raise ValueError("Unkown syntax %s %s" % (args, kwargs))
+            arg = args[0]
+            self.insert(self._get_dsl_class_from_tree_or_node(arg, **kwargs))
+            return
 
-    def _insert_node_below(self, node, parent_id=None, with_children=True):
+        if not args:
+            return
+
+        if len(args) > 1:
+            raise ValueError("Wrong declaration")
+
+        arg = args[0]
+        # None
+        if arg is None:
+            return self
+        # Term(), Query
+        if isinstance(arg, (Query, QueryClause)):
+            return self.insert(arg)
+        # {"bool": {"filter: xxx"}}
+        if isinstance(arg, dict):
+            self.insert(self._from_dict(arg))
+            return
+        raise ValueError("Unkown declaration %s" % arg)
+
+    def _insert_node_below(self, node, parent_id=None):
         """Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent."""
         if parent_id is not None:
             pnode = self.get(parent_id)
@@ -109,45 +118,44 @@ class Query(Tree):
                     "Cannot add clause under leaf query clause <%s>" % pnode.KEY
                 )
             if isinstance(pnode, ParentParameterClause):
-                if isinstance(node, ParameterClause):
+                if isinstance(node, ParentParameterClause):
                     raise ValueError(
-                        "Cannot add parameter clause <%s> under another paramter clause <%s>"
+                        "Cannot add parameter clause <%s> under another parameter clause <%s>"
                         % (pnode.KEY, node.KEY)
                     )
             if isinstance(pnode, CompoundClause):
                 if (
-                    not isinstance(node, ParameterClause)
-                    or node.KEY not in pnode.PARAMS_WHITELIST
+                    not isinstance(node, ParentParameterClause)
+                    or node.KEY not in pnode._parent_params
                 ):
                     raise ValueError(
                         "Expect a parameter clause of type %s under <%s> compound clause, got <%s>"
-                        % (pnode.PARAMS_WHITELIST, pnode.KEY, node.KEY)
+                        % (pnode._parent_params, pnode.KEY, node.KEY)
                     )
 
         # automatic handling of nested clauses
         if isinstance(node, Nested) or not self.mapping or not hasattr(node, "field"):
-            return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id, with_children=with_children
-            )
+            return super(Query, self)._insert_node_below(node=node, parent_id=parent_id)
         required_nested_level = self.mapping.nested_at_field(node.field)
         if self.is_empty():
             current_nested_level = None
         else:
             current_nested_level = self.applied_nested_path_at_node(parent_id)
+        if current_nested_level == required_nested_level:
+            return super(Query, self)._insert_node_below(node=node, parent_id=parent_id)
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s query clause on %s field. Invalid nested: expected %s, current %s."
                 % (node.KEY, node.field, required_nested_level, current_nested_level)
             )
-        if current_nested_level == required_nested_level:
-            return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id, with_children=with_children
-            )
         # requires nested - apply all required nested fields
+        to_insert = node
         for nested_lvl in self.mapping.list_nesteds_at_field(node.field):
             if current_nested_level != nested_lvl:
-                node = Nested(path=nested_lvl, query=node)
-        super(Query, self)._insert_node_below(node, parent_id, with_children=True)
+                to_insert = self.get_dsl_class("nested")(
+                    path=nested_lvl, query=to_insert
+                )
+        super(Query, self).insert(to_insert, parent_id)
 
     def applied_nested_path_at_node(self, nid):
         # from current node to root
@@ -164,7 +172,7 @@ class Query(Tree):
             return None
         from_ = self.root if from_ is None else from_
         node = self.get(from_)
-        if isinstance(node, (LeafQueryClause, SimpleParameter)):
+        if isinstance(node, LeafQueryClause):
             return node.to_dict(with_name=True)
         serialized_children = []
         should_yield = False
@@ -174,16 +182,15 @@ class Query(Tree):
             )
             if serialized_child is not None:
                 serialized_children.append(serialized_child)
-                if not isinstance(child_node, SimpleParameter):
-                    should_yield = True
+                should_yield = True
         if not should_yield:
             return None
         if isinstance(node, CompoundClause):
             # {bool: {filter: ..., must: ...}
-            body = {k: v for d in serialized_children for k, v in d.items()}
-            if with_name and node._named:
-                body["_name"] = node.name
-            return {node.KEY: body}
+            q = node.to_dict(with_name=with_name)
+            extra_body = {k: v for d in serialized_children for k, v in d.items()}
+            q[node.KEY].update(extra_body)
+            return q
         # parent parameter clause
         # {filter: [{...}, {...}]}
         assert isinstance(node, ParentParameterClause)
@@ -198,7 +205,7 @@ class Query(Tree):
         child = kwargs.pop("child", None)
         child_param = kwargs.pop("child_param", None)
         return self._insert_into(
-            self.node_class._type_deserializer(*args, **kwargs),
+            Query(*args, **kwargs),
             parent=parent,
             child=child,
             mode=mode,
@@ -249,10 +256,12 @@ class Query(Tree):
             if q.root is None:
                 return q.insert(inserted)
             # if both initial root query and inserted one are bool, merge
-            if isinstance(q.get(q.root), Bool) and isinstance(inserted_root, Bool):
+            if isinstance(q.get(q.root), BoolNode) and isinstance(
+                inserted_root, BoolNode
+            ):
                 return q._compound_update(name=q.root, new_compound=inserted, mode=mode)
             # if only inserted node is bool, insert initial query in it
-            if isinstance(inserted_root, Bool):
+            if isinstance(inserted_root, BoolNode):
                 child_operator = inserted_root.operator(child_param)
                 child_operator_node = next(
                     (
@@ -266,7 +275,7 @@ class Query(Tree):
                     child_operator_node = child_operator()
                     inserted.insert_node(child_operator_node, parent_id=inserted.root)
                 return inserted.insert(item=q, parent_id=child_operator_node.name)
-            if isinstance(q.get(q.root), Bool):
+            if isinstance(q.get(q.root), BoolNode):
                 return q.must(
                     inserted,
                     _name=q.root,
@@ -274,7 +283,7 @@ class Query(Tree):
                     parent_param=parent_param,
                     child_param=child_param,
                 )
-            parent_param_key = Bool.operator(parent_param).KEY
+            parent_param_key = BoolNode.operator(parent_param).KEY
             return q.bool(
                 parent_param=parent_param,
                 child_param=child_param,
@@ -339,11 +348,11 @@ class Query(Tree):
             None,
         )
         if parent_operator_node is not None and not parent_operator_node.MULTIPLE:
-            if isinstance(parent_node, Bool):
+            if isinstance(parent_node, BoolNode):
                 return q.bool(must=inserted, _name=parent)
             child_node = q.children(parent_operator_node.name, id_only=False)[0]
             child = child_node.name
-            if isinstance(child_node, Bool):
+            if isinstance(child_node, BoolNode):
                 return q.bool(must=inserted, _name=child, mode=mode)
             return q.bool(must=inserted, child=child, mode=mode)
         if parent_operator_node is None:
@@ -353,37 +362,37 @@ class Query(Tree):
 
     # compound
     def bool(self, *args, **kwargs):
-        return self._compound_insert(Bool, *args, **kwargs)
+        return self._compound_insert("bool", *args, **kwargs)
 
     def boost(self, *args, **kwargs):
-        return self._compound_insert(Boosting, *args, **kwargs)
+        return self._compound_insert("boosting", *args, **kwargs)
 
     def constant_score(self, *args, **kwargs):
-        return self._compound_insert(ConstantScore, *args, **kwargs)
+        return self._compound_insert("constant_score", *args, **kwargs)
 
     def dis_max(self, *args, **kwargs):
-        return self._compound_insert(DisMax, *args, **kwargs)
+        return self._compound_insert("dis_max", *args, **kwargs)
 
     def function_score(self, *args, **kwargs):
-        return self._compound_insert(FunctionScore, *args, **kwargs)
+        return self._compound_insert("function_score", *args, **kwargs)
 
     def nested(self, *args, **kwargs):
-        return self._compound_insert(Nested, *args, **kwargs)
+        return self._compound_insert("nested", *args, **kwargs)
 
     def has_child(self, *args, **kwargs):
-        return self._compound_insert(HasChild, *args, **kwargs)
+        return self._compound_insert("has_child", *args, **kwargs)
 
     def has_parent(self, *args, **kwargs):
-        return self._compound_insert(HasParent, *args, **kwargs)
+        return self._compound_insert("has_parent", *args, **kwargs)
 
     def parent_id(self, *args, **kwargs):
-        return self._compound_insert(ParentId, *args, **kwargs)
+        return self._compound_insert("parent_id", *args, **kwargs)
 
     def script_score(self, *args, **kwargs):
-        return self._compound_insert(ScriptScore, *args, **kwargs)
+        return self._compound_insert("script_score", *args, **kwargs)
 
     def pinned_query(self, *args, **kwargs):
-        return self._compound_insert(PinnedQuery, *args, **kwargs)
+        return self._compound_insert("pinned_query", *args, **kwargs)
 
     # compound parameters
     def must(self, *args, **kwargs):
@@ -398,17 +407,16 @@ class Query(Tree):
     def filter(self, *args, **kwargs):
         return self._compound_param_insert("bool", "filter", *args, **kwargs)
 
-    def _compound_insert(self, compound_klass, *args, **kwargs):
-        _name = kwargs.pop("_name", None)
+    def _compound_insert(self, compound_key, *args, **kwargs):
         mode = kwargs.pop("mode", ADD)
         # provided parent is compound, real one is parameter
         parent = kwargs.pop("parent", None)
         parent_param = kwargs.pop("parent_param", None)
         child = kwargs.pop("child", None)
         child_param = kwargs.pop("child_param", None)
-        compound_node = compound_klass(_name=_name, *args, **kwargs)
+        compound_q = self.get_dsl_class(compound_key)(*args, **kwargs)
         return self._insert_into(
-            compound_node,
+            compound_q,
             mode=mode,
             parent=parent,
             parent_param=parent_param,
@@ -417,21 +425,48 @@ class Query(Tree):
         )
 
     def _compound_param_insert(self, method_name, param_key, *args, **kwargs):
+        """Must accept:
+        bool, must, terms, some_field=2
+        bool, must, Terms()
+        bool, must, [Terms()]
+        bool, must, {"terms": {"some_field": 2}}
+        bool, must, [{"terms": {"some_field": 2}}]
+        """
         mode = kwargs.pop("mode", ADD)
-        param_klass = self.node_class.get_dsl_class(param_key, "_param_")
         _name = kwargs.pop("_name", None)
         parent = kwargs.pop("parent", None)
         parent_param = kwargs.pop("parent_param", None)
         child = kwargs.pop("child", None)
         child_param = kwargs.pop("child_param", None)
+
+        if len(args) < 1:
+            raise ValueError("Invalid: %s %s" % (args, kwargs))
+
+        # special syntax
+        if kwargs:
+            # only allowed when using special syntax:
+            # q.must("term", my__field=23)
+            if len(args) > 1:
+                raise ValueError("Invalid: %s %s" % (args, kwargs))
+            arg = args[0]
+            if not isinstance(arg, string_types):
+                raise ValueError()
+            children = [self._get_dsl_class_from_tree_or_node(arg, **kwargs)]
+        else:
+            children = []
+            for arg in args:
+                # .must([{}, {}])
+                # .must({}, {})
+                children.extend(arg if isinstance(arg, list) else [arg])
+
         return getattr(self, method_name)(
-            param_klass(*args, **kwargs),
             mode=mode,
             _name=_name,
             parent=parent,
             parent_param=parent_param,
             child=child,
             child_param=child_param,
+            **{param_key: children}
         )
 
     def _compound_update(self, name, new_compound, mode):
@@ -489,7 +524,82 @@ class Query(Tree):
                         parent_id=existing_param.identifier,
                     )
                 continue
+
+        # update simple body parameters
+        new_compound_node = new_compound.get(new_compound.root)
+        current_root_node = self.get(self.root)
+        current_root_node.body.update(new_compound_node.body)
         return self
 
     def __str__(self):
         return "<Query>\n%s" % text(self.show())
+
+
+class Leaf(Query):
+    KEY = None
+
+    def __init__(self, *args, **kwargs):
+        mapping = kwargs.pop("mapping", None)
+        nested_autocorrect = kwargs.pop("nested_autocorrect", None)
+        super(Leaf, self).__init__(
+            mapping=mapping, nested_autocorrect=nested_autocorrect
+        )
+        node = self.get_node_dsl_class(self.KEY)(*args, **kwargs)
+        if not isinstance(node, LeafQueryClause):
+            raise ValueError("Error: not a leaf %s" % self.KEY)
+        self.insert(node)
+
+
+class Compound(Query):
+
+    KEY = None
+    _params_keys = None
+
+    def __init__(self, **kwargs):
+        mapping = kwargs.pop("mapping", None)
+        nested_autocorrect = kwargs.pop("nested_autocorrect", None)
+        super(Compound, self).__init__(
+            mapping=mapping, nested_autocorrect=nested_autocorrect
+        )
+        body = kwargs.copy()
+        extra_body = dict()
+
+        # separate body parameters with children clauses (should), from regular body parameters (minimum_should_match=1)
+        node_klass = self.get_node_dsl_class(self.KEY)
+        if not issubclass(node_klass, CompoundClause):
+            raise ValueError("Error: not a compound clause %s" % self.KEY)
+        for p_key in node_klass._parent_params:
+            p_value = body.pop(p_key, None)
+            if p_value is None:
+                continue
+            extra_body[p_key] = p_value
+
+        # insert compound node (for instance bool)
+        compound_node = node_klass(**body)
+        self.insert_node(compound_node)
+
+        for p_key, p_value in iteritems(extra_body):
+            # insert parameter (for instance must)
+            p_klass = self.get_node_dsl_class(p_key)
+            p_node = p_klass()
+            self.insert_node(p_node, parent_id=compound_node.identifier)
+
+            # atomize
+            # filter=[{}, {}], filter={}, filter=Bool(), filter=[Bool(), Term()]
+            p_values = p_value if isinstance(p_value, (list, tuple)) else (p_value,)
+            if len(p_values) > 1 and not p_klass.MULTIPLE:
+                raise ValueError(
+                    "Not possible to have multiple clauses under %s parameter."
+                    % p_klass.KEY
+                )
+
+            # deserialize
+            for v in p_values:
+                if isinstance(v, (Query, QueryClause)):
+                    self.insert(v, parent_id=p_node.identifier)
+                    continue
+                if isinstance(v, dict):
+                    t = self._from_dict(v)
+                    self.insert(t, parent_id=p_node.identifier)
+                    continue
+                raise ValueError("Unkown clause %s" % v)

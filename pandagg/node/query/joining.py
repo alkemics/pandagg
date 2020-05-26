@@ -1,37 +1,28 @@
+from pandagg.node.query.abstract import LeafQueryClause
 from pandagg.node.query.compound import CompoundClause
-from pandagg.node.query._parameter_clause import Path, QueryP
 
 
 class Nested(CompoundClause):
-    DEFAULT_OPERATOR = QueryP
-    PARAMS_WHITELIST = ["path", "query", "score_mode", "ignore_unmapped"]
+    _default_operator = "query"
+    _parent_params = ["query"]
     KEY = "nested"
 
-    def __init__(self, *args, **kwargs):
-        super(Nested, self).__init__(*args, **kwargs)
-        self.path = next(
-            (c.body["value"] for c in self._children if isinstance(c, Path))
-        )
+    def __init__(self, path, **kwargs):
+        super(Nested, self).__init__(path=path, **kwargs)
+        self.path = path
 
 
 class HasChild(CompoundClause):
-    DEFAULT_OPERATOR = QueryP
-    PARAMS_WHITELIST = [
-        "query",
-        "type",
-        "max_children",
-        "min_children",
-        "score_mode",
-        "ignore_unmapped",
-    ]
+    _default_operator = "query"
+    _parent_params = ["query"]
     KEY = "has_child"
 
 
 class HasParent(CompoundClause):
-    DEFAULT_OPERATOR = QueryP
-    PARAMS_WHITELIST = ["query", "parent_type", "score", "ignore_unmapped"]
+    _default_operator = "query"
+    _parent_params = ["query"]
     KEY = "has_parent"
 
 
-class ParentId(CompoundClause):
+class ParentId(LeafQueryClause):
     KEY = "parent_id"

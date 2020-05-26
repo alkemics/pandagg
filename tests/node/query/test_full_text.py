@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.query import (
+from pandagg.node.query import (
     Intervals,
     Match,
     MatchBoolPrefix,

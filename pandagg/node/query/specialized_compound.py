@@ -1,14 +1,13 @@
 from pandagg.node.query.compound import CompoundClause
-from pandagg.node.query._parameter_clause import Organic, QueryP
 
 
 class ScriptScore(CompoundClause):
-    DEFAULT_OPERATOR = QueryP
-    PARAMS_WHITELIST = ["query", "script", "min_score"]
+    _default_operator = "query"
+    _parent_params = ["query"]
     KEY = "script_score"
 
 
 class PinnedQuery(CompoundClause):
-    DEFAULT_OPERATOR = Organic
-    PARAMS_WHITELIST = ["ids", "organic"]
+    _default_operator = "organic"
+    _parent_params = ["organic"]
     KEY = "pinned"
