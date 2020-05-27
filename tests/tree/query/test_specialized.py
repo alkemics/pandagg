@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
 from unittest import TestCase
 
 from pandagg.query import ScriptScore, PinnedQuery, Match
@@ -31,7 +29,7 @@ class SpecializedQueriesTestCase(TestCase):
                 },
             )
             self.assertEqual(
-                b.__str__(),
+                b.__repr__(),
                 """<Query>
 script_score, script={"source": "doc['likes'].value / 10 "}
 └── query

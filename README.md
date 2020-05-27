@@ -135,7 +135,7 @@ In ***pandagg***, all **nodes** are agnostic about which are their parents/child
 of storing this structure. It is thus possible to add/update/remove aggregation **nodes** or **sub-trees** in
 specific locations of the initial **tree**, thus allowing more flexible ways to build your queries.
 
-Another difference is about how the response class. ***pandagg*** will favor "explicit" attributes and methods, rather
+Another difference is about how the response class. ***pandagg*** will favor "explicit" attributes rather
 than automatically generated attributes (except for classes whose purpose is exclusively interactive).
 
 ### Disclaimers
@@ -156,8 +156,8 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 ## Roadmap
 
 - implement CI workflow: python2/3 tests, coverage
-- documentation; explain challenges induced by nested `nodes` syntaxes: for instance why are nested query clauses
-saved in `children` attribute before tree deserialization
 - on aggregation `nodes`, ensure all allowed `fields` are listed
 - expand functionalities: proper ORM similar to elasticsearch-dsl Document classes, index managing operations
 - package versions for different ElasticSearch versions
+- composite aggregation iterator
+- clean and proper documentation

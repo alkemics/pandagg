@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
 from mock import patch
 
 from pandagg.node.query._parameter_clause import Must
@@ -608,11 +606,7 @@ bool
     def test_deserialize_dict_query(self):
         # simple leaf
         q = Query({"term": {"some_field": {"value": 2}}})
-        self.assertEqual(
-            q.show(),
-            """term, field=some_field, value=2
-""",
-        )
+        self.assertEqual(q.to_dict(), {"term": {"some_field": {"value": 2}}})
         self.assertEqual(len(q.list()), 1)
         n = q.get(q.root)
         self.assertIsInstance(n, TermNode)
@@ -620,13 +614,6 @@ bool
 
         # bool simple leaf
         q = Query({"bool": {"must_not": {"term": {"some_field": {"value": 2}}}}})
-        self.assertEqual(
-            q.show(),
-            """bool
-└── must_not
-    └── term, field=some_field, value=2
-""",
-        )
         self.assertEqual(len(q.list()), 3)
         n = q.get(q.root)
         self.assertIsInstance(n, BoolNode)
@@ -646,29 +633,19 @@ bool
                 }
             }
         )
-        self.assertEqual(
-            q.show(),
-            """bool
-└── must_not
-    ├── term, field=some_field, value=2
-    └── term, field=other_field, value=3
-""",
-        )
         self.assertEqual(len(q.list()), 4)
         n = q.get(q.root)
         self.assertIsInstance(n, BoolNode)
-        self.assertTrue(
-            equal_queries(
-                q.to_dict(),
-                {
-                    "bool": {
-                        "must_not": [
-                            {"term": {"some_field": {"value": 2}}},
-                            {"term": {"other_field": {"value": 3}}},
-                        ]
-                    }
-                },
-            )
+        self.assertQueryEqual(
+            q.to_dict(),
+            {
+                "bool": {
+                    "must_not": [
+                        {"term": {"some_field": {"value": 2}}},
+                        {"term": {"other_field": {"value": 3}}},
+                    ]
+                }
+            },
         )
 
         # nested compound queries
@@ -687,36 +664,24 @@ bool
                 }
             }
         )
-        self.assertEqual(
-            q.show(),
-            """nested, path="some_nested_path"
-└── query
-    └── bool
-        └── must_not
-            ├── term, field=some_field, value=2
-            └── term, field=other_field, value=3
-""",
-        )
         self.assertEqual(len(q.list()), 6)
         n = q.get(q.root)
         self.assertIsInstance(n, NestedNode)
-        self.assertTrue(
-            equal_queries(
-                q.to_dict(),
-                {
-                    "nested": {
-                        "path": "some_nested_path",
-                        "query": {
-                            "bool": {
-                                "must_not": [
-                                    {"term": {"some_field": {"value": 2}}},
-                                    {"term": {"other_field": {"value": 3}}},
-                                ]
-                            }
-                        },
-                    }
-                },
-            )
+        self.assertQueryEqual(
+            q.to_dict(),
+            {
+                "nested": {
+                    "path": "some_nested_path",
+                    "query": {
+                        "bool": {
+                            "must_not": [
+                                {"term": {"some_field": {"value": 2}}},
+                                {"term": {"other_field": {"value": 3}}},
+                            ]
+                        }
+                    },
+                }
+            },
         )
 
     def test_query_method(self):
