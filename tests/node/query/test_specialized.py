@@ -2,8 +2,6 @@ from __future__ import unicode_literals
 
 from unittest import TestCase
 
-from pandagg.node.query._parameter_clause import QueryP, Organic
-from pandagg.node.query.full_text import Match
 from pandagg.node.query.specialized import Wrapper
 from pandagg.node.query import (
     DistanceFeature,
@@ -11,8 +9,6 @@ from pandagg.node.query import (
     Percolate,
     RankFeature,
     Script,
-    ScriptScore,
-    PinnedQuery,
 )
 
 

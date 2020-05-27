@@ -123,14 +123,13 @@ _
             "global_metrics.non_existing_field",
         )
         # resolve
-        self.assertEqual(
-            mapping_tree.resolve_path_to_id("classification_type"),
-            "classification_type1",
-        )
-        self.assertEqual(
-            mapping_tree.resolve_path_to_id("local_metrics.dataset.support_test"),
-            "support_test26",
-        )
+        resolved = mapping_tree.resolve_path_to_id("classification_type")
+        self.assertIn("classification_type", resolved)
+        self.assertIn(resolved, mapping_tree)
+
+        resolved = mapping_tree.resolve_path_to_id("local_metrics.dataset.support_test")
+        self.assertIn("support_test", resolved)
+        self.assertIn(resolved, mapping_tree)
 
     def test_mapping_type_of_field(self):
         mapping_tree = Mapping(MAPPING)
