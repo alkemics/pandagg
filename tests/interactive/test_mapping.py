@@ -4,7 +4,6 @@
 from mock import Mock
 from unittest import TestCase
 
-from pandagg.node.mapping.abstract import Field
 from pandagg.mapping import Keyword, Text, Nested, Object, Integer
 from pandagg.tree.mapping.mapping import Mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name

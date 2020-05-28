@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from unittest import TestCase
+from tests import PandaggTestCase
 
 import pandas as pd
 
@@ -15,7 +15,7 @@ from pandagg.utils import ordered
 from tests.testing_samples.mapping_example import MAPPING
 
 
-class ResponseTestCase(TestCase):
+class ResponseTestCase(PandaggTestCase):
     def test_hit(self):
         h = Hit(
             {
@@ -112,7 +112,7 @@ class ResponseTestCase(TestCase):
             self.assertIsInstance(hit, Hit)
 
 
-class AggregationsResponseTestCase(TestCase):
+class AggregationsResponseTestCase(PandaggTestCase):
     def test_parse_as_tree(self, *_):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         response = Aggregations(
@@ -121,7 +121,7 @@ class AggregationsResponseTestCase(TestCase):
             index=None,
             client=None,
             query=None,
-        ).serialize_as_tree()
+        ).to_tree()
         self.assertIsInstance(response, AggsResponseTree)
         self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
 
@@ -133,7 +133,7 @@ class AggregationsResponseTestCase(TestCase):
             index=None,
             client=None,
             query=None,
-        ).serialize_as_normalized()
+        ).to_normalized()
         self.assertEqual(
             ordered(response), ordered(sample.EXPECTED_NORMALIZED_RESPONSE)
         )
@@ -147,7 +147,50 @@ class AggregationsResponseTestCase(TestCase):
             index=None,
             client=None,
             query=None,
-        ).serialize_as_tabular(row_as_tuple=True)
+        ).to_tabular(index_orient=True)
+
+        self.assertEqual(
+            index_names, ["classification_type", "global_metrics.field.name"]
+        )
+        self.assertEqual(
+            index_values,
+            {
+                ("multilabel", "ispracticecompatible"): {
+                    "avg_f1_micro": 0.72,
+                    "avg_nb_classes": 18.71,
+                    "doc_count": 128,
+                },
+                ("multilabel", "gpc"): {
+                    "avg_f1_micro": 0.95,
+                    "avg_nb_classes": 183.21,
+                    "doc_count": 119,
+                },
+                ("multilabel", "preservationmethods"): {
+                    "avg_f1_micro": 0.8,
+                    "avg_nb_classes": 9.97,
+                    "doc_count": 76,
+                },
+                ("multiclass", "kind"): {
+                    "avg_f1_micro": 0.89,
+                    "avg_nb_classes": 206.5,
+                    "doc_count": 370,
+                },
+                ("multiclass", "gpc"): {
+                    "avg_f1_micro": 0.93,
+                    "avg_nb_classes": 211.12,
+                    "doc_count": 198,
+                },
+            },
+        )
+
+        # index_orient = False
+        index_names, index_values = Aggregations(
+            data=sample.ES_AGG_RESPONSE,
+            aggs=my_agg,
+            index=None,
+            client=None,
+            query=None,
+        ).to_tabular(index_orient=False)
 
         self.assertEqual(
             index_names, ["classification_type", "global_metrics.field.name"]
@@ -155,26 +198,41 @@ class AggregationsResponseTestCase(TestCase):
         self.assertEqual(
             index_values,
             [
-                (
-                    ("multilabel", "ispracticecompatible"),
-                    {"avg_f1_micro": 0.72, "avg_nb_classes": 18.71, "doc_count": 128},
-                ),
-                (
-                    ("multilabel", "gpc"),
-                    {"avg_f1_micro": 0.95, "avg_nb_classes": 183.21, "doc_count": 119},
-                ),
-                (
-                    ("multilabel", "preservationmethods"),
-                    {"avg_f1_micro": 0.8, "avg_nb_classes": 9.97, "doc_count": 76},
-                ),
-                (
-                    ("multiclass", "kind"),
-                    {"avg_f1_micro": 0.89, "avg_nb_classes": 206.5, "doc_count": 370},
-                ),
-                (
-                    ("multiclass", "gpc"),
-                    {"avg_f1_micro": 0.93, "avg_nb_classes": 211.12, "doc_count": 198},
-                ),
+                {
+                    "avg_f1_micro": 0.72,
+                    "avg_nb_classes": 18.71,
+                    "classification_type": "multilabel",
+                    "doc_count": 128,
+                    "global_metrics.field.name": "ispracticecompatible",
+                },
+                {
+                    "avg_f1_micro": 0.95,
+                    "avg_nb_classes": 183.21,
+                    "classification_type": "multilabel",
+                    "doc_count": 119,
+                    "global_metrics.field.name": "gpc",
+                },
+                {
+                    "avg_f1_micro": 0.8,
+                    "avg_nb_classes": 9.97,
+                    "classification_type": "multilabel",
+                    "doc_count": 76,
+                    "global_metrics.field.name": "preservationmethods",
+                },
+                {
+                    "avg_f1_micro": 0.89,
+                    "avg_nb_classes": 206.5,
+                    "classification_type": "multiclass",
+                    "doc_count": 370,
+                    "global_metrics.field.name": "kind",
+                },
+                {
+                    "avg_f1_micro": 0.93,
+                    "avg_nb_classes": 211.12,
+                    "classification_type": "multiclass",
+                    "doc_count": 198,
+                    "global_metrics.field.name": "gpc",
+                },
             ],
         )
 
@@ -202,21 +260,18 @@ class AggregationsResponseTestCase(TestCase):
         }
         index_names, index_values = Aggregations(
             data=raw_response, aggs=my_agg, index=None, client=None, query=None,
-        ).serialize_as_tabular(row_as_tuple=True, expand_sep=" || ")
+        ).to_tabular(index_orient=True, expand_sep=" || ")
 
         self.assertEqual(index_names, [])
         self.assertEqual(
             index_values,
-            [
-                (
-                    (),
-                    {
-                        "avg_f1_score": 0.815,
-                        "classification_type || multiclass": 439,
-                        "classification_type || multilabel": 433,
-                    },
-                )
-            ],
+            {
+                (): {
+                    "avg_f1_score": 0.815,
+                    "classification_type || multiclass": 439,
+                    "classification_type || multilabel": 433,
+                }
+            },
         )
 
     def test_parse_as_dataframe(self):
@@ -227,7 +282,7 @@ class AggregationsResponseTestCase(TestCase):
             index=None,
             client=None,
             query=None,
-        ).serialize_as_dataframe()
+        ).to_dataframe()
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(
             set(df.index.names), {"classification_type", "global_metrics.field.name"}
@@ -235,24 +290,34 @@ class AggregationsResponseTestCase(TestCase):
         self.assertEqual(
             set(df.columns), {"avg_f1_micro", "avg_nb_classes", "doc_count"}
         )
-        self.assertEqual(
-            df.index.to_list(),
-            [
-                ("multilabel", "ispracticecompatible"),
-                ("multilabel", "gpc"),
-                ("multilabel", "preservationmethods"),
-                ("multiclass", "kind"),
-                ("multiclass", "gpc"),
-            ],
-        )
 
         self.assertEqual(
-            df.to_dict(orient="rows"),
-            [
-                {"avg_f1_micro": 0.72, "avg_nb_classes": 18.71, "doc_count": 128},
-                {"avg_f1_micro": 0.95, "avg_nb_classes": 183.21, "doc_count": 119},
-                {"avg_f1_micro": 0.8, "avg_nb_classes": 9.97, "doc_count": 76},
-                {"avg_f1_micro": 0.89, "avg_nb_classes": 206.5, "doc_count": 370},
-                {"avg_f1_micro": 0.93, "avg_nb_classes": 211.12, "doc_count": 198},
-            ],
+            df.to_dict(orient="index"),
+            {
+                ("multiclass", "gpc"): {
+                    "avg_f1_micro": 0.93,
+                    "avg_nb_classes": 211.12,
+                    "doc_count": 198,
+                },
+                ("multiclass", "kind"): {
+                    "avg_f1_micro": 0.89,
+                    "avg_nb_classes": 206.5,
+                    "doc_count": 370,
+                },
+                ("multilabel", "gpc"): {
+                    "avg_f1_micro": 0.95,
+                    "avg_nb_classes": 183.21,
+                    "doc_count": 119,
+                },
+                ("multilabel", "ispracticecompatible"): {
+                    "avg_f1_micro": 0.72,
+                    "avg_nb_classes": 18.71,
+                    "doc_count": 128,
+                },
+                ("multilabel", "preservationmethods"): {
+                    "avg_f1_micro": 0.8,
+                    "avg_nb_classes": 9.97,
+                    "doc_count": 76,
+                },
+            },
         )
