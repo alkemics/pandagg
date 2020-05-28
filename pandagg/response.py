@@ -7,7 +7,7 @@ import copy
 
 from builtins import str as text
 
-from future.utils import iterkeys
+from future.utils import iterkeys, iteritems
 
 from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, ShadowRoot
@@ -213,9 +213,9 @@ class Aggregations:
             return None
         return self.__aggs.get(name)
 
-    def serialize_as_tabular(
+    def to_tabular(
         self,
-        row_as_tuple=False,
+        index_orient=True,
         grouped_by=None,
         expand_columns=True,
         expand_sep="|",
@@ -240,14 +240,14 @@ class Aggregations:
             steel       blue      1      9     0
                         red       23     4     2
 
-        :param row_as_tuple: if True, level-key samples are returned as tuples, else in a dictionnary
+        :param index_orient: if True, level-key samples are returned as tuples, else in a dictionnary
         :param grouped_by: name of the aggregation node used as last grouping level
         :param normalize: if True, normalize columns buckets
         :return: index, index_names, values
         """
         grouping_agg = self._grouping_agg(grouped_by)
         if grouping_agg is None:
-            index_values = [(tuple() if row_as_tuple else dict(), self.data)]
+            index_values = [(tuple() if index_orient else dict(), self.data)]
             index_names = []
         else:
             index_names = [
@@ -261,7 +261,7 @@ class Aggregations:
             index_values = list(
                 self._parse_group_by(
                     response=self.data,
-                    row_as_tuple=row_as_tuple,
+                    row_as_tuple=index_orient,
                     until=grouping_agg.name,
                     with_single_bucket_groups=with_single_bucket_groups,
                 )
@@ -269,22 +269,34 @@ class Aggregations:
             if not index_values:
                 return [], []
 
-        rows = [
-            (
-                row_index,
-                self.serialize_columns(
+        if index_orient:
+            rows = {
+                row_index: self._serialize_columns(
                     row_values,
                     normalize=normalize,
                     total_agg=grouping_agg,
                     expand_columns=expand_columns,
                     expand_sep=expand_sep,
-                ),
-            )
-            for row_index, row_values in index_values
-        ]
+                )
+                for row_index, row_values in index_values
+            }
+        else:
+            rows = [
+                dict(
+                    row_index,
+                    **self._serialize_columns(
+                        row_values,
+                        normalize=normalize,
+                        total_agg=grouping_agg,
+                        expand_columns=expand_columns,
+                        expand_sep=expand_sep,
+                    )
+                )
+                for row_index, row_values in index_values
+            ]
         return index_names, rows
 
-    def serialize_columns(
+    def _serialize_columns(
         self, row_data, normalize, expand_columns, expand_sep, total_agg=None
     ):
         # extract value (usually 'doc_count') of grouping agg node
@@ -316,7 +328,7 @@ class Aggregations:
                 result[child.name] = row_data[child.name]
         return result
 
-    def serialize_as_dataframe(
+    def to_dataframe(
         self, grouped_by=None, normalize_children=True, with_single_bucket_groups=False
     ):
         try:
@@ -326,13 +338,13 @@ class Aggregations:
                 'Using dataframe output format requires to install pandas. Please install "pandas" or '
                 "use another output format."
             )
-        index_names, index_values = self.serialize_as_tabular(
-            row_as_tuple=True,
+        index_names, rows = self.to_tabular(
+            index_orient=True,
             grouped_by=grouped_by,
             normalize=normalize_children,
             with_single_bucket_groups=with_single_bucket_groups,
         )
-        index, values = zip(*index_values)
+        index, values = zip(*iteritems(rows))
         if not index:
             return pd.DataFrame()
         if len(index[0]) == 0:
@@ -341,43 +353,43 @@ class Aggregations:
             index = pd.MultiIndex.from_tuples(index, names=index_names)
         return pd.DataFrame(index=index, data=values)
 
-    def serialize_as_normalized(self):
+    def to_normalized(self):
         children = []
         for k in sorted(iterkeys(self.data)):
             for child in self._normalize_buckets(self.data, k):
                 children.append(child)
         return {"level": "root", "key": None, "value": None, "children": children}
 
-    def serialize_as_tree(self):
+    def to_tree(self):
         return AggsResponseTree(aggs=self.__aggs, index=self.__index).parse(self.data)
 
-    def serialize_as_interactive_tree(self):
+    def to_interactive_tree(self):
         return IResponse(
-            tree=self.serialize_as_tree(),
+            tree=self.to_tree(),
             index_name=self.__index,
             query=self.__query,
             client=self.__client,
             depth=1,
         )
 
-    def serialize(self, output="dataframe", **kwargs):
+    def serialize(self, output="tabular", **kwargs):
         """
-        :param output: output format, one of "raw", "tree", "normalized_tree", "dict_rows", "dataframe"
-        :param kwargs: serialization kwargs
+        :param output: output format, one of "raw", "tree", "interactive_tree", "normalized", "tabular", "dataframe"
+        :param kwargs: tabular serialization kwargs
         :return:
         """
         if output == "raw":
             return self.data
         elif output == "tree":
-            return self.serialize_as_tree()
+            return self.to_tree()
         elif output == "interactive_tree":
-            return self.serialize_as_interactive_tree()
-        elif output == "normalized_tree":
-            return self.serialize_as_normalized()
-        elif output == "dict_rows":
-            return self.serialize_as_tabular(**kwargs)
+            return self.to_interactive_tree()
+        elif output == "normalized":
+            return self.to_normalized()
+        elif output == "tabular":
+            return self.to_tabular(**kwargs)
         elif output == "dataframe":
-            return self.serialize_as_dataframe(**kwargs)
+            return self.to_dataframe(**kwargs)
         else:
             raise NotImplementedError("Unkown %s output format." % output)
 
