@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+try:
+    # python 2
+    from StringIO import StringIO
+except ImportError:
+    # python 3
+    from io import StringIO
+
+import sys
+
 from mock import Mock
 from unittest import TestCase
 
@@ -37,8 +46,15 @@ _
 └── support_train                                             Integer
 """,
         )
+        # capture print statement
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # what triggers print
+        dataset()
+        # restore stout
+        sys.stdout = sys.__stdout__
         self.assertEqual(
-            dataset(),
+            captured_output.getvalue(),
             """{
   "dynamic": false,
   "properties": {
@@ -49,7 +65,8 @@ _
       "type": "integer"
     }
   }
-}""",
+}
+""",
         )
 
     def test_imapping_init(self):

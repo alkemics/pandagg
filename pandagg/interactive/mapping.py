@@ -8,7 +8,8 @@ from pandagg.interactive._field_agg_factory import field_classes_per_name
 
 
 class IMapping(TreeBasedObj):
-    """Interactive wrapper upon mapping tree.
+    """Interactive wrapper upon mapping tree, allowing field navigation and quick access to single clause aggregations
+    computation.
     """
 
     _NODE_PATH_ATTR = "name"
@@ -48,9 +49,9 @@ class IMapping(TreeBasedObj):
                 )
 
     def __call__(self, *args, **kwargs):
-        return json.dumps(
+        print(json.dumps(
             self._tree.to_dict(root=False),
             indent=2,
             sort_keys=True,
             separators=(",", ": "),
-        )
+        ))
