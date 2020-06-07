@@ -13,37 +13,34 @@ from pandagg.mapping import (
 
 index_name = "movies"
 mapping = Mapping(
-    properties=[
-        Keyword("movie_id"),
-        Text("name", fields=Keyword("raw")),
-        Integer("year"),
-        Float("rank"),
-        Keyword("genres"),
-        Nested(
-            "roles",
-            properties=[
-                Keyword("role"),
-                Keyword("actor_id"),
-                Keyword("gender"),
-                Text("first_name", fields=Keyword("raw")),
-                Text("last_name", fields=Keyword("raw")),
-                Text("full_name", fields=Keyword("raw")),
-            ],
+    properties={
+        "movie_id": Keyword(),
+        "name": Text(fields={"raw": Keyword()}),
+        "year": Integer(),
+        "rank": Float(),
+        "genres": Keyword(),
+        "roles": Nested(
+            properties={
+                "role": Keyword(),
+                "actor_id": Keyword(),
+                "gender": Keyword(),
+                "first_name": Text(fields={"raw": Keyword()}),
+                "last_name": Text(fields={"raw": Keyword()}),
+                "full_name": Text(fields={"raw": Keyword()}),
+            }
         ),
-        Nested(
-            "directors",
-            properties=[
-                Keyword("role"),
-                Keyword("director_id"),
-                Keyword("gender"),
-                Text("first_name", fields=Keyword("raw")),
-                Text("last_name", fields=Keyword("raw")),
-                Text("full_name", fields=Keyword("raw")),
-            ],
+        "directors": Nested(
+            properties={
+                "director_id": Keyword(),
+                "first_name": Text(fields={"raw": Keyword()}),
+                "last_name": Text(fields={"raw": Keyword()}),
+                "full_name": Text(fields={"raw": Keyword()}),
+                "genres": Keyword(),
+            }
         ),
-        Integer("nb_directors"),
-        Integer("nb_roles"),
-    ]
+        "nb_directors": Integer(),
+        "nb_roles": Integer(),
+    }
 ).to_dict()
 
 

@@ -19,11 +19,13 @@ class MappingTreeTestCase(TestCase):
     """
 
     def test_keyword_with_fields(self):
-        tree = Keyword(name="path.to.field", fields={"searchable": {"type": "text"}})
-        self.assertEqual(
-            tree.to_dict(root=False),
-            {"type": "keyword", "fields": {"searchable": {"type": "text"}}},
-        )
+        unnamed_field = Keyword(fields={"searchable": {"type": "text"}}, fielddata=True)
+        self.assertEqual(unnamed_field.body, {"fielddata": True})
+        self.assertEqual(unnamed_field.fields, {"searchable": {"type": "text"}})
+        named_field = unnamed_field.to_named_field(name="path.to.field")
+        self.assertIsInstance(named_field, Field)
+        self.assertEqual(named_field.KEY, "keyword")
+        self.assertEqual(named_field.body, {"fielddata": True, "type": "keyword"})
 
     def test_deserialization(self):
         mapping_dict = {
@@ -53,24 +55,24 @@ class MappingTreeTestCase(TestCase):
 
         m2 = Mapping(
             dynamic=False,
-            properties=[
-                Keyword("classification_type", fields=[Text("raw")]),
-                Nested(
-                    "local_metrics",
+            properties={
+                "classification_type": Keyword(fields={"raw": Text()}),
+                "local_metrics": Nested(
                     dynamic=False,
-                    properties=[
-                        Object(
-                            "dataset",
+                    properties={
+                        "dataset": Object(
                             dynamic=False,
-                            properties=[
-                                Integer("support_test"),
-                                Integer("support_train"),
-                            ],
+                            properties={
+                                "support_test": Integer(),
+                                "support_train": Integer(),
+                            },
                         )
-                    ],
+                    },
                 ),
-            ],
+            },
         )
+
+        m3 = Mapping(m1)
 
         expected_repr = """<Mapping>
 _
@@ -81,9 +83,13 @@ _
         ├── support_test                                      Integer
         └── support_train                                     Integer
 """
-        for i, m in enumerate((m1, m2,)):
+        for i, m in enumerate((m1, m2, m3)):
             self.assertEqual(m.__repr__(), expected_repr, "failed at m%d" % (i + 1))
             self.assertEqual(m.to_dict(), mapping_dict, "failed at m%d" % (i + 1))
+
+    def test_mapping_node(self):
+        m = Mapping(None)
+        self.assertTrue(m.is_empty())
 
     def test_parse_tree_from_dict(self):
         mapping_tree = Mapping(MAPPING)

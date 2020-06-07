@@ -23,15 +23,13 @@ class DslMeta(type):
         if not hasattr(cls, "_type_name") or cls._type_name is None:
             return
 
-        key = cls.KEY
-
-        if key is None:
+        if cls.KEY is None:
             # and create a registry for subclasses
             if not hasattr(cls, "_classes"):
                 cls._classes = {}
-        elif key not in cls._classes:
+        elif cls.KEY not in cls._classes:
             # normal class, register it
-            cls._classes[key] = cls
+            cls._classes[cls.KEY] = cls
 
     @classmethod
     def get_dsl_type(cls, name):
