@@ -39,6 +39,15 @@ class DslMeta(type):
             raise ValueError("DSL type %s does not exist." % name)
 
 
+def get_dsl_class(cls, name):
+    try:
+        return cls._classes[name]
+    except KeyError:
+        raise NotImplementedError(
+            "DSL class `{}` does not exist in {}.".format(name, cls._type_name)
+        )
+
+
 def ordered(obj):
     if isinstance(obj, dict):
         return sorted((k, ordered(v)) for k, v in obj.items())

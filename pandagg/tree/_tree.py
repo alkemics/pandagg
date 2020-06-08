@@ -9,7 +9,7 @@ from builtins import str as text
 from lighttree import Tree as OriginalTree
 from six import add_metaclass
 
-from pandagg.utils import DslMeta
+from pandagg.utils import DslMeta, get_dsl_class
 
 
 @python_2_unicode_compatible
@@ -19,14 +19,7 @@ class Tree(OriginalTree):
     KEY = None
     _type_name = None
 
-    @classmethod
-    def get_dsl_class(cls, name):
-        try:
-            return cls._classes[name]
-        except KeyError:
-            raise NotImplementedError(
-                "DSL class `{}` does not exist in {}.".format(name, cls._type_name)
-            )
+    get_dsl_class = classmethod(get_dsl_class)
 
     @classmethod
     def get_node_dsl_class(cls, name):

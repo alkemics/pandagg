@@ -8,7 +8,7 @@ from builtins import str as text
 from six import add_metaclass
 
 from pandagg.node._node import Node
-from pandagg.utils import DslMeta
+from pandagg.utils import DslMeta, get_dsl_class
 
 
 @add_metaclass(DslMeta)
@@ -22,14 +22,7 @@ class UnnamedField:
     def to_named_field(self, name, _subfield=False):
         return Field(name, self.KEY, _subfield=_subfield, **self.body)
 
-    @classmethod
-    def get_dsl_class(cls, name):
-        try:
-            return cls._classes[name]
-        except KeyError:
-            raise NotImplementedError(
-                "DSL class `{}` does not exist in {}.".format(name, cls._type_name)
-            )
+    get_dsl_class = classmethod(get_dsl_class)
 
 
 class UnnamedComplexField(UnnamedField):
