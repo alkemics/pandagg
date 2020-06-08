@@ -8,7 +8,7 @@ from future.utils import string_types
 from pandagg.connections import get_connection
 from pandagg.query import Bool
 from pandagg.response import Response
-from pandagg.tree.mapping.mapping import Mapping
+from pandagg.tree.mapping import Mapping
 from pandagg.tree.query.abstract import Query
 from pandagg.tree.aggs.aggs import Aggs
 
@@ -95,7 +95,7 @@ class Request(object):
 
 
 class Search(Request):
-    def __init__(self, using=None, index=None, mapping=None):
+    def __init__(self, using=None, index=None, mapping=None, nested_autocorrect=False):
         """
         Search request to elasticsearch.
 
@@ -115,9 +115,11 @@ class Search(Request):
         self._script_fields = {}
         mapping = Mapping(mapping)
         self._mapping = mapping
-        self._aggs = Aggs(mapping=mapping)
-        self._query = Query(mapping=mapping)
-        self._post_filter = Query(mapping=mapping)
+        self._aggs = Aggs(mapping=mapping, nested_autocorrect=nested_autocorrect)
+        self._query = Query(mapping=mapping, nested_autocorrect=nested_autocorrect)
+        self._post_filter = Query(
+            mapping=mapping, nested_autocorrect=nested_autocorrect
+        )
         super(Search, self).__init__(using=using, index=index)
 
     def query(self, *args, **kwargs):

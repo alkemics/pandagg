@@ -1,11 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+try:
+    # python 2
+    from StringIO import StringIO
+except ImportError:
+    # python 3
+    from io import StringIO
+
+import sys
+
 from mock import Mock
 from unittest import TestCase
 
 from pandagg.mapping import Keyword, Text, Nested, Object, Integer
-from pandagg.tree.mapping.mapping import Mapping
+from pandagg.tree.mapping import Mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.interactive.mapping import IMapping
 
@@ -31,14 +40,21 @@ class IMappingTestCase(TestCase):
         dataset = mapping.global_metrics.dataset
         self.assertEqual(
             dataset.__repr__(),
-            """<IMapping subpart: global_metrics.dataset>
-_
+            """<Mapping subpart: global_metrics.dataset>
+dataset                                                      {Object}
 ├── nb_classes                                                Integer
 └── support_train                                             Integer
 """,
         )
+        # capture print statement
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # what triggers print
+        dataset()
+        # restore stout
+        sys.stdout = sys.__stdout__
         self.assertEqual(
-            dataset(),
+            captured_output.getvalue(),
             """{
   "dynamic": false,
   "properties": {
@@ -49,7 +65,8 @@ _
       "type": "integer"
     }
   }
-}""",
+}
+""",
         )
 
     def test_imapping_init(self):
@@ -88,23 +105,21 @@ _
 
         # from nodes
         im3 = IMapping(
-            properties=[
-                Keyword("classification_type", fields=[Text("raw")]),
-                Nested(
-                    "local_metrics",
+            properties={
+                "classification_type": Keyword(fields={"raw": Text()}),
+                "local_metrics": Nested(
                     dynamic=False,
-                    properties=[
-                        Object(
-                            "dataset",
+                    properties={
+                        "dataset": Object(
                             dynamic=False,
-                            properties=[
-                                Integer("support_test"),
-                                Integer("support_train"),
-                            ],
+                            properties={
+                                "support_test": Integer(),
+                                "support_train": Integer(),
+                            },
                         )
-                    ],
+                    },
                 ),
-            ],
+            },
             dynamic=False,
             client=client_mock,
             index=index_name,
@@ -114,7 +129,7 @@ _
             self.assertEqual(m._index, index_name)
             self.assertIs(m._client, client_mock)
 
-    def test_client_bound(self):
+    def test_quick_agg(self):
         """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
         aggregations on that field type.
         """
@@ -144,7 +159,7 @@ _
 
         workflow_field = client_bound_mapping.workflow
         self.assertTrue(hasattr(workflow_field, "a"))
-        # workflow type is String
+        # workflow type is keyword
         self.assertIsInstance(workflow_field.a, field_classes_per_name["keyword"])
 
         response = workflow_field.a.terms(
@@ -160,6 +175,59 @@ _
         client_mock.search.assert_called_with(
             body={
                 "aggs": {"terms_agg": {"terms": {"field": "workflow", "size": 20}}},
+                "size": 0,
+                "query": {"term": {"classification_type": "multiclass"}},
+            },
+            index="classification_report_index_name",
+        )
+
+    def test_quick_agg_nested(self):
+        """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
+        aggregations on that field type, applying nested if necessary.
+        """
+        client_mock = Mock(spec=["search"])
+        es_response_mock = {
+            "_shards": {"failed": 0, "successful": 135, "total": 135},
+            "aggregations": {"local_metrics": {"avg_agg": {"value": 23},},},
+            "hits": {"hits": [], "max_score": 0.0, "total": 300},
+            "timed_out": False,
+            "took": 30,
+        }
+        client_mock.search = Mock(return_value=es_response_mock)
+
+        mapping_tree = Mapping(MAPPING)
+        client_bound_mapping = IMapping(
+            mapping_tree, client=client_mock, index="classification_report_index_name",
+        )
+
+        local_train_support = client_bound_mapping.local_metrics.dataset.support_train
+        self.assertTrue(hasattr(local_train_support, "a"))
+        self.assertIsInstance(local_train_support.a, field_classes_per_name["integer"])
+
+        response = local_train_support.a.avg(
+            size=20,
+            raw_output=True,
+            query={"term": {"classification_type": "multiclass"}},
+        )
+        self.assertEqual(
+            response, [(None, {"value": 23}),],
+        )
+        client_mock.search.assert_called_once()
+        client_mock.search.assert_called_with(
+            body={
+                "aggs": {
+                    "local_metrics": {
+                        "nested": {"path": "local_metrics"},
+                        "aggs": {
+                            "avg_agg": {
+                                "avg": {
+                                    "field": "local_metrics.dataset.support_train",
+                                    "size": 20,
+                                }
+                            }
+                        },
+                    }
+                },
                 "size": 0,
                 "query": {"term": {"classification_type": "multiclass"}},
             },

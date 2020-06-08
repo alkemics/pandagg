@@ -1,207 +1,205 @@
 """https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html"""
 
-from .abstract import Field, ComplexField, NumericField
+from .abstract import UnnamedComplexField, UnnamedRegularField
 
 
 # CORE DATATYPES
 # string
-class Text(Field):
+class Text(UnnamedRegularField):
     KEY = "text"
 
 
-class Keyword(Field):
+class Keyword(UnnamedRegularField):
     KEY = "keyword"
 
 
 # numeric
-class Long(NumericField):
+class Long(UnnamedRegularField):
     KEY = "long"
 
 
-class Integer(NumericField):
+class Integer(UnnamedRegularField):
     KEY = "integer"
 
 
-class Short(NumericField):
+class Short(UnnamedRegularField):
     KEY = "short"
 
 
-class Byte(NumericField):
+class Byte(UnnamedRegularField):
     KEY = "byte"
 
 
-class Double(NumericField):
+class Double(UnnamedRegularField):
     KEY = "double"
 
 
-class Float(NumericField):
+class Float(UnnamedRegularField):
     KEY = "float"
 
 
-class HalfFloat(NumericField):
+class HalfFloat(UnnamedRegularField):
     KEY = "half_float"
 
 
-class ScaledFloat(NumericField):
+class ScaledFloat(UnnamedRegularField):
     KEY = "scaled_float"
 
 
 # date
-class Date(NumericField):
+class Date(UnnamedRegularField):
     KEY = "date"
 
 
-class DateNanos(NumericField):
+class DateNanos(UnnamedRegularField):
     KEY = "date_nanos"
 
 
 # boolean
-class Boolean(NumericField):
+class Boolean(UnnamedRegularField):
     KEY = "boolean"
 
 
 # binary
-class Binary(Field):
+class Binary(UnnamedRegularField):
     KEY = "binary"
 
 
 # range
-class IntegerRange(Field):
+class IntegerRange(UnnamedRegularField):
     KEY = "integer_range"
 
 
-class FloatRange(Field):
+class FloatRange(UnnamedRegularField):
     KEY = "float_range"
 
 
-class LongRange(Field):
+class LongRange(UnnamedRegularField):
     KEY = "long_range"
 
 
-class DoubleRange(Field):
+class DoubleRange(UnnamedRegularField):
     KEY = "double_range"
 
 
-class DateRange(Field):
+class DateRange(UnnamedRegularField):
     KEY = "date_range"
 
 
 # COMPLEX DATATYPES
-class Object(ComplexField):
+class Object(UnnamedComplexField):
     KEY = "object"
-    _display_pattern = " {%s}"
 
 
-class Nested(ComplexField):
+class Nested(UnnamedComplexField):
     KEY = "nested"
-    _display_pattern = " [%s]"
 
 
 # GEO DATATYPES
-class GeoPoint(Field):
+class GeoPoint(UnnamedRegularField):
     """For lat/lon points"""
 
     KEY = "geo_point"
 
 
-class GeoShape(Field):
+class GeoShape(UnnamedRegularField):
     """For complex shapes like polygons"""
 
     KEY = "geo_shape"
 
 
 # SPECIALIZED DATATYPES
-class IP(Field):
+class IP(UnnamedRegularField):
     """for IPv4 and IPv6 addresses"""
 
     KEY = "IP"
 
 
-class Completion(Field):
+class Completion(UnnamedRegularField):
     """To provide auto-complete suggestions"""
 
     KEY = "completion"
 
 
-class TokenCount(Field):
+class TokenCount(UnnamedRegularField):
     """To count the number of tokens in a string"""
 
     KEY = "token_count"
 
 
-class MapperMurMur3(Field):
+class MapperMurMur3(UnnamedRegularField):
     """To compute hashes of values at index-time and store them in the index"""
 
     KEY = "murmur3"
 
 
-class MapperAnnotatedText(Field):
+class MapperAnnotatedText(UnnamedRegularField):
     """To index text containing special markup (typically used for identifying named entities)"""
 
     KEY = "annotated-text"
 
 
-class Percolator(Field):
+class Percolator(UnnamedRegularField):
     """Accepts queries from the query-dsl"""
 
     KEY = "percolator"
 
 
-class Join(Field):
+class Join(UnnamedRegularField):
     """Defines parent/child relation for documents within the same index"""
 
     KEY = "join"
 
 
-class RankFeature(Field):
+class RankFeature(UnnamedRegularField):
     """Record numeric feature to boost hits at query time."""
 
     KEY = "rank_feature"
 
 
-class RankFeatures(Field):
+class RankFeatures(UnnamedRegularField):
     """Record numeric features to boost hits at query time."""
 
     KEY = "rank_features"
 
 
-class DenseVector(Field):
+class DenseVector(UnnamedRegularField):
     """Record dense vectors of float values."""
 
     KEY = "dense_vector"
 
 
-class SparseVector(Field):
+class SparseVector(UnnamedRegularField):
     """Record sparse vectors of float values."""
 
     KEY = "sparse_vector"
 
 
-class SearchAsYouType(Field):
+class SearchAsYouType(UnnamedRegularField):
     """A text-like field optimized for queries to implement as-you-type completion"""
 
     KEY = "search_as_you_type"
 
 
-class Alias(Field):
+class Alias(UnnamedRegularField):
     """Defines an alias to an existing field."""
 
     KEY = "alias"
 
 
-class Flattened(Field):
+class Flattened(UnnamedRegularField):
     """Allows an entire JSON object to be indexed as a single field."""
 
     KEY = "flattened"
 
 
-class Shape(Field):
+class Shape(UnnamedRegularField):
     """For arbitrary cartesian geometries."""
 
     KEY = "shape"
 
 
-class Histogram(Field):
+class Histogram(UnnamedRegularField):
     """For pre-aggregated numerical values for percentiles aggregations."""
 
     KEY = "histogram"

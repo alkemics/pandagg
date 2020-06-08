@@ -10,7 +10,7 @@ from future.utils import iteritems
 from lighttree import Node as OriginalNode
 from six import add_metaclass
 
-from pandagg.utils import DslMeta
+from pandagg.utils import DslMeta, get_dsl_class
 
 
 @add_metaclass(DslMeta)
@@ -33,14 +33,7 @@ class Node(OriginalNode):
     def _craft_identifier(self):
         return "%s%s" % (self._identifier_prefix, text(uuid.uuid4())[: self.NID_SIZE])
 
-    @classmethod
-    def get_dsl_class(cls, name):
-        try:
-            return cls._classes[name]
-        except KeyError:
-            raise NotImplementedError(
-                "DSL class `{}` does not exist in {}.".format(name, cls._type_name)
-            )
+    get_dsl_class = classmethod(get_dsl_class)
 
     @staticmethod
     def expand__to_dot(params):

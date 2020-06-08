@@ -11,6 +11,7 @@ from future.utils import iterkeys, iteritems
 
 from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, ShadowRoot
+from pandagg.node.aggs.bucket import Nested
 from pandagg.tree.response import AggsResponseTree
 
 
@@ -195,7 +196,9 @@ class Aggregations:
             yield result
 
     def _grouping_agg(self, name=None):
-        """Return aggregation node that used as grouping node."""
+        """Return aggregation node that used as grouping node.
+        Note: in case there is only a nested aggregation below that node, groupby nested clause.
+        """
         # if provided
         if name is not None:
             if name not in self.__aggs:
@@ -204,7 +207,13 @@ class Aggregations:
                 raise ValueError(
                     "Cannot group by <%s>, not a valid grouping aggregation" % name
                 )
-            return self.__aggs.get(name)
+            # if parent of single nested clause and nested_autocorrect
+            node = self.__aggs.get(name)
+            if self.__aggs.nested_autocorrect:
+                children = self.__aggs.children(node.identifier, id_only=False)
+                if len(children) == 1 and isinstance(children[0], Nested):
+                    return children[0]
+            return node
 
         if isinstance(self.__aggs.get(self.__aggs.root), ShadowRoot):
             return None

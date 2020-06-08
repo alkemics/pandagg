@@ -6,7 +6,6 @@ from pandagg.mapping import (
     Mapping,
     Keyword,
     Text,
-    Date,
     Float,
     Nested,
     Integer,
@@ -14,39 +13,34 @@ from pandagg.mapping import (
 
 index_name = "movies"
 mapping = Mapping(
-    properties=[
-        Keyword("movie_id"),
-        Text("name", fields=Keyword("raw")),
-        Date("year"),
-        Float("rank"),
-        Keyword("genres"),
-        Nested(
-            "roles",
-            properties=[
-                Keyword("role"),
-                Keyword("actor_id"),
-                Keyword("gender"),
-                Text("first_name", copy_to="roles.full_name", fields=Keyword("raw")),
-                Text("last_name", copy_to="roles.full_name", fields=Keyword("raw")),
-                Text("full_name"),
-            ],
+    properties={
+        "movie_id": Keyword(),
+        "name": Text(fields={"raw": Keyword()}),
+        "year": Integer(),
+        "rank": Float(),
+        "genres": Keyword(),
+        "roles": Nested(
+            properties={
+                "role": Keyword(),
+                "actor_id": Keyword(),
+                "gender": Keyword(),
+                "first_name": Text(fields={"raw": Keyword()}),
+                "last_name": Text(fields={"raw": Keyword()}),
+                "full_name": Text(fields={"raw": Keyword()}),
+            }
         ),
-        Nested(
-            "directors",
-            properties=[
-                Keyword("role"),
-                Keyword("director_id"),
-                Keyword("gender"),
-                Text(
-                    "first_name", copy_to="directors.full_name", fields=Keyword("raw")
-                ),
-                Text("last_name", copy_to="directors.full_name", fields=Keyword("raw")),
-                Text("full_name"),
-            ],
+        "directors": Nested(
+            properties={
+                "director_id": Keyword(),
+                "first_name": Text(fields={"raw": Keyword()}),
+                "last_name": Text(fields={"raw": Keyword()}),
+                "full_name": Text(fields={"raw": Keyword()}),
+                "genres": Keyword(),
+            }
         ),
-        Integer("nb_directors"),
-        Integer("nb_roles"),
-    ]
+        "nb_directors": Integer(),
+        "nb_roles": Integer(),
+    }
 ).to_dict()
 
 
@@ -68,10 +62,14 @@ def bulk_index(client, docs):
 if __name__ == "__main__":
     es_client = Elasticsearch(hosts=[ES_HOST])
 
-    if not es_client.indices.exists(index=index_name):
+    if es_client.indices.exists(index=index_name):
         print("-" * 50)
-        print("CREATE INDEX\n")
-        es_client.indices.create(index_name)
+        print("DELETE INDEX\n")
+        es_client.indices.delete(index=index_name)
+
+    print("-" * 50)
+    print("CREATE INDEX\n")
+    es_client.indices.create(index_name)
     print("-" * 50)
     print("UPDATE MAPPING\n")
     es_client.indices.put_mapping(index=index_name, body=mapping)

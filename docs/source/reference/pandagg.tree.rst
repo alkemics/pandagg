@@ -8,7 +8,6 @@ Subpackages
    :maxdepth: 8
 
    pandagg.tree.aggs
-   pandagg.tree.mapping
    pandagg.tree.query
 
 Submodules
@@ -17,6 +16,7 @@ Submodules
 .. toctree::
    :maxdepth: 8
 
+   pandagg.tree.mapping
    pandagg.tree.response
 
 Module contents

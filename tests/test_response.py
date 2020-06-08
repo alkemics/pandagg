@@ -321,3 +321,29 @@ class AggregationsResponseTestCase(PandaggTestCase):
                 },
             },
         )
+
+    def test_grouping_agg(self):
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        agg_response = Aggregations(
+            data=sample.ES_AGG_RESPONSE,
+            aggs=my_agg,
+            index=None,
+            client=None,
+            query=None,
+        )
+
+        # none provided
+        self.assertEqual(
+            agg_response._grouping_agg().identifier, "global_metrics.field.name"
+        )
+        # fake provided
+        with self.assertRaises(ValueError):
+            agg_response._grouping_agg("yolo")
+        # not bucket provided
+        with self.assertRaises(ValueError):
+            agg_response._grouping_agg("avg_f1_micro")
+        # real provided
+        self.assertEqual(
+            agg_response._grouping_agg("global_metrics.field.name").identifier,
+            "global_metrics.field.name",
+        )

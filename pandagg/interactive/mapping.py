@@ -3,14 +3,16 @@
 import json
 
 from lighttree import TreeBasedObj
-from pandagg.tree.mapping.mapping import Mapping
+from pandagg.tree.mapping import Mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 
 
 class IMapping(TreeBasedObj):
-    """Interactive wrapper upon mapping tree.
+    """Interactive wrapper upon mapping tree, allowing field navigation and quick access to single clause aggregations
+    computation.
     """
 
+    _REPR_NAME = "Mapping"
     _NODE_PATH_ATTR = "name"
 
     def __init__(self, *args, **kwargs):
@@ -48,9 +50,8 @@ class IMapping(TreeBasedObj):
                 )
 
     def __call__(self, *args, **kwargs):
-        return json.dumps(
-            self._tree.to_dict(root=False),
-            indent=2,
-            sort_keys=True,
-            separators=(",", ": "),
+        print(
+            json.dumps(
+                self._tree.to_dict(), indent=2, sort_keys=True, separators=(",", ": "),
+            )
         )

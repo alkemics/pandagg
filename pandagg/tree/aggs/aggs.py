@@ -8,7 +8,7 @@ import json
 from future.utils import python_2_unicode_compatible, iteritems, string_types
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mapping.mapping import Mapping
+from pandagg.tree.mapping import Mapping
 
 from pandagg.node.aggs.abstract import (
     BucketAggNode,
