@@ -58,7 +58,8 @@ class Mapping(Tree):
         # root
         root_node = Field("_", "_", dynamic=dynamic)
         self.insert_node(root_node)
-        self._insert(root_node.identifier, properties, False)
+        if properties:
+            self._insert(root_node.identifier, properties, False)
 
     def _insert(self, pid, el, is_subfield):
         if not isinstance(el, dict):
