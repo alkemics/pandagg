@@ -16,16 +16,17 @@ tests_require = [
     "coverage",
     "pytest",
     "mock",
-    "pandas>=0.24.2",
+    "pandas",
 ]
 
 install_requires = [
+    "six",
     "future",
     "lighttree==0.0.6",
-    "elasticsearch>=7.1.0,<8.0.0",
+    "elasticsearch>=7.0.0,<8.0.0",
 ]
 
-extras_require = {"test": tests_require, "pandas": ["pandas>=0.24.2"]}
+extras_require = {"test": tests_require, "pandas": ["pandas"]}
 
 
 setup(
