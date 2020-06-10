@@ -21,6 +21,7 @@ class Connections(object):
         configuration management tool.
 
         Example::
+        
 
             connections.configure(
                 default={'hosts': 'localhost'},
