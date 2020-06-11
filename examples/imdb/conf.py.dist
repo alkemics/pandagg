@@ -1,5 +1,9 @@
 # your cluster address, if local probably 'localhost:9200'
 ES_HOST = '__FILL_ME__'
+ES_USE_AUTH = False
+# if auth = True:
+ES_USER = 'xxx'
+ES_PASSWORD = 'xxx'
 
 # where your table dumps are stored, and where serialized output will be written
 DATA_DIR = '__FILL_ME__'

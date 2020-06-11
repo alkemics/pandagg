@@ -24,17 +24,28 @@ class Bucket(Node):
         item access (dict like), see more in 'utils.Obj' for more details.
         """
         if self.key is not None:
-            return "%s_%s" % (self.level.replace(".", "_"), self.key)
+            return "%s_%s" % (self.level.replace(".", "_"), self._coerced_key)
         return self.level.replace(".", "_")
 
     def line_repr(self, **kwargs):
         REPR_SIZE = 60
         s = self.level
         if self.key is not None:
-            s += "=%s" % self.key
+            s += "=%s" % self._coerced_key
         if self.value is not None:
             pad = max(
                 REPR_SIZE - 4 * kwargs.get("depth") - len(s) - len(str(self.value)), 4
             )
             s = s + " " * pad + str(self.value)
         return s
+
+    @property
+    def _coerced_key(self):
+        key = self.key
+        try:
+            # order matters, will
+            key = float(key)
+            key = int(key)
+        except (ValueError, TypeError):
+            pass
+        return key
