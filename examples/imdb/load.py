@@ -1,7 +1,7 @@
 import json
 from os.path import join
 from elasticsearch import Elasticsearch, helpers
-from examples.imdb.conf import ES_HOST, DATA_DIR
+from examples.imdb.conf import ES_HOST, ES_USE_AUTH, ES_PASSWORD, ES_USER, DATA_DIR
 from pandagg.mapping import (
     Mapping,
     Keyword,
@@ -13,6 +13,7 @@ from pandagg.mapping import (
 
 index_name = "movies"
 mapping = Mapping(
+    dynamic=False,
     properties={
         "movie_id": Keyword(),
         "name": Text(fields={"raw": Keyword()}),
@@ -60,7 +61,10 @@ def bulk_index(client, docs):
 
 
 if __name__ == "__main__":
-    es_client = Elasticsearch(hosts=[ES_HOST])
+    if ES_USE_AUTH:
+        es_client = Elasticsearch(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+    else:
+        es_client = Elasticsearch(hosts=[ES_HOST])
 
     if es_client.indices.exists(index=index_name):
         print("-" * 50)

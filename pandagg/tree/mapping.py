@@ -53,7 +53,7 @@ class Mapping(Tree):
 
         # Mapping(dynamic=False, properties={...}}
         properties = kwargs.pop("properties", None)
-        dynamic = kwargs.pop("dynamic", None)
+        dynamic = kwargs.pop("dynamic", False)
 
         # root
         root_node = Field("_", "_", dynamic=dynamic)
