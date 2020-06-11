@@ -3,7 +3,8 @@ Map config = [
     "ut_create_database": false,
     "ut_push_config": false,
     "ut_check_coverage": true,
-    "ut_python_3": true
+    "ut_python_3": true,
+    "ut_on_each_pr": true
 ]
 timestamps {
     node("master") {
