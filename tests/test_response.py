@@ -347,3 +347,6 @@ class AggregationsResponseTestCase(PandaggTestCase):
             agg_response._grouping_agg("global_metrics.field.name").identifier,
             "global_metrics.field.name",
         )
+
+    def test_fake(self):
+        self.assertTrue(False)
