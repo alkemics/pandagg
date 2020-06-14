@@ -37,19 +37,17 @@ Pandagg provides a DSL to declare this query in a quite similar fashion:
 
     >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
 
-    >>> q = Query(
-    >>>    Bool(must=[
-    >>>        Terms('genres', terms=['Action', 'Thriller']),
-    >>>        Range('rank', gte=7),
-    >>>        Nested(
-    >>>            path='roles',
-    >>>            query=Bool(must=[
-    >>>                Term('roles.gender', value='F'),
-    >>>                Term('roles.role', value='Reporter')
-    >>>            ])
-    >>>        )
-    >>>    ])
-    >>>)
+    >>> q = Bool(must=[
+    >>>     Terms(genres=['Action', 'Thriller']),
+    >>>     Range(rank={"gte": 7}),
+    >>>     Nested(
+    >>>         path='roles',
+    >>>         query=Bool(must=[
+    >>>             Term(roles__gender='F'),
+    >>>             Term(roles__role='Reporter')
+    >>>         ])
+    >>>     )
+    >>> ])
 
 The serialized query is then available with `query_dict` method:
 
@@ -72,121 +70,6 @@ A visual representation of the query helps to have a clearer view:
         ├── range, field=rank, gte=7
         └── terms, field=genres, values=['Action', 'Thriller']
 
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.query_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-
 
 Chaining
 ========
@@ -202,78 +85,6 @@ Another way to declare this query is through chaining:
     >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
 
     >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.query_dict(), expected_query)
     True
 
 .. note::

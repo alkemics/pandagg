@@ -41,7 +41,6 @@ auto-completion features and convenient representations.
 Namely:
 
 * :class:`~pandagg.interactive.mapping.IMapping`: used to interactively navigate in mapping and run quick aggregations on some fields
-* :class:`~pandagg.interactive.client.Elasticsearch`: used to discover cluster indices, and eventually navigate their mappings, or run quick access aggregations or queries.
 * :class:`~pandagg.interactive.response.IResponse`: used to interactively navigate in an aggregation response
 
 These use case will be detailed in following sections.
