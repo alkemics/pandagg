@@ -24,7 +24,7 @@ class JoiningQueriesTestCase(TestCase):
                 },
             )
             self.assertEqual(
-                n.__str__(),
+                n.show(),
                 """<Query>
 nested, path="some_nested_path"
 └── query

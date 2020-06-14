@@ -58,7 +58,7 @@ The serialized query is then available with `query_dict` method:
 
 A visual representation of the query helps to have a clearer view:
 
-    >>> q
+    >>> q.show()
     <Query>
     bool
     └── must

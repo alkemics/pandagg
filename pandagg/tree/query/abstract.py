@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
 from builtins import str as text
 
 from future.utils import python_2_unicode_compatible, iteritems, string_types
@@ -532,7 +533,10 @@ class Query(Tree):
         return self
 
     def __str__(self):
-        return "<Query>\n%s" % text(self.show())
+        return json.dumps(self.to_dict(), indent=2)
+
+    def show(self, *args, **kwargs):
+        return "<Query>\n%s" % text(super(Query, self).show(*args, **kwargs))
 
 
 class Leaf(Query):
