@@ -25,7 +25,7 @@ class QueryClause(Node):
             return self.KEY
         repr_args = [text(self.KEY)]
         if self._named:
-            repr_args.append("_name=%s" % self.identifier)
+            repr_args.append("_name=%s" % text(self.identifier))
         repr_args.append(self._params_repr(self.body))
         return ", ".join(repr_args)
 

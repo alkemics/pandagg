@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from unittest import TestCase
 
@@ -24,7 +25,7 @@ class JoiningQueriesTestCase(TestCase):
                 },
             )
             self.assertEqual(
-                n.show(print=False),
+                n.show(stdout=False),
                 """<Query>
 nested, path="some_nested_path"
 └── query

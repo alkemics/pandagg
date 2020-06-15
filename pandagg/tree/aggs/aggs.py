@@ -559,10 +559,10 @@ class Aggs(Tree):
         return json.dumps(self.to_dict(), indent=2)
 
     def show(self, *args, **kwargs):
-        pr = kwargs.pop("print", True)
+        stdout = kwargs.pop("stdout", True)
 
         result = "<Aggregations>\n%s" % text(super(Tree, self).show(*args, **kwargs))
-        if not pr:
+        if not stdout:
             return result
         print(result)
 

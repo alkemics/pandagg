@@ -536,10 +536,10 @@ class Query(Tree):
         return json.dumps(self.to_dict(), indent=2)
 
     def show(self, *args, **kwargs):
-        pr = kwargs.pop("print", True)
+        stdout = kwargs.pop("stdout", True)
 
         result = "<Query>\n%s" % text(super(Query, self).show(*args, **kwargs))
-        if not pr:
+        if not stdout:
             return result
         print(result)
 
