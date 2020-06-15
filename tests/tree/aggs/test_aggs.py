@@ -5,8 +5,9 @@
 #                                   IMPORTS
 # =============================================================================
 
+from __future__ import unicode_literals
 from unittest import TestCase
-from lighttree.exceptions import MultipleRootError, NotFoundNodeError
+from lighttree.exceptions import NotFoundNodeError
 from mock import patch
 
 from pandagg.tree.aggs.aggs import Aggs
@@ -89,6 +90,13 @@ class AggTestCase(TestCase):
         )
         for a in (agg1, agg2, agg3, agg4, agg5):
             self.assertEqual(a.to_dict(), expected)
+            self.assertEqual(
+                a.show(stdout=False),
+                """<Aggregations>
+genres                                                <terms, field="genres", size=3>
+└── movie_decade               <date_histogram, field="year", fixed_interval="3650d">
+""",
+            )
 
     def test_add_node_with_mapping(self):
         with_mapping = Aggs(mapping=MAPPING, nested_autocorrect=True)
@@ -140,6 +148,14 @@ class AggTestCase(TestCase):
                     "terms": {"field": "workflow"},
                 }
             },
+        )
+        self.assertEqual(
+            with_mapping.show(stdout=False),
+            """<Aggregations>
+workflow                                                    <terms, field="workflow">
+└── nested_below_workflow                              <nested, path="local_metrics">
+    └── local_f1_score         <avg, field="local_metrics.performance.test.f1_score">
+""",
         )
         self.assertIn("nested_below_workflow", with_mapping)
         nested_node = with_mapping.get("nested_below_workflow")

@@ -13,9 +13,20 @@ User Guide
 Query
 *****
 
-The :class:`~pandagg.tree.query.Query` class allows multiple ways to declare and udpate an Elasticsearch query.
+The :class:`~pandagg.tree.query.abstract.Query` class provides :
 
-Let's explore the multiple ways we have to declare the following query:
+- multiple syntaxes to declare and udpate a query
+- query validation (with nested clauses validation)
+- ability to insert clauses at specific points
+- tree-like visual representation
+
+Instantiation
+=============
+
+From native "dict" query
+------------------------
+
+Given the following query:
 
     >>> expected_query = {'bool': {'must': [
     >>>    {'terms': {'genres': ['Action', 'Thriller']}},
@@ -29,252 +40,45 @@ Let's explore the multiple ways we have to declare the following query:
     >>>    }}
     >>> ]}}
 
+To instantiate :class:`~pandagg.tree.query.abstract.Query`, simply pass "dict" query as argument:
 
-Pandagg DSL
-===========
+    >>> from pandagg.query import Query
+    >>> q = Query(expected_query)
 
-Pandagg provides a DSL to declare this query in a quite similar fashion:
+A visual representation of the query is available with :func:`~pandagg.tree.query.abstract.Query.show`:
 
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query(
-    >>>    Bool(must=[
-    >>>        Terms('genres', terms=['Action', 'Thriller']),
-    >>>        Range('rank', gte=7),
-    >>>        Nested(
-    >>>            path='roles',
-    >>>            query=Bool(must=[
-    >>>                Term('roles.gender', value='F'),
-    >>>                Term('roles.role', value='Reporter')
-    >>>            ])
-    >>>        )
-    >>>    ])
-    >>>)
-
-The serialized query is then available with `query_dict` method:
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
+    >>> q.show()
     <Query>
     bool
     └── must
-        ├── nested
-        │   ├── path="roles"
+        ├── nested, path="roles"
         │   └── query
         │       └── bool
         │           └── must
         │               ├── term, field=roles.gender, value="F"
         │               └── term, field=roles.role, value="Reporter"
         ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.to_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
-
-    >>> q.query_dict() == expected_query
-    True
-
-A visual representation of the query helps to have a clearer view:
-
-    >>> q
-    <Query>
-    bool
-    └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
+        └── terms, genres=["Action", "Thriller"]
 
 
+Call :func:`~pandagg.tree.query.abstract.Query.to_dict` to convert it to native dict:
 
-Chaining
-========
-Another way to declare this query is through chaining:
+    >>> q.to_dict()
+    {'bool': {
+        'must': [
+            {'range': {'rank': {'gte': 7}}},
+            {'terms': {'genres': ['Action', 'Thriller']}},
+            {'bool': {'must': [
+                {'term': {'roles.role': {'value': 'Reporter'}}},
+                {'term': {'roles.gender': {'value': 'F'}}}]}}}}
+            ]}
+        ]
+    }}
 
     >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
     >>> equal_queries(q.to_dict(), expected_query)
     True
 
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-    >>> from pandagg.utils import equal_queries
-    >>> from pandagg.query import Nested, Bool, Query, Range, Term, Terms
-
-    >>> q = Query()\
-    >>>     .query({'terms': {'genres': ['Action', 'Thriller']}})\
-    >>>     .nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))\
-    >>>     .query(Range('rank', gte=7))\
-    >>>     .query(Term('roles.role', value='Reporter'), parent='nested_roles')
-
-    >>> equal_queries(q.query_dict(), expected_query)
-    True
 
 .. note::
     `equal_queries` function won't consider order of clauses in must/should parameters since it actually doesn't matter
@@ -283,138 +87,234 @@ Another way to declare this query is through chaining:
         >>> equal_queries({'must': [A, B]}, {'must': [B, A]})
         True
 
-Regular syntax
-==============
-Eventually, you can also use regular Elasticsearch dict syntax:
+With DSL classes
+----------------
 
-    >>> q = Query(expected_query)
-    >>> q
+Pandagg provides a DSL to declare this query in a quite similar fashion:
+
+    >>> from pandagg.query import Nested, Bool, Range, Term, Terms
+
+    >>> q = Bool(must=[
+    >>>     Terms(genres=['Action', 'Thriller']),
+    >>>     Range(rank={"gte": 7}),
+    >>>     Nested(
+    >>>         path='roles',
+    >>>         query=Bool(must=[
+    >>>             Term(roles__gender='F'),
+    >>>             Term(roles__role='Reporter')
+    >>>         ])
+    >>>     )
+    >>> ])
+
+All these classes inherit from :class:`~pandagg.tree.query.abstract.Query` and thus provide the same interface.
+
+    >>> from pandagg.query import Query
+    >>> isinstance(q, Query)
+    True
+
+With single clause as flattened syntax
+--------------------------------------
+
+In the flattened syntax, the query clause type is used as first argument:
+
+    >>> from pandagg.query import Query
+    >>> q = Query('terms', genres=['Action', 'Thriller'])
+
+
+Query enrichment
+================
+
+query() method
+--------------
+
+The base method to enrich a :class:`~pandagg.tree.query.abstract.Query` is :func:`~pandagg.tree.query.abstract.Query.query`.
+
+It returns a new instance, and keep unchanged the initial query:
+
+    >>> from pandagg.query import Query
+    >>> initial_q = Query()
+    >>> enriched_q = initial_q.query('terms', genres=['Comedy', 'Short'])
+
+    >>> initial_q.to_dict()
+    None
+
+    >>> enriched_q.to_dict()
+    {'terms': {'genres': ['Comedy', 'Short']}}
+
+.. note::
+
+    Calling :func:`~pandagg.tree.query.abstract.Query.to_dict` on an empty Query returns `None`
+
+        >>> from pandagg.query import Query
+        >>> Query().to_dict()
+        None
+
+
+Available syntaxes
+^^^^^^^^^^^^^^^^^^
+
+Considering this query:
+
+    >>> from pandagg.query import Query
+    >>> q = Query()
+
+:func:`~pandagg.tree.query.abstract.Query.query` accepts following syntaxes:
+
+from dictionnary
+""""""""""""""""
+
+
+    >>> q.query({"terms": {"genres": ['Comedy', 'Short']})
+
+flattened syntax
+""""""""""""""""
+
+
+    >>> q.query("terms", genres=['Comedy', 'Short'])
+
+
+from Query instance
+"""""""""""""""""""
+
+This includes DSL classes:
+
+    >>> from pandagg.query import Terms
+    >>> q.query(Terms(genres=['Action', 'Thriller']))
+
+
+Compound clauses specific methods
+---------------------------------
+
+:class:`~pandagg.tree.query.abstract.Query` instance also exposes following methods for specific compound queries:
+
+(TODO: detail allowed syntaxes)
+
+Specific to bool queries:
+
+- :func:`~pandagg.tree.query.abstract.Query.bool`
+- :func:`~pandagg.tree.query.abstract.Query.filter`
+- :func:`~pandagg.tree.query.abstract.Query.must`
+- :func:`~pandagg.tree.query.abstract.Query.must_not`
+- :func:`~pandagg.tree.query.abstract.Query.should`
+
+Specific to other compound queries:
+
+- :func:`~pandagg.tree.query.abstract.Query.nested`
+- :func:`~pandagg.tree.query.abstract.Query.constant_score`
+- :func:`~pandagg.tree.query.abstract.Query.dis_max`
+- :func:`~pandagg.tree.query.abstract.Query.function_score`
+- :func:`~pandagg.tree.query.abstract.Query.has_child`
+- :func:`~pandagg.tree.query.abstract.Query.has_parent`
+- :func:`~pandagg.tree.query.abstract.Query.parent_id`
+- :func:`~pandagg.tree.query.abstract.Query.pinned_query`
+- :func:`~pandagg.tree.query.abstract.Query.script_score`
+- :func:`~pandagg.tree.query.abstract.Query.boost`
+
+
+Inserted clause location
+------------------------
+
+On all insertion methods detailed above, by default, the inserted clause is placed at the top level of your query, and
+generates a bool clause if necessary.
+
+Considering the following query:
+
+    >>> from pandagg.query import Query
+    >>> q = Query('terms', genres=['Action', 'Thriller'])
+    >>> q.show()
+    <Query>
+    terms, genres=["Action", "Thriller"]
+
+A bool query will be created:
+
+    >>> q = q.query('range', rank={"gte": 7})
+    >>> q.show()
     <Query>
     bool
     └── must
-        ├── nested
-        │   ├── path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
         ├── range, field=rank, gte=7
-        └── terms, field=genres, values=['Action', 'Thriller']
+        └── terms, genres=["Action", "Thriller"]
 
+And reused if necessary:
+
+    >>> q = q.must_not('range', year={"lte": 1970})
+    >>> q.show()
+    <Query>
+    bool
+    ├── must
+    │   ├── range, field=rank, gte=7
+    │   └── terms, genres=["Action", "Thriller"]
+    └── must_not
+        └── range, field=year, lte=1970
+
+Specifying a specific location requires to `name queries <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html#request-body-search-queries-and-filters>`_ :
+
+    >>> from pandagg.query import Nested
+
+    >>> q = q.nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))
+    >>> q.show()
+    <Query>
+    bool
+    ├── must
+    │   ├── nested, _name=nested_roles, path="roles"
+    │   │   └── query
+    │   │       └── term, field=roles.gender, value="F"
+    │   ├── range, field=rank, gte=7
+    │   └── terms, genres=["Action", "Thriller"]
+    └── must_not
+        └── range, field=year, lte=1970
+
+Doing so allows to insert clauses above/below given clause using `parent`/`child` parameters:
+
+    >>> q = q.query('term', roles__role='Reporter', parent='nested_roles')
+    >>> q.show()
+    <Query>
+    bool
+    ├── must
+    │   ├── nested, _name=nested_roles, path="roles"
+    │   │   └── query
+    │   │       └── bool
+    │   │           └── must
+    │   │               ├── term, field=roles.role, value="Reporter"
+    │   │               └── term, field=roles.gender, value="F"
+    │   ├── range, field=rank, gte=7
+    │   └── terms, genres=["Action", "Thriller"]
+    └── must_not
+        └── range, field=year, lte=1970
+
+
+TODO: explain `parent_param`, `child_param`, `mode` merging strategies on same named clause etc..
 
 ***********
 Aggregation
 ***********
 
+The :class:`~pandagg.tree.aggs.aggs.Aggs` class provides :
+
+- multiple syntaxes to declare and udpate a aggregation
+- clause validation (with nested clauses validation)
+- ability to insert clauses at specific points
+
+
 Aggregation declaration
 =======================
+
+
 
 Aggregation response
 ====================
 
 TODO
 
+******
+Search
+******
+
+TODO
+
 *******
 Mapping
 *******
-
-Here is a portion of :doc:`IMDB` example mapping:
-
-    >>> imdb_mapping = {
-    >>>     'dynamic': False,
-    >>>     'properties': {
-    >>>         'movie_id': {'type': 'integer'},
-    >>>         'name': {
-    >>>             'type': 'text',
-    >>>             'fields': {
-    >>>                 'raw': {'type': 'keyword'}
-    >>>             }
-    >>>         },
-    >>>         'year': {
-    >>>             'type': 'date',
-    >>>             'format': 'yyyy'
-    >>>         },
-    >>>         'rank': {'type': 'float'},
-    >>>         'genres': {'type': 'keyword'},
-    >>>         'roles': {
-    >>>             'type': 'nested',
-    >>>             'properties': {
-    >>>                 'role': {'type': 'keyword'},
-    >>>                 'actor_id': {'type': 'integer'},
-    >>>                 'gender': {'type': 'keyword'},
-    >>>                 'first_name':  {
-    >>>                     'type': 'text',
-    >>>                     'fields': {
-    >>>                         'raw': {'type': 'keyword'}
-    >>>                     }
-    >>>                 },
-    >>>                 'last_name':  {
-    >>>                     'type': 'text',
-    >>>                     'fields': {
-    >>>                         'raw': {'type': 'keyword'}
-    >>>                     }
-    >>>                 }
-    >>>             }
-    >>>         }
-    >>>     }
-    >>> }
-
-Mapping DSL
-===========
-
-The :class:`~pandagg.tree.mapping.Mapping` class provides a more compact view, which can help when dealing with large mappings:
-
-    >>> from pandagg.mapping import Mapping
-    >>> m = Mapping(imdb_mapping)
-    <Mapping>
-                                                                 {Object}
-    ├── genres                                                    Keyword
-    ├── movie_id                                                  Integer
-    ├── name                                                      Text
-    │   └── raw                                                 ~ Keyword
-    ├── rank                                                      Float
-    ├── roles                                                    [Nested]
-    │   ├── actor_id                                              Integer
-    │   ├── first_name                                            Text
-    │   │   └── raw                                             ~ Keyword
-    │   ├── gender                                                Keyword
-    │   ├── last_name                                             Text
-    │   │   └── raw                                             ~ Keyword
-    │   └── role                                                  Keyword
-    └── year                                                      Date
-
-
-With pandagg DSL, an equivalent declaration would be the following:
-
-    >>> from pandagg.mapping import Mapping, Object, Nested, Float, Keyword, Date, Integer, Text
-    >>>
-    >>> dsl_mapping = Mapping(properties=[
-    >>>     Integer('movie_id'),
-    >>>     Text('name', fields=[
-    >>>         Keyword('raw')
-    >>>     ]),
-    >>>     Date('year', format='yyyy'),
-    >>>     Float('rank'),
-    >>>     Keyword('genres'),
-    >>>     Nested('roles', properties=[
-    >>>         Keyword('role'),
-    >>>         Integer('actor_id'),
-    >>>         Keyword('gender'),
-    >>>         Text('first_name', fields=[
-    >>>             Keyword('raw')
-    >>>         ]),
-    >>>         Text('last_name', fields=[
-    >>>             Keyword('raw')
-    >>>         ])
-    >>>     ])
-    >>> ])
-
-Which is exactly equivalent to initial mapping:
-
-    >>> dsl_mapping.serialize() == imdb_mapping
-    True
-
 
 Interactive mapping
 ===================
@@ -423,6 +323,7 @@ In interactive context, the :class:`~pandagg.interactive.mapping.IMapping` class
 mapping:
 
     >>> from pandagg.mapping import IMapping
+    >>> from examples.imdb.load import mapping
     >>> m = IMapping(imdb_mapping)
     >>> m.roles
     <IMapping subpart: roles>
@@ -459,14 +360,9 @@ Suppose you have the following client:
     >>> from elasticsearch import Elasticsearch
     >>> client = Elasticsearch(hosts=['localhost:9200'])
 
-Client can be bound either at initiation:
+Client can be bound at instantiation:
 
     >>> m = IMapping(imdb_mapping, client=client, index_name='movies')
-
-or afterwards through `bind` method:
-
-    >>> m = IMapping(imdb_mapping)
-    >>> m.bind(client=client, index_name='movies')
 
 Doing so will generate a **a** attribute on mapping fields, this attribute will list all available aggregation for that
 field type (with autocompletion):

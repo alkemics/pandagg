@@ -23,7 +23,11 @@ class QueryClause(Node):
     def line_repr(self, depth, **kwargs):
         if not self.body:
             return self.KEY
-        return ", ".join([text(self.KEY), self._params_repr(self.body)])
+        repr_args = [text(self.KEY)]
+        if self._named:
+            repr_args.append("_name=%s" % text(self.identifier))
+        repr_args.append(self._params_repr(self.body))
+        return ", ".join(repr_args)
 
     @staticmethod
     def _params_repr(params):

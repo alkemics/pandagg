@@ -2,7 +2,7 @@
 
 You might know the Internet Movie Database, commonly called [IMDB](https://www.imdb.com/).
 
-Well it's a good simple example to showcase ElasticSearch capabilities.
+Well it's a simple example to showcase some of Elasticsearch capabilities.
 
 In this case, relational databases (SQL) are a good fit to store with consistence this kind of data.
 Yet indexing some of this data in a optimized search engine will allow more powerful queries.
@@ -61,38 +61,39 @@ opt for a text field. Yet we might want to aggregate on exact keywords to count 
 More inforamtion on distinction between text and keyword fields [here](
 https://www.elastic.co/fr/blog/strings-are-dead-long-live-strings)
 
-#### Final mapping
+#### Mapping
 
-*TODO -> use [copy_to](https://www.elastic.co/guide/en/elasticsearch/reference/current/copy-to.html) parameter to build **full_name***
 ```
-.                                                            
-├── directors                         [Nested]
-│   ├── director_id                    Integer
-│   ├── first_name                     Text
-│   │   └── raw                      ~ Keyword
-│   ├── full_name                      Text
-│   │   └── raw                      ~ Keyword
-│   ├── genres                         Keyword
-│   └── last_name                      Text
-│       └── raw                      ~ Keyword
-├── genres                             Keyword
-├── movie_id                           Integer
-├── name                               Text
-│   └── raw                          ~ Keyword
-├── rank                               Float
-├── roles                             [Nested]
-│   ├── actor_id                       Integer
-│   ├── first_name                     Text
-│   │   └── raw                      ~ Keyword
-│   ├── full_name                      Text
-│   │   └── raw                      ~ Keyword
-│   ├── gender                         Keyword
-│   ├── last_name                      Text
-│   │   └── raw                      ~ Keyword
-│   └── role                           Keyword
-└── year                               Date
+<Mapping>
+_
+├── directors                                                [Nested]
+│   ├── director_id                                           Keyword
+│   ├── first_name                                            Text
+│   │   └── raw                                             ~ Keyword
+│   ├── full_name                                             Text
+│   │   └── raw                                             ~ Keyword
+│   ├── genres                                                Keyword
+│   └── last_name                                             Text
+│       └── raw                                             ~ Keyword
+├── genres                                                    Keyword
+├── movie_id                                                  Keyword
+├── name                                                      Text
+│   └── raw                                                 ~ Keyword
+├── nb_directors                                              Integer
+├── nb_roles                                                  Integer
+├── rank                                                      Float
+├── roles                                                    [Nested]
+│   ├── actor_id                                              Keyword
+│   ├── first_name                                            Text
+│   │   └── raw                                             ~ Keyword
+│   ├── full_name                                             Text
+│   │   └── raw                                             ~ Keyword
+│   ├── gender                                                Keyword
+│   ├── last_name                                             Text
+│   │   └── raw                                             ~ Keyword
+│   └── role                                                  Keyword
+└── year                                                      Integer
 ```
-
 
 ## Steps to start playing with your index
 

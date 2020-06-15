@@ -41,7 +41,7 @@ mapping = Mapping(
         ),
         "nb_directors": Integer(),
         "nb_roles": Integer(),
-    }
+    },
 ).to_dict()
 
 

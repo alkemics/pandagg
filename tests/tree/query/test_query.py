@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 from mock import patch
 
 from pandagg.node.query._parameter_clause import Must
@@ -32,7 +34,7 @@ class QueryTestCase(PandaggTestCase):
             {"bool": {"boost": 2, "filter": [{"term": {"yolo": {"value": 2}}}]}},
         )
         self.assertEqual(
-            q.__str__(),
+            q.show(stdout=False),
             """<Query>
 bool, boost=2
 └── filter
@@ -441,7 +443,7 @@ bool, boost=2
         self.assertEqual(term.name, "term_nid")
 
         self.assertEqual(
-            q1.__str__(),
+            q1.show(stdout=False),
             """<Query>
 bool
 └── must
@@ -456,7 +458,7 @@ bool
         next((c for c in q2.list() if isinstance(c, Must)))
         next((c for c in q2.list() if isinstance(c, TermNode)))
         self.assertEqual(
-            q2.__str__(),
+            q2.show(stdout=False),
             """<Query>
 bool
 └── must
@@ -477,7 +479,7 @@ bool
         next((c for c in q3.list() if isinstance(c, TermNode)))
         next((c for c in q3.list() if isinstance(c, ExistsNode)))
         self.assertEqual(
-            q3.__str__(),
+            q3.show(stdout=False),
             """<Query>
 bool
 └── must
@@ -502,7 +504,7 @@ bool
         )
 
         self.assertEqual(
-            q.__str__(),
+            q.show(stdout=False),
             """<Query>
 bool
 ├── filter
@@ -693,7 +695,7 @@ bool
         )
         for r in (q1, q2):
             self.assertEqual(
-                r.__str__(),
+                r.show(stdout=False),
                 """<Query>
 bool
 └── must
@@ -707,7 +709,7 @@ bool
         q2 = q.query({"term": {"other_field": 3}})
         for r in (q1, q2):
             self.assertEqual(
-                r.__str__(),
+                r.show(stdout=False),
                 """<Query>
 bool
 └── must
@@ -722,7 +724,7 @@ bool
         q2 = q.query({"term": {"other_field": 3}})
         for r in (q1, q2):
             self.assertEqual(
-                r.__str__(),
+                r.show(stdout=False),
                 """<Query>
 bool
 └── must
@@ -737,9 +739,9 @@ bool
         q2 = q.query({"term": {"some_nested_path.id": 2}}, parent="root_nested")
         for r in (q1, q2):
             self.assertEqual(
-                r.__str__(),
+                r.show(stdout=False),
                 """<Query>
-nested, path="some_nested_path"
+nested, _name=root_nested, path="some_nested_path"
 └── query
     └── term, field=some_nested_path.id, value=2
 """,
@@ -750,7 +752,7 @@ nested, path="some_nested_path"
         q2 = q.query({"term": {"some_other_field": 2}}, parent="root_bool")
         for r in (q1, q2):
             self.assertEqual(
-                r.__str__(),
+                r.show(stdout=False),
                 """<Query>
 bool
 ├── filter
@@ -774,7 +776,7 @@ bool
         )
         for r in (q1, q2):
             self.assertEqual(
-                r.__str__(),
+                r.show(stdout=False),
                 """<Query>
 bool
 ├── filter

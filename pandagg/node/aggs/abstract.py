@@ -31,7 +31,21 @@ class AggNode(Node):
         super(AggNode, self).__init__(identifier=self.name)
 
     def line_repr(self, depth, **kwargs):
-        return "[%s] %s" % (text(self.name), text(self.KEY))
+        max_size = 85
+        repr_args = [text(self.KEY)]
+        if self.body:
+            repr_args.append(self._params_repr(self.body))
+        unnamed = "<%s>" % ", ".join(repr_args)
+        pad = max(max_size - 4 * depth - len(self.name) - len(unnamed), 4)
+        return "%s%s%s" % (self.name, " " * pad, unnamed)
+
+    @staticmethod
+    def _params_repr(params):
+        params = params or {}
+        return ", ".join(
+            "%s=%s" % (text(k), text(json.dumps(params[k], sort_keys=True)))
+            for k in sorted(params.keys())
+        )
 
     @classmethod
     def valid_on_field_type(cls, field_type):

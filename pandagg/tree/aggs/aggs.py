@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+from builtins import str as text
 
 import json
 
@@ -556,6 +557,14 @@ class Aggs(Tree):
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)
+
+    def show(self, *args, **kwargs):
+        stdout = kwargs.pop("stdout", True)
+
+        result = "<Aggregations>\n%s" % text(super(Tree, self).show(*args, **kwargs))
+        if not stdout:
+            return result
+        print(result)
 
 
 class AbstractLeafAgg(Aggs):
