@@ -559,7 +559,12 @@ class Aggs(Tree):
         return json.dumps(self.to_dict(), indent=2)
 
     def show(self, *args, **kwargs):
-        print("<Aggregations>\n%s" % text(super(Aggs, self).show(*args, **kwargs)))
+        pr = kwargs.pop("print", True)
+
+        result = "<Aggregations>\n%s" % text(super(Tree, self).show(*args, **kwargs))
+        if not pr:
+            return result
+        print(result)
 
 
 class AbstractLeafAgg(Aggs):

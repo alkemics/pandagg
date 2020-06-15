@@ -15,7 +15,7 @@ Query
 
 The :class:`~pandagg.tree.query.abstract.Query` class provides :
 
-- convenient ways to declare and udpate a query
+- multiple syntaxes to declare and udpate a query
 - query validation (with nested clauses validation)
 - ability to insert clauses at specific points
 - tree-like visual representation
@@ -289,114 +289,32 @@ TODO: explain `parent_param`, `child_param`, `mode` merging strategies on same n
 Aggregation
 ***********
 
+The :class:`~pandagg.tree.aggs.aggs.Aggs` class provides :
+
+- multiple syntaxes to declare and udpate a aggregation
+- clause validation (with nested clauses validation)
+- ability to insert clauses at specific points
+
+
 Aggregation declaration
 =======================
+
+
 
 Aggregation response
 ====================
 
 TODO
 
+******
+Search
+******
+
+TODO
+
 *******
 Mapping
 *******
-
-Here is a portion of :doc:`IMDB` example mapping:
-
-    >>> imdb_mapping = {
-    >>>     'dynamic': False,
-    >>>     'properties': {
-    >>>         'movie_id': {'type': 'integer'},
-    >>>         'name': {
-    >>>             'type': 'text',
-    >>>             'fields': {
-    >>>                 'raw': {'type': 'keyword'}
-    >>>             }
-    >>>         },
-    >>>         'year': {
-    >>>             'type': 'date',
-    >>>             'format': 'yyyy'
-    >>>         },
-    >>>         'rank': {'type': 'float'},
-    >>>         'genres': {'type': 'keyword'},
-    >>>         'roles': {
-    >>>             'type': 'nested',
-    >>>             'properties': {
-    >>>                 'role': {'type': 'keyword'},
-    >>>                 'actor_id': {'type': 'integer'},
-    >>>                 'gender': {'type': 'keyword'},
-    >>>                 'first_name':  {
-    >>>                     'type': 'text',
-    >>>                     'fields': {
-    >>>                         'raw': {'type': 'keyword'}
-    >>>                     }
-    >>>                 },
-    >>>                 'last_name':  {
-    >>>                     'type': 'text',
-    >>>                     'fields': {
-    >>>                         'raw': {'type': 'keyword'}
-    >>>                     }
-    >>>                 }
-    >>>             }
-    >>>         }
-    >>>     }
-    >>> }
-
-Mapping DSL
-===========
-
-The :class:`~pandagg.tree.mapping.Mapping` class provides a more compact view, which can help when dealing with large mappings:
-
-    >>> from pandagg.mapping import Mapping
-    >>> m = Mapping(imdb_mapping)
-    <Mapping>
-                                                                 {Object}
-    ├── genres                                                    Keyword
-    ├── movie_id                                                  Integer
-    ├── name                                                      Text
-    │   └── raw                                                 ~ Keyword
-    ├── rank                                                      Float
-    ├── roles                                                    [Nested]
-    │   ├── actor_id                                              Integer
-    │   ├── first_name                                            Text
-    │   │   └── raw                                             ~ Keyword
-    │   ├── gender                                                Keyword
-    │   ├── last_name                                             Text
-    │   │   └── raw                                             ~ Keyword
-    │   └── role                                                  Keyword
-    └── year                                                      Date
-
-
-With pandagg DSL, an equivalent declaration would be the following:
-
-    >>> from pandagg.mapping import Mapping, Object, Nested, Float, Keyword, Date, Integer, Text
-    >>>
-    >>> dsl_mapping = Mapping(properties=[
-    >>>     Integer('movie_id'),
-    >>>     Text('name', fields=[
-    >>>         Keyword('raw')
-    >>>     ]),
-    >>>     Date('year', format='yyyy'),
-    >>>     Float('rank'),
-    >>>     Keyword('genres'),
-    >>>     Nested('roles', properties=[
-    >>>         Keyword('role'),
-    >>>         Integer('actor_id'),
-    >>>         Keyword('gender'),
-    >>>         Text('first_name', fields=[
-    >>>             Keyword('raw')
-    >>>         ]),
-    >>>         Text('last_name', fields=[
-    >>>             Keyword('raw')
-    >>>         ])
-    >>>     ])
-    >>> ])
-
-Which is exactly equivalent to initial mapping:
-
-    >>> dsl_mapping.serialize() == imdb_mapping
-    True
-
 
 Interactive mapping
 ===================
@@ -405,6 +323,7 @@ In interactive context, the :class:`~pandagg.interactive.mapping.IMapping` class
 mapping:
 
     >>> from pandagg.mapping import IMapping
+    >>> from examples.imdb.load import mapping
     >>> m = IMapping(imdb_mapping)
     >>> m.roles
     <IMapping subpart: roles>
@@ -441,14 +360,9 @@ Suppose you have the following client:
     >>> from elasticsearch import Elasticsearch
     >>> client = Elasticsearch(hosts=['localhost:9200'])
 
-Client can be bound either at initiation:
+Client can be bound at instantiation:
 
     >>> m = IMapping(imdb_mapping, client=client, index_name='movies')
-
-or afterwards through `bind` method:
-
-    >>> m = IMapping(imdb_mapping)
-    >>> m.bind(client=client, index_name='movies')
 
 Doing so will generate a **a** attribute on mapping fields, this attribute will list all available aggregation for that
 field type (with autocompletion):
