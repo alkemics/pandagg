@@ -29,7 +29,7 @@ class SpecializedQueriesTestCase(TestCase):
                 },
             )
             self.assertEqual(
-                b.show(),
+                b.show(print=False),
                 """<Query>
 script_score, script={"source": "doc['likes'].value / 10 "}
 └── query
@@ -55,7 +55,7 @@ script_score, script={"source": "doc['likes'].value / 10 "}
                 },
             )
             self.assertEqual(
-                b.show(),
+                b.show(print=False),
                 """<Query>
 pinned, ids=[1, 23]
 └── organic
