@@ -1050,3 +1050,40 @@ workflow                                                    <terms, field="workf
         )
         agg2 = Aggs(node_hierarchy_2, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(agg2.deepest_linear_bucket_agg, "week")
+
+    def test_groupby_pointer(self):
+        a = (
+            Aggs()
+            .groupby("A", "terms", field="a")
+            .groupby("B", "date_histogram", fixed_interval="1d", field="b")
+        )
+
+        self.assertEqual(a._groupby_ptr, "B")
+
+        a1 = a.aggs("C1", "terms", field="c1").aggs("C2", "terms", field="c2")
+        self.assertEqual(
+            a1.show(stdout=False),
+            """<Aggregations>
+A                                                                  <terms, field="a">
+└── B                                <date_histogram, field="b", fixed_interval="1d">
+    ├── C1                                                        <terms, field="c1">
+    └── C2                                                        <terms, field="c2">
+""",
+        )
+        self.assertEqual(
+            a1.to_dict(),
+            {
+                "A": {
+                    "aggs": {
+                        "B": {
+                            "aggs": {
+                                "C1": {"terms": {"field": "c1"}},
+                                "C2": {"terms": {"field": "c2"}},
+                            },
+                            "date_histogram": {"field": "b", "fixed_interval": "1d"},
+                        }
+                    },
+                    "terms": {"field": "a"},
+                }
+            },
+        )
