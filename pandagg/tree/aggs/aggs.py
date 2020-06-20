@@ -49,10 +49,10 @@ class Aggs(Tree):
 
     >>> Aggs({"per_user":{"terms":{"field":"user"}, "aggs": {"avg_age": {"avg": {"field": "age"}}}}})
 
-    With is similar to:
+    Which is similar to:
 
     >>> from pandagg.aggs import Terms, Avg
-    >>> Aggs(Terms('per_user', field='user', aggs=Avg('avg_age', field='age')))
+    >>> Terms('per_user', field='user', aggs=Avg('avg_age', field='age'))
 
     :Keyword Arguments:
         * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
@@ -73,6 +73,7 @@ class Aggs(Tree):
     def __init__(self, *args, **kwargs):
         self.mapping = Mapping(kwargs.pop("mapping", None))
         self.nested_autocorrect = kwargs.pop("nested_autocorrect", False)
+        self._groupby_ptr = kwargs.pop("_groupby_ptr", None)
         super(Aggs, self).__init__()
         if args or kwargs:
             self._fill(*args, **kwargs)
@@ -142,6 +143,7 @@ class Aggs(Tree):
         return Aggs(
             mapping=self.mapping.clone(deep=deep),
             nested_autocorrect=self.nested_autocorrect,
+            _groupby_ptr=self._groupby_ptr,
         )
 
     def _is_eligible_grouping_node(self, nid):
@@ -184,7 +186,11 @@ class Aggs(Tree):
         """
         If pid is not None, ensure that pid belongs to tree, and that it refers to a bucket aggregation.
 
-        Else, if not provided, return deepest bucket aggregation if there is no ambiguity (linear aggregations).
+        If pid not provided:
+
+        - if previous groupby call, return deepest inserted node by last groupby call
+        - else return deepest bucket aggregation if there is no ambiguity (linear aggregations).
+
         KO: non-ambiguous::
             A──> B──> C1
                  └──> C2
@@ -194,6 +200,7 @@ class Aggs(Tree):
 
             A──> B──> C1
             return C1
+
         """
         if pid is not None:
             if not self._is_eligible_grouping_node(pid):
@@ -203,6 +210,10 @@ class Aggs(Tree):
         # root
         if len(leaves) == 0:
             return None
+
+        # previous groupby calls defined grouping pointer
+        if self._groupby_ptr is not None:
+            return self._groupby_ptr
 
         if len(leaves) > 1 or not isinstance(leaves[0], BucketAggNode):
             raise ValueError(
@@ -349,10 +360,11 @@ class Aggs(Tree):
 
         insert_below = self._validate_aggs_parent_id(insert_below)
 
-        # empty initial tree
         if insert_below is None:
+            # empty initial tree
             insert_below_subtrees = []
         else:
+            # elements above which the inserted clauses are placed
             insert_below_subtrees = [
                 new_agg.drop_subtree(c.identifier)
                 for c in new_agg.children(insert_below, id_only=False)
@@ -360,6 +372,8 @@ class Aggs(Tree):
         for inserted_agg in inserted_aggs:
             new_agg.insert(inserted_agg, parent_id=insert_below)
             insert_below = inserted_agg.deepest_linear_bucket_agg
+            if not insert_below_subtrees:
+                new_agg._groupby_ptr = insert_below
         for st in insert_below_subtrees:
             new_agg.insert_tree(parent_id=insert_below, new_tree=st)
         return new_agg

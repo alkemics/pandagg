@@ -214,6 +214,9 @@ class Aggregations:
                 if len(children) == 1 and isinstance(children[0], Nested):
                     return children[0]
             return node
+        # if use of groupby method in Aggs class, use groupby pointer
+        if self.__aggs._groupby_ptr is not None:
+            return self.__aggs.get(self.__aggs._groupby_ptr)
 
         if isinstance(self.__aggs.get(self.__aggs.root), ShadowRoot):
             return None
