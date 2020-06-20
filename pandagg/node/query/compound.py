@@ -2,7 +2,9 @@ from pandagg.node.query.abstract import QueryClause
 
 
 class CompoundClause(QueryClause):
-    """Compound clauses can encapsulate other query clauses::
+    """Compound clauses can encapsulate other query clauses:
+
+    .. code-block::
 
         {
             "<query_type>" : {
@@ -10,6 +12,7 @@ class CompoundClause(QueryClause):
                 <children_clauses>
             }
         }
+
     """
 
     _default_operator = None

@@ -1,1 +1,3 @@
 pandas
+sphinx_rtd_theme
+recommonmark

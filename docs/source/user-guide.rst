@@ -124,12 +124,10 @@ In the flattened syntax, the query clause type is used as first argument:
 Query enrichment
 ================
 
-query() method
---------------
+All methods described below return a new :class:`~pandagg.tree.query.abstract.Query` instance, and keep unchanged the
+initial query.
 
-The base method to enrich a :class:`~pandagg.tree.query.abstract.Query` is :func:`~pandagg.tree.query.abstract.Query.query`.
-
-It returns a new instance, and keep unchanged the initial query:
+For instance:
 
     >>> from pandagg.query import Query
     >>> initial_q = Query()
@@ -150,8 +148,11 @@ It returns a new instance, and keep unchanged the initial query:
         None
 
 
-Available syntaxes
-^^^^^^^^^^^^^^^^^^
+query() method
+--------------
+
+The base method to enrich a :class:`~pandagg.tree.query.abstract.Query` is :func:`~pandagg.tree.query.abstract.Query.query`.
+
 
 Considering this query:
 
@@ -160,23 +161,18 @@ Considering this query:
 
 :func:`~pandagg.tree.query.abstract.Query.query` accepts following syntaxes:
 
-from dictionnary
-""""""""""""""""
+from dictionnary::
 
 
     >>> q.query({"terms": {"genres": ['Comedy', 'Short']})
 
-flattened syntax
-""""""""""""""""
+flattened syntax::
 
 
     >>> q.query("terms", genres=['Comedy', 'Short'])
 
 
-from Query instance
-"""""""""""""""""""
-
-This includes DSL classes:
+from Query instance (this includes DSL classes)::
 
     >>> from pandagg.query import Terms
     >>> q.query(Terms(genres=['Action', 'Thriller']))
