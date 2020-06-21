@@ -1,7 +1,5 @@
 flake8
 coverage
 pytest
-# last mock version compatible with P2 (will drop constraint when removing support for P2)
-mock<=3.0.5
-# idem, last pandas compatible version with P2
-pandas<=0.23.1
+mock
+pandas
