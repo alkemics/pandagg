@@ -55,7 +55,7 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 
 ## Roadmap
 
-- implement CI workflow: python2/3 tests, coverage
+- improve CI workflow with coverage report
 - on aggregation `nodes`, ensure all allowed `fields` are listed
 - expand functionalities: proper ORM similar to elasticsearch-dsl Document classes, index managing operations
 - package versions for different ElasticSearch versions

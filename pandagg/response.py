@@ -363,7 +363,7 @@ class Aggregations:
             index = (None,) * len(index)
         else:
             index = pd.MultiIndex.from_tuples(index, names=index_names)
-        return pd.DataFrame(index=index, data=values)
+        return pd.DataFrame(index=index, data=list(values))
 
     def to_normalized(self):
         children = []
