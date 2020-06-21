@@ -1,3 +1,8 @@
+[![PyPI Latest Release](https://img.shields.io/pypi/v/pandagg.svg)](https://pypi.org/project/pandagg/)
+[![License](https://img.shields.io/pypi/l/pandagg.svg)](https://github.com/alkemics/pandagg/blob/master/LICENSE)
+![Python package](https://github.com/alkemics/pandagg/workflows/Python%20package/badge.svg)
+
+
 ## What is it?
 
 **pandagg** is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations. Its goal is to make it
