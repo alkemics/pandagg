@@ -2,6 +2,7 @@
 ![Python package](https://github.com/alkemics/pandagg/workflows/Python%203%20Tests/badge.svg)
 ![Python package](https://github.com/alkemics/pandagg/workflows/Python%202%20Tests/badge.svg)
 [![Coverage](https://codecov.io/github/alkemics/pandagg/coverage.svg?branch=master)](https://codecov.io/gh/alkemics/pandagg)
+[![Docs](https://readthedocs.org/projects/pandagg/badge/?version=latest&style=flat)](https://pandagg.readthedocs.io/en/latest/)
 
 
 ## What is it?
