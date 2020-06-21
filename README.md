@@ -1,6 +1,7 @@
 [![PyPI Latest Release](https://img.shields.io/pypi/v/pandagg.svg)](https://pypi.org/project/pandagg/)
 ![Python package](https://github.com/alkemics/pandagg/workflows/Python%203%20Tests/badge.svg)
 ![Python package](https://github.com/alkemics/pandagg/workflows/Python%202%20Tests/badge.svg)
+[![Coverage](https://codecov.io/github/alkemics/pandagg/coverage.svg?branch=master)](https://codecov.io/gh/alkemics/pandagg)
 
 
 ## What is it?
@@ -55,7 +56,6 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 
 ## Roadmap
 
-- improve CI workflow with coverage report
 - on aggregation `nodes`, ensure all allowed `fields` are listed
 - expand functionalities: proper ORM similar to elasticsearch-dsl Document classes, index managing operations
 - package versions for different ElasticSearch versions
