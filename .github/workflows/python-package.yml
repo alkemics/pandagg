@@ -36,4 +36,4 @@ jobs:
         flake8 --count --ignore=W503,W605,E231,E501 --show-source --statistics tests
     - name: Test with pytest
       run: |
-        pytest
+        python setup.py test
