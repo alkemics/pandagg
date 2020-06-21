@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 from mock import patch
 
 from pandagg.node.query._parameter_clause import Must
-from pandagg.node.query.joining import Nested
 from pandagg.query import Query, Range, Prefix, Ids, Term, Terms, Nested
 from pandagg.node.query.term_level import Term as TermNode, Exists as ExistsNode
 from pandagg.node.query.joining import Nested as NestedNode

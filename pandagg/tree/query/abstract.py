@@ -20,7 +20,8 @@ ADD = "add"
 REPLACE = "replace"
 REPLACE_ALL = "replace_all"
 
-sub_insertion = Substitution(insertion_doc="""
+sub_insertion = Substitution(
+    insertion_doc="""
     * *parent* (``str``) --
       named query clause under which the inserted clauses should be placed.
 
@@ -42,7 +43,8 @@ sub_insertion = Substitution(insertion_doc="""
       - 'replace' : for each parameter (for instance in 'bool' case : 'filter', 'must', 'must_not', 'should'),
         replace existing clauses under this parameter, by new ones only if declared in inserted compound query
       - 'replace_all' : existing compound clause is completely replaced by the new one
-""")
+"""
+)
 
 
 @python_2_unicode_compatible
