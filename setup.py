@@ -12,21 +12,12 @@ from setuptools import find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
 
-tests_require = [
-    "coverage",
-    "pytest",
-    "mock",
-    "pandas",
-]
-
 install_requires = [
     "six",
     "future",
-    "lighttree==0.0.6",
+    "lighttree==0.0.8",
     "elasticsearch>=7.0.0,<8.0.0",
 ]
-
-extras_require = {"test": tests_require, "pandas": ["pandas"]}
 
 
 setup(
@@ -44,6 +35,5 @@ setup(
     test_suite="pandagg.tests",
     zip_safe=False,
     install_requires=install_requires,
-    tests_require=tests_require,
-    extras_require=extras_require,
+    setup_requires=["pytest-runner"],
 )

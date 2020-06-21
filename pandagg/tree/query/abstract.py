@@ -7,6 +7,7 @@ from builtins import str as text
 
 from future.utils import python_2_unicode_compatible, iteritems, string_types
 
+from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
 from pandagg.node.query.abstract import QueryClause, LeafQueryClause
 from pandagg.node.query.compound import CompoundClause, Bool as BoolNode
@@ -18,6 +19,32 @@ from pandagg.tree.mapping import Mapping
 ADD = "add"
 REPLACE = "replace"
 REPLACE_ALL = "replace_all"
+
+sub_insertion = Substitution(
+    insertion_doc="""
+    * *parent* (``str``) --
+      named query clause under which the inserted clauses should be placed.
+
+    * *parent_param* (``str`` optional parameter when using *parent* param) --
+      parameter under which inserted clauses will be placed. For instance if *parent* clause is a boolean, can be
+      'must', 'filter', 'should', 'must_not'.
+
+    * *child* (``str``) --
+      named query clause above which the inserted clauses should be placed.
+
+    * *child_param* (``str`` optional parameter when using *parent* param) --
+      parameter of inserted boolean clause under which child clauses will be placed. For instance if inserted clause
+      is a boolean, can be 'must', 'filter', 'should', 'must_not'.
+
+    * *mode* (``str`` one of 'add', 'replace', 'replace_all') --
+      merging strategy when inserting clauses on a existing compound clause.
+
+      - 'add' (default) : adds new clauses keeping initial ones
+      - 'replace' : for each parameter (for instance in 'bool' case : 'filter', 'must', 'must_not', 'should'),
+        replace existing clauses under this parameter, by new ones only if declared in inserted compound query
+      - 'replace_all' : existing compound clause is completely replaced by the new one
+"""
+)
 
 
 @python_2_unicode_compatible
@@ -167,7 +194,10 @@ class Query(Tree):
         return None
 
     def to_dict(self, from_=None, with_name=True):
-        """Return None if no query clause.
+        """Serialize query as native dict.
+        :param from\_: optional,
+        :param with_name: optional
+        :return:
         """
         if self.root is None:
             return None
@@ -199,7 +229,37 @@ class Query(Tree):
             return {node.KEY: serialized_children}
         return {node.KEY: serialized_children[0]}
 
+    @sub_insertion
     def query(self, *args, **kwargs):
+        r"""Insert new clause(s) in current query.
+
+        Inserted clause can accepts following syntaxes.
+
+        Given an empty query:
+
+        >>> from pandagg.query import Query
+        >>> q = Query()
+
+        flat syntax: clause type, followed by query clause body as keyword arguments:
+
+        >>> q.query('term', some_field=23)
+        {'term': {'some_field': 23}}
+
+        from regular Elasticsearch dict query:
+
+        >>> q.query({'term': {'some_field': 23}})
+        {'term': {'some_field': 23}}
+
+        using pandagg DSL:
+
+        >>> from pandagg.query import Term
+        >>> q.query(Term(field=23))
+        {'term': {'some_field': 23}}
+
+        :Keyword Arguments:
+        %(insertion_doc)s
+
+        """
         mode = kwargs.pop("mode", ADD)
         parent = kwargs.pop("parent", None)
         parent_param = kwargs.pop("parent_param", None)

@@ -81,12 +81,6 @@ ES_AGG_RESPONSE = {
                             "key": "ispracticecompatible",
                         },
                         {
-                            "avg_f1_micro": {"value": 0.95},
-                            "avg_nb_classes": {"value": 183.21},
-                            "doc_count": 119,
-                            "key": "gpc",
-                        },
-                        {
                             "avg_f1_micro": {"value": 0.80},
                             "avg_nb_classes": {"value": 9.97},
                             "doc_count": 76,
@@ -135,9 +129,6 @@ EXPECTED_RESP_REPR = """root
 │       ├── avg_f1_micro                                0.89
 │       └── avg_nb_classes                             206.5
 └── classification_type=multilabel                      1797
-    ├── global_metrics.field.name=gpc                    119
-    │   ├── avg_f1_micro                                0.95
-    │   └── avg_nb_classes                            183.21
     ├── global_metrics.field.name=ispracticecompatible    128
     │   ├── avg_f1_micro                                0.72
     │   └── avg_nb_classes                             18.71
@@ -161,15 +152,6 @@ EXPECTED_NORMALIZED_RESPONSE = {
                     "key": "ispracticecompatible",
                     "level": "global_metrics.field.name",
                     "value": 128,
-                },
-                {
-                    "children": [
-                        {"key": None, "level": "avg_nb_classes", "value": 183.21},
-                        {"key": None, "level": "avg_f1_micro", "value": 0.95},
-                    ],
-                    "key": "gpc",
-                    "level": "global_metrics.field.name",
-                    "value": 119,
                 },
                 {
                     "children": [

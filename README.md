@@ -1,3 +1,8 @@
+[![PyPI Latest Release](https://img.shields.io/pypi/v/pandagg.svg)](https://pypi.org/project/pandagg/)
+[![License](https://img.shields.io/pypi/l/pandagg.svg)](https://github.com/alkemics/pandagg/blob/master/LICENSE)
+![Python package](https://github.com/alkemics/pandagg/workflows/Python%20package/badge.svg)
+
+
 ## What is it?
 
 **pandagg** is a Python package providing a simple interface to manipulate ElasticSearch queries and aggregations. Its goal is to make it
@@ -50,7 +55,7 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 
 ## Roadmap
 
-- implement CI workflow: python2/3 tests, coverage
+- improve CI workflow with coverage report
 - on aggregation `nodes`, ensure all allowed `fields` are listed
 - expand functionalities: proper ORM similar to elasticsearch-dsl Document classes, index managing operations
 - package versions for different ElasticSearch versions

@@ -19,9 +19,9 @@ class ResponseTestCase(TestCase):
             sample.ES_AGG_RESPONSE
         )
         self.assertEqual(response_tree.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
-        self.assertEqual(len(response_tree.list()), 18)
+        self.assertEqual(len(response_tree.list()), 15)
 
-        multilabel_gpc_bucket = next(
+        multiclass_gpc_bucket = next(
             (
                 b
                 for b in response_tree.list()
@@ -31,11 +31,11 @@ class ResponseTestCase(TestCase):
 
         # bucket properties will give parents levels and keys
         self.assertEqual(
-            response_tree.bucket_properties(multilabel_gpc_bucket),
+            response_tree.bucket_properties(multiclass_gpc_bucket),
             OrderedDict(
                 [
                     ("global_metrics.field.name", "gpc"),
-                    ("classification_type", "multilabel"),
+                    ("classification_type", "multiclass"),
                 ]
             ),
         )
@@ -64,12 +64,12 @@ class ClientBoundResponseTestCase(TestCase):
         self.assertIn("classification_type_multiclass", dir(response))
         self.assertIn("classification_type_multilabel", dir(response))
 
-        multilabel = response.classification_type_multilabel
-        self.assertIsInstance(multilabel, IResponse)
-        self.assertIs(multilabel._initial_tree, response._tree)
+        multiclass = response.classification_type_multiclass
+        self.assertIsInstance(multiclass, IResponse)
+        self.assertIs(multiclass._initial_tree, response._tree)
 
-        self.assertIn("global_metrics_field_name_gpc", dir(multilabel))
-        gpc = multilabel.global_metrics_field_name_gpc
+        self.assertIn("global_metrics_field_name_gpc", dir(multiclass))
+        gpc = multiclass.global_metrics_field_name_gpc
         self.assertIsInstance(gpc, IResponse)
         self.assertIs(gpc._initial_tree, response._tree)
 
@@ -81,7 +81,7 @@ class ClientBoundResponseTestCase(TestCase):
                     "bool": {
                         "must": [
                             {"term": {"global_metrics.field.name": {"value": "gpc"}}},
-                            {"term": {"classification_type": {"value": "multilabel"}}},
+                            {"term": {"classification_type": {"value": "multiclass"}}},
                             {"term": {"some_field": {"value": 1}}},
                         ]
                     }

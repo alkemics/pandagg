@@ -160,11 +160,6 @@ class AggregationsResponseTestCase(PandaggTestCase):
                     "avg_nb_classes": 18.71,
                     "doc_count": 128,
                 },
-                ("multilabel", "gpc"): {
-                    "avg_f1_micro": 0.95,
-                    "avg_nb_classes": 183.21,
-                    "doc_count": 119,
-                },
                 ("multilabel", "preservationmethods"): {
                     "avg_f1_micro": 0.8,
                     "avg_nb_classes": 9.97,
@@ -204,13 +199,6 @@ class AggregationsResponseTestCase(PandaggTestCase):
                     "classification_type": "multilabel",
                     "doc_count": 128,
                     "global_metrics.field.name": "ispracticecompatible",
-                },
-                {
-                    "avg_f1_micro": 0.95,
-                    "avg_nb_classes": 183.21,
-                    "classification_type": "multilabel",
-                    "doc_count": 119,
-                    "global_metrics.field.name": "gpc",
                 },
                 {
                     "avg_f1_micro": 0.8,
@@ -303,11 +291,6 @@ class AggregationsResponseTestCase(PandaggTestCase):
                     "avg_f1_micro": 0.89,
                     "avg_nb_classes": 206.5,
                     "doc_count": 370,
-                },
-                ("multilabel", "gpc"): {
-                    "avg_f1_micro": 0.95,
-                    "avg_nb_classes": 183.21,
-                    "doc_count": 119,
                 },
                 ("multilabel", "ispracticecompatible"): {
                     "avg_f1_micro": 0.72,
