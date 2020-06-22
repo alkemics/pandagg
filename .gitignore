@@ -1,5 +1,5 @@
 .*
-/_*
+!.github
 *.py[co]
 *.egg
 *.egg-info
@@ -10,6 +10,5 @@
 /build
 /docs/build
 /examples/imdb/conf.py
-
-env/
-env3/
+/coverage.xml
+env*
