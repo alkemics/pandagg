@@ -294,7 +294,7 @@ class SearchTestCase(PandaggTestCase):
             {
                 "_source": {"includes": ["foo.bar.*"], "excludes": ["foo.one"]},
                 "query": {
-                    "bool": {"filter": [{"term": {"title": {"value": "python"}}}],}
+                    "bool": {"filter": [{"term": {"title": {"value": "python"}}}]}
                 },
             },
             Search()
@@ -307,7 +307,7 @@ class SearchTestCase(PandaggTestCase):
             {
                 "_source": False,
                 "query": {
-                    "bool": {"filter": [{"term": {"title": {"value": "python"}}}],}
+                    "bool": {"filter": [{"term": {"title": {"value": "python"}}}]}
                 },
             },
             Search().source(False).filter("term", title="python").to_dict(),

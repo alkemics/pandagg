@@ -72,7 +72,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
             buckets,
             [
                 # key -> bucket
-                (None, {"doc_count": 12, "sub_aggs": {}}),
+                (None, {"doc_count": 12, "sub_aggs": {}})
             ],
         )
 
@@ -98,7 +98,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
             buckets,
             [
                 # key -> bucket
-                (None, {"doc_count": 12, "sub_aggs": {}}),
+                (None, {"doc_count": 12, "sub_aggs": {}})
             ],
         )
 
@@ -106,7 +106,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
         self.assertEqual(Nested.extract_bucket_value({"doc_count": 12}), 12)
 
         # test get_filter
-        nested_agg = Nested(name="some_agg", path="nested_path",)
+        nested_agg = Nested(name="some_agg", path="nested_path")
         self.assertEqual(nested_agg.get_filter(None), None)
 
         # test query dict

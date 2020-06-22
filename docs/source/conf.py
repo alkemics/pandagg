@@ -130,7 +130,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "pandagg.tex", u"pandagg Documentation", u"Léonard Binet", "manual"),
+    (master_doc, "pandagg.tex", u"pandagg Documentation", u"Léonard Binet", "manual")
 ]
 
 
@@ -155,7 +155,7 @@ texinfo_documents = [
         "pandagg",
         "One line description of project.",
         "Miscellaneous",
-    ),
+    )
 ]
 
 

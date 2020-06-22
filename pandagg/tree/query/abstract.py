@@ -567,13 +567,13 @@ class Query(Tree):
             )
             if not existing_param:
                 self.insert(
-                    item=new_compound.subtree(param_node.identifier), parent_id=name,
+                    item=new_compound.subtree(param_node.identifier), parent_id=name
                 )
                 continue
             if mode == REPLACE:
                 self.drop_node(existing_param.identifier)
                 self.insert(
-                    item=new_compound.subtree(param_node.identifier), parent_id=name,
+                    item=new_compound.subtree(param_node.identifier), parent_id=name
                 )
                 continue
             if mode == ADD:

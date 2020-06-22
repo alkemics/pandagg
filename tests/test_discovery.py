@@ -39,9 +39,7 @@ class WrapperTestCase(TestCase):
         self.assertTrue(hasattr(indices, "classification_report_one"))
         report_index = indices.classification_report_one
         self.assertIsInstance(report_index, Index)
-        self.assertEqual(
-            report_index.__str__(), "<Index 'classification_report_one'>",
-        )
+        self.assertEqual(report_index.__str__(), "<Index 'classification_report_one'>")
         self.assertEqual(report_index.name, "classification_report_one")
 
         # ensure mapping presence

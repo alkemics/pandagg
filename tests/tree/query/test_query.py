@@ -264,9 +264,7 @@ bool, boost=2
         # ABOVE non-existing
         with self.assertRaises(ValueError) as e:
             initial_q.must(
-                {"term": {"new_field": 2}},
-                child="not_existing_node",
-                _name="somewhere",
+                {"term": {"new_field": 2}}, child="not_existing_node", _name="somewhere"
             )
         self.assertEqual(
             e.exception.args,
@@ -275,9 +273,7 @@ bool, boost=2
 
         with self.assertRaises(ValueError) as e:
             initial_q.must(
-                {"term": {"new_field": 2}},
-                child="not_existing_node",
-                _name="somewhere",
+                {"term": {"new_field": 2}}, child="not_existing_node", _name="somewhere"
             )
         self.assertEqual(
             e.exception.args,
@@ -432,7 +428,7 @@ bool, boost=2
     def test_must_at_root(self):
         q_i1 = Query()
         q1 = q_i1.must(
-            Term(field="some_field", value=2, _name="term_nid"), _name="bool_nid",
+            Term(field="some_field", value=2, _name="term_nid"), _name="bool_nid"
         )
         self.assertEqual(len(q_i1.list()), 0)
         bool_ = next((c for c in q1.list() if isinstance(c, BoolNode)))

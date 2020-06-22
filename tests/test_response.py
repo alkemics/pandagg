@@ -247,7 +247,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
             "avg_f1_score": {"value": 0.815},
         }
         index_names, index_values = Aggregations(
-            data=raw_response, aggs=my_agg, index=None, client=None, query=None,
+            data=raw_response, aggs=my_agg, index=None, client=None, query=None
         ).to_tabular(index_orient=True, expand_sep=" || ")
 
         self.assertEqual(index_names, [])

@@ -129,7 +129,7 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
-            q.line_repr(depth=None), 'terms, boost=1, user=["kimchy", "elasticsearch"]',
+            q.line_repr(depth=None), 'terms, boost=1, user=["kimchy", "elasticsearch"]'
         )
 
     def test_terms_set_clause(self):
