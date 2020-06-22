@@ -39,7 +39,7 @@ jobs:
         flake8 --count --ignore=W503,W605,E231,E501 --show-source --statistics tests
     - name: Test with pytest and generate coverage report
       run:
-        pytest --cov=./ --cov-report=xml
+        pytest --cov=./pandagg --cov-report=xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
