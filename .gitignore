@@ -1,5 +1,6 @@
 .*
 !.github
+!.pre-commit-config.yaml
 *.py[co]
 *.egg
 *.egg-info
