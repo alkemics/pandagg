@@ -52,6 +52,6 @@ class IMapping(TreeBasedObj):
     def __call__(self, *args, **kwargs):
         print(
             json.dumps(
-                self._tree.to_dict(), indent=2, sort_keys=True, separators=(",", ": "),
+                self._tree.to_dict(), indent=2, sort_keys=True, separators=(",", ": ")
             )
         )

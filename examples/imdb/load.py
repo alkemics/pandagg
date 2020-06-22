@@ -2,14 +2,7 @@ import json
 from os.path import join
 from elasticsearch import Elasticsearch, helpers
 from examples.imdb.conf import ES_HOST, ES_USE_AUTH, ES_PASSWORD, ES_USER, DATA_DIR
-from pandagg.mapping import (
-    Mapping,
-    Keyword,
-    Text,
-    Float,
-    Nested,
-    Integer,
-)
+from pandagg.mapping import Mapping, Keyword, Text, Float, Nested, Integer
 
 index_name = "movies"
 mapping = Mapping(

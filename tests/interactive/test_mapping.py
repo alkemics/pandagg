@@ -154,7 +154,7 @@ dataset                                                      {Object}
 
         mapping_tree = Mapping(MAPPING)
         client_bound_mapping = IMapping(
-            mapping_tree, client=client_mock, index="classification_report_index_name",
+            mapping_tree, client=client_mock, index="classification_report_index_name"
         )
 
         workflow_field = client_bound_mapping.workflow
@@ -169,7 +169,7 @@ dataset                                                      {Object}
         )
         self.assertEqual(
             response,
-            [(1, {"doc_count": 25, "key": 1}), (2, {"doc_count": 50, "key": 2}),],
+            [(1, {"doc_count": 25, "key": 1}), (2, {"doc_count": 50, "key": 2})],
         )
         client_mock.search.assert_called_once()
         client_mock.search.assert_called_with(
@@ -188,7 +188,7 @@ dataset                                                      {Object}
         client_mock = Mock(spec=["search"])
         es_response_mock = {
             "_shards": {"failed": 0, "successful": 135, "total": 135},
-            "aggregations": {"local_metrics": {"avg_agg": {"value": 23},},},
+            "aggregations": {"local_metrics": {"avg_agg": {"value": 23}}},
             "hits": {"hits": [], "max_score": 0.0, "total": 300},
             "timed_out": False,
             "took": 30,
@@ -197,7 +197,7 @@ dataset                                                      {Object}
 
         mapping_tree = Mapping(MAPPING)
         client_bound_mapping = IMapping(
-            mapping_tree, client=client_mock, index="classification_report_index_name",
+            mapping_tree, client=client_mock, index="classification_report_index_name"
         )
 
         local_train_support = client_bound_mapping.local_metrics.dataset.support_train
@@ -209,9 +209,7 @@ dataset                                                      {Object}
             raw_output=True,
             query={"term": {"classification_type": "multiclass"}},
         )
-        self.assertEqual(
-            response, [(None, {"value": 23}),],
-        )
+        self.assertEqual(response, [(None, {"value": 23})])
         client_mock.search.assert_called_once()
         client_mock.search.assert_called_with(
             body={

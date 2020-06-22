@@ -127,8 +127,7 @@ class FullTextQueriesTestCase(TestCase):
         q3 = MatchBoolPrefix(message="quick brown f")
         self.assertEqual(q3.body, {"message": {"query": "quick brown f"}})
         self.assertEqual(
-            q3.to_dict(),
-            {"match_bool_prefix": {"message": {"query": "quick brown f"}}},
+            q3.to_dict(), {"match_bool_prefix": {"message": {"query": "quick brown f"}}}
         )
         self.assertEqual(
             q3.line_repr(depth=None),
@@ -155,7 +154,7 @@ class FullTextQueriesTestCase(TestCase):
         q3 = MatchPhrase(message="this is a test")
         self.assertEqual(q3.body, {"message": {"query": "this is a test"}})
         self.assertEqual(
-            q3.to_dict(), {"match_phrase": {"message": {"query": "this is a test"}}},
+            q3.to_dict(), {"match_phrase": {"message": {"query": "this is a test"}}}
         )
         self.assertEqual(
             q3.line_repr(depth=None),

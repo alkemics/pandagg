@@ -1,9 +1,9 @@
 ## Sphinx documentation
 
 Documentation stems from 3 sources:
-- automatically generated based on repository sources in `docs/source/reference` directory 
+- automatically generated based on repository sources in `docs/source/reference` directory
 - manually written documentation in all other files of `docs/source` directory
-- a jupyter notebook file generated following procedure in `example/imdb`, then running notebook and exporting 
+- a jupyter notebook file generated following procedure in `example/imdb`, then running notebook and exporting
 html file
 
 #### Procedure

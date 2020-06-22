@@ -27,7 +27,7 @@ class AggsResponseTree(Tree):
         self.__index = index
 
     def _clone_init(self, deep=False):
-        return AggsResponseTree(aggs=self.__aggs.clone(deep=deep), index=self.__index,)
+        return AggsResponseTree(aggs=self.__aggs.clone(deep=deep), index=self.__index)
 
     def parse(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
@@ -70,7 +70,7 @@ class AggsResponseTree(Tree):
             self.insert_node(bucket, pid)
             for child in self.__aggs.children(agg_node.name, id_only=False):
                 self._parse_node_with_children(
-                    agg_node=child, raw_response=raw_value, pid=bucket.identifier,
+                    agg_node=child, raw_response=raw_value, pid=bucket.identifier
                 )
 
     def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):

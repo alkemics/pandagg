@@ -111,8 +111,7 @@ genres                                                <terms, field="genres", si
         # try to add field aggregation on non-existing field will fail
         with self.assertRaises(AbsentMappingFieldError):
             with_mapping.aggs(
-                Terms("imaginary_agg", field="imaginary_field"),
-                insert_below="workflow",
+                Terms("imaginary_agg", field="imaginary_field"), insert_below="workflow"
             )
         self.assertEqual(len(with_mapping.list()), 1)
 
@@ -370,7 +369,7 @@ workflow                                                    <terms, field="workf
                         "interval": "1w",
                     }
                 }
-            },
+            }
         )
         self.assertEqual({n.identifier for n in initial_agg_1.list()}, {"week"})
 
@@ -545,7 +544,7 @@ workflow                                                    <terms, field="workf
                 "one": {
                     "terms": {"field": "terms_one"},
                     "aggs": {"two": {"terms": {"field": "terms_two"}}},
-                },
+                }
             },
         )
 
@@ -707,7 +706,7 @@ workflow                                                    <terms, field="workf
                 "two": {
                     "terms": {"field": "terms_two"},
                     "aggs": {"one": {"terms": {"field": "terms_one"}}},
-                },
+                }
             },
         )
 
@@ -723,7 +722,7 @@ workflow                                                    <terms, field="workf
                 "one": {
                     "terms": {"field": "terms_one"},
                     "aggs": {"two": {"terms": {"field": "terms_two"}}},
-                },
+                }
             },
         )
 

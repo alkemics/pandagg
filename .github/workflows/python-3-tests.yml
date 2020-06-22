@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8]
     env:
       PYTHON: ${{ matrix.python-version }}
       OS: 'ubuntu-latest'
@@ -37,6 +37,9 @@ jobs:
         flake8 --count --ignore=W503,W605 --show-source --statistics pandagg
         # on tests, more laxist: allow "missing whitespace after ','" and "line too long"
         flake8 --count --ignore=W503,W605,E231,E501 --show-source --statistics tests
+    - name: Lint with black
+      run: |
+        black --check .
     - name: Test with pytest and generate coverage report
       run:
         pytest --cov=./pandagg --cov-report=xml
