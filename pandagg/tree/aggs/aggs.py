@@ -449,7 +449,7 @@ class Aggs(Tree):
 
     def to_dict(self, from_=None, depth=None, with_name=True):
         if self.root is None:
-            return {}
+            return None
         from_ = self.root if from_ is None else from_
         node = self.get(from_)
         children_queries = {}
