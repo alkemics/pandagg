@@ -2,10 +2,6 @@
 Principles
 ##########
 
-.. note::
-
-    This is a work in progress. Some sections still need to be furnished.
-
 
 This library focuses on two principles:
 
