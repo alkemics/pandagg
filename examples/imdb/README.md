@@ -97,8 +97,22 @@ _
 
 ## Steps to start playing with your index
 
-Note to Elastic, if you have a spare cluster to prepare demo indices on which you could let your community perform read
-operations we could skip this step ;)
+
+You can either directly use the demo index available [here]('https://beba020ee88d49488d8f30c163472151.eu-west-2.aws.cloud.es.io:9243/')
+with credentials user: `pandagg`, password: `pandagg`:
+
+Access it with following client instantiation:
+```
+from elasticsearch import Elasticsearch
+client = Elasticsearch(
+    hosts=['https://beba020ee88d49488d8f30c163472151.eu-west-2.aws.cloud.es.io:9243/'],
+    http_auth=('pandagg', 'pandagg')
+)
+```
+
+
+Or follow below steps to install it yourself locally.
+In this case, you can either generate yourself the files, or download them from [here](https://drive.google.com/file/d/1po3T18l9QoYxPEGh-iKV4oN3DslWGu8-/view?usp=sharing) (file md5 `b363dee23720052501e24d15361ed605`).
 
 #### Dump tables
 Follow instruction on bottom of https://relational.fit.cvut.cz/dataset/IMDb page and dump following tables in a
