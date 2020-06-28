@@ -548,6 +548,15 @@ workflow                                                    <terms, field="workf
             },
         )
 
+    def test_aggs_strings(self):
+        self.assertEqual(
+            Aggs().aggs(["yolo1", "yolo2"]).to_dict(),
+            {
+                "yolo1": {"terms": {"field": "yolo1"}},
+                "yolo2": {"terms": {"field": "yolo2"}},
+            },
+        )
+
     def test_validate_aggs_parent_id(self):
         """
         <Aggregation>
