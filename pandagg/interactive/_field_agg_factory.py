@@ -59,7 +59,7 @@ def _operate(self, agg_node, index, raw_output, query):
         return result
     keys = map(itemgetter(0), result)
     raw_values = map(itemgetter(1), result)
-    return pd.DataFrame(index=keys, data=raw_values)
+    return pd.DataFrame(index=list(keys), data=list(raw_values))
 
 
 def field_type_klass_factory(field_type):

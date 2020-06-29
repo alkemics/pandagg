@@ -3,486 +3,107 @@ User Guide
 ##########
 
 
+**pandagg** library provides interfaces to perform **read** operations on cluster.
+
+
+.. toctree::
+   :maxdepth: 2
+
+   user-guide.search
+   user-guide.query
+   user-guide.aggs
+   user-guide.response
+   user-guide.interactive
+
+
 .. note::
 
     Examples will be based on :doc:`IMDB` data.
-    This is a work in progress. Some sections still need to be furnished.
 
 
-*****
-Query
-*****
 
-The :class:`~pandagg.tree.query.abstract.Query` class provides :
+:class:`~pandagg.search.Search` class is intended to perform request (see :doc:`user-guide.search`)
 
-- multiple syntaxes to declare and udpate a query
-- query validation (with nested clauses validation)
-- ability to insert clauses at specific points
-- tree-like visual representation
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
 
-Declaration
-===========
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+            ...
+            ..truncated..
+            ...
+          }
+        }
+      },
+      "size": 2
+    }
 
-From native "dict" query
-------------------------
+It relies on:
 
-Given the following query:
+- :class:`~pandagg.query.Query` to build queries (see :doc:`user-guide.query`),
+- :class:`~pandagg.aggs.Aggs` to build aggregations (see :doc:`user-guide.aggs`)
 
-    >>> expected_query = {'bool': {'must': [
-    >>>    {'terms': {'genres': ['Action', 'Thriller']}},
-    >>>    {'range': {'rank': {'gte': 7}}},
-    >>>    {'nested': {
-    >>>        'path': 'roles',
-    >>>        'query': {'bool': {'must': [
-    >>>            {'term': {'roles.gender': {'value': 'F'}}},
-    >>>            {'term': {'roles.role': {'value': 'Reporter'}}}]}
-    >>>         }
-    >>>    }}
-    >>> ]}}
-
-To instantiate :class:`~pandagg.tree.query.abstract.Query`, simply pass "dict" query as argument:
-
-    >>> from pandagg.query import Query
-    >>> q = Query(expected_query)
-
-A visual representation of the query is available with :func:`~pandagg.tree.query.abstract.Query.show`:
-
-    >>> q.show()
+    >>> search._query.show()
     <Query>
     bool
-    └── must
-        ├── nested, path="roles"
-        │   └── query
-        │       └── bool
-        │           └── must
-        │               ├── term, field=roles.gender, value="F"
-        │               └── term, field=roles.role, value="Reporter"
-        ├── range, field=rank, gte=7
-        └── terms, genres=["Action", "Thriller"]
+    └── filter
+        └── range, field=year, gte=1990
 
-
-Call :func:`~pandagg.tree.query.abstract.Query.to_dict` to convert it to native dict:
-
-    >>> q.to_dict()
-    {'bool': {
-        'must': [
-            {'range': {'rank': {'gte': 7}}},
-            {'terms': {'genres': ['Action', 'Thriller']}},
-            {'bool': {'must': [
-                {'term': {'roles.role': {'value': 'Reporter'}}},
-                {'term': {'roles.gender': {'value': 'F'}}}]}}}}
-            ]}
-        ]
-    }}
-
-    >>> from pandagg.utils import equal_queries
-    >>> equal_queries(q.to_dict(), expected_query)
-    True
-
-
-.. note::
-    `equal_queries` function won't consider order of clauses in must/should parameters since it actually doesn't matter
-    in Elasticsearch execution, ie
-
-        >>> equal_queries({'must': [A, B]}, {'must': [B, A]})
-        True
-
-With DSL classes
-----------------
-
-Pandagg provides a DSL to declare this query in a quite similar fashion:
-
-    >>> from pandagg.query import Nested, Bool, Range, Term, Terms
-
-    >>> q = Bool(must=[
-    >>>     Terms(genres=['Action', 'Thriller']),
-    >>>     Range(rank={"gte": 7}),
-    >>>     Nested(
-    >>>         path='roles',
-    >>>         query=Bool(must=[
-    >>>             Term(roles__gender='F'),
-    >>>             Term(roles__role='Reporter')
-    >>>         ])
-    >>>     )
-    >>> ])
-
-All these classes inherit from :class:`~pandagg.tree.query.abstract.Query` and thus provide the same interface.
-
-    >>> from pandagg.query import Query
-    >>> isinstance(q, Query)
-    True
-
-With flattened syntax
----------------------
-
-In the flattened syntax, the query clause type is used as first argument:
-
-    >>> from pandagg.query import Query
-    >>> q = Query('terms', genres=['Action', 'Thriller'])
-
-
-Query enrichment
-================
-
-All methods described below return a new :class:`~pandagg.tree.query.abstract.Query` instance, and keep unchanged the
-initial query.
-
-For instance:
-
-    >>> from pandagg.query import Query
-    >>> initial_q = Query()
-    >>> enriched_q = initial_q.query('terms', genres=['Comedy', 'Short'])
-
-    >>> initial_q.to_dict()
-    None
-
-    >>> enriched_q.to_dict()
-    {'terms': {'genres': ['Comedy', 'Short']}}
-
-.. note::
-
-    Calling :func:`~pandagg.tree.query.abstract.Query.to_dict` on an empty Query returns `None`
-
-        >>> from pandagg.query import Query
-        >>> Query().to_dict()
-        None
-
-
-query() method
---------------
-
-The base method to enrich a :class:`~pandagg.tree.query.abstract.Query` is :func:`~pandagg.tree.query.abstract.Query.query`.
-
-
-Considering this query:
-
-    >>> from pandagg.query import Query
-    >>> q = Query()
-
-:func:`~pandagg.tree.query.abstract.Query.query` accepts following syntaxes:
-
-from dictionnary::
-
-
-    >>> q.query({"terms": {"genres": ['Comedy', 'Short']})
-
-flattened syntax::
-
-
-    >>> q.query("terms", genres=['Comedy', 'Short'])
-
-
-from Query instance (this includes DSL classes)::
-
-    >>> from pandagg.query import Terms
-    >>> q.query(Terms(genres=['Action', 'Thriller']))
-
-
-Compound clauses specific methods
----------------------------------
-
-:class:`~pandagg.tree.query.abstract.Query` instance also exposes following methods for specific compound queries:
-
-(TODO: detail allowed syntaxes)
-
-Specific to bool queries:
-
-- :func:`~pandagg.tree.query.abstract.Query.bool`
-- :func:`~pandagg.tree.query.abstract.Query.filter`
-- :func:`~pandagg.tree.query.abstract.Query.must`
-- :func:`~pandagg.tree.query.abstract.Query.must_not`
-- :func:`~pandagg.tree.query.abstract.Query.should`
-
-Specific to other compound queries:
-
-- :func:`~pandagg.tree.query.abstract.Query.nested`
-- :func:`~pandagg.tree.query.abstract.Query.constant_score`
-- :func:`~pandagg.tree.query.abstract.Query.dis_max`
-- :func:`~pandagg.tree.query.abstract.Query.function_score`
-- :func:`~pandagg.tree.query.abstract.Query.has_child`
-- :func:`~pandagg.tree.query.abstract.Query.has_parent`
-- :func:`~pandagg.tree.query.abstract.Query.parent_id`
-- :func:`~pandagg.tree.query.abstract.Query.pinned_query`
-- :func:`~pandagg.tree.query.abstract.Query.script_score`
-- :func:`~pandagg.tree.query.abstract.Query.boost`
-
-
-Inserted clause location
-------------------------
-
-On all insertion methods detailed above, by default, the inserted clause is placed at the top level of your query, and
-generates a bool clause if necessary.
-
-Considering the following query:
-
-    >>> from pandagg.query import Query
-    >>> q = Query('terms', genres=['Action', 'Thriller'])
-    >>> q.show()
-    <Query>
-    terms, genres=["Action", "Thriller"]
-
-A bool query will be created:
-
-    >>> q = q.query('range', rank={"gte": 7})
-    >>> q.show()
-    <Query>
-    bool
-    └── must
-        ├── range, field=rank, gte=7
-        └── terms, genres=["Action", "Thriller"]
-
-And reused if necessary:
-
-    >>> q = q.must_not('range', year={"lte": 1970})
-    >>> q.show()
-    <Query>
-    bool
-    ├── must
-    │   ├── range, field=rank, gte=7
-    │   └── terms, genres=["Action", "Thriller"]
-    └── must_not
-        └── range, field=year, lte=1970
-
-Specifying a specific location requires to `name queries <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html#request-body-search-queries-and-filters>`_ :
-
-    >>> from pandagg.query import Nested
-
-    >>> q = q.nested(path='roles', _name='nested_roles', query=Term('roles.gender', value='F'))
-    >>> q.show()
-    <Query>
-    bool
-    ├── must
-    │   ├── nested, _name=nested_roles, path="roles"
-    │   │   └── query
-    │   │       └── term, field=roles.gender, value="F"
-    │   ├── range, field=rank, gte=7
-    │   └── terms, genres=["Action", "Thriller"]
-    └── must_not
-        └── range, field=year, lte=1970
-
-Doing so allows to insert clauses above/below given clause using `parent`/`child` parameters:
-
-    >>> q = q.query('term', roles__role='Reporter', parent='nested_roles')
-    >>> q.show()
-    <Query>
-    bool
-    ├── must
-    │   ├── nested, _name=nested_roles, path="roles"
-    │   │   └── query
-    │   │       └── bool
-    │   │           └── must
-    │   │               ├── term, field=roles.role, value="Reporter"
-    │   │               └── term, field=roles.gender, value="F"
-    │   ├── range, field=rank, gte=7
-    │   └── terms, genres=["Action", "Thriller"]
-    └── must_not
-        └── range, field=year, lte=1970
-
-
-TODO: explain `parent_param`, `child_param`, `mode` merging strategies on same named clause etc..
-
-***********
-Aggregation
-***********
-
-The :class:`~pandagg.tree.aggs.aggs.Aggs` class provides :
-
-- multiple syntaxes to declare and udpate a aggregation
-- aggregation clause validation
-- ability to insert clauses at specific locations (and not just below last manipulated clause)
-
-
-Declaration
-===========
-
-From native "dict" query
-------------------------
-
-Given the following aggregation:
-
-    >>> expected_aggs = {
-    >>>   "decade": {
-    >>>     "histogram": {"field": "year", "interval": 10},
-    >>>     "aggs": {
-    >>>       "genres": {
-    >>>         "terms": {"field": "genres", "size": 3},
-    >>>         "aggs": {
-    >>>           "max_nb_roles": {
-    >>>             "max": {"field": "nb_roles"}
-    >>>           },
-    >>>           "avg_rank": {
-    >>>             "avg": {"field": "rank"}
-    >>>           }
-    >>>         }
-    >>>       }
-    >>>     }
-    >>>   }
-    >>> }
-
-To declare :class:`~pandagg.tree.aggs.aggs.Aggs`, simply pass "dict" query as argument:
-
-    >>> from pandagg.aggs import Aggs
-    >>> a = Aggs(expected_aggs)
-
-A visual representation of the query is available with :func:`~pandagg.tree.aggs.aggs.Aggs.show`:
-
-    >>> a.show()
+    >>> search._aggs.show()
     <Aggregations>
     decade                                         <histogram, field="year", interval=10>
     └── genres                                            <terms, field="genres", size=3>
-        ├── max_nb_roles                                          <max, field="nb_roles">
+        ├── avg_nb_roles                                          <avg, field="nb_roles">
         └── avg_rank                                                  <avg, field="rank">
 
+Executing a :class:`~pandagg.search.Search` request using :func:`~pandagg.search.Search.execute` will return a
+:class:`~pandagg.response.Response` instance (see :doc:`user-guide.response`).
 
-Call :func:`~pandagg.tree.aggs.aggs.Aggs.to_dict` to convert it to native dict:
+    >>> response = search.execute()
+    >>> response
+    <Response> took 58ms, success: True, total result >=10000, contains 2 hits
 
-    >>> a.to_dict() == expected_aggs
-    True
+    >>> response.hits.hits
+    [<Hit 640> score=0.00, <Hit 641> score=0.00]
 
-With DSL classes
-----------------
+    >>> response.aggregations.to_dataframe()
+                            avg_nb_roles  avg_rank  doc_count
+    decade genres
+    1990.0 Drama           18.518067  5.981429      12232
+           Short            3.023284  6.311326      12197
+           Documentary      3.778982  6.517093       8393
+    2000.0 Short            4.053082  6.836253      13451
+           Drama           14.385391  6.269675      11500
+           Documentary      5.581433  6.980898       8639
 
-Pandagg provides a DSL to declare this query in a quite similar fashion:
-
-    >>> from pandagg.aggs import Histogram, Terms, Max, Avg
-    >>>
-    >>> a = Histogram("decade", field='year', interval=10, aggs=[
-    >>>     Terms("genres", field="genres", size=3, aggs=[
-    >>>         Max("max_nb_roles", field="nb_roles"),
-    >>>         Avg("avg_rank", field="range")
-    >>>     ]),
-    >>> ])
-
-All these classes inherit from :class:`~pandagg.tree.aggs.aggs.Aggs` and thus provide the same interface.
-
-    >>> from pandagg.aggs import Aggs
-    >>> isinstance(a, Aggs)
-    True
-
-With flattened syntax
----------------------
-
-In the flattened syntax, the first argument is the aggregation name, the second argument is the aggregation type, the
-following keyword arguments define the aggregation body:
-
-    >>> from pandagg.query import Aggs
-    >>> a = Aggs('genres', 'terms', size=3)
-    >>> a.to_dict()
-    {'genres': {'terms': {'field': 'genres', 'size': 3}}}
-
-
-Aggregations enrichment
-=======================
-
-Aggregations can be enriched using two methods:
-
-- :func:`~pandagg.tree.aggs.aggs.Aggs.aggs`
-- :func:`~pandagg.tree.aggs.aggs.Aggs.groupby`
-
-Both methods return a new :class:`~pandagg.tree.aggs.aggs.Aggs` instance, and keep unchanged the initial Aggregation.
-
-For instance:
-
-    >>> from pandagg.aggs import Aggs
-    >>> initial_a = Aggs()
-    >>> enriched_a = initial_a.aggs('genres_agg', 'terms', field='genres')
-
-    >>> initial_q.to_dict()
-    None
-
-    >>> enriched_q.to_dict()
-    {'genres_agg': {'terms': {'field': 'genres'}}}
-
-.. note::
-
-    Calling :func:`~pandagg.tree.aggs.aggs.Aggs.to_dict` on an empty Aggregation returns `None`
-
-        >>> from pandagg.aggs import Aggs
-        >>> Aggs().to_dict()
-        None
-
-
-TODO
-
-********
-Response
-********
-
-TODO
-
-******
-Search
-******
-
-TODO
-
-*******
-Mapping
-*******
-
-Interactive mapping
-===================
-
-In interactive context, the :class:`~pandagg.interactive.mapping.IMapping` class provides navigation features with autocompletion to quickly discover a large
-mapping:
-
-    >>> from pandagg.mapping import IMapping
-    >>> from examples.imdb.load import mapping
-    >>> m = IMapping(imdb_mapping)
-    >>> m.roles
-    <IMapping subpart: roles>
-    roles                                                    [Nested]
-    ├── actor_id                                              Integer
-    ├── first_name                                            Text
-    │   └── raw                                             ~ Keyword
-    ├── gender                                                Keyword
-    ├── last_name                                             Text
-    │   └── raw                                             ~ Keyword
-    └── role                                                  Keyword
-    >>> m.roles.first_name
-    <IMapping subpart: roles.first_name>
-    first_name                                            Text
-    └── raw                                             ~ Keyword
-
-To get the complete field definition, just call it:
-
-    >>> m.roles.first_name()
-    <Mapping Field first_name> of type text:
-    {
-        "type": "text",
-        "fields": {
-            "raw": {
-                "type": "keyword"
-            }
-        }
-    }
-
-A **IMapping** instance can be bound to an Elasticsearch client to get quick access to aggregations computation on mapping fields.
-
-Suppose you have the following client:
-
-    >>> from elasticsearch import Elasticsearch
-    >>> client = Elasticsearch(hosts=['localhost:9200'])
-
-Client can be bound at instantiation:
-
-    >>> m = IMapping(imdb_mapping, client=client, index_name='movies')
-
-Doing so will generate a **a** attribute on mapping fields, this attribute will list all available aggregation for that
-field type (with autocompletion):
-
-    >>> m.roles.gender.a.terms()
-    [('M', {'key': 'M', 'doc_count': 2296792}),
-    ('F', {'key': 'F', 'doc_count': 1135174})]
-
-
-.. note::
-
-    Nested clauses will be automatically taken into account.
-
-
-*************************
-Cluster indices discovery
-*************************
-
-TODO
+On top of that some interactive features are available (see :doc:`user-guide.interactive`).

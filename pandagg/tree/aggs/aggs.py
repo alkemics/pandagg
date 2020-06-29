@@ -131,7 +131,9 @@ class Aggs(Tree):
             self.insert_node(shadow_root)
             pid = shadow_root.identifier
         for ar in arg:
-            if not isinstance(ar, (AggNode, Aggs)):
+            if isinstance(ar, string_types):
+                ar = Terms(ar, field=ar)
+            elif not isinstance(ar, (AggNode, Aggs)):
                 raise ValueError("Invalid type %s, %s" % (type(ar), ar))
             self.insert(ar, parent_id=pid)
 
@@ -331,11 +333,8 @@ class Aggs(Tree):
             inserted_aggs = [Aggs(arg) for arg in args]
         # groupby([{}, {}])
         elif len(args) == 1 and isinstance(args[0], (list, tuple)):
-            if kwargs:
-                raise ValueError(
-                    "Kwargs not allowed when passing multiple aggregations in args."
-                )
-            inserted_aggs = [Aggs(arg) for arg in args[0]]
+            # kwargs applied on all
+            inserted_aggs = [Aggs(arg, **kwargs) for arg in args[0]]
         # groupby({})
         # groupby(Terms())
         # groupby('terms', name='per_tag', field='tag')
