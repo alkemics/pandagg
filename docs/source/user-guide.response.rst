@@ -12,7 +12,7 @@ a :class:`~pandagg.response.Response` instance is returned.
     >>> response = Search(using=client, index='movies')\
     >>>     .size(2)\
     >>>     .filter('term', 'genres', 'Documentary')\
-    >>>     .aggs('avg', field='rank')\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
     >>>     .execute()
 
     >>> response
@@ -108,7 +108,7 @@ Let's build a bit more complex aggregation query to showcase its functionalities
     >>> from elasticsearch import Elasticsearch
     >>> from pandagg.search import Search
     >>>
-    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
     >>> response = Search(using=client, index='movies')\
     >>>     .size(0)\
     >>>     .groupby('decade', 'histogram', interval=10, field='year')\
@@ -195,6 +195,14 @@ Using :func:`~pandagg.response.Aggregations.to_interactive_tree`:
 Tabular serialization
 ---------------------
 
+Doing so requires to identify a level that will draw the line between:
+
+- grouping levels: those which will be used to identify rows (here decades, and genres), and provide **doc_count** per row
+- columns levels: those which will be used to populate columns and cells (here avg_nb_roles and avg_rank)
+
+The tabular format will suit especially well aggregations with a T shape.
+
+
 Using :func:`~pandagg.response.Aggregations.to_dataframe`:
 
     >>> response.aggregations.to_dataframe()
@@ -230,3 +238,15 @@ Using :func:`~pandagg.response.Aggregations.to_tabular`:
       (2000.0, 'Documentary'): {'doc_count': 8639,
        'avg_rank': 6.980897812811443,
        'avg_nb_roles': 5.581433036231045}})
+
+
+.. note::
+
+    TODO - explain parameters:
+
+        - index_orient
+        - grouped_by
+        - expand_columns
+        - expand_sep
+        - normalize
+        - with_single_bucket_groups
