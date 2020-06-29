@@ -78,7 +78,7 @@ _
 ├── name                                                      Text
 ...
 ```
-```
+```python
 >>> movies.mapping.roles
 <Mapping subpart: roles>
 roles                                                        [Nested]
@@ -95,7 +95,7 @@ roles                                                        [Nested]
 ```
 Execute aggregation on field:
 
-```
+```python
 >>> movies.mapping.roles.gender.a.terms()
    doc_count key
 M    2296792   M
