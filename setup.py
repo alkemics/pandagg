@@ -31,5 +31,5 @@ setup(
     zip_safe=False,
     install_requires=install_requires,
     setup_requires=["pytest-runner"],
-    license="MIT",
+    license="Apache-2.0",
 )
