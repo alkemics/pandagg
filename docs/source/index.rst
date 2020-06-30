@@ -53,7 +53,7 @@ The :doc:`reference/pandagg` documentation provides API-level documentation.
 License
 *******
 
-pandagg is made available under the MIT License. For more details, see `LICENSE.txt <https://github.com/alkemics/pandagg/blob/master/LICENCE>`_.
+pandagg is made available under the Apache 2.0 License. For more details, see `LICENSE.txt <https://github.com/alkemics/pandagg/blob/master/LICENSE>`_.
 
 ************
 Contributing
