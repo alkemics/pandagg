@@ -45,14 +45,14 @@ class ResponseTestCase(PandaggTestCase):
                         "_type": "_doc",
                         "_id": "1",
                         "_score": 1.0,
-                        "_source": {"field_23": 1},
+                        "_source": {"field_23": 1, "yo": 2},
                     },
                     {
                         "_index": "my_index_01",
                         "_type": "_doc",
                         "_id": "2",
                         "_score": 0.2,
-                        "_source": {"field_23": 2},
+                        "_source": {"field_23": 2, "to": 1},
                     },
                 ],
             }
@@ -64,6 +64,21 @@ class ResponseTestCase(PandaggTestCase):
         for h in hits.hits:
             self.assertIsInstance(h, Hit)
         self.assertEqual(hits.__repr__(), "<Hits> total: 34, contains 2 hits")
+
+        # as dataframe
+        expanded_df = hits.to_dataframe()
+        non_expanded_df = hits.to_dataframe(expand_source=False)
+
+        self.assertEqual(
+            sorted(expanded_df.columns.tolist()),
+            sorted(["_index", "_score", "_type", "field_23", "to", "yo"]),
+        )
+        self.assertEqual(expanded_df.shape, (2, 6))
+        self.assertEqual(
+            sorted(non_expanded_df.columns.tolist()),
+            ["_index", "_score", "_source", "_type"],
+        )
+        self.assertEqual(non_expanded_df.shape, (2, 4))
 
     def test_response(self):
         r = Response(
