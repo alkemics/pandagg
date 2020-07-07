@@ -11,7 +11,7 @@ a :class:`~pandagg.response.Response` instance is returned.
     >>> client = ElasticSearch(hosts=['localhost:9200'])
     >>> response = Search(using=client, index='movies')\
     >>>     .size(2)\
-    >>>     .filter('term', 'genres', 'Documentary')\
+    >>>     .filter('term', genres='Documentary')\
     >>>     .aggs('avg_rank', 'avg', field='rank')\
     >>>     .execute()
 
@@ -95,6 +95,14 @@ Each hit contains the raw dict under `data` attribute:
      'nb_directors': 1,
      'rank': None}
 
+
+If pandas dependency is installed, hits can be parsed as a dataframe:
+
+    >>> hits.to_dataframe()
+         _index  _score _type                                                                                                                                                        directors         genres  movie_id                       name  nb_directors  nb_roles  rank roles  year
+    _id
+    642  movies     0.0  _doc  [{'director_id': 33096, 'first_name': 'Reinhard', 'last_name': 'Hauff', 'full_name': 'Reinhard Hauff', 'genres': ['Documentary', 'Drama', 'Musical', 'Short']}]  [Documentary]       642        10 Tage in Calcutta             1         0  None  None  1984
+    643  movies     0.0  _doc                               [{'director_id': 32148, 'first_name': 'Tanja', 'last_name': 'Hamilton', 'full_name': 'Tanja Hamilton', 'genres': ['Documentary']}]  [Documentary]       643  10 Tage, ein ganzes Leben             1         0  None  None  2004
 
 Aggregations
 ============

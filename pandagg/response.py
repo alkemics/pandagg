@@ -74,6 +74,29 @@ class Hits:
             return ">=%d" % self.total["value"]
         raise ValueError("Invalid total %s" % self.total)
 
+    def to_dataframe(self, expand_source=True):
+        """
+        Return hits as pandas dataframe.
+        Requires pandas dependency.
+        :param expand_source: if True, `_source` sub-fields are expanded as columns
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                'Using dataframe output format requires to install pandas. Please install "pandas" or '
+                "use another output format."
+            )
+        hits = self.data.get("hits", [])
+        if not expand_source:
+            return pd.DataFrame(hits).set_index("_id")
+        flattened_hits = []
+        for hit in hits:
+            hit = hit.copy()
+            hit.update(hit.pop("_source"))
+            flattened_hits.append(hit)
+        return pd.DataFrame(flattened_hits).set_index("_id")
+
     def __repr__(self):
         if not isinstance(self.total, dict):
             total_repr = text(self.total)
