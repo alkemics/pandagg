@@ -95,13 +95,22 @@ class Request(object):
 
 
 class Search(Request):
-    def __init__(self, using=None, index=None, mapping=None, nested_autocorrect=False):
+    def __init__(
+        self,
+        using=None,
+        index=None,
+        mapping=None,
+        nested_autocorrect=False,
+        repr_auto_execute=False,
+    ):
         """
         Search request to elasticsearch.
 
         :arg using: `Elasticsearch` instance to use
         :arg index: limit the search to index
         :arg mapping: mapping used for query validation
+        :arg nested_autocorrect: in case of missing nested clause, will insert it automatically
+        :arg repr_auto_execute: execute query and display results as dataframe, requires client to be provided
 
         All the parameters supplied (or omitted) at creation type can be later
         overridden by methods (`using`, `index` and `mapping` respectively).
@@ -120,6 +129,7 @@ class Search(Request):
         self._post_filter = Query(
             mapping=mapping, nested_autocorrect=nested_autocorrect
         )
+        self._repr_auto_execute = repr_auto_execute
         super(Search, self).__init__(using=using, index=index)
 
     def query(self, *args, **kwargs):
@@ -278,6 +288,7 @@ class Search(Request):
         s._query = self._query.clone()
         s._post_filter = self._post_filter.clone()
         s._mapping = self._mapping.clone()
+        s._repr_auto_execute = self._repr_auto_execute
         return s
 
     def update_from_dict(self, d):
@@ -579,8 +590,27 @@ class Search(Request):
             and other.to_dict() == self.to_dict()
         )
 
+    def _auto_execution_df_result(self):
+        try:
+            import pandas as pd  # noqa
+        except ImportError:
+            return ImportError("repr_auto_execute requires pandas dependency")
+        r = self.execute()
+        if not self._aggs.is_empty():
+            return r.aggregations.to_dataframe()
+        return r.hits.to_dataframe()
+
     def __repr__(self):
-        return json.dumps(self.to_dict(), indent=2)
+        # inspired by https://github.com/elastic/eland/blob/master/eland/dataframe.py#L471 idea to execute search at
+        # __repr__ to have more interactive experience
+        if not self._repr_auto_execute:
+            return json.dumps(self.to_dict(), indent=2)
+        return self._auto_execution_df_result().__repr__()
+
+    def _repr_html_(self):
+        if not self._repr_auto_execute:
+            return None
+        return self._auto_execution_df_result()._repr_html_()
 
 
 class MultiSearch(Request):

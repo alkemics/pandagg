@@ -66,19 +66,29 @@ class ResponseTestCase(PandaggTestCase):
         self.assertEqual(hits.__repr__(), "<Hits> total: 34, contains 2 hits")
 
         # as dataframe
-        expanded_df = hits.to_dataframe()
+        source_only_df = hits.to_dataframe()
+        with_metadata_df = hits.to_dataframe(source_only=False)
         non_expanded_df = hits.to_dataframe(expand_source=False)
 
         self.assertEqual(
-            sorted(expanded_df.columns.tolist()),
+            sorted(source_only_df.columns.tolist()), sorted(["field_23", "to", "yo"])
+        )
+        self.assertEqual(source_only_df.shape, (2, 3))
+        self.assertEqual(source_only_df.index.tolist(), ["1", "2"])
+
+        self.assertEqual(
+            sorted(with_metadata_df.columns.tolist()),
             sorted(["_index", "_score", "_type", "field_23", "to", "yo"]),
         )
-        self.assertEqual(expanded_df.shape, (2, 6))
+        self.assertEqual(with_metadata_df.shape, (2, 6))
+        self.assertEqual(with_metadata_df.index.tolist(), ["1", "2"])
+
         self.assertEqual(
             sorted(non_expanded_df.columns.tolist()),
             ["_index", "_score", "_source", "_type"],
         )
         self.assertEqual(non_expanded_df.shape, (2, 4))
+        self.assertEqual(non_expanded_df.index.tolist(), ["1", "2"])
 
     def test_response(self):
         r = Response(
