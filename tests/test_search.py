@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from mock import patch, Mock
+from mock import patch
 
 from elasticsearch import Elasticsearch
 from pandagg.search import Search
