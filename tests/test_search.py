@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from mock import patch
 
+from elasticsearch import Elasticsearch
 from pandagg.search import Search
 from pandagg.aggs import Aggs
 from pandagg.query import Query, Bool, Match
@@ -383,3 +384,44 @@ class SearchTestCase(PandaggTestCase):
             "indices_boost": [{"important-documents": 2}],
             "_source": ["id", "name"],
         } == s.to_dict()
+
+    @patch.object(Elasticsearch, "search")
+    def test_repr_execution(self, client_search):
+        client_search.return_value = {
+            "took": 42,
+            "timed_out": False,
+            "_shards": {"total": 10, "successful": 10, "skipped": 0, "failed": 0},
+            "hits": {
+                "total": {"value": 34, "relation": "eq"},
+                "max_score": 0.0,
+                "hits": [
+                    {
+                        "_index": "my_index_01",
+                        "_type": "_doc",
+                        "_id": "1",
+                        "_score": 1.0,
+                        "_source": {"field_23": 1},
+                    },
+                    {
+                        "_index": "my_index_01",
+                        "_type": "_doc",
+                        "_id": "2",
+                        "_score": 0.2,
+                        "_source": {"field_23": 2},
+                    },
+                ],
+            },
+        }
+        s = Search(
+            using=Elasticsearch(hosts=["..."]), index="yolo", repr_auto_execute=True
+        )
+
+        s.size(2).__repr__()
+        client_search.assert_called_once()
+        client_search.assert_any_call(body={"size": 2}, index=["yolo"])
+
+        client_search.reset_mock()
+
+        s.size(2)._repr_html_()
+        client_search.assert_called_once()
+        client_search.assert_any_call(body={"size": 2}, index=["yolo"])

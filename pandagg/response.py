@@ -74,11 +74,12 @@ class Hits:
             return ">=%d" % self.total["value"]
         raise ValueError("Invalid total %s" % self.total)
 
-    def to_dataframe(self, expand_source=True):
+    def to_dataframe(self, expand_source=True, source_only=True):
         """
         Return hits as pandas dataframe.
         Requires pandas dependency.
         :param expand_source: if True, `_source` sub-fields are expanded as columns
+        :param source_only: if True, doesn't include hit metadata (except id which is used as dataframe index)
         """
         try:
             import pandas as pd
@@ -88,13 +89,19 @@ class Hits:
                 "use another output format."
             )
         hits = self.data.get("hits", [])
+        if not hits:
+            return pd.DataFrame()
         if not expand_source:
             return pd.DataFrame(hits).set_index("_id")
         flattened_hits = []
         for hit in hits:
-            hit = hit.copy()
-            hit.update(hit.pop("_source"))
-            flattened_hits.append(hit)
+            hit_metadata = hit.copy()
+            hit_source = hit_metadata.pop("_source")
+            if source_only:
+                hit_source["_id"] = hit_metadata["_id"]
+            else:
+                hit_source.update(hit_metadata)
+            flattened_hits.append(hit_source)
         return pd.DataFrame(flattened_hits).set_index("_id")
 
     def __repr__(self):

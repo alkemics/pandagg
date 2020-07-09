@@ -40,12 +40,13 @@ class Index(object):
         self.mapping = IMapping(mapping, client=client, index=name)
         self.aliases = aliases
 
-    def search(self, nested_autocorrect=True):
+    def search(self, nested_autocorrect=True, repr_auto_execute=True):
         return Search(
             using=self.client,
             mapping=self._mapping,
             index=self.name,
             nested_autocorrect=nested_autocorrect,
+            repr_auto_execute=repr_auto_execute,
         )
 
     def __str__(self):
