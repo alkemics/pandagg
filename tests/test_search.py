@@ -6,6 +6,7 @@ from elasticsearch import Elasticsearch
 from pandagg.search import Search
 from pandagg.aggs import Aggs
 from pandagg.query import Query, Bool, Match
+from pandagg.tree import Mapping
 from pandagg.utils import ordered
 from tests import PandaggTestCase
 
@@ -34,6 +35,19 @@ class SearchTestCase(PandaggTestCase):
             ordered(s3._query.to_dict()),
             ordered(Query(Bool(must=[Match(f=42), Match(f=43)])).to_dict()),
         )
+
+    def test_search_column_selection(self):
+        mapping = Mapping(
+            properties={"col1": {"type": "keyword"}, "col2": {"type": "integer"}}
+        )
+        self.assertEqual(
+            Search(mapping=mapping)[["col1", "col2"]].to_dict(),
+            {"_source": {"includes": ["col1", "col2"]}},
+        )
+
+        with self.assertRaises(KeyError):
+            mapping = Mapping(properties={"example": {"type": "keyword"}})
+            Search(mapping=mapping)[["col1", "col2"]]
 
     def test_using(self):
         o = object()
