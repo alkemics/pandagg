@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from pandagg import Search
 
 try:
     # python 2
@@ -10,7 +11,6 @@ except ImportError:
 
 import sys
 
-from mock import Mock
 from unittest import TestCase
 
 from pandagg.mapping import Keyword, Text, Nested, Object, Integer
@@ -95,7 +95,7 @@ dataset                                                      {Object}
         }
 
         mapping_tree = Mapping(mapping_dict)
-        client_mock = Mock(spec=["search"])
+        client_mock = {}
         index_name = "classification_report_index_name"
 
         # from dict
@@ -133,24 +133,7 @@ dataset                                                      {Object}
         """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
         aggregations on that field type.
         """
-        client_mock = Mock(spec=["search"])
-        es_response_mock = {
-            "_shards": {"failed": 0, "successful": 135, "total": 135},
-            "aggregations": {
-                "terms_agg": {
-                    "buckets": [
-                        {"doc_count": 25, "key": 1},
-                        {"doc_count": 50, "key": 2},
-                    ],
-                    "doc_count_error_upper_bound": 0,
-                    "sum_other_doc_count": 4,
-                }
-            },
-            "hits": {"hits": [], "max_score": 0.0, "total": 300},
-            "timed_out": False,
-            "took": 30,
-        }
-        client_mock.search = Mock(return_value=es_response_mock)
+        client_mock = {}
 
         mapping_tree = Mapping(MAPPING)
         client_bound_mapping = IMapping(
@@ -162,72 +145,12 @@ dataset                                                      {Object}
         # workflow type is keyword
         self.assertIsInstance(workflow_field.a, field_classes_per_name["keyword"])
 
-        response = workflow_field.a.terms(
-            size=20,
-            raw_output=True,
-            query={"term": {"classification_type": "multiclass"}},
-        )
+        search = workflow_field.a.terms(size=20)
+        self.assertIsInstance(search, Search)
+        self.assertTrue(search._repr_auto_execute)
         self.assertEqual(
-            response,
-            [(1, {"doc_count": 25, "key": 1}), (2, {"doc_count": 50, "key": 2})],
+            search._aggs.to_dict(),
+            {"terms_workflow": {"terms": {"field": "workflow", "size": 20}}},
         )
-        client_mock.search.assert_called_once()
-        client_mock.search.assert_called_with(
-            body={
-                "aggs": {"terms_agg": {"terms": {"field": "workflow", "size": 20}}},
-                "size": 0,
-                "query": {"term": {"classification_type": "multiclass"}},
-            },
-            index="classification_report_index_name",
-        )
-
-    def test_quick_agg_nested(self):
-        """Check that when reaching leaves (fields without children) leaves have the "a" attribute that can generate
-        aggregations on that field type, applying nested if necessary.
-        """
-        client_mock = Mock(spec=["search"])
-        es_response_mock = {
-            "_shards": {"failed": 0, "successful": 135, "total": 135},
-            "aggregations": {"local_metrics": {"avg_agg": {"value": 23}}},
-            "hits": {"hits": [], "max_score": 0.0, "total": 300},
-            "timed_out": False,
-            "took": 30,
-        }
-        client_mock.search = Mock(return_value=es_response_mock)
-
-        mapping_tree = Mapping(MAPPING)
-        client_bound_mapping = IMapping(
-            mapping_tree, client=client_mock, index="classification_report_index_name"
-        )
-
-        local_train_support = client_bound_mapping.local_metrics.dataset.support_train
-        self.assertTrue(hasattr(local_train_support, "a"))
-        self.assertIsInstance(local_train_support.a, field_classes_per_name["integer"])
-
-        response = local_train_support.a.avg(
-            size=20,
-            raw_output=True,
-            query={"term": {"classification_type": "multiclass"}},
-        )
-        self.assertEqual(response, [(None, {"value": 23})])
-        client_mock.search.assert_called_once()
-        client_mock.search.assert_called_with(
-            body={
-                "aggs": {
-                    "local_metrics": {
-                        "nested": {"path": "local_metrics"},
-                        "aggs": {
-                            "avg_agg": {
-                                "avg": {
-                                    "field": "local_metrics.dataset.support_train",
-                                    "size": 20,
-                                }
-                            }
-                        },
-                    }
-                },
-                "size": 0,
-                "query": {"term": {"classification_type": "multiclass"}},
-            },
-            index="classification_report_index_name",
-        )
+        self.assertEqual(search._index, ["classification_report_index_name"])
+        self.assertIs(search._using, client_mock)

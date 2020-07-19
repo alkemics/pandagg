@@ -5,14 +5,12 @@ import json
 from future.utils import python_2_unicode_compatible
 from builtins import str as text
 
-from six import add_metaclass
 
 from pandagg.node._node import Node
-from pandagg.utils import DslMeta, get_dsl_class
+from pandagg.utils import DSLMixin
 
 
-@add_metaclass(DslMeta)
-class UnnamedField:
+class UnnamedField(DSLMixin):
     _type_name = "field"
     KEY = None
 
@@ -21,8 +19,6 @@ class UnnamedField:
 
     def to_named_field(self, name, _subfield=False):
         return Field(name, self.KEY, _subfield=_subfield, **self.body)
-
-    get_dsl_class = classmethod(get_dsl_class)
 
 
 class UnnamedComplexField(UnnamedField):

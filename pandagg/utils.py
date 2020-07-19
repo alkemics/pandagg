@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 
 
 # adapted from https://github.com/elastic/elasticsearch-dsl-py/blob/master/elasticsearch_dsl/utils.py#L162
+from six import add_metaclass
+
+
 class DslMeta(type):
     """
     Base Metaclass for DslBase subclasses that builds a registry of all classes
@@ -19,11 +22,13 @@ class DslMeta(type):
 
     def __init__(cls, name, bases, attrs):
         super(DslMeta, cls).__init__(name, bases, attrs)
-        # skip for DslBase
+        # skip for DSLMixin
         if not hasattr(cls, "_type_name") or cls._type_name is None:
             return
 
-        if cls.KEY is None:
+        if not hasattr(cls, "KEY") or cls.KEY is None:
+            # abstract base class, register its shortcut
+            cls._types[cls._type_name] = cls
             # and create a registry for subclasses
             if not hasattr(cls, "_classes"):
                 cls._classes = {}
@@ -31,21 +36,27 @@ class DslMeta(type):
             # normal class, register it
             cls._classes[cls.KEY] = cls
 
+
+@add_metaclass(DslMeta)
+class DSLMixin(object):
+    """Base class for all DSL objects - queries, filters, aggregations etc. Wraps
+    a dictionary representing the object's json."""
+
     @classmethod
-    def get_dsl_type(cls, name):
+    def get_dsl_class(cls, name):
         try:
-            return cls._types[name]
+            return cls._classes[name]
+        except KeyError:
+            raise NotImplementedError(
+                "DSL class `{}` does not exist in {}.".format(name, cls._type_name)
+            )
+
+    @staticmethod
+    def get_dsl_type(name):
+        try:
+            return DslMeta._types[name]
         except KeyError:
             raise ValueError("DSL type %s does not exist." % name)
-
-
-def get_dsl_class(cls, name):
-    try:
-        return cls._classes[name]
-    except KeyError:
-        raise NotImplementedError(
-            "DSL class `{}` does not exist in {}.".format(name, cls._type_name)
-        )
 
 
 def ordered(obj):

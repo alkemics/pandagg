@@ -7,19 +7,15 @@ from future.utils import python_2_unicode_compatible
 from builtins import str as text
 
 from lighttree import Tree as OriginalTree
-from six import add_metaclass
 
-from pandagg.utils import DslMeta, get_dsl_class
+from pandagg.utils import DSLMixin
 
 
 @python_2_unicode_compatible
-@add_metaclass(DslMeta)
-class Tree(OriginalTree):
+class Tree(DSLMixin, OriginalTree):
 
     KEY = None
     _type_name = None
-
-    get_dsl_class = classmethod(get_dsl_class)
 
     @classmethod
     def get_node_dsl_class(cls, name):

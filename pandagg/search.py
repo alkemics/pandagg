@@ -11,6 +11,7 @@ from pandagg.response import Response
 from pandagg.tree.mapping import Mapping
 from pandagg.tree.query.abstract import Query
 from pandagg.tree.aggs.aggs import Aggs
+from pandagg.utils import DSLMixin
 
 
 class Request(object):
@@ -94,7 +95,10 @@ class Request(object):
         return self._clone()
 
 
-class Search(Request):
+class Search(DSLMixin, Request):
+
+    _type_name = "search"
+
     def __init__(
         self,
         using=None,
@@ -595,9 +599,11 @@ class Search(Request):
             import pandas as pd  # noqa
         except ImportError:
             return ImportError("repr_auto_execute requires pandas dependency")
-        r = self.execute()
         if not self._aggs.is_empty():
+            # hits are not necessary to display aggregation results
+            r = self.size(0).execute()
             return r.aggregations.to_dataframe()
+        r = self.execute()
         return r.hits.to_dataframe()
 
     def __repr__(self):

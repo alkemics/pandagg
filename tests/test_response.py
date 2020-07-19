@@ -141,11 +141,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
     def test_parse_as_tree(self, *_):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         response = Aggregations(
-            data=sample.ES_AGG_RESPONSE,
-            aggs=my_agg,
-            index=None,
-            client=None,
-            query=None,
+            data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_tree()
         self.assertIsInstance(response, AggsResponseTree)
         self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
@@ -153,11 +149,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
     def test_normalize_buckets(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         response = Aggregations(
-            data=sample.ES_AGG_RESPONSE,
-            aggs=my_agg,
-            index=None,
-            client=None,
-            query=None,
+            data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_normalized()
         self.assertEqual(
             ordered(response), ordered(sample.EXPECTED_NORMALIZED_RESPONSE)
@@ -167,11 +159,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         # with single agg at root
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         index_names, index_values = Aggregations(
-            data=sample.ES_AGG_RESPONSE,
-            aggs=my_agg,
-            index=None,
-            client=None,
-            query=None,
+            data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_tabular(index_orient=True)
 
         self.assertEqual(
@@ -205,11 +193,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
 
         # index_orient = False
         index_names, index_values = Aggregations(
-            data=sample.ES_AGG_RESPONSE,
-            aggs=my_agg,
-            index=None,
-            client=None,
-            query=None,
+            data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_tabular(index_orient=False)
 
         self.assertEqual(
@@ -272,7 +256,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
             "avg_f1_score": {"value": 0.815},
         }
         index_names, index_values = Aggregations(
-            data=raw_response, aggs=my_agg, index=None, client=None, query=None
+            data=raw_response, search=Search().aggs(my_agg)
         ).to_tabular(index_orient=True, expand_sep=" || ")
 
         self.assertEqual(index_names, [])
@@ -290,11 +274,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
     def test_parse_as_dataframe(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         df = Aggregations(
-            data=sample.ES_AGG_RESPONSE,
-            aggs=my_agg,
-            index=None,
-            client=None,
-            query=None,
+            data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_dataframe()
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(
@@ -333,11 +313,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
     def test_grouping_agg(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         agg_response = Aggregations(
-            data=sample.ES_AGG_RESPONSE,
-            aggs=my_agg,
-            index=None,
-            client=None,
-            query=None,
+            data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         )
 
         # none provided
