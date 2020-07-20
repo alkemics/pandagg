@@ -155,9 +155,9 @@ class Aggregations:
     def _parse_group_by(
         self,
         response,
+        until,
         row=None,
         agg_name=None,
-        until=None,
         ancestors=None,
         row_as_tuple=False,
         with_single_bucket_groups=False,
@@ -166,11 +166,14 @@ class Aggregations:
 
         Yields each row for which last bucket aggregation generated buckets.
         """
+        # initialization: find ancestors once for faster computation
         if ancestors is None:
             ancestors = self._aggs.ancestors(until, id_only=True)
+            # remove eventual fake root
+            ancestors = [until] + [a for a in ancestors if a != "_"]
+            agg_name = ancestors[-1]
         if not row:
             row = [] if row_as_tuple else {}
-        agg_name = self._aggs.root if agg_name is None else agg_name
         if agg_name in response:
             agg_node = self._aggs.get(agg_name)
             for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
