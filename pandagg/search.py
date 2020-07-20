@@ -4,6 +4,7 @@ import json
 
 from elasticsearch.helpers import scan
 from future.utils import string_types
+from lighttree.exceptions import NotFoundNodeError
 
 from pandagg.connections import get_connection
 from pandagg.query import Bool
@@ -233,6 +234,15 @@ class Search(DSLMixin, Request):
             s._params["from"] = n.start or 0
             s._params["size"] = n.stop - (n.start or 0) if n.stop is not None else 10
             return s
+        elif isinstance(n, list):
+            # Columns selection
+            if self._mapping:
+                for key in n:
+                    try:
+                        self._mapping.get(key)
+                    except NotFoundNodeError:
+                        raise KeyError("%s not in index" % key)
+            return self.source(includes=n)
         else:  # This is an index lookup, equivalent to slicing by [n:n+1].
             # If negative index, abort.
             if n < 0:
