@@ -25,11 +25,7 @@ class Response:
         self._shards = data["_shards"]
         self.hits = Hits(data["hits"])
         self.aggregations = Aggregations(
-            data.get("aggregations", {}),
-            aggs=self.__search._aggs,
-            index=self.__search._index,
-            query=self.__search._query,
-            client=self.__search._using,
+            data.get("aggregations", {}), search=self.__search
         )
         self.profile = data.get("profile")
 
@@ -130,12 +126,25 @@ class Hit:
 
 
 class Aggregations:
-    def __init__(self, data, aggs, query, index, client):
+    def __init__(self, data, search):
         self.data = data
-        self.__aggs = aggs
-        self.__index = index
-        self.__query = query
-        self.__client = client
+        self.__search = search
+
+    @property
+    def _aggs(self):
+        return self.__search._aggs
+
+    @property
+    def _query(self):
+        return self.__search._query
+
+    @property
+    def _client(self):
+        return self.__search._using
+
+    @property
+    def _index(self):
+        return self.__search._index
 
     def keys(self):
         return self.data.keys()
@@ -158,12 +167,12 @@ class Aggregations:
         Yields each row for which last bucket aggregation generated buckets.
         """
         if ancestors is None:
-            ancestors = self.__aggs.ancestors(until, id_only=True)
+            ancestors = self._aggs.ancestors(until, id_only=True)
         if not row:
             row = [] if row_as_tuple else {}
-        agg_name = self.__aggs.root if agg_name is None else agg_name
+        agg_name = self._aggs.root if agg_name is None else agg_name
         if agg_name in response:
-            agg_node = self.__aggs.get(agg_name)
+            agg_node = self._aggs.get(agg_name)
             for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
                 sub_row = copy.copy(row)
                 if (
@@ -182,7 +191,7 @@ class Aggregations:
                         yield sub_row, raw_bucket
                 elif agg_name in ancestors:
                     # yield children
-                    for child in self.__aggs.children(agg_name, id_only=False):
+                    for child in self._aggs.children(agg_name, id_only=False):
                         for nrow, nraw_bucket in self._parse_group_by(
                             row=sub_row,
                             response=raw_bucket,
@@ -205,9 +214,9 @@ class Aggregations:
                 ]
             }
         """
-        agg_name = agg_name or self.__aggs.root
-        agg_node = self.__aggs.get(agg_name)
-        agg_children = self.__aggs.children(agg_node.name, id_only=False)
+        agg_name = agg_name or self._aggs.root
+        agg_node = self._aggs.get(agg_name)
+        agg_children = self._aggs.children(agg_node.name, id_only=False)
         for key, raw_bucket in agg_node.extract_buckets(agg_response[agg_name]):
             result = {
                 "level": agg_name,
@@ -231,29 +240,29 @@ class Aggregations:
         """
         # if provided
         if name is not None:
-            if name not in self.__aggs:
+            if name not in self._aggs:
                 raise ValueError("Cannot group by <%s>, agg node does not exist" % name)
-            if not self.__aggs._is_eligible_grouping_node(name):
+            if not self._aggs._is_eligible_grouping_node(name):
                 raise ValueError(
                     "Cannot group by <%s>, not a valid grouping aggregation" % name
                 )
             # if parent of single nested clause and nested_autocorrect
-            node = self.__aggs.get(name)
-            if self.__aggs.nested_autocorrect:
-                children = self.__aggs.children(node.identifier, id_only=False)
+            node = self._aggs.get(name)
+            if self._aggs.nested_autocorrect:
+                children = self._aggs.children(node.identifier, id_only=False)
                 if len(children) == 1 and isinstance(children[0], Nested):
                     return children[0]
             return node
         # if use of groupby method in Aggs class, use groupby pointer
-        if self.__aggs._groupby_ptr is not None:
-            return self.__aggs.get(self.__aggs._groupby_ptr)
+        if self._aggs._groupby_ptr is not None:
+            return self._aggs.get(self._aggs._groupby_ptr)
 
-        if isinstance(self.__aggs.get(self.__aggs.root), ShadowRoot):
+        if isinstance(self._aggs.get(self._aggs.root), ShadowRoot):
             return None
-        name = self.__aggs.deepest_linear_bucket_agg
+        name = self._aggs.deepest_linear_bucket_agg
         if name is None:
             return None
-        return self.__aggs.get(name)
+        return self._aggs.get(name)
 
     def to_tabular(
         self,
@@ -294,7 +303,7 @@ class Aggregations:
         else:
             index_names = [
                 a.name
-                for a in self.__aggs.ancestors(
+                for a in self._aggs.ancestors(
                     grouping_agg.name, id_only=False, from_root=True
                 )
                 + [grouping_agg]
@@ -345,13 +354,11 @@ class Aggregations:
         result = {}
         if total_agg is not None and not isinstance(total_agg, ShadowRoot):
             result[total_agg.VALUE_ATTRS[0]] = total_agg.extract_bucket_value(row_data)
-            grouping_agg_children = self.__aggs.children(
+            grouping_agg_children = self._aggs.children(
                 total_agg.identifier, id_only=False
             )
         else:
-            grouping_agg_children = self.__aggs.children(
-                self.__aggs.root, id_only=False
-            )
+            grouping_agg_children = self._aggs.children(self._aggs.root, id_only=False)
 
         # extract values of children, one columns per child
         for child in grouping_agg_children:
@@ -403,16 +410,10 @@ class Aggregations:
         return {"level": "root", "key": None, "value": None, "children": children}
 
     def to_tree(self):
-        return AggsResponseTree(aggs=self.__aggs, index=self.__index).parse(self.data)
+        return AggsResponseTree(aggs=self._aggs).parse(self.data)
 
     def to_interactive_tree(self):
-        return IResponse(
-            tree=self.to_tree(),
-            index_name=self.__index,
-            query=self.__query,
-            client=self.__client,
-            depth=1,
-        )
+        return IResponse(tree=self.to_tree(), search=self.__search, depth=1)
 
     def serialize(self, output="tabular", **kwargs):
         """

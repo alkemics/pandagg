@@ -17,17 +17,15 @@ class AggsResponseTree(Tree):
     """Tree representation of an ElasticSearch response.
     """
 
-    def __init__(self, aggs, index):
+    def __init__(self, aggs):
         """
         :param aggs: instance of pandagg.agg.Agg from which this Elasticsearch response originates.
-        :param index: indice(s) on which aggregation was computed.
         """
         super(AggsResponseTree, self).__init__()
         self.__aggs = aggs
-        self.__index = index
 
     def _clone_init(self, deep=False):
-        return AggsResponseTree(aggs=self.__aggs.clone(deep=deep), index=self.__index)
+        return AggsResponseTree(aggs=self.__aggs.clone(deep=deep))
 
     def parse(self, raw_response):
         """Build response tree from ElasticSearch aggregation response
@@ -159,9 +157,11 @@ class AggsResponseTree(Tree):
 
         nid_to_children = defaultdict(set)
         for nested in all_nesteds:
-            nested_with_parents = list(
-                tree_mapping.rsearch(nid=nested, filter=lambda x: x.KEY == "nested")
-            )
+            nested_with_parents = [
+                n
+                for n in tree_mapping.ancestors(nid=nested, id_only=False)
+                if n.KEY == "nested"
+            ]
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
             nid_to_children[nearest_nested_parent].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level).to_dict()

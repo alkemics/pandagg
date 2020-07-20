@@ -8,13 +8,11 @@ import uuid
 from future.utils import iteritems
 
 from lighttree import Node as OriginalNode
-from six import add_metaclass
 
-from pandagg.utils import DslMeta, get_dsl_class
+from pandagg.utils import DSLMixin
 
 
-@add_metaclass(DslMeta)
-class Node(OriginalNode):
+class Node(DSLMixin, OriginalNode):
 
     KEY = None
     _type_name = None
@@ -32,8 +30,6 @@ class Node(OriginalNode):
 
     def _craft_identifier(self):
         return "%s%s" % (self._identifier_prefix, text(uuid.uuid4())[: self.NID_SIZE])
-
-    get_dsl_class = classmethod(get_dsl_class)
 
     @staticmethod
     def expand__to_dot(params):

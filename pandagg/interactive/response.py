@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from lighttree import TreeBasedObj
-from pandagg.tree.query.abstract import Query
+
+from pandagg.tree.aggs.aggs import Aggs
 
 
 class IResponse(TreeBasedObj):
@@ -13,44 +14,37 @@ class IResponse(TreeBasedObj):
     _NODE_PATH_ATTR = "attr_name"
     _COERCE_ATTR = True
 
-    def __init__(
-        self,
-        tree,
-        client=None,
-        index_name=None,
-        root_path=None,
-        depth=None,
-        initial_tree=None,
-        query=None,
-    ):
-        self._client = client
-        self._index_name = index_name
-        self._query = Query(query)
+    def __init__(self, tree, search, depth, root_path=None, initial_tree=None):
+        self.__search = search
         super(IResponse, self).__init__(
             tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree
         )
 
+    @property
+    def _client(self):
+        return self.__search._using
+
+    @property
+    def _index(self):
+        return self.__search._index
+
     def _clone(self, nid, root_path, depth):
         return IResponse(
-            client=self._client,
-            index_name=self._index_name,
             tree=self._tree.subtree(nid),
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,
-            query=self._query,
+            search=self.__search,
         )
 
     def get_bucket_filter(self):
-        """Build filters to select documents belonging to that bucket"""
-        bucket_filter = self._initial_tree.get_bucket_filter(self._tree.root)
-        return self._query.query(bucket_filter).to_dict()
-
-    def list_documents(self, **body):
-        """Return ES aggregation query to list documents belonging to given bucket.
-        :return:
+        """Build filters to select documents belonging to that bucket, independently from initial search query clauses.
         """
-        filter_query = self.get_bucket_filter()
-        if filter_query:
-            body["query"] = filter_query
-        return self._client.search(index=self._index_name, body=body)
+        return self._initial_tree.get_bucket_filter(self._tree.root)
+
+    def search(self):
+        # add bucket filter to initial query clauses
+        s = self.__search.query(self.get_bucket_filter())
+        # remove no-more necessary aggregations
+        s._aggs = Aggs()
+        return s

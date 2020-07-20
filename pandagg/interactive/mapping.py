@@ -3,11 +3,13 @@
 import json
 
 from lighttree import TreeBasedObj
+
 from pandagg.tree.mapping import Mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name
+from pandagg.utils import DSLMixin
 
 
-class IMapping(TreeBasedObj):
+class IMapping(DSLMixin, TreeBasedObj):
     """Interactive wrapper upon mapping tree, allowing field navigation and quick access to single clause aggregations
     computation.
     """
@@ -42,11 +44,16 @@ class IMapping(TreeBasedObj):
         if self._client is not None and not self._tree.children(self._tree.root):
             field_node = self._tree.get(self._tree.root)
             if field_node.KEY in field_classes_per_name:
+                search_class = self.get_dsl_type("search")
                 self.a = field_classes_per_name[field_node.KEY](
-                    mapping_tree=self._initial_tree,
-                    client=self._client,
+                    search=search_class(
+                        using=self._client,
+                        index=self._index,
+                        mapping=self._initial_tree,
+                        repr_auto_execute=True,
+                        nested_autocorrect=True,
+                    ),
                     field=self._initial_tree.node_path(field_node.identifier),
-                    index=self._index,
                 )
 
     def __call__(self, *args, **kwargs):
