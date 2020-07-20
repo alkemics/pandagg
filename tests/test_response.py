@@ -271,6 +271,16 @@ class AggregationsResponseTestCase(PandaggTestCase):
             },
         )
 
+        # with specified grouped_by
+        index_names, index_values = Aggregations(
+            data=raw_response, search=Search().aggs(my_agg)
+        ).to_tabular(grouped_by="classification_type")
+        self.assertEqual(index_names, ["classification_type"])
+        self.assertEqual(
+            index_values,
+            {("multiclass",): {"doc_count": 439}, ("multilabel",): {"doc_count": 433}},
+        )
+
     def test_parse_as_dataframe(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         df = Aggregations(
