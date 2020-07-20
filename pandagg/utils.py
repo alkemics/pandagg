@@ -43,7 +43,7 @@ class DSLMixin(object):
     a dictionary representing the object's json."""
 
     @classmethod
-    def get_dsl_class(cls, name):
+    def _get_dsl_class(cls, name):
         try:
             return cls._classes[name]
         except KeyError:
@@ -52,7 +52,7 @@ class DSLMixin(object):
             )
 
     @staticmethod
-    def get_dsl_type(name):
+    def _get_dsl_type(name):
         try:
             return DslMeta._types[name]
         except KeyError:

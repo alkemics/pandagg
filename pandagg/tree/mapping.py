@@ -67,7 +67,9 @@ class Mapping(Tree):
         for name, field in iteritems(el):
             if isinstance(field, dict):
                 field = field.copy()
-                field = UnnamedField.get_dsl_class(field.pop("type", "object"))(**field)
+                field = UnnamedField._get_dsl_class(field.pop("type", "object"))(
+                    **field
+                )
             if not isinstance(field, UnnamedField):
                 raise ValueError("Unsupported type %s" % type(field))
             node = field.to_named_field(name, _subfield=is_subfield)

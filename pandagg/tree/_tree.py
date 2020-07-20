@@ -19,7 +19,7 @@ class Tree(DSLMixin, OriginalTree):
 
     @classmethod
     def get_node_dsl_class(cls, name):
-        return cls.node_class.get_dsl_class(name)
+        return cls.node_class._get_dsl_class(name)
 
     def __str__(self):
         return "<{class_}>\n{tree}".format(

@@ -21,13 +21,13 @@ class CompoundClause(QueryClause):
     @classmethod
     def operator(cls, key):
         if key is None:
-            return cls.get_dsl_class(cls._default_operator)
+            return cls._get_dsl_class(cls._default_operator)
         if key not in cls._parent_params:
             raise ValueError(
                 "Child operator <%s> not permitted for compound query of type <%s>"
                 % (key, cls.__name__)
             )
-        return cls.get_dsl_class(key)
+        return cls._get_dsl_class(key)
 
 
 class Bool(CompoundClause):

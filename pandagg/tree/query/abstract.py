@@ -102,10 +102,10 @@ class Query(Tree):
     def _get_dsl_class_from_tree_or_node(cls, key, **body):
         # either a compound query clause -> search among trees
         if key in cls._classes:
-            return cls.get_dsl_class(key)(**body)
+            return cls._get_dsl_class(key)(**body)
         # either a simple query clause -> search among nodes
         elif key in cls.node_class._classes:
-            return Query(cls.node_class.get_dsl_class(key)(**body))
+            return Query(cls.node_class._get_dsl_class(key)(**body))
         else:
             raise ValueError("Unkown clause %s" % key)
 
@@ -180,7 +180,7 @@ class Query(Tree):
         to_insert = node
         for nested_lvl in self.mapping.list_nesteds_at_field(node.field):
             if current_nested_level != nested_lvl:
-                to_insert = self.get_dsl_class("nested")(
+                to_insert = self._get_dsl_class("nested")(
                     path=nested_lvl, query=to_insert
                 )
         super(Query, self).insert(to_insert, parent_id)
@@ -475,7 +475,7 @@ class Query(Tree):
         parent_param = kwargs.pop("parent_param", None)
         child = kwargs.pop("child", None)
         child_param = kwargs.pop("child_param", None)
-        compound_q = self.get_dsl_class(compound_key)(*args, **kwargs)
+        compound_q = self._get_dsl_class(compound_key)(*args, **kwargs)
         return self._insert_into(
             compound_q,
             mode=mode,
