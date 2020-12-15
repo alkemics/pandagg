@@ -2,14 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from future.utils import iteritems
-from lighttree.exceptions import NotFoundNodeError
 
-from pandagg.node.mapping.abstract import (
-    Field,
-    UnnamedField,
-    UnnamedRegularField,
-    UnnamedComplexField,
-)
+from pandagg.node.mapping.abstract import Field, RegularField, ComplexField
 
 
 from pandagg.exceptions import (
@@ -24,40 +18,34 @@ class Mapping(Tree):
     node_class = Field
     KEY = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, mapping=None, **kwargs):
         super(Mapping, self).__init__()
-        if not kwargs and not args:
+
+        if not kwargs and not mapping:
             return
-        if len(args) > 1:
+        if mapping and kwargs:
             raise ValueError(
-                "Invalid mapping declaration. Got:\n*args: %s\n**kwargs: %s"
-                % (args, kwargs)
+                'Wrong Mapping declaration, at most one of "mapping" and "kwargs" must be defined.'
             )
 
-        if args:
-            arg = args[0]
-            if arg is None:
-                # Mapping(None)
-                return
-            if isinstance(arg, Mapping):
+        root_node = Field()
+        self.insert_node(root_node)
+
+        if mapping:
+            if isinstance(mapping, Mapping):
                 # Mapping(Mapping())
-                self.insert(arg)
+                self.merge(mapping, nid=root_node.identifier)
                 return
-            if isinstance(arg, dict):
+            if isinstance(mapping, dict):
                 # Mapping({"properties": {}})
-                kwargs = arg.copy()
+                kwargs = mapping.copy()
             else:
-                raise ValueError(
-                    "Wrong declaration: args %s, kwargs %s" % (args, kwargs)
-                )
+                raise ValueError("Wrong declaration: mapping of type %s" % mapping)
 
         # Mapping(dynamic=False, properties={...}}
         properties = kwargs.pop("properties", None)
         dynamic = kwargs.pop("dynamic", False)
 
-        # root
-        root_node = Field("_", "_", dynamic=dynamic)
-        self.insert_node(root_node)
         if properties:
             self._insert(root_node.identifier, properties, False)
 
@@ -67,24 +55,23 @@ class Mapping(Tree):
         for name, field in iteritems(el):
             if isinstance(field, dict):
                 field = field.copy()
-                field = UnnamedField._get_dsl_class(field.pop("type", "object"))(
-                    **field
-                )
-            if not isinstance(field, UnnamedField):
+                field = Field._get_dsl_class(field.pop("type", "object"))(**field)
+            if not isinstance(field, Field):
                 raise ValueError("Unsupported type %s" % type(field))
-            node = field.to_named_field(name, _subfield=is_subfield)
-            self.insert_node(node, parent_id=pid)
-            if isinstance(field, UnnamedComplexField) and field.properties:
-                self._insert(node.identifier, field.properties, False)
-            if isinstance(field, UnnamedRegularField) and field.fields:
+            # node = field.to_named_field(name, _subfield=is_subfield)
+            # self.insert_node(node, parent_id=pid)
+            self.insert_node(field, key=name, parent_id=pid)
+            if isinstance(field, ComplexField) and field.properties:
+                self._insert(field.identifier, field.properties, False)
+            if isinstance(field, RegularField) and field.fields:
                 if is_subfield:
                     raise ValueError(
                         "Cannot insert subfields into a subfield on field %s" % name
                     )
-                self._insert(node.identifier, field.fields, True)
+                self._insert(field.identifier, field.fields, True)
 
     def __nonzero__(self):
-        return not self.is_empty()
+        return len(self.list()) > 1
 
     __bool__ = __nonzero__
 
@@ -92,39 +79,22 @@ class Mapping(Tree):
         if self.root is None:
             return None
         from_ = self.root if from_ is None else from_
-        node = self.get(from_)
+        key, node = self.get(from_)
         children_queries = {}
         if depth is None or depth > 0:
             if depth is not None:
                 depth -= 1
-            for child_node in self.children(node.identifier, id_only=False):
-                children_queries[child_node.name] = self.to_dict(
+            for child_key, child_node in self.children(node.identifier):
+                children_queries[child_key] = self.to_dict(
                     from_=child_node.identifier, depth=depth
                 )
         serialized_node = node.body
         if children_queries:
-            if node.KEY in ("_", "object", "nested"):
+            if node.KEY is None or node.KEY in ("object", "nested"):
                 serialized_node["properties"] = children_queries
             else:
                 serialized_node["fields"] = children_queries
         return serialized_node
-
-    def resolve_path_to_id(self, path):
-        if path in self._nodes_map:
-            return path
-        nid = self.root
-        names = path.split(".")
-        for name in names:
-            matching_children = [
-                c for c in self.children(nid, id_only=False) if c.name == name
-            ]
-            if len(matching_children) != 1:
-                return path
-            nid = matching_children[0].identifier
-        return nid
-
-    def get(self, key):
-        return super(Mapping, self).get(self.resolve_path_to_id(key))
 
     def validate_agg_node(self, agg_node, exc=True):
         """Ensure if node has field or path that it exists in mapping, and that required aggregation type
@@ -164,8 +134,9 @@ class Mapping(Tree):
 
     def mapping_type_of_field(self, field_path):
         try:
-            return self.get(field_path).KEY
-        except NotFoundNodeError:
+            _, node = self.get(field_path, by_path=True)
+            return node.KEY
+        except Exception:
             raise AbsentMappingFieldError(
                 u"<%s field is not present in mapping>" % field_path
             )
@@ -177,19 +148,11 @@ class Mapping(Tree):
         return None
 
     def list_nesteds_at_field(self, field_path):
-        path_nid = self.resolve_path_to_id(field_path)
+        """List nested paths that apply at a given path."""
+        path_nid = self.get_node_id_by_path(field_path)
         # from deepest to highest
         return [
-            self.node_path(nid)
-            for nid in self.ancestors(path_nid) + [path_nid]
-            if self.get(nid).KEY == "nested"
+            self.get_path(nid)
+            for nid in self.ancestors_ids(path_nid) + [path_nid]
+            if self.get(nid)[1].KEY == "nested"
         ]
-
-    def node_path(self, nid):
-        return ".".join(
-            [
-                self.get(id_).name
-                for id_ in self.ancestors(nid, from_root=True) + [nid]
-                if id_ != self.root
-            ]
-        )

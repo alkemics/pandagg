@@ -20,8 +20,8 @@ class Global(UniqueBucketAgg):
     KEY = "global"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, name, meta=None):
-        super(Global, self).__init__(name=name, agg_body={}, meta=meta)
+    def __init__(self, meta=None):
+        super(Global, self).__init__(agg_body={}, meta=meta)
 
     def get_filter(self, key):
         return None
@@ -32,7 +32,7 @@ class Filter(UniqueBucketAgg):
     KEY = "filter"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, name, filter=None, meta=None, **kwargs):
+    def __init__(self, filter=None, meta=None, **kwargs):
         if (filter is not None) != (not kwargs):
             raise ValueError(
                 'Filter aggregation requires exactly one of "filter" or "kwargs"'
@@ -42,15 +42,15 @@ class Filter(UniqueBucketAgg):
         else:
             filter_ = kwargs.copy()
         self.filter = filter_
-        super(Filter, self).__init__(name=name, meta=meta, **filter_)
+        super(Filter, self).__init__(meta=meta, **filter_)
 
     def get_filter(self, key):
         return self.filter
 
 
 class MatchAll(Filter):
-    def __init__(self, name, meta=None):
-        super(MatchAll, self).__init__(name=name, filter={"match_all": {}}, meta=meta)
+    def __init__(self, meta=None):
+        super(MatchAll, self).__init__(filter={"match_all": {}}, meta=meta)
 
 
 class Nested(UniqueBucketAgg):
@@ -59,9 +59,9 @@ class Nested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, name, path, meta=None):
+    def __init__(self, path, meta=None):
         self.path = path
-        super(Nested, self).__init__(name=name, path=path, meta=meta)
+        super(Nested, self).__init__(path=path, meta=meta)
 
     def get_filter(self, key):
         return None
@@ -73,12 +73,12 @@ class ReverseNested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, name, path=None, meta=None, **body):
+    def __init__(self, path=None, meta=None, **body):
         self.path = path
         body_kwargs = dict(body)
         if path:
             body_kwargs["path"] = path
-        super(ReverseNested, self).__init__(name=name, meta=meta, **body_kwargs)
+        super(ReverseNested, self).__init__(meta=meta, **body_kwargs)
 
     def get_filter(self, key):
         return None
@@ -89,22 +89,21 @@ class Missing(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     BLACKLISTED_MAPPING_TYPES = []
 
-    def __init__(self, name, field, meta=None, **body):
-        super(UniqueBucketAgg, self).__init__(name=name, field=field, meta=meta, **body)
+    def __init__(self, field, meta=None, **body):
+        super(UniqueBucketAgg, self).__init__(field=field, meta=meta, **body)
 
     def get_filter(self, key):
         return {"bool": {"must_not": {"exists": {"field": self.field}}}}
 
 
 class Terms(MultipleBucketAgg):
-    """Terms aggregation.
-    """
+    """Terms aggregation."""
 
     KEY = "terms"
     VALUE_ATTRS = ["doc_count", "doc_count_error_upper_bound", "sum_other_doc_count"]
     BLACKLISTED_MAPPING_TYPES = []
 
-    def __init__(self, name, field, missing=None, size=None, meta=None, **body):
+    def __init__(self, field, missing=None, size=None, meta=None, **body):
         self.field = field
         self.missing = missing
         self.size = size
@@ -115,7 +114,7 @@ class Terms(MultipleBucketAgg):
         if size is not None:
             body_kwargs["size"] = size
 
-        super(Terms, self).__init__(name=name, field=field, meta=meta, **body_kwargs)
+        super(Terms, self).__init__(field=field, meta=meta, **body_kwargs)
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""
@@ -132,13 +131,7 @@ class Filters(MultipleBucketAgg):
     IMPLICIT_KEYED = True
 
     def __init__(
-        self,
-        name,
-        filters,
-        other_bucket=False,
-        other_bucket_key=None,
-        meta=None,
-        **body
+        self, filters, other_bucket=False, other_bucket_key=None, meta=None, **body
     ):
         self.filters = filters
         self.other_bucket = other_bucket
@@ -149,9 +142,7 @@ class Filters(MultipleBucketAgg):
         if other_bucket_key:
             body_kwargs["other_bucket_key"] = other_bucket_key
 
-        super(Filters, self).__init__(
-            name=name, filters=filters, meta=meta, **body_kwargs
-        )
+        super(Filters, self).__init__(filters=filters, meta=meta, **body_kwargs)
 
     def get_filter(self, key):
         """Provide filter to get documents belonging to document of given key."""
@@ -164,7 +155,7 @@ class Filters(MultipleBucketAgg):
                         "must_not": {"bool": {"should": list(self.filters.values())}}
                     }
                 }
-        raise ValueError("Unkown <%s> key in <Agg %s>" % (key, self.name))
+        raise ValueError("Unkown <%s> key" % key)
 
 
 class Histogram(MultipleBucketAgg):
@@ -173,11 +164,11 @@ class Histogram(MultipleBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
-    def __init__(self, name, field, interval, meta=None, **body):
+    def __init__(self, field, interval, meta=None, **body):
         self.field = field
         self.interval = interval
         super(Histogram, self).__init__(
-            name=name, field=field, interval=interval, meta=meta, **body
+            field=field, interval=interval, meta=meta, **body
         )
 
     def get_filter(self, key):
@@ -199,7 +190,6 @@ class DateHistogram(MultipleBucketAgg):
 
     def __init__(
         self,
-        name,
         field,
         interval=None,
         calendar_interval=None,
@@ -227,7 +217,6 @@ class DateHistogram(MultipleBucketAgg):
             body["fixed_interval"] = fixed_interval
         self.interval = interval or calendar_interval or fixed_interval
         super(DateHistogram, self).__init__(
-            name=name,
             field=field,
             meta=meta,
             keyed=keyed,
@@ -248,7 +237,7 @@ class Range(MultipleBucketAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
     KEY_SEP = "-"
 
-    def __init__(self, name, field, ranges, keyed=False, meta=None, **body):
+    def __init__(self, field, ranges, keyed=False, meta=None, **body):
         self.field = field
         self.ranges = ranges
         body_kwargs = dict(body)
@@ -257,7 +246,7 @@ class Range(MultipleBucketAgg):
         else:
             self.bucket_key_suffix = None
         super(Range, self).__init__(
-            name=name, field=field, ranges=ranges, meta=meta, keyed=keyed, **body_kwargs
+            field=field, ranges=ranges, meta=meta, keyed=keyed, **body_kwargs
         )
 
     @property
@@ -300,11 +289,9 @@ class DateRange(Range):
     # cannot use range '-' separator since some keys contain it
     KEY_SEP = "::"
 
-    def __init__(self, name, field, key_as_string=True, meta=None, **body):
+    def __init__(self, field, key_as_string=True, meta=None, **body):
         self.key_as_string = key_as_string
-        super(DateRange, self).__init__(
-            name=name, field=field, keyed=True, meta=meta, **body
-        )
+        super(DateRange, self).__init__(field=field, keyed=True, meta=meta, **body)
 
 
 class Composite(MultipleBucketAgg):

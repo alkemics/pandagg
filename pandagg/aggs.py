@@ -1,6 +1,6 @@
 from pandagg.tree.aggs.aggs import Aggs
 
-from pandagg.tree.aggs.bucket import (
+from pandagg.node.aggs.bucket import (
     Terms,
     Filters,
     Histogram,
@@ -13,7 +13,7 @@ from pandagg.tree.aggs.bucket import (
     Missing,
 )
 
-from pandagg.tree.aggs.metric import (
+from pandagg.node.aggs.metric import (
     Avg,
     Max,
     Min,
@@ -29,7 +29,7 @@ from pandagg.tree.aggs.metric import (
     ValueCount,
 )
 
-from pandagg.tree.aggs.pipeline import (
+from pandagg.node.aggs.pipeline import (
     AvgBucket,
     Derivative,
     MaxBucket,

@@ -68,8 +68,7 @@ def ordered(obj):
 
 
 def equal_queries(d1, d2):
-    """Compares if two queries are equivalent (do not consider nested list orders).
-    """
+    """Compares if two queries are equivalent (do not consider nested list orders)."""
     return ordered(d1) == ordered(d2)
 
 

@@ -9,13 +9,12 @@ from pandagg.node.query.joining import Nested
 from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
-from pandagg.node.aggs.abstract import UniqueBucketAgg, ShadowRoot
+from pandagg.node.aggs.abstract import UniqueBucketAgg
 from pandagg.tree.query.abstract import Query
 
 
 class AggsResponseTree(Tree):
-    """Tree representation of an ElasticSearch response.
-    """
+    """Tree representation of an ElasticSearch response."""
 
     def __init__(self, aggs):
         """
@@ -96,8 +95,7 @@ class AggsResponseTree(Tree):
     def _build_filter(
         cls, nid_to_children, filters_per_nested_level, current_nested_path=None
     ):
-        """Recursive function to build bucket filters from highest to deepest nested conditions.
-        """
+        """Recursive function to build bucket filters from highest to deepest nested conditions."""
         current_conditions = filters_per_nested_level.get(current_nested_path, [])
         nested_children = nid_to_children[current_nested_path]
         for nested_child in nested_children:

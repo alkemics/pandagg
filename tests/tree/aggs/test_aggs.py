@@ -100,10 +100,10 @@ genres                                                <terms, field="genres", si
 
     def test_add_node_with_mapping(self):
         with_mapping = Aggs(mapping=MAPPING, nested_autocorrect=True)
-        self.assertEqual(len(with_mapping.list()), 0)
+        self.assertEqual(len(with_mapping.list()), 1)
 
         # add regular node
-        with_mapping = with_mapping.aggs(Terms("workflow", field="workflow"))
+        with_mapping = with_mapping.aggs("workflow", Terms(field="workflow"))
         self.assertEqual(
             with_mapping.to_dict(), {"workflow": {"terms": {"field": "workflow"}}}
         )
@@ -111,21 +111,23 @@ genres                                                <terms, field="genres", si
         # try to add field aggregation on non-existing field will fail
         with self.assertRaises(AbsentMappingFieldError):
             with_mapping.aggs(
-                Terms("imaginary_agg", field="imaginary_field"), insert_below="workflow"
+                "imaginary_agg", Terms(field="imaginary_field"), insert_below="workflow"
             )
         self.assertEqual(len(with_mapping.list()), 1)
 
         # try to add aggregation on a non-compatible field will fail
         with self.assertRaises(InvalidOperationMappingFieldError):
             with_mapping.aggs(
-                Avg("average_of_string", field="classification_type"),
+                "average_of_string",
+                Avg(field="classification_type"),
                 insert_below="workflow",
             )
         self.assertEqual(len(with_mapping.list()), 1)
 
         # add field aggregation on field passing through nested will automatically add nested
         with_mapping = with_mapping.aggs(
-            Avg("local_f1_score", field="local_metrics.performance.test.f1_score"),
+            "local_f1_score",
+            Avg(field="local_metrics.performance.test.f1_score"),
             insert_below="workflow",
         )
         self.assertEqual(
@@ -922,7 +924,7 @@ workflow                                                    <terms, field="workf
 
     def test_agg_insert_below(self):
         a1 = Aggs(
-            Terms("A", field="A", aggs=[Terms("B", field="B"), Terms("C", field="C")])
+            {"A": Terms(field="A", aggs={"B": Terms(field="B"), "C": Terms(field="C")})}
         )
         self.assertEqual(
             a1.to_dict(),
@@ -938,7 +940,7 @@ workflow                                                    <terms, field="workf
         )
 
         self.assertEqual(
-            a1.aggs(Terms("D", field="D"), insert_below="A").to_dict(),
+            a1.aggs(name="D", type_or_agg=Terms(field="D"), insert_below="A").to_dict(),
             {
                 "A": {
                     "aggs": {
@@ -968,7 +970,7 @@ workflow                                                    <terms, field="workf
         )
 
     def test_applied_nested_path_at_node(self):
-        """ Check that correct nested path is detected at node levels:
+        """Check that correct nested path is detected at node levels:
         week
         └── nested_below_week
             └── local_metrics.field_class.name

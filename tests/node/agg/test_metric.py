@@ -33,7 +33,7 @@ class MetricAggNodesTestCase(TestCase):
         # example for Average metric aggregation
         es_raw_response = {"value": 75.0}
         # test extract_buckets
-        buckets_iterator = Avg("name", "field").extract_buckets(es_raw_response)
+        buckets_iterator = Avg("field").extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -49,21 +49,18 @@ class MetricAggNodesTestCase(TestCase):
 
     def test_top_hits(self):
         query = {
-            "top_sales_hits": {
-                "top_hits": {
-                    "sort": [{"date": {"order": "desc"}}],
-                    "_source": {"includes": ["date", "price"]},
-                    "size": 1,
-                }
+            "top_hits": {
+                "sort": [{"date": {"order": "desc"}}],
+                "_source": {"includes": ["date", "price"]},
+                "size": 1,
             }
         }
         top_hits = TopHits(
-            "top_sales_hits",
             sort=[{"date": {"order": "desc"}}],
             _source={"includes": ["date", "price"]},
             size=1,
         )
-        self.assertEqual(top_hits.to_dict(with_name=True), query)
+        self.assertEqual(top_hits.to_dict(), query)
 
         es_raw_answer = {
             "hits": {

@@ -88,9 +88,9 @@ class PercentileRanks(FieldOrScriptMetricAgg):
     VALUE_ATTRS = ["values"]
     KEY = "percentile_ranks"
 
-    def __init__(self, name, field, values, meta=None, **body):
+    def __init__(self, field, values, meta=None, **body):
         super(PercentileRanks, self).__init__(
-            name=name, field=field, meta=meta, values=values, **body
+            field=field, meta=meta, values=values, **body
         )
 
 

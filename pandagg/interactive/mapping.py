@@ -32,7 +32,7 @@ class IMapping(DSLMixin, TreeBasedObj):
 
     def _clone(self, nid, root_path, depth):
         return IMapping(
-            self._tree.subtree(nid),
+            self._tree.subtree(nid)[1],
             client=self._client,
             root_path=root_path,
             depth=depth,

@@ -10,7 +10,7 @@ from builtins import str as text
 from future.utils import iterkeys, iteritems
 
 from pandagg.interactive.response import IResponse
-from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, ShadowRoot
+from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg
 from pandagg.node.aggs.bucket import Nested
 from pandagg.tree.response import AggsResponseTree
 

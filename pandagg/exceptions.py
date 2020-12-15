@@ -24,7 +24,6 @@ class InvalidOperationMappingFieldError(MappingError):
 
 
 class VersionIncompatibilityError(Exception):
-    """Pandagg is not compatible with this ElasticSearch version.
-    """
+    """Pandagg is not compatible with this ElasticSearch version."""
 
     pass

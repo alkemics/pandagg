@@ -24,20 +24,22 @@ class AggNode(Node):
     WHITELISTED_MAPPING_TYPES = None
     BLACKLISTED_MAPPING_TYPES = None
 
-    def __init__(self, name, meta=None, **body):
-        self.name = name
+    def __init__(self, meta=None, **body):
+        identifier = body.pop("identifier", None)
         self.body = body
         self.meta = meta
-        super(AggNode, self).__init__(identifier=self.name)
+        self._children = {}
+        super(AggNode, self).__init__(identifier=identifier)
 
     def line_repr(self, depth, **kwargs):
-        max_size = 85
+        # root node
+        if self.KEY is None:
+            return "_", ""
         repr_args = [text(self.KEY)]
         if self.body:
             repr_args.append(self._params_repr(self.body))
         unnamed = "<%s>" % ", ".join(repr_args)
-        pad = max(max_size - 4 * depth - len(self.name) - len(unnamed), 4)
-        return "%s%s%s" % (self.name, " " * pad, unnamed)
+        return "", unnamed
 
     @staticmethod
     def _params_repr(params):
@@ -55,7 +57,7 @@ class AggNode(Node):
             return field_type not in cls.BLACKLISTED_MAPPING_TYPES
         return False
 
-    def to_dict(self, with_name=False):
+    def to_dict(self):
         """ElasticSearch aggregation queries follow this formatting::
 
             {
@@ -67,7 +69,7 @@ class AggNode(Node):
                 }
             }
 
-        Query dict returns the following part (without aggregation name)::
+        to_dict() returns the following part (without aggregation name)::
 
             {
                 "<aggregation_type>" : {
@@ -79,8 +81,6 @@ class AggNode(Node):
         aggs = {self.KEY: self.body}
         if self.meta:
             aggs["meta"] = self.meta
-        if with_name:
-            return {self.name: aggs}
         return aggs
 
     def get_filter(self, key):
@@ -101,18 +101,17 @@ class AggNode(Node):
         return response.get(attrs[0])
 
     def __str__(self):
-        return "<{class_}, name={name}, type={type}, body={body}>".format(
+        return "<{class_}, type={type}, body={body}>".format(
             class_=text(self.__class__.__name__),
             type=text(self.KEY),
-            name=text(self.name),
             body=json.dumps(self.body),
         )
 
     def __eq__(self, other):
         if isinstance(other, AggNode):
-            return other.to_dict() == self.to_dict() and other.name == self.name
+            return other.to_dict() == self.to_dict()
         # make sure we still equal to a dict with the same data
-        return other == {self.name: self.to_dict()}
+        return other == self.to_dict()
 
 
 class MetricAgg(AggNode):
@@ -121,7 +120,7 @@ class MetricAgg(AggNode):
     VALUE_ATTRS = None
 
     def extract_buckets(self, response_value):
-        yield (None, response_value)
+        yield None, response_value
 
     def get_filter(self, key):
         return None
@@ -139,15 +138,21 @@ class BucketAggNode(AggNode):
     Note: the aggs attribute's only purpose is for children initiation with the following syntax:
     >>> from pandagg.aggs import Terms, Avg
     >>> agg = Terms(
-    >>>     name='term_agg',
     >>>     field='some_path',
-    >>>     aggs=[
-    >>>         Avg(agg_name='avg_agg', field='some_other_path')
-    >>>     ]
+    >>>     aggs={
+    >>>         'avg_agg': Avg(field='some_other_path')
+    >>>     }
     >>> )
     """
 
     VALUE_ATTRS = None
+
+    def __init__(self, meta=None, aggs=None, **body):
+        identifier = body.pop("identifier", None)
+        self.body = body
+        self.meta = meta
+        self._children = aggs or {}
+        super(AggNode, self).__init__(identifier=identifier)
 
     def extract_buckets(self, response_value):
         raise NotImplementedError()
@@ -169,50 +174,31 @@ class UniqueBucketAgg(BucketAggNode):
         raise NotImplementedError()
 
 
-class ShadowRoot(UniqueBucketAgg):
-    """Not a real aggregation."""
-
-    KEY = "shadow_root"
-
-    def __init__(self):
-        super(ShadowRoot, self).__init__("_")
-
-    @classmethod
-    def extract_bucket_value(cls, response, value_as_dict=False):
-        return None
-
-    def line_repr(self, depth, **kwargs):
-        return "[%s]" % text(self.name)
-
-    def get_filter(self, key):
-        return None
-
-
 class MultipleBucketAgg(BucketAggNode):
 
     VALUE_ATTRS = None
     IMPLICIT_KEYED = False
 
-    def __init__(self, name, keyed=None, key_path="key", meta=None, **body):
+    def __init__(self, keyed=None, key_path="key", meta=None, **body):
         """Aggregation that return either a list or a map of buckets.
 
         If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
         list item).
-        :param name:
         :param keyed:
         :param meta:
         :param aggs:
         :param body:
         """
-        self.keyed = keyed or self.IMPLICIT_KEYED
+        # keyed has another meaning in lighttree Node
+        self.keyed_ = keyed or self.IMPLICIT_KEYED
         self.key_path = key_path
         if keyed and not self.IMPLICIT_KEYED:
             body["keyed"] = keyed
-        super(MultipleBucketAgg, self).__init__(name=name, meta=meta, **body)
+        super(MultipleBucketAgg, self).__init__(meta=meta, **body)
 
     def extract_buckets(self, response_value):
         buckets = response_value["buckets"]
-        if self.keyed:
+        if self.keyed_:
             for key in sorted(buckets.keys()):
                 yield (key, buckets[key])
         else:
@@ -231,17 +217,17 @@ class FieldOrScriptMetricAgg(MetricAgg):
 
     VALUE_ATTRS = None
 
-    def __init__(self, name, meta=None, **body):
+    def __init__(self, meta=None, **body):
         self.field = body.get("field")
         self.script = body.get("script")
-        super(FieldOrScriptMetricAgg, self).__init__(name=name, meta=meta, **body)
+        super(FieldOrScriptMetricAgg, self).__init__(meta=meta, **body)
 
 
 class Pipeline(UniqueBucketAgg):
 
     VALUE_ATTRS = None
 
-    def __init__(self, name, buckets_path, gap_policy=None, meta=None, **body):
+    def __init__(self, buckets_path, gap_policy=None, meta=None, **body):
         self.buckets_path = buckets_path
         self.gap_policy = gap_policy
         body_kwargs = dict(body)
@@ -249,9 +235,7 @@ class Pipeline(UniqueBucketAgg):
             assert gap_policy in ("skip", "insert_zeros")
             body_kwargs["gap_policy"] = gap_policy
 
-        super(Pipeline, self).__init__(
-            name=name, meta=meta, buckets_path=buckets_path, **body
-        )
+        super(Pipeline, self).__init__(meta=meta, buckets_path=buckets_path, **body)
 
     def get_filter(self, key):
         return None
@@ -261,9 +245,8 @@ class ScriptPipeline(Pipeline):
     KEY = None
     VALUE_ATTRS = "value"
 
-    def __init__(self, name, script, buckets_path, gap_policy=None, meta=None, **body):
+    def __init__(self, script, buckets_path, gap_policy=None, meta=None, **body):
         super(ScriptPipeline, self).__init__(
-            name=name,
             buckets_path=buckets_path,
             gap_policy=gap_policy,
             meta=meta,
