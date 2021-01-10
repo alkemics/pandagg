@@ -98,42 +98,42 @@ MAPPING = {
 }
 
 EXPECTED_MAPPING_REPR = """_
-├── classification_type                                       Keyword
-├── date                                                      Date
-├── global_metrics                                           {Object}
-│   ├── dataset                                              {Object}
-│   │   ├── nb_classes                                        Integer
-│   │   └── support_train                                     Integer
-│   ├── field                                                {Object}
-│   │   ├── id                                                Integer
-│   │   ├── name                                              Text
-│   │   │   └── raw                                         ~ Keyword
-│   │   └── type                                              Keyword
-│   └── performance                                          {Object}
-│       └── test                                             {Object}
-│           ├── macro                                        {Object}
-│           │   ├── f1_score                                  Float
-│           │   ├── precision                                 Float
-│           │   └── recall                                    Float
-│           └── micro                                        {Object}
-│               ├── f1_score                                  Float
-│               ├── precision                                 Float
-│               └── recall                                    Float
-├── id                                                        Keyword
-├── language                                                  Keyword
-├── local_metrics                                            [Nested]
-│   ├── dataset                                              {Object}
-│   │   ├── support_test                                      Integer
-│   │   └── support_train                                     Integer
-│   ├── field_class                                          {Object}
-│   │   ├── id                                                Integer
-│   │   └── name                                              Keyword
-│   └── performance                                          {Object}
-│       └── test                                             {Object}
-│           ├── f1_score                                      Float
-│           ├── precision                                     Float
-│           └── recall                                        Float
-└── workflow                                                  Keyword
+├── classification_type                              Keyword
+├── date                                                Date
+├── global_metrics                                  {Object}
+│   ├── dataset                                     {Object}
+│   │   ├── nb_classes                               Integer
+│   │   └── support_train                            Integer
+│   ├── field                                       {Object}
+│   │   ├── id                                       Integer
+│   │   ├── name                                        Text
+│   │   │   └── raw                                ~ Keyword
+│   │   └── type                                     Keyword
+│   └── performance                                 {Object}
+│       └── test                                    {Object}
+│           ├── macro                               {Object}
+│           │   ├── f1_score                           Float
+│           │   ├── precision                          Float
+│           │   └── recall                             Float
+│           └── micro                               {Object}
+│               ├── f1_score                           Float
+│               ├── precision                          Float
+│               └── recall                             Float
+├── id                                               Keyword
+├── language                                         Keyword
+├── local_metrics                                   [Nested]
+│   ├── dataset                                     {Object}
+│   │   ├── support_test                             Integer
+│   │   └── support_train                            Integer
+│   ├── field_class                                 {Object}
+│   │   ├── id                                       Integer
+│   │   └── name                                     Keyword
+│   └── performance                                 {Object}
+│       └── test                                    {Object}
+│           ├── f1_score                               Float
+│           ├── precision                              Float
+│           └── recall                                 Float
+└── workflow                                         Keyword
 """
 
 EXPECTED_MAPPING_TREE_REPR = """<Mapping>\n%s""" % EXPECTED_MAPPING_REPR

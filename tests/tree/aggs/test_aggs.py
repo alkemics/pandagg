@@ -100,7 +100,6 @@ genres                                                <terms, field="genres", si
 
     def test_add_node_with_mapping(self):
         with_mapping = Aggs(mapping=MAPPING, nested_autocorrect=True)
-        self.assertEqual(len(with_mapping.list()), 1)
 
         # add regular node
         with_mapping = with_mapping.aggs("workflow", Terms(field="workflow"))
@@ -113,7 +112,6 @@ genres                                                <terms, field="genres", si
             with_mapping.aggs(
                 "imaginary_agg", Terms(field="imaginary_field"), insert_below="workflow"
             )
-        self.assertEqual(len(with_mapping.list()), 1)
 
         # try to add aggregation on a non-compatible field will fail
         with self.assertRaises(InvalidOperationMappingFieldError):
@@ -122,7 +120,6 @@ genres                                                <terms, field="genres", si
                 Avg(field="classification_type"),
                 insert_below="workflow",
             )
-        self.assertEqual(len(with_mapping.list()), 1)
 
         # add field aggregation on field passing through nested will automatically add nested
         with_mapping = with_mapping.aggs(
@@ -153,23 +150,24 @@ genres                                                <terms, field="genres", si
         self.assertEqual(
             with_mapping.show(stdout=False),
             """<Aggregations>
-workflow                                                    <terms, field="workflow">
-└── nested_below_workflow                              <nested, path="local_metrics">
-    └── local_f1_score         <avg, field="local_metrics.performance.test.f1_score">
+workflow                                               <terms, field="workflow">
+└── nested_below_workflow                         <nested, path="local_metrics">
+    └── local_f1_score    <avg, field="local_metrics.performance.test.f1_score">
 """,
         )
-        self.assertIn("nested_below_workflow", with_mapping)
-        nested_node = with_mapping.get("nested_below_workflow")
-        self.assertEqual(nested_node.KEY, "nested")
-        self.assertEqual(nested_node.path, "local_metrics")
+        auto_nested_id = with_mapping.id_from_key("nested_below_workflow")
+        k, node = with_mapping.get(auto_nested_id)
+        self.assertEqual(k, "nested_below_workflow")
+        self.assertEqual(node.KEY, "nested")
+        self.assertEqual(node.path, "local_metrics")
 
         # add other agg requiring nested will reuse nested agg as parent
         with_mapping = with_mapping.aggs(
-            Avg("local_precision", field="local_metrics.performance.test.precision"),
+            "local_precision",
+            Avg(field="local_metrics.performance.test.precision"),
             insert_below="workflow",
         )
         self.assertEqual(
-            with_mapping.to_dict(),
             {
                 "workflow": {
                     "aggs": {
@@ -192,16 +190,16 @@ workflow                                                    <terms, field="workf
                     "terms": {"field": "workflow"},
                 }
             },
+            with_mapping.to_dict(),
         )
-        self.assertEqual(len(with_mapping.list()), 4)
 
         # add under a nested parent a field aggregation that requires to be located under root will automatically
         # add reverse-nested
         with_mapping = with_mapping.aggs(
-            Terms("language_terms", field="language"),
+            "language_terms",
+            Terms(field="language"),
             insert_below="nested_below_workflow",
         )
-        self.assertEqual(len(with_mapping.list()), 6)
         self.assertEqual(
             with_mapping.to_dict(),
             {
@@ -939,34 +937,31 @@ workflow                                                    <terms, field="workf
             },
         )
 
+        expected = {
+            "A": {
+                "aggs": {
+                    "B": {"terms": {"field": "B"}},
+                    "C": {"terms": {"field": "C"}},
+                    "D": {"terms": {"field": "D"}},
+                },
+                "terms": {"field": "A"},
+            }
+        }
         self.assertEqual(
             a1.aggs(name="D", type_or_agg=Terms(field="D"), insert_below="A").to_dict(),
-            {
-                "A": {
-                    "aggs": {
-                        "B": {"terms": {"field": "B"}},
-                        "C": {"terms": {"field": "C"}},
-                        "D": {"terms": {"field": "D"}},
-                    },
-                    "terms": {"field": "A"},
-                }
-            },
+            expected,
         )
         self.assertEqual(
             a1.aggs(
-                [Terms("D", field="D"), Terms("E", field="E")], insert_below="A"
+                name="D", type_or_agg="terms", field="D", insert_below="A"
             ).to_dict(),
-            {
-                "A": {
-                    "aggs": {
-                        "B": {"terms": {"field": "B"}},
-                        "C": {"terms": {"field": "C"}},
-                        "D": {"terms": {"field": "D"}},
-                        "E": {"terms": {"field": "E"}},
-                    },
-                    "terms": {"field": "A"},
-                }
-            },
+            expected,
+        )
+        self.assertEqual(
+            a1.aggs(
+                name="D", type_or_agg={"terms": {"field": "D"}}, insert_below="A"
+            ).to_dict(),
+            expected,
         )
 
     def test_applied_nested_path_at_node(self):

@@ -18,34 +18,11 @@ class Mapping(Tree):
     node_class = Field
     KEY = None
 
-    def __init__(self, mapping=None, **kwargs):
+    def __init__(self, properties=None, dynamic=False, **kwargs):
+        """"""
         super(Mapping, self).__init__()
-
-        if not kwargs and not mapping:
-            return
-        if mapping and kwargs:
-            raise ValueError(
-                'Wrong Mapping declaration, at most one of "mapping" and "kwargs" must be defined.'
-            )
-
-        root_node = Field()
+        root_node = Field(dynamic=dynamic, **kwargs)
         self.insert_node(root_node)
-
-        if mapping:
-            if isinstance(mapping, Mapping):
-                # Mapping(Mapping())
-                self.merge(mapping, nid=root_node.identifier)
-                return
-            if isinstance(mapping, dict):
-                # Mapping({"properties": {}})
-                kwargs = mapping.copy()
-            else:
-                raise ValueError("Wrong declaration: mapping of type %s" % mapping)
-
-        # Mapping(dynamic=False, properties={...}}
-        properties = kwargs.pop("properties", None)
-        dynamic = kwargs.pop("dynamic", False)
-
         if properties:
             self._insert(root_node.identifier, properties, False)
 
@@ -55,11 +32,14 @@ class Mapping(Tree):
         for name, field in iteritems(el):
             if isinstance(field, dict):
                 field = field.copy()
-                field = Field._get_dsl_class(field.pop("type", "object"))(**field)
-            if not isinstance(field, Field):
+                field = Field._get_dsl_class(field.pop("type", "object"))(
+                    _subfield=is_subfield, **field
+                )
+            elif isinstance(field, Field):
+                field._subfield = is_subfield
+                pass
+            else:
                 raise ValueError("Unsupported type %s" % type(field))
-            # node = field.to_named_field(name, _subfield=is_subfield)
-            # self.insert_node(node, parent_id=pid)
             self.insert_node(field, key=name, parent_id=pid)
             if isinstance(field, ComplexField) and field.properties:
                 self._insert(field.identifier, field.properties, False)
@@ -69,11 +49,6 @@ class Mapping(Tree):
                         "Cannot insert subfields into a subfield on field %s" % name
                     )
                 self._insert(field.identifier, field.fields, True)
-
-    def __nonzero__(self):
-        return len(self.list()) > 1
-
-    __bool__ = __nonzero__
 
     def to_dict(self, from_=None, depth=None):
         if self.root is None:
@@ -113,16 +88,16 @@ class Mapping(Tree):
             return True
 
         # TODO take into account flattened data type
-        field = self.resolve_path_to_id(agg_node.field)
-        if field not in self:
-            if not exc:
-                return False
+        try:
+            nid = self.get_node_id_by_path(agg_node.field)
+        except StopIteration:
             raise AbsentMappingFieldError(
                 u"Agg of type <%s> on non-existing field <%s>."
                 % (agg_node.KEY, agg_node.field)
             )
+        _, field = self.get(nid)
 
-        field_type = self.mapping_type_of_field(field)
+        field_type = field.KEY
         if not agg_node.valid_on_field_type(field_type):
             if not exc:
                 return False

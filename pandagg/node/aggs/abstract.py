@@ -114,6 +114,15 @@ class AggNode(Node):
         return other == self.to_dict()
 
 
+class Root(AggNode):
+    """Not a real aggregation. Just the initial empty dict."""
+
+    KEY = "_root"
+
+    def line_repr(self, depth, **kwargs):
+        return "_", ""
+
+
 class MetricAgg(AggNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
 

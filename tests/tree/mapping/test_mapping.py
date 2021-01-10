@@ -47,7 +47,7 @@ class MappingTreeTestCase(TestCase):
             },
         }
 
-        m1 = Mapping(mapping_dict)
+        m1 = Mapping(**mapping_dict)
 
         m2 = Mapping(
             dynamic=False,
@@ -68,32 +68,26 @@ class MappingTreeTestCase(TestCase):
             },
         )
 
-        m3 = Mapping(m1)
-
         expected_repr = """<Mapping>
 _
 ├── classification_type                              Keyword
-│   └── raw                                             Text
+│   └── raw                                           ~ Text
 └── local_metrics                                   [Nested]
     └── dataset                                     {Object}
         ├── support_test                             Integer
         └── support_train                            Integer
 """
-        for i, m in enumerate((m1, m2, m3)):
+        for i, m in enumerate((m1, m2)):
             self.assertEqual(m.__repr__(), expected_repr, "failed at m%d" % (i + 1))
             self.assertEqual(m.to_dict(), mapping_dict, "failed at m%d" % (i + 1))
 
-    def test_mapping_node(self):
-        m = Mapping(None)
-        self.assertTrue(m.is_empty())
-
     def test_parse_tree_from_dict(self):
-        mapping_tree = Mapping(MAPPING)
+        mapping_tree = Mapping(**MAPPING)
 
         self.assertEqual(mapping_tree.__str__(), EXPECTED_MAPPING_TREE_REPR)
 
     def test_nesteds_applied_at_field(self):
-        mapping_tree = Mapping(MAPPING)
+        mapping_tree = Mapping(**MAPPING)
 
         self.assertEqual(mapping_tree.nested_at_field("classification_type"), None)
         self.assertEqual(mapping_tree.list_nesteds_at_field("classification_type"), [])
@@ -116,7 +110,7 @@ _
         )
 
     def test_mapping_type_of_field(self):
-        mapping_tree = Mapping(MAPPING)
+        mapping_tree = Mapping(**MAPPING)
         with self.assertRaises(AbsentMappingFieldError):
             self.assertEqual(mapping_tree.mapping_type_of_field("yolo"), False)
 
@@ -132,7 +126,7 @@ _
         )
 
     def test_node_path(self):
-        mapping_tree = Mapping(MAPPING)
+        mapping_tree = Mapping(**MAPPING)
         # get node by path syntax
         k, node = mapping_tree.get("local_metrics.dataset.support_test", by_path=True)
         self.assertIsInstance(node, Field)
