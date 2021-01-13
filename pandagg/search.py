@@ -9,7 +9,7 @@ from lighttree.exceptions import NotFoundNodeError
 from pandagg.connections import get_connection
 from pandagg.query import Bool
 from pandagg.response import Response
-from pandagg.tree.mapping import Mapping
+from pandagg.tree.mapping import _mapping
 from pandagg.tree.query.abstract import Query
 from pandagg.tree.aggs.aggs import Aggs
 from pandagg.utils import DSLMixin
@@ -127,7 +127,7 @@ class Search(DSLMixin, Request):
         self._highlight_opts = {}
         self._suggest = {}
         self._script_fields = {}
-        mapping = Mapping(mapping)
+        mapping = _mapping(mapping)
         self._mapping = mapping
         self._aggs = Aggs(mapping=mapping, nested_autocorrect=nested_autocorrect)
         self._query = Query(mapping=mapping, nested_autocorrect=nested_autocorrect)
@@ -190,16 +190,35 @@ class Search(DSLMixin, Request):
         s._post_filter = s._post_filter.query(*args, **kwargs)
         return s
 
-    def aggs(self, *args, **kwargs):
+    def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
         s = self._clone()
-        s._aggs = s._aggs.aggs(*args, **kwargs)
+        s._aggs = s._aggs.agg(
+            name,
+            type_or_agg=type_or_agg,
+            insert_below=insert_below,
+            at_root=at_root,
+            **body
+        )
+        return s
+
+    agg.__doc__ = Aggs.agg.__doc__
+
+    def aggs(self, aggs, insert_below=None, at_root=False):
+        s = self._clone()
+        s._aggs = s._aggs.aggs(aggs, insert_below=insert_below, at_root=at_root)
         return s
 
     aggs.__doc__ = Aggs.aggs.__doc__
 
-    def groupby(self, *args, **kwargs):
+    def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
         s = self._clone()
-        s._aggs = s._aggs.groupby(*args, **kwargs)
+        s._aggs = s._aggs.groupby(
+            name,
+            type_or_agg=type_or_agg,
+            insert_below=insert_below,
+            at_root=at_root,
+            **body
+        )
         return s
 
     groupby.__doc__ = Aggs.groupby.__doc__
@@ -301,7 +320,7 @@ class Search(DSLMixin, Request):
         s._aggs = self._aggs.clone()
         s._query = self._query.clone()
         s._post_filter = self._post_filter.clone()
-        s._mapping = self._mapping.clone()
+        s._mapping = None if self._mapping is None else self._mapping.clone()
         s._repr_auto_execute = self._repr_auto_execute
         return s
 

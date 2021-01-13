@@ -158,9 +158,7 @@ class SearchTestCase(PandaggTestCase):
             size=10
         )
 
-        s = s.aggs("per_tag", "terms", field="f").aggs(
-            "max_score", "max", field="score"
-        )
+        s = s.agg("per_tag", "terms", field="f").agg("max_score", "max", field="score")
         d = {
             "aggs": {
                 "per_tag": {
@@ -187,8 +185,8 @@ class SearchTestCase(PandaggTestCase):
             )
             .post_filter("terms", tags=["prague", "czech"])
             .script_fields(more_attendees="doc['attendees'].value + 42")
-            .aggs("per_country", "terms", field="country")
-            .aggs("avg_attendees", "avg", field="attendees")
+            .agg("per_country", "terms", field="country")
+            .agg("avg_attendees", "avg", field="attendees")
             .bool(minimum_should_match=2)
             .highlight_options(order="score")
             .highlight("title", "body", fragment_size=50)

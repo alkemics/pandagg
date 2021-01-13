@@ -11,13 +11,11 @@ class PipelineAggNodesTestCase(TestCase):
 
         # test query dict
         self.assertEqual(
-            agg_node.to_dict(with_name=True),
+            agg_node.to_dict(),
             {
-                "agg_name": {
-                    "bucket_selector": {
-                        "buckets_path": {"stuff": "other_agg"},
-                        "script": "stuff > 100",
-                    }
+                "bucket_selector": {
+                    "buckets_path": {"stuff": "other_agg"},
+                    "script": "stuff > 100",
                 }
             },
         )

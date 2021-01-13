@@ -34,37 +34,34 @@ EXPECTED_AGG_QUERY = {
 def get_wrapper_declared_agg():
     return (
         Aggs(mapping=MAPPING)
-        .groupby(["classification_type", "global_metrics.field.name"])
-        .aggs(
-            [
-                Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
-                Avg(
-                    "avg_f1_micro",
-                    field="global_metrics.performance.test.micro.f1_score",
-                ),
-            ]
+        .groupby("classification_type")
+        .groupby("global_metrics.field.name")
+        .agg("avg_nb_classes", Avg(field="global_metrics.dataset.nb_classes"))
+        .agg(
+            "avg_f1_micro", Avg(field="global_metrics.performance.test.micro.f1_score")
         )
     )
 
 
 def get_node_hierarchy():
-    return Terms(
-        name="classification_type",
-        field="classification_type",
-        aggs=[
-            Terms(
-                name="global_metrics.field.name",
-                field="global_metrics.field.name",
-                aggs=[
-                    Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
-                    Avg(
-                        "avg_f1_micro",
-                        field="global_metrics.performance.test.micro.f1_score",
-                    ),
-                ],
-            )
-        ],
-    )
+    return {
+        "classification_type": Terms(
+            field="classification_type",
+            aggs={
+                "global_metrics.field.name": Terms(
+                    field="global_metrics.field.name",
+                    aggs={
+                        "avg_nb_classes": Avg(
+                            field="global_metrics.dataset.nb_classes"
+                        ),
+                        "avg_f1_micro": Avg(
+                            field="global_metrics.performance.test.micro.f1_score"
+                        ),
+                    },
+                )
+            },
+        )
+    }
 
 
 ES_AGG_RESPONSE = {

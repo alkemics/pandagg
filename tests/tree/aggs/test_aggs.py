@@ -22,10 +22,6 @@ import tests.testing_samples.data_sample as sample
 from tests.testing_samples.mapping_example import MAPPING
 
 
-def to_id_set(nodes):
-    return {n.identifier for n in nodes}
-
-
 class AggTestCase(TestCase):
     def setUp(self):
         patcher = patch("uuid.uuid4", side_effect=range(1000))
@@ -45,46 +41,56 @@ class AggTestCase(TestCase):
         }
         agg1 = Aggs(expected)
         agg2 = Aggs(
-            Terms(
-                "genres",
-                field="genres",
-                size=3,
-                aggs=DateHistogram(
-                    name="movie_decade", field="year", fixed_interval="3650d"
-                ),
-            )
+            {
+                "genres": Terms(
+                    field="genres",
+                    size=3,
+                    aggs={
+                        "movie_decade": DateHistogram(
+                            field="year", fixed_interval="3650d"
+                        )
+                    },
+                )
+            }
         )
         agg3 = Aggs(
-            Terms(
-                "genres",
-                field="genres",
-                size=3,
-                aggs=[
-                    DateHistogram(
-                        name="movie_decade", field="year", fixed_interval="3650d"
-                    )
-                ],
-            )
+            {
+                "genres": Terms(
+                    field="genres",
+                    size=3,
+                    aggs={
+                        "movie_decade": DateHistogram(
+                            field="year", fixed_interval="3650d"
+                        )
+                    },
+                )
+            }
         )
         agg4 = Aggs(
-            Terms(
-                "genres",
-                field="genres",
-                size=3,
-                aggs={
-                    "movie_decade": {
-                        "date_histogram": {"field": "year", "fixed_interval": "3650d"}
-                    }
-                },
-            )
+            {
+                "genres": Terms(
+                    field="genres",
+                    size=3,
+                    aggs={
+                        "movie_decade": {
+                            "date_histogram": {
+                                "field": "year",
+                                "fixed_interval": "3650d",
+                            }
+                        }
+                    },
+                )
+            }
         )
         agg5 = Aggs(
             {
                 "genres": {
                     "terms": {"field": "genres", "size": 3},
-                    "aggs": DateHistogram(
-                        name="movie_decade", field="year", fixed_interval="3650d"
-                    ),
+                    "aggs": {
+                        "movie_decade": DateHistogram(
+                            field="year", fixed_interval="3650d"
+                        )
+                    },
                 }
             }
         )
@@ -93,8 +99,8 @@ class AggTestCase(TestCase):
             self.assertEqual(
                 a.show(stdout=False),
                 """<Aggregations>
-genres                                                <terms, field="genres", size=3>
-└── movie_decade               <date_histogram, field="year", fixed_interval="3650d">
+genres                                           <terms, field="genres", size=3>
+└── movie_decade          <date_histogram, field="year", fixed_interval="3650d">
 """,
             )
 
@@ -102,27 +108,27 @@ genres                                                <terms, field="genres", si
         with_mapping = Aggs(mapping=MAPPING, nested_autocorrect=True)
 
         # add regular node
-        with_mapping = with_mapping.aggs("workflow", Terms(field="workflow"))
+        with_mapping = with_mapping.agg("workflow", Terms(field="workflow"))
         self.assertEqual(
             with_mapping.to_dict(), {"workflow": {"terms": {"field": "workflow"}}}
         )
 
         # try to add field aggregation on non-existing field will fail
         with self.assertRaises(AbsentMappingFieldError):
-            with_mapping.aggs(
+            with_mapping.agg(
                 "imaginary_agg", Terms(field="imaginary_field"), insert_below="workflow"
             )
 
         # try to add aggregation on a non-compatible field will fail
         with self.assertRaises(InvalidOperationMappingFieldError):
-            with_mapping.aggs(
+            with_mapping.agg(
                 "average_of_string",
                 Avg(field="classification_type"),
                 insert_below="workflow",
             )
 
         # add field aggregation on field passing through nested will automatically add nested
-        with_mapping = with_mapping.aggs(
+        with_mapping = with_mapping.agg(
             "local_f1_score",
             Avg(field="local_metrics.performance.test.f1_score"),
             insert_below="workflow",
@@ -162,7 +168,7 @@ workflow                                               <terms, field="workflow">
         self.assertEqual(node.path, "local_metrics")
 
         # add other agg requiring nested will reuse nested agg as parent
-        with_mapping = with_mapping.aggs(
+        with_mapping = with_mapping.agg(
             "local_precision",
             Avg(field="local_metrics.performance.test.precision"),
             insert_below="workflow",
@@ -195,7 +201,7 @@ workflow                                               <terms, field="workflow">
 
         # add under a nested parent a field aggregation that requires to be located under root will automatically
         # add reverse-nested
-        with_mapping = with_mapping.aggs(
+        with_mapping = with_mapping.agg(
             "language_terms",
             Terms(field="language"),
             insert_below="nested_below_workflow",
@@ -249,7 +255,7 @@ workflow                                               <terms, field="workflow">
             },
             mapping=MAPPING,
         )
-        self.assertEqual(to_id_set(initial_agg_1.list()), {"week"})
+        self.assertEqual({k for k, _ in initial_agg_1.list()}, {None, "week"})
         pasted_agg_1 = Aggs(
             {
                 "nested_below_week": {
@@ -266,17 +272,17 @@ workflow                                               <terms, field="workflow">
             }
         )
         self.assertEqual(
-            to_id_set(pasted_agg_1.list()),
-            {"nested_below_week", "local_metrics.field_class.name"},
+            {k for k, _ in pasted_agg_1.list()},
+            {None, "nested_below_week", "local_metrics.field_class.name"},
         )
 
-        initial_agg_1.insert_tree(pasted_agg_1, "week")
+        agg_2 = initial_agg_1.aggs(pasted_agg_1, insert_below="week")
         self.assertEqual(
-            to_id_set(initial_agg_1.list()),
-            {"week", "nested_below_week", "local_metrics.field_class.name"},
+            {k for k, _ in agg_2.list()},
+            {None, "week", "nested_below_week", "local_metrics.field_class.name"},
         )
         self.assertEqual(
-            initial_agg_1.to_dict(),
+            agg_2.to_dict(),
             {
                 "week": {
                     "date_histogram": {
@@ -315,7 +321,7 @@ workflow                                               <terms, field="workflow">
             mapping=MAPPING,
             nested_autocorrect=True,
         )
-        self.assertEqual(to_id_set(initial_agg_2.list()), {"week"})
+        self.assertEqual({k for k, _ in initial_agg_2.list()}, {None, "week"})
         pasted_agg_2 = Aggs(
             {
                 "local_metrics.field_class.name": {
@@ -324,16 +330,17 @@ workflow                                               <terms, field="workflow">
             }
         )
         self.assertEqual(
-            to_id_set(pasted_agg_2.list()), {"local_metrics.field_class.name"}
+            {k for k, _ in pasted_agg_2.list()},
+            {None, "local_metrics.field_class.name"},
         )
 
-        initial_agg_2.insert_tree(pasted_agg_2, "week")
+        agg_3 = initial_agg_2.aggs(pasted_agg_2, insert_below="week")
         self.assertEqual(
-            to_id_set(initial_agg_2.list()),
-            {"week", "nested_below_week", "local_metrics.field_class.name"},
+            {k for k, _ in agg_3.list()},
+            {None, "week", "nested_below_week", "local_metrics.field_class.name"},
         )
         self.assertEqual(
-            initial_agg_2.to_dict(),
+            agg_3.to_dict(),
             {
                 "week": {
                     "date_histogram": {
@@ -371,7 +378,7 @@ workflow                                               <terms, field="workflow">
                 }
             }
         )
-        self.assertEqual({n.identifier for n in initial_agg_1.list()}, {"week"})
+        self.assertEqual({k for k, _ in initial_agg_1.list()}, {None, "week"})
 
         pasted_agg_1 = Aggs(
             {
@@ -389,17 +396,17 @@ workflow                                               <terms, field="workflow">
             }
         )
         self.assertEqual(
-            to_id_set(pasted_agg_1.list()),
-            {"nested_below_week", "local_metrics.field_class.name"},
+            {k for k, _ in pasted_agg_1.list()},
+            {None, "nested_below_week", "local_metrics.field_class.name"},
         )
 
-        initial_agg_1.insert_tree(pasted_agg_1, "week")
+        agg_2 = initial_agg_1.aggs(pasted_agg_1, insert_below="week")
         self.assertEqual(
-            to_id_set(initial_agg_1.list()),
-            {"week", "nested_below_week", "local_metrics.field_class.name"},
+            {k for k, _ in agg_2.list()},
+            {None, "week", "nested_below_week", "local_metrics.field_class.name"},
         )
         self.assertEqual(
-            initial_agg_1.to_dict(),
+            agg_2.to_dict(),
             {
                 "week": {
                     "date_histogram": {
@@ -426,14 +433,14 @@ workflow                                               <terms, field="workflow">
 
     def test_interpret_agg_string(self):
         some_agg = Aggs()
-        some_agg = some_agg.aggs("some_field", insert_below=None)
+        some_agg = some_agg.agg("some_field", insert_below=None)
         self.assertEqual(
             some_agg.to_dict(), {"some_field": {"terms": {"field": "some_field"}}}
         )
 
         # with default size
         some_agg = Aggs()
-        some_agg = some_agg.aggs("some_field", insert_below=None, size=10)
+        some_agg = some_agg.agg("some_field", insert_below=None, size=10)
         self.assertEqual(
             some_agg.to_dict(),
             {"some_field": {"terms": {"field": "some_field", "size": 10}}},
@@ -443,7 +450,7 @@ workflow                                               <terms, field="workflow">
         some_agg = Aggs(
             {"root_agg_name": {"terms": {"field": "some_field", "size": 5}}}
         )
-        some_agg = some_agg.aggs("child_field", insert_below="root_agg_name")
+        some_agg = some_agg.agg("child_field", insert_below="root_agg_name")
         self.assertEqual(
             some_agg.to_dict(),
             {
@@ -460,7 +467,7 @@ workflow                                               <terms, field="workflow">
             mapping=MAPPING,
             nested_autocorrect=True,
         )
-        some_agg = some_agg.aggs(
+        some_agg = some_agg.agg(
             "local_metrics.field_class.name", insert_below="term_workflow"
         )
         self.assertEqual(
@@ -483,8 +490,8 @@ workflow                                               <terms, field="workflow">
         )
 
     def test_aggs(self):
-        node = Terms(name="some_name", field="some_field", size=10)
-        some_agg = Aggs().aggs(node, insert_below=None)
+        node = Terms(field="some_field", size=10)
+        some_agg = Aggs().agg("some_name", node, insert_below=None)
         self.assertEqual(
             some_agg.to_dict(),
             {"some_name": {"terms": {"field": "some_field", "size": 10}}},
@@ -495,8 +502,8 @@ workflow                                               <terms, field="workflow">
             mapping=MAPPING,
             nested_autocorrect=True,
         )
-        node = Avg(name="min_local_f1", field="local_metrics.performance.test.f1_score")
-        some_agg = some_agg.aggs(node, insert_below="term_workflow")
+        node = Avg(field="local_metrics.performance.test.f1_score")
+        some_agg = some_agg.agg("min_local_f1", node, insert_below="term_workflow")
         self.assertEqual(
             some_agg.to_dict(),
             {
@@ -519,98 +526,107 @@ workflow                                               <terms, field="workflow">
         )
 
     def test_aggs_at_root(self):
+        # not at root
         a = (
             Aggs()
-            .aggs("one", "terms", field="terms_one")
-            .aggs("two", "terms", field="terms_two", at_root=True)
+            .groupby("zero", "terms", field="terms_zero")
+            .agg("one", "terms", field="terms_one")
+            .agg("two", "terms", field="terms_two")
         )
         self.assertEqual(
             a.to_dict(),
             {
-                "one": {"terms": {"field": "terms_one"}},
-                "two": {"terms": {"field": "terms_two"}},
+                "zero": {
+                    "terms": {"field": "terms_zero"},
+                    "aggs": {
+                        "one": {"terms": {"field": "terms_one"}},
+                        "two": {"terms": {"field": "terms_two"}},
+                    },
+                }
             },
         )
 
-        # not at root: default behavior
+        # at root
         a = (
             Aggs()
-            .aggs("one", "terms", field="terms_one")
-            .aggs("two", "terms", field="terms_two")
+            .groupby("zero", "terms", field="terms_zero")
+            .agg("one", "terms", field="terms_one")
+            .agg("two", "terms", field="terms_two", at_root=True)
         )
         self.assertEqual(
             a.to_dict(),
             {
-                "one": {
-                    "terms": {"field": "terms_one"},
-                    "aggs": {"two": {"terms": {"field": "terms_two"}}},
-                }
+                "zero": {
+                    "terms": {"field": "terms_zero"},
+                    "aggs": {"one": {"terms": {"field": "terms_one"}}},
+                },
+                "two": {"terms": {"field": "terms_two"}},
             },
         )
 
     def test_aggs_strings(self):
         self.assertEqual(
-            Aggs().aggs(["yolo1", "yolo2"]).to_dict(),
+            Aggs().agg("yolo1").agg("yolo2").to_dict(),
             {
                 "yolo1": {"terms": {"field": "yolo1"}},
                 "yolo2": {"terms": {"field": "yolo2"}},
             },
         )
 
-    def test_validate_aggs_parent_id(self):
-        """
-        <Aggregation>
-        classification_type
-        └── global_metrics.field.name
-            ├── avg_f1_micro
-            └── avg_nb_classes
-        """
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
-
-        with self.assertRaises(ValueError) as e:
-            my_agg._validate_aggs_parent_id(pid=None)
-        self.assertEqual(
-            e.exception.args,
-            (
-                "Declaration is ambiguous, you must declare the node id under which these "
-                "aggregations should be placed.",
-            ),
-        )
-
-        with self.assertRaises(ValueError) as e:
-            my_agg._validate_aggs_parent_id("avg_f1_micro")
-        self.assertEqual(
-            e.exception.args, ("Node id <avg_f1_micro> is not a bucket aggregation.",)
-        )
-
-        self.assertEqual(
-            my_agg._validate_aggs_parent_id("global_metrics.field.name"),
-            "global_metrics.field.name",
-        )
-
-        with self.assertRaises(NotFoundNodeError) as e:
-            my_agg._validate_aggs_parent_id("non-existing-node")
-        self.assertEqual(
-            e.exception.args, ("Node id <non-existing-node> doesn't exist in tree",)
-        )
-
-        # linear agg
-        my_agg.drop_node("avg_f1_micro")
-        my_agg.drop_node("avg_nb_classes")
-        """
-        <Aggregation>
-        classification_type
-        └── global_metrics.field.name
-        """
-        self.assertEqual(
-            my_agg._validate_aggs_parent_id(None), "global_metrics.field.name"
-        )
-
-        # empty agg
-        agg = Aggs()
-        self.assertEqual(agg._validate_aggs_parent_id(None), None)
-
-        # TODO - pipeline aggregation under metric agg
+    # def test_validate_aggs_parent_id(self):
+    #     """
+    #     <Aggregation>
+    #     classification_type
+    #     └── global_metrics.field.name
+    #         ├── avg_f1_micro
+    #         └── avg_nb_classes
+    #     """
+    #     my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+    #
+    #     with self.assertRaises(ValueError) as e:
+    #         my_agg._validate_aggs_parent_id(pid=None)
+    #     self.assertEqual(
+    #         e.exception.args,
+    #         (
+    #             "Declaration is ambiguous, you must declare the node id under which these "
+    #             "aggregations should be placed.",
+    #         ),
+    #     )
+    #
+    #     with self.assertRaises(ValueError) as e:
+    #         my_agg._validate_aggs_parent_id("avg_f1_micro")
+    #     self.assertEqual(
+    #         e.exception.args, ("Node id <avg_f1_micro> is not a bucket aggregation.",)
+    #     )
+    #
+    #     self.assertEqual(
+    #         my_agg._validate_aggs_parent_id("global_metrics.field.name"),
+    #         "global_metrics.field.name",
+    #     )
+    #
+    #     with self.assertRaises(NotFoundNodeError) as e:
+    #         my_agg._validate_aggs_parent_id("non-existing-node")
+    #     self.assertEqual(
+    #         e.exception.args, ("Node id <non-existing-node> doesn't exist in tree",)
+    #     )
+    #
+    #     # linear agg
+    #     my_agg.drop_node("avg_f1_micro")
+    #     my_agg.drop_node("avg_nb_classes")
+    #     """
+    #     <Aggregation>
+    #     classification_type
+    #     └── global_metrics.field.name
+    #     """
+    #     self.assertEqual(
+    #         my_agg._validate_aggs_parent_id(None), "global_metrics.field.name"
+    #     )
+    #
+    #     # empty agg
+    #     agg = Aggs()
+    #     self.assertEqual(agg._validate_aggs_parent_id(None), None)
+    #
+    #     # TODO - pipeline aggregation under metric agg
 
     def test_init_from_node_hierarchy(self):
         node_hierarchy = sample.get_node_hierarchy()
@@ -619,24 +635,23 @@ workflow                                               <terms, field="workflow">
         self.assertEqual(agg.to_dict(), sample.EXPECTED_AGG_QUERY)
 
         # with nested
-        node_hierarchy = DateHistogram(
-            name="week",
-            field="date",
-            interval="1w",
-            aggs=[
-                Terms(
-                    name="local_metrics.field_class.name",
-                    field="local_metrics.field_class.name",
-                    size=10,
-                    aggs=[
-                        Min(
-                            name="min_f1_score",
-                            field="local_metrics.performance.test.f1_score",
-                        )
-                    ],
-                )
-            ],
-        )
+        node_hierarchy = {
+            "week": DateHistogram(
+                field="date",
+                interval="1w",
+                aggs={
+                    "local_metrics.field_class.name": Terms(
+                        field="local_metrics.field_class.name",
+                        size=10,
+                        aggs={
+                            "min_f1_score": Min(
+                                field="local_metrics.performance.test.f1_score"
+                            )
+                        },
+                    )
+                },
+            )
+        }
         agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(
             agg.to_dict(),
@@ -737,7 +752,7 @@ workflow                                               <terms, field="workflow">
 
     def test_groupby_insert_below(self):
         a1 = Aggs(
-            Terms("A", field="A", aggs=[Terms("B", field="B"), Terms("C", field="C")])
+            {"A": Terms(field="A", aggs={"B": Terms(field="B"), "C": Terms(field="C")})}
         )
         self.assertEqual(
             a1.to_dict(),
@@ -753,7 +768,7 @@ workflow                                               <terms, field="workflow">
         )
 
         self.assertEqual(
-            a1.groupby(Terms("D", field="D"), insert_below="A").to_dict(),
+            a1.groupby("D", Terms(field="D"), insert_below="A").to_dict(),
             {
                 "A": {
                     "terms": {"field": "A"},
@@ -769,156 +784,111 @@ workflow                                               <terms, field="workflow">
                 }
             },
         )
-        self.assertEqual(
-            a1.groupby(
-                [Terms("D", field="D"), Terms("E", field="E")], insert_below="A"
-            ).to_dict(),
-            {
-                "A": {
-                    "terms": {"field": "A"},
-                    "aggs": {
-                        "D": {
-                            "terms": {"field": "D"},
-                            "aggs": {
-                                "E": {
-                                    "terms": {"field": "E"},
-                                    "aggs": {
-                                        "C": {"terms": {"field": "C"}},
-                                        "B": {"terms": {"field": "B"}},
-                                    },
-                                }
-                            },
-                        }
-                    },
-                }
-            },
-        )
-        self.assertEqual(
-            a1.groupby(
-                Terms("D", field="D", aggs=Terms("E", field="E")), insert_below="A"
-            ).to_dict(),
-            {
-                "A": {
-                    "terms": {"field": "A"},
-                    "aggs": {
-                        "D": {
-                            "terms": {"field": "D"},
-                            "aggs": {
-                                "E": {
-                                    "terms": {"field": "E"},
-                                    "aggs": {
-                                        "B": {"terms": {"field": "B"}},
-                                        "C": {"terms": {"field": "C"}},
-                                    },
-                                }
-                            },
-                        }
-                    },
-                }
-            },
-        )
 
-    def test_groupby_insert_above(self):
-        a1 = Aggs(
-            Terms("A", field="A", aggs=[Terms("B", field="B"), Terms("C", field="C")])
-        )
-        self.assertEqual(
-            a1.to_dict(),
-            {
-                "A": {
-                    "terms": {"field": "A"},
-                    "aggs": {
-                        "B": {"terms": {"field": "B"}},
-                        "C": {"terms": {"field": "C"}},
-                    },
-                }
-            },
-        )
-
-        self.assertEqual(
-            a1.groupby(Terms("D", field="D"), insert_above="B").to_dict(),
-            {
-                "A": {
-                    "terms": {"field": "A"},
-                    "aggs": {
-                        "C": {"terms": {"field": "C"}},
-                        "D": {
-                            "terms": {"field": "D"},
-                            "aggs": {"B": {"terms": {"field": "B"}}},
-                        },
-                    },
-                }
-            },
-        )
-        self.assertEqual(
-            a1.groupby(
-                [Terms("D", field="D"), Terms("E", field="E")], insert_above="B"
-            ).to_dict(),
-            {
-                "A": {
-                    "terms": {"field": "A"},
-                    "aggs": {
-                        "C": {"terms": {"field": "C"}},
-                        "D": {
-                            "terms": {"field": "D"},
-                            "aggs": {
-                                "E": {
-                                    "terms": {"field": "E"},
-                                    "aggs": {"B": {"terms": {"field": "B"}}},
-                                }
-                            },
-                        },
-                    },
-                }
-            },
-        )
-        self.assertEqual(
-            a1.groupby(
-                Terms("D", field="D", aggs=Terms("E", field="E")), insert_above="B"
-            ).to_dict(),
-            {
-                "A": {
-                    "aggs": {
-                        "C": {"terms": {"field": "C"}},
-                        "D": {
-                            "aggs": {
-                                "E": {
-                                    "aggs": {"B": {"terms": {"field": "B"}}},
-                                    "terms": {"field": "E"},
-                                }
-                            },
-                            "terms": {"field": "D"},
-                        },
-                    },
-                    "terms": {"field": "A"},
-                }
-            },
-        )
-        # above root
-        self.assertEqual(
-            a1.groupby(
-                Terms("D", field="D", aggs=Terms("E", field="E")), insert_above="A"
-            ).to_dict(),
-            {
-                "D": {
-                    "terms": {"field": "D"},
-                    "aggs": {
-                        "E": {
-                            "terms": {"field": "E"},
-                            "aggs": {
-                                "A": {
-                                    "terms": {"field": "A"},
-                                    "aggs": {
-                                        "B": {"terms": {"field": "B"}},
-                                        "C": {"terms": {"field": "C"}},
-                                    },
-                                }
-                            },
-                        }
-                    },
-                }
-            },
-        )
+    # def test_groupby_insert_above(self):
+    #     a1 = Aggs({
+    #         "A": Terms(field="A", aggs={
+    #             "B": Terms(field="B"),
+    #             "C": Terms(field="C")
+    #         })
+    #     })
+    #     self.assertEqual(
+    #         a1.to_dict(),
+    #         {
+    #             "A": {
+    #                 "terms": {"field": "A"},
+    #                 "aggs": {
+    #                     "B": {"terms": {"field": "B"}},
+    #                     "C": {"terms": {"field": "C"}},
+    #                 },
+    #             }
+    #         },
+    #     )
+    #
+    #     self.assertEqual(
+    #         a1.groupby("D", Terms(field="D"), insert_above="B").to_dict(),
+    #         {
+    #             "A": {
+    #                 "terms": {"field": "A"},
+    #                 "aggs": {
+    #                     "C": {"terms": {"field": "C"}},
+    #                     "D": {
+    #                         "terms": {"field": "D"},
+    #                         "aggs": {"B": {"terms": {"field": "B"}}},
+    #                     },
+    #                 },
+    #             }
+    #         },
+    #     )
+    #     self.assertEqual(
+    #         a1.groupby(
+    #             [Terms("D", field="D"), Terms("E", field="E")], insert_above="B"
+    #         ).to_dict(),
+    #         {
+    #             "A": {
+    #                 "terms": {"field": "A"},
+    #                 "aggs": {
+    #                     "C": {"terms": {"field": "C"}},
+    #                     "D": {
+    #                         "terms": {"field": "D"},
+    #                         "aggs": {
+    #                             "E": {
+    #                                 "terms": {"field": "E"},
+    #                                 "aggs": {"B": {"terms": {"field": "B"}}},
+    #                             }
+    #                         },
+    #                     },
+    #                 },
+    #             }
+    #         },
+    #     )
+    #     self.assertEqual(
+    #         a1.groupby(
+    #             Terms("D", field="D", aggs=Terms("E", field="E")), insert_above="B"
+    #         ).to_dict(),
+    #         {
+    #             "A": {
+    #                 "aggs": {
+    #                     "C": {"terms": {"field": "C"}},
+    #                     "D": {
+    #                         "aggs": {
+    #                             "E": {
+    #                                 "aggs": {"B": {"terms": {"field": "B"}}},
+    #                                 "terms": {"field": "E"},
+    #                             }
+    #                         },
+    #                         "terms": {"field": "D"},
+    #                     },
+    #                 },
+    #                 "terms": {"field": "A"},
+    #             }
+    #         },
+    #     )
+    #     # above root
+    #     self.assertEqual(
+    #         a1.groupby(
+    #             Terms("D", field="D", aggs=Terms("E", field="E")), insert_above="A"
+    #         ).to_dict(),
+    #         {
+    #             "D": {
+    #                 "terms": {"field": "D"},
+    #                 "aggs": {
+    #                     "E": {
+    #                         "terms": {"field": "E"},
+    #                         "aggs": {
+    #                             "A": {
+    #                                 "terms": {"field": "A"},
+    #                                 "aggs": {
+    #                                     "B": {"terms": {"field": "B"}},
+    #                                     "C": {"terms": {"field": "C"}},
+    #                                 },
+    #                             }
+    #                         },
+    #                     }
+    #                 },
+    #             }
+    #         },
+    #     )
 
     def test_agg_insert_below(self):
         a1 = Aggs(
@@ -948,17 +918,17 @@ workflow                                               <terms, field="workflow">
             }
         }
         self.assertEqual(
-            a1.aggs(name="D", type_or_agg=Terms(field="D"), insert_below="A").to_dict(),
+            a1.agg(name="D", type_or_agg=Terms(field="D"), insert_below="A").to_dict(),
             expected,
         )
         self.assertEqual(
-            a1.aggs(
+            a1.agg(
                 name="D", type_or_agg="terms", field="D", insert_below="A"
             ).to_dict(),
             expected,
         )
         self.assertEqual(
-            a1.aggs(
+            a1.agg(
                 name="D", type_or_agg={"terms": {"field": "D"}}, insert_below="A"
             ).to_dict(),
             expected,
@@ -973,33 +943,35 @@ workflow                                               <terms, field="workflow">
                 ├── max_f1_score
                 └── min_f1_score
         """
-        node_hierarchy = DateHistogram(
-            name="week",
-            field="date",
-            interval="1w",
-            aggs=[
-                Terms(
-                    name="local_metrics.field_class.name",
-                    field="local_metrics.field_class.name",
-                    size=10,
-                    aggs=[
-                        Min(
-                            name="min_f1_score",
-                            field="local_metrics.performance.test.f1_score",
-                        )
-                    ],
-                )
-            ],
-        )
+        node_hierarchy = {
+            "week": DateHistogram(
+                field="date",
+                interval="1w",
+                aggs={
+                    "local_metrics.field_class.name": Terms(
+                        field="local_metrics.field_class.name",
+                        size=10,
+                        aggs={
+                            "min_f1_score": Min(
+                                field="local_metrics.performance.test.f1_score"
+                            )
+                        },
+                    )
+                },
+            )
+        }
         agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
 
-        self.assertEqual(agg.applied_nested_path_at_node("week"), None)
-        for nid in (
+        self.assertEqual(agg.applied_nested_path_at_node(agg.id_from_key("week")), None)
+        for node_key in (
             "nested_below_week",
             "local_metrics.field_class.name",
             "min_f1_score",
         ):
-            self.assertEqual(agg.applied_nested_path_at_node(nid), "local_metrics")
+            self.assertEqual(
+                agg.applied_nested_path_at_node(agg.id_from_key(node_key)),
+                "local_metrics",
+            )
 
     def test_deepest_linear_agg(self):
         # deepest_linear_bucket_agg
@@ -1009,52 +981,49 @@ workflow                                               <terms, field="workflow">
             └── local_metrics.field_class.name   <----- HERE because then metric aggregation
                 └── avg_f1_score
         """
-        node_hierarchy = DateHistogram(
-            name="week",
-            field="date",
-            interval="1w",
-            aggs=[
-                Terms(
-                    name="local_metrics.field_class.name",
-                    field="local_metrics.field_class.name",
-                    size=10,
-                    aggs=[
-                        Min(
-                            name="min_f1_score",
-                            field="local_metrics.performance.test.f1_score",
-                        )
-                    ],
-                )
-            ],
-        )
+        node_hierarchy = {
+            "week": DateHistogram(
+                field="date",
+                interval="1w",
+                aggs={
+                    "local_metrics.field_class.name": Terms(
+                        field="local_metrics.field_class.name",
+                        size=10,
+                        aggs={
+                            "min_f1_score": Min(
+                                field="local_metrics.performance.test.f1_score"
+                            )
+                        },
+                    )
+                },
+            )
+        }
         agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(
-            agg.deepest_linear_bucket_agg, "local_metrics.field_class.name"
+            agg.get_key(agg.deepest_linear_bucket_agg), "local_metrics.field_class.name"
         )
 
         # week is last bucket linear bucket
-        node_hierarchy_2 = DateHistogram(
-            name="week",
-            field="date",
-            interval="1w",
-            aggs=[
-                Terms(
-                    name="local_metrics.field_class.name",
-                    field="local_metrics.field_class.name",
-                    size=10,
-                ),
-                Filter(
-                    name="f1_score_above_threshold",
-                    filter={
-                        "range": {
-                            "local_metrics.performance.test.f1_score": {"gte": 0.5}
+        node_hierarchy_2 = {
+            "week": DateHistogram(
+                field="date",
+                interval="1w",
+                aggs={
+                    "local_metrics.field_class.name": Terms(
+                        field="local_metrics.field_class.name", size=10
+                    ),
+                    "f1_score_above_threshold": Filter(
+                        filter={
+                            "range": {
+                                "local_metrics.performance.test.f1_score": {"gte": 0.5}
+                            }
                         }
-                    },
-                ),
-            ],
-        )
+                    ),
+                },
+            )
+        }
         agg2 = Aggs(node_hierarchy_2, mapping=MAPPING, nested_autocorrect=True)
-        self.assertEqual(agg2.deepest_linear_bucket_agg, "week")
+        self.assertEqual(agg2.get_key(agg2.deepest_linear_bucket_agg), "week")
 
     def test_groupby_pointer(self):
         a = (
@@ -1063,16 +1032,16 @@ workflow                                               <terms, field="workflow">
             .groupby("B", "date_histogram", fixed_interval="1d", field="b")
         )
 
-        self.assertEqual(a._groupby_ptr, "B")
+        self.assertEqual(a.get_key(a._groupby_ptr), "B")
 
-        a1 = a.aggs("C1", "terms", field="c1").aggs("C2", "terms", field="c2")
+        a1 = a.agg("C1", "terms", field="c1").agg("C2", "terms", field="c2")
         self.assertEqual(
             a1.show(stdout=False),
             """<Aggregations>
-A                                                                  <terms, field="a">
-└── B                                <date_histogram, field="b", fixed_interval="1d">
-    ├── C1                                                        <terms, field="c1">
-    └── C2                                                        <terms, field="c2">
+A                                                             <terms, field="a">
+└── B                           <date_histogram, field="b", fixed_interval="1d">
+    ├── C1                                                   <terms, field="c1">
+    └── C2                                                   <terms, field="c2">
 """,
         )
         self.assertEqual(

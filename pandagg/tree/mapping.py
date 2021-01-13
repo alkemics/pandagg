@@ -13,6 +13,16 @@ from pandagg.exceptions import (
 from pandagg.tree._tree import Tree
 
 
+def _mapping(m):
+    if m is None:
+        return None
+    if isinstance(m, dict):
+        return Mapping(**m)
+    if isinstance(m, Mapping):
+        return m
+    raise TypeError("Unsupported %s type for Mapping" % type(m))
+
+
 class Mapping(Tree):
 
     node_class = Field

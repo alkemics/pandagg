@@ -9,7 +9,7 @@ from pandagg.node.query.joining import Nested
 from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket
-from pandagg.node.aggs.abstract import UniqueBucketAgg
+from pandagg.node.aggs.abstract import UniqueBucketAgg, Root
 from pandagg.tree.query.abstract import Query
 
 
@@ -35,7 +35,7 @@ class AggsResponseTree(Tree):
         :param raw_response: ElasticSearch aggregation response
         :return: self
         """
-        root_node = self.__aggs.get(self.__aggs.root)
+        root_key, root_node = self.__aggs.get(self.__aggs.root)
         pid = None
 
         if not isinstance(root_node, UniqueBucketAgg):
@@ -55,7 +55,7 @@ class AggsResponseTree(Tree):
         """
         agg_raw_response = (
             raw_response
-            if isinstance(agg_node, ShadowRoot)
+            if isinstance(agg_node, Root)
             else raw_response.get(agg_node.name)
         )
         for key, raw_value in agg_node.extract_buckets(agg_raw_response):

@@ -1,4 +1,5 @@
-from pandagg.interactive.mapping import Mapping, IMapping
+from pandagg.tree.mapping import Mapping
+from pandagg.interactive.mapping import IMapping
 from pandagg.node.mapping.field_datatypes import (
     Text,
     Keyword,

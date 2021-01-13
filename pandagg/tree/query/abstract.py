@@ -14,7 +14,7 @@ from pandagg.node.query.compound import CompoundClause, Bool as BoolNode
 from pandagg.node.query.joining import Nested
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mapping import Mapping
+from pandagg.tree.mapping import _mapping
 
 ADD = "add"
 REPLACE = "replace"
@@ -72,7 +72,7 @@ class Query(Tree):
     node_class = QueryClause
 
     def __init__(self, *args, **kwargs):
-        self.mapping = Mapping(kwargs.pop("mapping", None))
+        self.mapping = _mapping(kwargs.pop("mapping", None))
         self.nested_autocorrect = kwargs.pop("nested_autocorrect", False)
         super(Query, self).__init__()
         if args or kwargs:
@@ -85,7 +85,9 @@ class Query(Tree):
 
     def _clone_init(self, deep=False):
         return Query(
-            mapping=self.mapping.clone(with_tree=True, deep=deep),
+            mapping=None
+            if self.mapping is None
+            else self.mapping.clone(with_tree=True, deep=deep),
             nested_autocorrect=self.nested_autocorrect,
         )
 

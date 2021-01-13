@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import json
 
 from lighttree import TreeBasedObj
 
-from pandagg.tree.mapping import Mapping
+from pandagg.tree.mapping import _mapping
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.utils import DSLMixin
 
@@ -17,15 +18,24 @@ class IMapping(DSLMixin, TreeBasedObj):
     _REPR_NAME = "Mapping"
     _NODE_PATH_ATTR = "name"
 
-    def __init__(self, *args, **kwargs):
-        self._client = kwargs.pop("client", None)
-        self._index = kwargs.pop("index", None)
-        root_path = kwargs.pop("root_path", None)
-        depth = kwargs.pop("depth", 1)
-        initial_tree = kwargs.pop("initial_tree", None)
-        tree = Mapping(*args, **kwargs)
+    def __init__(
+        self,
+        mapping,
+        client=None,
+        index=None,
+        depth=1,
+        root_path=None,
+        initial_tree=None,
+    ):
+        if mapping is None:
+            raise ValueError("mapping cannot be None")
+        self._client = client
+        self._index = index
         super(IMapping, self).__init__(
-            tree=tree, root_path=root_path, depth=depth, initial_tree=initial_tree
+            tree=_mapping(mapping),
+            root_path=root_path,
+            depth=depth,
+            initial_tree=initial_tree,
         )
         # if we reached a leave, add aggregation capabilities based on reached mapping type
         self._set_agg_property_if_required()
