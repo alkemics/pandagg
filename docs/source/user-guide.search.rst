@@ -14,6 +14,616 @@ Elasticsearch `search api <https://www.elastic.co/guide/en/elasticsearch/referen
     >>>     .groupby('decade', 'histogram', interval=10, field='year')\
     >>>     .groupby('genres', size=3)\
     >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})
+
+    >>> search
+    {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "year": {
+                  "gte": 1990
+                }
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "genres": {
+              "terms": {
+                "field": "genres",
+                "size": 3
+              },
+              "aggs": {
+                "avg_rank": {
+                  "avg": {
+                    "field": "rank"
+                  }
+                },
+                "avg_nb_roles": {
+                  "avg": {
+                    "field": "nb_roles"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "size": 2
+    }
+
+It relies on:
+
+-
+
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> search = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
     >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
     >>>     .filter('range', year={"gte": 1990})
 
@@ -155,6 +765,54 @@ The **aggregations** part of a :class:`~pandagg.search.Search` instance is avail
 
 To enrich **aggregations** of a search request, methods are exactly the same as for a
 :class:`~pandagg.aggs.Aggs` instance.
+
+    >>> Search()\
+    >>> .groupby('decade', 'histogram', interval=10, field='year')\
+    >>> .agg('avg_rank', 'avg', field='rank')
+    {
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "avg_rank": {
+              "avg": {
+                "field": "rank"
+              }
+            }
+          }
+        }
+      }
+    }
+
+
+See section
+
+    >>> Search()\
+    >>> .groupby('decade', 'histogram', interval=10, field='year')\
+    >>> .agg('avg_rank', 'avg', field='rank')
+    {
+      "aggs": {
+        "decade": {
+          "histogram": {
+            "field": "year",
+            "interval": 10
+          },
+          "aggs": {
+            "avg_rank": {
+              "avg": {
+                "field": "rank"
+              }
+            }
+          }
+        }
+      }
+    }
+
+
+See section
 
     >>> Search()\
     >>> .groupby('decade', 'histogram', interval=10, field='year')\

@@ -87,7 +87,7 @@ class Aggs(Tree):
         >>> Aggs().agg("per_user", {"terms": {"field": "user"}})
 
         Using DSL class:
-        >>> from pandagg.agg import Terms
+        >>> from pandagg.aggs import Terms
         >>> Aggs().agg("per_user", Terms(field='user'))
 
         Agg node insertion, accepts following syntax:
@@ -301,7 +301,7 @@ class Aggs(Tree):
         >>> .groupby('per_user_id', {'terms': {"field": "user_id"}})
         {"per_user_id":{"terms":{"field":"user_id"}}}
 
-        >>> from pandagg.agg import Terms
+        >>> from pandagg.aggs import Terms
         >>> Aggs()\
         >>> .groupby('per_user_id', Terms(field="user_id"))
         {"per_user_id":{"terms":{"field":"user_id"}}}

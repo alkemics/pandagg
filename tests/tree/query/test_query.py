@@ -9,8 +9,7 @@ from pandagg.node.query._parameter_clause import Must
 from pandagg.query import Query, Range, Prefix, Ids, Term, Terms, Nested
 from pandagg.node.query.term_level import Term as TermNode, Exists as ExistsNode
 from pandagg.node.query.joining import Nested as NestedNode
-from pandagg.tree.query.compound import Bool
-from pandagg.node.query.compound import Bool as BoolNode
+from pandagg.node.query.compound import Bool
 
 from pandagg.utils import equal_queries, ordered
 from tests import PandaggTestCase
@@ -39,6 +38,23 @@ bool, boost=2
 └── filter
     └── term, field=yolo, value=2
 """,
+        )
+
+    def test_query_method_simple(self):
+        self.assertEqual(
+            Query().query("term", pizza=1).to_dict(), {"term": {"pizza": {"value": 1}}}
+        )
+
+        self.assertEqual(
+            Query().query("term", pizza=1).query("term", yolo=False).to_dict(),
+            {
+                "bool": {
+                    "must": [
+                        {"term": {"yolo": {"value": False}}},
+                        {"term": {"pizza": {"value": 1}}},
+                    ]
+                }
+            },
         )
 
     def test_new_bool_must_above_node(self):
@@ -431,7 +447,7 @@ bool, boost=2
             Term(field="some_field", value=2, _name="term_nid"), _name="bool_nid"
         )
         self.assertEqual(len(q_i1.list()), 0)
-        bool_ = next((c for c in q1.list() if isinstance(c, BoolNode)))
+        bool_ = next((c for c in q1.list() if isinstance(c, Bool)))
         self.assertEqual(bool_.name, "bool_nid")
         next((c for c in q1.list() if isinstance(c, Must)))
         term = next((c for c in q1.list() if isinstance(c, TermNode)))
@@ -449,7 +465,7 @@ bool
         q_i2 = Query()
         q2 = q_i2.must({"term": {"some_field": {"value": 2}}})
         self.assertEqual(len(q_i2.list()), 0)
-        next((c for c in q2.list() if isinstance(c, BoolNode)))
+        next((c for c in q2.list() if isinstance(c, Bool)))
         next((c for c in q2.list() if isinstance(c, Must)))
         next((c for c in q2.list() if isinstance(c, TermNode)))
         self.assertEqual(
@@ -469,7 +485,7 @@ bool
                 {"term": {"other_field": {"value": 5}}},
             ]
         )
-        next((c for c in q3.list() if isinstance(c, BoolNode)))
+        next((c for c in q3.list() if isinstance(c, Bool)))
         next((c for c in q3.list() if isinstance(c, Must)))
         next((c for c in q3.list() if isinstance(c, TermNode)))
         next((c for c in q3.list() if isinstance(c, ExistsNode)))
@@ -613,7 +629,7 @@ bool
         q = Query({"bool": {"must_not": {"term": {"some_field": {"value": 2}}}}})
         self.assertEqual(len(q.list()), 3)
         n = q.get(q.root)
-        self.assertIsInstance(n, BoolNode)
+        self.assertIsInstance(n, Bool)
         self.assertEqual(
             q.to_dict(),
             {"bool": {"must_not": [{"term": {"some_field": {"value": 2}}}]}},
@@ -632,7 +648,7 @@ bool
         )
         self.assertEqual(len(q.list()), 4)
         n = q.get(q.root)
-        self.assertIsInstance(n, BoolNode)
+        self.assertIsInstance(n, Bool)
         self.assertQueryEqual(
             q.to_dict(),
             {

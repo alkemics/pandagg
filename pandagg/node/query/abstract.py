@@ -13,12 +13,15 @@ class QueryClause(Node):
     _type_name = "query"
     KEY = None
 
-    def __init__(self, **body):
-        body = body.copy()
-        _name = body.pop("_name", None)
-        self.body = body
+    def __init__(
+        self, _name=None, accept_children=True, keyed=True, _children=None, **body
+    ):
+        self.body = body.copy()
         self._named = _name is not None
-        super(QueryClause, self).__init__(identifier=_name)
+        super(QueryClause, self).__init__(
+            identifier=_name, accept_children=accept_children, keyed=keyed
+        )
+        self._children = _children or {}
 
     def line_repr(self, depth, **kwargs):
         if not self.body:
@@ -45,9 +48,9 @@ class QueryClause(Node):
     def _identifier_prefix(self):
         return "%s_" % self.KEY
 
-    def to_dict(self, with_name=True):
+    def to_dict(self):
         b = self.body.copy()
-        if with_name and self._named:
+        if self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
@@ -67,7 +70,10 @@ class QueryClause(Node):
 
 
 class LeafQueryClause(QueryClause):
-    pass
+    def __init__(self, _name=None, **body):
+        super(LeafQueryClause, self).__init__(
+            _name=_name, accept_children=False, **body
+        )
 
 
 class AbstractSingleFieldQueryClause(LeafQueryClause):
@@ -167,4 +173,5 @@ class MultiFieldsQueryClause(LeafQueryClause):
 
 
 class ParentParameterClause(QueryClause):
-    MULTIPLE = False
+    def __init__(self):
+        super(ParentParameterClause, self).__init__(accept_children=True, keyed=False)

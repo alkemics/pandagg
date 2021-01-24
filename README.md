@@ -103,21 +103,22 @@ F    1135174   F
 ```
 
 Build search request:
+
 ```python
->>> search = movies\
-    .search()\
-    .size(2)\
-    .groupby('decade', 'histogram', interval=10, field='year')\
-    .groupby('genres', size=3)\
-    .aggs('avg_rank', 'avg', field='rank')\
-    .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+>> > search = movies
+    .search()
+    .size(2)
+    .groupby('decade', 'histogram', interval=10, field='year')
+    .groupby('genres', size=3)
+    .agg('avg_rank', 'avg', field='rank')
+    .agg('avg_nb_roles', 'avg', field='nb_roles')
     .filter('range', year={"gte": 1990})
 
->>> search.to_dict()
+>> > search.to_dict()
 {'aggs': {'decade': {u'aggs': {'genres': {u'aggs': {'avg_nb_roles': {u'avg': {'field': 'nb_roles'}},
-      'avg_rank': {u'avg': {'field': 'rank'}}},
-     'terms': {'field': 'genres', 'size': 3}}},
-   'histogram': {'field': 'year', 'interval': 10}}},
+                                                    'avg_rank': {u'avg': {'field': 'rank'}}},
+                                          'terms': {'field': 'genres', 'size': 3}}},
+                     'histogram': {'field': 'year', 'interval': 10}}},
  'query': {'bool': {u'filter': [{'range': {'year': {'gte': 1990}}}]}},
  'size': 2}
 ```

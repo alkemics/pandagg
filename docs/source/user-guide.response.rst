@@ -12,6 +12,82 @@ a :class:`~pandagg.response.Response` instance is returned.
     >>> response = Search(using=client, index='movies')\
     >>>     .size(2)\
     >>>     .filter('term', genres='Documentary')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .execute()
+
+    >>> response
+    <Response> took 9ms, success: True, total result >=10000, contains 2 hits
+
+    >>> response.__class__
+    pandagg.response.Response
+
+
+ElasticSearch raw dict response is available under
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .filter('term', genres='Documentary')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .execute()
+
+    >>> response
+    <Response> took 9ms, success: True, total result >=10000, contains 2 hits
+
+    >>> response.__class__
+    pandagg.response.Response
+
+
+ElasticSearch raw dict response is available under
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .filter('term', genres='Documentary')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .execute()
+
+    >>> response
+    <Response> took 9ms, success: True, total result >=10000, contains 2 hits
+
+    >>> response.__class__
+    pandagg.response.Response
+
+
+ElasticSearch raw dict response is available under
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .filter('term', genres='Documentary')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .execute()
+
+    >>> response
+    <Response> took 9ms, success: True, total result >=10000, contains 2 hits
+
+    >>> response.__class__
+    pandagg.response.Response
+
+
+ElasticSearch raw dict response is available under
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = ElasticSearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(2)\
+    >>>     .filter('term', genres='Documentary')\
     >>>     .aggs('avg_rank', 'avg', field='rank')\
     >>>     .execute()
 
@@ -110,6 +186,156 @@ Aggregations
 Aggregations are handled differently, the `aggregations` attribute of a :class:`~pandagg.response.Response` returns
 a :class:`~pandagg.response.Aggregations` instance, that provides specific parsing abilities in addition to exposing
 raw aggregations response under `data` attribute.
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
+
+Let's build a bit more complex aggregation query to showcase its functionalities:
+
+    >>> from elasticsearch import Elasticsearch
+    >>> from pandagg.search import Search
+    >>>
+    >>> client = Elasticsearch(hosts=['localhost:9200'])
+    >>> response = Search(using=client, index='movies')\
+    >>>     .size(0)\
+    >>>     .groupby('decade', 'histogram', interval=10, field='year')\
+    >>>     .groupby('genres', size=3)\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .filter('range', year={"gte": 1990})\
+    >>>     .execute()
 
 Let's build a bit more complex aggregation query to showcase its functionalities:
 
