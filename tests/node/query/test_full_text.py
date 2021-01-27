@@ -82,7 +82,13 @@ class FullTextQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'intervals, field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, {"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": "big bad"}}]}}, {"match": {"query": "wolf"}}], "max_gaps": 0, "ordered": true}',
+                (
+                    "intervals",
+                    'field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, '
+                    '{"any_of": {"intervals": [{"match": {"query": "big"}}, {"match": {"query": '
+                    '"big bad"}}]}}, {"match": {"query": "wolf"}}], "max_gaps": 0, "ordered": '
+                    "true}",
+                ),
             )
 
     def test_match_clause(self):
@@ -96,7 +102,7 @@ class FullTextQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'match, field=message, operator="and", query="this is a test"',
+                ("match", 'field=message, operator="and", query="this is a test"'),
             )
 
         # short syntax
@@ -106,7 +112,7 @@ class FullTextQueriesTestCase(TestCase):
             q3.to_dict(), {"match": {"message": {"query": "this is a test"}}}
         )
         self.assertEqual(
-            q3.line_repr(depth=None), 'match, field=message, query="this is a test"'
+            q3.line_repr(depth=None), ("match", 'field=message, query="this is a test"')
         )
 
     def test_match_bool_prefix_clause(self):
@@ -120,7 +126,10 @@ class FullTextQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'match_bool_prefix, field=message, analyzer="keyword", query="quick brown f"',
+                (
+                    "match_bool_prefix",
+                    'field=message, analyzer="keyword", query="quick brown f"',
+                ),
             )
 
         # short syntax
@@ -131,7 +140,7 @@ class FullTextQueriesTestCase(TestCase):
         )
         self.assertEqual(
             q3.line_repr(depth=None),
-            'match_bool_prefix, field=message, query="quick brown f"',
+            ("match_bool_prefix", 'field=message, query="quick brown f"'),
         )
 
     def test_match_phrase_clause(self):
@@ -147,7 +156,10 @@ class FullTextQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'match_phrase, field=message, analyzer="my_analyzer", query="this is a test"',
+                (
+                    "match_phrase",
+                    'field=message, analyzer="my_analyzer", query="this is a test"',
+                ),
             )
 
         # short syntax
@@ -158,7 +170,7 @@ class FullTextQueriesTestCase(TestCase):
         )
         self.assertEqual(
             q3.line_repr(depth=None),
-            'match_phrase, field=message, query="this is a test"',
+            ("match_phrase", 'field=message, query="this is a test"'),
         )
 
     def test_match_phrase_prefix_clause(self):
@@ -176,7 +188,10 @@ class FullTextQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'match_phrase_prefix, field=message, analyzer="my_analyzer", query="this is a test"',
+                (
+                    "match_phrase_prefix",
+                    'field=message, analyzer="my_analyzer", query="this is a test"',
+                ),
             )
 
     def test_multi_match_clause(self):
@@ -193,7 +208,7 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
-            q.line_repr(depth=None), "multi_match, fields=['subject', 'message']"
+            q.line_repr(depth=None), ("multi_match", "fields=['subject', 'message']")
         )
 
     def test_query_string_clause(self):
@@ -205,7 +220,10 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'query_string, default_field="content", query="(new york city) OR (big apple)"',
+            (
+                "query_string",
+                'default_field="content", query="(new york city) OR (big apple)"',
+            ),
         )
 
     def test_simple_string_clause(self):
@@ -219,5 +237,8 @@ class FullTextQueriesTestCase(TestCase):
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'simple_string, default_field="content", query="(new york city) OR (big apple)"',
+            (
+                "simple_string",
+                'default_field="content", query="(new york city) OR (big apple)"',
+            ),
         )

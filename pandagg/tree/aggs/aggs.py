@@ -55,12 +55,12 @@ class Aggs(Tree):
     ):
         self.mapping = _mapping(mapping)
         self.nested_autocorrect = nested_autocorrect
-        self._groupby_ptr = _groupby_ptr
         super(Aggs, self).__init__()
 
         # the root node of an aggregation is just the initial empty dict
         root_node = Root()
         self.insert_node(root_node)
+        self._groupby_ptr = self.root if _groupby_ptr is None else _groupby_ptr
 
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)
@@ -72,15 +72,7 @@ class Aggs(Tree):
                 return n.identifier
         raise KeyError('No node found with key "%s"' % key)
 
-    def _insert_agg(
-        self,
-        name,
-        type_or_agg=None,
-        insert_below=None,
-        at_root=None,
-        groupby=False,
-        **body
-    ):
+    def _insert_agg(self, name, node, insert_below=None, at_root=None, groupby=False):
         """
         Using flat declaration:
         >>> Aggs().agg("per_user", "terms", field="user")
@@ -100,61 +92,18 @@ class Aggs(Tree):
         - name="per_user", type_or_agg=Terms(field='user', aggs={"avg_spent_time": Avg(field="spent_time")})
         - name="per_user", type_or_agg={"field": "user", aggs: {"avg_spent_time": {"avg": {"field": "spent_time"}}}}
         """
-        if insert_below is not None and at_root:
+        if insert_below and at_root:
             raise ValueError('Must define at most one of "insert_below" or "at_root".')
         if at_root:
             insert_below = self.root
-        elif not insert_below:
-            # parent based on last groupby pointer
-            if self._groupby_ptr:
-                insert_below = self._groupby_ptr
-            elif groupby:
-                # doesn't accept groupby if any ambiguity
-                insert_below = self._validate_aggs_parent_id(None)
-            else:
-                insert_below = self.deepest_linear_bucket_agg
+        # based on last groupby pointer
+        if insert_below is None:
+            insert_below = self._groupby_ptr
 
         if not isinstance(name, text_type):
             raise ValueError('Agg "name" must be a str.')
 
-        if isinstance(type_or_agg, text_type):
-            # Aggs("per_user", "terms", field="user")
-            _children_aggs = (
-                body.pop("aggs", None) or body.pop("aggregations", None) or {}
-            )
-            node = self.get_node_dsl_class(type_or_agg)(**body)
-        elif isinstance(type_or_agg, AggNode):
-            # Aggs("per_user", Terms(field='user'))
-            node = type_or_agg
-            if body:
-                raise ValueError(
-                    'Body cannot be added using "AggNode" declaration, got %s.' % body
-                )
-            _children_aggs = node._children or {}
-        elif isinstance(type_or_agg, dict):
-            if body:
-                raise ValueError(
-                    'Body cannot be added using "dict" agg declaration, got %s.' % body
-                )
-            type_or_agg = type_or_agg.copy()
-            _children_aggs = (
-                type_or_agg.pop("aggs", None)
-                or type_or_agg.pop("aggregations", None)
-                or {}
-            )
-            if len(type_or_agg) != 1:
-                raise ValueError(
-                    "Invalid aggregation declaration (two many keys): got <%s>"
-                    % type_or_agg
-                )
-            type_, body_ = type_or_agg.popitem()
-            node = self.get_node_dsl_class(type_)(**body_)
-        elif type_or_agg is None:
-            # if type_or_agg is not provided, by default execute a terms aggregation
-            node = self.get_node_dsl_class("terms")(field=name, **body)
-            _children_aggs = {}
-        else:
-            raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
+        _children_aggs = node._children or {}
 
         if groupby:
             if _children_aggs:
@@ -167,14 +116,12 @@ class Aggs(Tree):
             self._groupby_ptr = node.identifier
             return
 
-        # in aggs mode, do not move pointer (only set it at beginning)
-        if self._groupby_ptr is None:
-            self._groupby_ptr = insert_below
-
+        # in aggs mode, do not move pointer
         self.insert_node(node=node, key=name, parent_id=insert_below)
-        for child_name, child_node in _children_aggs.items():
+        for child_name, child in _children_aggs.items():
+            child_node = self._translate_agg(child_name, child)
             self._insert_agg(
-                name=child_name, type_or_agg=child_node, insert_below=node.identifier
+                name=child_name, node=child_node, insert_below=node.identifier
             )
 
     def _clone_init(self, deep=False):
@@ -284,15 +231,6 @@ class Aggs(Tree):
             A──> new──> B
             └──> C
 
-        If `insert_below` nor `insert_above` is provided by will be placed between the the deepest linear
-        bucket aggregation if there is no ambiguity, and its children::
-
-            A──> B      : OK generates     A──> B ─> C ─> by
-
-            A──> B      : KO, ambiguous, must precise either A, B or C
-            └──> C
-
-
         >>> Aggs()\
         >>> .groupby('per_user_id', 'terms', field='user_id')
         {"per_user_id":{"terms":{"field":"user_id"}}}
@@ -319,15 +257,15 @@ class Aggs(Tree):
         :rtype: pandagg.aggs.Aggs
         """
         new_agg = self.clone(with_nodes=True)
-        if insert_below:
+        if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
+        node = self._translate_agg(name, type_or_agg, **body)
         new_agg._insert_agg(
             name=name,
-            type_or_agg=type_or_agg,
+            node=node,
             insert_below=insert_below,
             at_root=at_root,
             groupby=True,
-            **body
         )
         return new_agg
 
@@ -378,7 +316,7 @@ class Aggs(Tree):
         :rtype: pandagg.aggs.Aggs
         """
         new_agg = self.clone(with_nodes=True)
-        if insert_below:
+        if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
         new_agg._insert_aggs(aggs=aggs, insert_below=insert_below, at_root=at_root)
         return new_agg
@@ -397,11 +335,55 @@ class Aggs(Tree):
             self._groupby_ptr = self.root
         elif isinstance(aggs, dict):
             for agg_name, agg_body in aggs.items():
-                self._insert_agg(
-                    name=agg_name, type_or_agg=agg_body, insert_below=insert_below
-                )
+                node = self._translate_agg(agg_name, agg_body)
+                self._insert_agg(name=agg_name, node=node, insert_below=insert_below)
         elif aggs is not None:
             raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
+
+    @classmethod
+    def _translate_agg(cls, name, type_or_agg=None, **body):
+        """Accept multiple syntaxes, return a AggNode.
+        :param type_or_agg:
+        :param body:
+        :return: AggNode
+        """
+        if isinstance(type_or_agg, text_type):
+            # _translate_agg("per_user", "terms", field="user")
+            return cls.get_node_dsl_class(type_or_agg)(**body)
+        if isinstance(type_or_agg, AggNode):
+            # _translate_agg("per_user", Terms(field='user'))
+            if body:
+                raise ValueError(
+                    'Body cannot be added using "AggNode" declaration, got %s.' % body
+                )
+            return type_or_agg
+        if isinstance(type_or_agg, dict):
+            # _translate_agg("per_user", {"terms": {"field": "user"}})
+            if body:
+                raise ValueError(
+                    'Body cannot be added using "dict" agg declaration, got %s.' % body
+                )
+            type_or_agg = type_or_agg.copy()
+            children_aggs = (
+                type_or_agg.pop("aggs", None)
+                or type_or_agg.pop("aggregations", None)
+                or {}
+            )
+            if len(type_or_agg) != 1:
+                raise ValueError(
+                    "Invalid aggregation declaration (two many keys): got <%s>"
+                    % type_or_agg
+                )
+            type_, body_ = type_or_agg.popitem()
+            body_ = body_.copy()
+            if children_aggs:
+                body_["aggs"] = children_aggs
+            return cls.get_node_dsl_class(type_)(**body_)
+        if type_or_agg is None:
+            # if type_or_agg is not provided, by default execute a terms aggregation
+            # _translate_agg("per_user")
+            return cls.get_node_dsl_class("terms")(field=name, **body)
+        raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
 
     def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
         """
@@ -414,14 +396,11 @@ class Aggs(Tree):
         :return:
         """
         new_agg = self.clone(with_nodes=True)
-        if insert_below:
+        if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
+        node = self._translate_agg(name, type_or_agg, **body)
         new_agg._insert_agg(
-            name=name,
-            type_or_agg=type_or_agg,
-            insert_below=insert_below,
-            at_root=at_root,
-            **body
+            name=name, node=node, insert_below=insert_below, at_root=at_root
         )
         return new_agg
 

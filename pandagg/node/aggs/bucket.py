@@ -59,9 +59,9 @@ class Nested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, path, meta=None):
+    def __init__(self, path, meta=None, **body):
         self.path = path
-        super(Nested, self).__init__(path=path, meta=meta)
+        super(Nested, self).__init__(path=path, meta=meta, **body)
 
     def get_filter(self, key):
         return None

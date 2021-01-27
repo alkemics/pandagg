@@ -37,7 +37,7 @@ class Bucket(Node):
                 REPR_SIZE - 4 * kwargs.get("depth") - len(s) - len(str(self.value)), 4
             )
             s = s + " " * pad + str(self.value)
-        return s
+        return "", s
 
     @property
     def _coerced_key(self):

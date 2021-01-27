@@ -31,7 +31,11 @@ class GeoQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'geo_bounding_box, field=pin.location, bottom_right={"lat": 40.01, "lon": -71.12}, top_left={"lat": 40.73, "lon": -74.1}',
+                (
+                    "geo_bounding_box",
+                    'field=pin.location, bottom_right={"lat": 40.01, "lon": -71.12}, '
+                    'top_left={"lat": 40.73, "lon": -74.1}',
+                ),
             )
 
     def test_geo_polygone_clause(self):
@@ -47,7 +51,10 @@ class GeoQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                "geo_polygon, field=person.location, points=[[-70, 40], [-80, 30], [-90, 20]]",
+                (
+                    "geo_polygon",
+                    "field=person.location, points=[[-70, 40], [-80, 30], [-90, 20]]",
+                ),
             )
 
     def test_geo_distance_clause(self):
@@ -57,7 +64,9 @@ class GeoQueriesTestCase(TestCase):
         q = GeoDistance(pin__location="drm3btev3e86", distance="12km")
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
-        self.assertEqual(q.line_repr(depth=None), "geo_distance, field=pin.location")
+        self.assertEqual(
+            q.line_repr(depth=None), ("geo_distance", "field=pin.location")
+        )
 
     def test_geo_shape(self):
         body = {
@@ -90,5 +99,9 @@ class GeoQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'geo_shape, field=location, relation="within", shape={"coordinates": [[13.0, 53.0], [14.0, 52.0]], "type": "envelope"}',
+                (
+                    "geo_shape",
+                    'field=location, relation="within", shape={"coordinates": [[13.0, 53.0], '
+                    '[14.0, 52.0]], "type": "envelope"}',
+                ),
             )

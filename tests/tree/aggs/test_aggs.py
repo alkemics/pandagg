@@ -114,7 +114,7 @@ genres                                           <terms, field="genres", size=3>
         )
 
         # try to add field aggregation on non-existing field will fail
-        with self.assertRaises(AbsentMappingFieldError):
+        with self.assertRaises(ValueError):
             with_mapping.agg(
                 "imaginary_agg", Terms(field="imaginary_field"), insert_below="workflow"
             )

@@ -24,13 +24,12 @@ class QueryClause(Node):
         self._children = _children or {}
 
     def line_repr(self, depth, **kwargs):
-        if not self.body:
-            return self.KEY
-        repr_args = [text(self.KEY)]
+        repr_args = []
         if self._named:
             repr_args.append("_name=%s" % text(self.identifier))
-        repr_args.append(self._params_repr(self.body))
-        return ", ".join(repr_args)
+        if self.body:
+            repr_args.append(self._params_repr(self.body))
+        return self.KEY, ", ".join(repr_args)
 
     @staticmethod
     def _params_repr(params):
@@ -59,7 +58,7 @@ class QueryClause(Node):
             class_=text(self.__class__.__name__),
             type=text(self.KEY),
             id=text(self.identifier),
-            body=json.dumps(self.body),
+            body=self.body,
         )
 
     def __eq__(self, other):
@@ -153,13 +152,12 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
 
     def line_repr(self, depth, **kwargs):
         if not self.inner_body:
-            return ", ".join([text(self.KEY), "field=%s" % text(self.field)])
-        return ", ".join(
-            [
-                text(self.KEY),
-                "field=%s" % text(self.field),
-                self._params_repr(self.inner_body),
-            ]
+            return "", ", ".join([text(self.KEY), "field=%s" % text(self.field)])
+        return (
+            self.KEY,
+            ", ".join(
+                ["field=%s" % text(self.field), self._params_repr(self.inner_body)]
+            ),
         )
 
 
@@ -169,9 +167,12 @@ class MultiFieldsQueryClause(LeafQueryClause):
         super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
 
     def line_repr(self, depth, **kwargs):
-        return "%s, fields=%s" % (self.KEY, list(map(text, self.fields)))
+        return self.KEY, "fields=%s" % (list(map(text, self.fields)))
 
 
 class ParentParameterClause(QueryClause):
     def __init__(self):
         super(ParentParameterClause, self).__init__(accept_children=True, keyed=False)
+
+    def line_repr(self, **kwargs):
+        return "", ""

@@ -22,7 +22,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'distance_feature, field="production_date", origin="now", pivot="7d"',
+            ("distance_feature", 'field="production_date", origin="now", pivot="7d"'),
         )
 
     def test_more_like_this_clause(self):
@@ -43,7 +43,8 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
-            q.line_repr(depth=None), "more_like_this, fields=['title', 'description']"
+            q.line_repr(depth=None),
+            ("more_like_this", "fields=['title', 'description']"),
         )
 
     def test_percolate_clause(self):
@@ -60,7 +61,10 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'percolate, document={"message": "A new bonsai tree in the office"}, field="query"',
+            (
+                "percolate",
+                'document={"message": "A new bonsai tree in the office"}, field="query"',
+            ),
         )
 
     def test_rank_feature_clause(self):
@@ -71,7 +75,7 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
-            q.line_repr(depth=None), 'rank_feature, boost=0.1, field="url_length"'
+            q.line_repr(depth=None), ("rank_feature", 'boost=0.1, field="url_length"')
         )
 
     def test_script_clause(self):
@@ -95,7 +99,11 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'script, script={"lang": "painless", "params": {"param1": 5}, "source": "doc[\'num1\'].value > params.param1"}',
+            (
+                "script",
+                'script={"lang": "painless", "params": {"param1": 5}, "source": '
+                "\"doc['num1'].value > params.param1\"}",
+            ),
         )
 
     def test_wrapper_clause(self):
@@ -107,5 +115,5 @@ class SpecializedQueriesTestCase(TestCase):
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
             q.line_repr(depth=None),
-            'wrapper, query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="',
+            ("wrapper", 'query="eyJ0ZXJtIiA6IHsgInVzZXIiIDogIktpbWNoeSIgfX0="'),
         )

@@ -145,7 +145,7 @@ class BucketAggNode(AggNode):
     - to build query to filter documents belonging to that bucket
 
     Note: the aggs attribute's only purpose is for children initiation with the following syntax:
-    >>> from pandagg.agg import Terms, Avg
+    >>> from pandagg.aggs import Terms, Avg
     >>> agg = Terms(
     >>>     field='some_path',
     >>>     aggs={
@@ -156,11 +156,11 @@ class BucketAggNode(AggNode):
 
     VALUE_ATTRS = None
 
-    def __init__(self, meta=None, aggs=None, **body):
+    def __init__(self, meta=None, **body):
         identifier = body.pop("identifier", None)
         self.body = body
         self.meta = meta
-        self._children = aggs or {}
+        self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
         super(AggNode, self).__init__(identifier=identifier)
 
     def extract_buckets(self, response_value):

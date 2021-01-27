@@ -22,13 +22,13 @@ class CompoundClause(QueryClause):
     def __init__(self, _name=None, **body):
         b = body.copy()
         children = {}
-        for param in self._parent_params.keys():
+        for param in self._parent_params:
             v = b.pop(param, None)
             if not v:
                 continue
             children[param] = v if isinstance(v, list) else [v]
         super(CompoundClause, self).__init__(
-            _name=_name, accept_children=True, keyed=True, _children=children, **body
+            _name=_name, accept_children=True, keyed=True, _children=children, **b
         )
 
 
