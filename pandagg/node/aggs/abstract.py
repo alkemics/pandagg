@@ -122,6 +122,13 @@ class Root(AggNode):
     def line_repr(self, depth, **kwargs):
         return "_", ""
 
+    def extract_buckets(self, response_value):
+        yield None, response_value
+
+    @classmethod
+    def extract_bucket_value(cls, response, value_as_dict=False):
+        return None
+
 
 class MetricAgg(AggNode):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""

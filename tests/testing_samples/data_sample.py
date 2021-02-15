@@ -117,21 +117,21 @@ ES_AGG_RESPONSE = {
     }
 }
 
-EXPECTED_RESP_REPR = """root
-├── classification_type=multiclass                       568
-│   ├── global_metrics.field.name=gpc                    198
-│   │   ├── avg_f1_micro                                0.93
-│   │   └── avg_nb_classes                            211.12
-│   └── global_metrics.field.name=kind                   370
-│       ├── avg_f1_micro                                0.89
-│       └── avg_nb_classes                             206.5
-└── classification_type=multilabel                      1797
-    ├── global_metrics.field.name=ispracticecompatible    128
-    │   ├── avg_f1_micro                                0.72
-    │   └── avg_nb_classes                             18.71
-    └── global_metrics.field.name=preservationmethods     76
-        ├── avg_f1_micro                                 0.8
-        └── avg_nb_classes                              9.97
+EXPECTED_RESP_REPR = """[]
+├── classification_type=multilabel                      1797
+│   ├── global_metrics.field.name=ispracticecompatible   128
+│   │   ├── avg_f1_micro                                0.72
+│   │   └── avg_nb_classes                             18.71
+│   └── global_metrics.field.name=preservationmethods     76
+│       ├── avg_f1_micro                                 0.8
+│       └── avg_nb_classes                              9.97
+└── classification_type=multiclass                       568
+    ├── global_metrics.field.name=kind                   370
+    │   ├── avg_f1_micro                                0.89
+    │   └── avg_nb_classes                             206.5
+    └── global_metrics.field.name=gpc                    198
+        ├── avg_f1_micro                                0.93
+        └── avg_nb_classes                            211.12
 """
 EXPECTED_RESPONSE_REPR = """<IResponse>\n%s""" % EXPECTED_RESP_REPR
 EXPECTED_RESPONSE_TREE_REPR = """<AggsResponseTree>\n%s""" % EXPECTED_RESP_REPR

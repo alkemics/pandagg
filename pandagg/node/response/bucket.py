@@ -5,15 +5,18 @@ from __future__ import unicode_literals
 from pandagg.node._node import Node
 
 
-class Bucket(Node):
+class BucketNode(Node):
+    def __init__(self):
+        self.level = None
+        super(BucketNode, self).__init__(keyed=False)
 
-    ROOT_NAME = "root"
 
+class Bucket(BucketNode):
     def __init__(self, value, key=None, level=None):
-        self.value = value
-        self.level = level if level is not None else self.ROOT_NAME
-        self.key = key
         super(Bucket, self).__init__()
+        self.value = value
+        self.level = level
+        self.key = key
 
     @property
     def attr_name(self):
@@ -28,16 +31,10 @@ class Bucket(Node):
         return self.level.replace(".", "_")
 
     def line_repr(self, **kwargs):
-        REPR_SIZE = 60
-        s = self.level
+        s = self.level or ""
         if self.key is not None:
             s += "=%s" % self._coerced_key
-        if self.value is not None:
-            pad = max(
-                REPR_SIZE - 4 * kwargs.get("depth") - len(s) - len(str(self.value)), 4
-            )
-            s = s + " " * pad + str(self.value)
-        return "", s
+        return s, str(self.value) if self.value else ""
 
     @property
     def _coerced_key(self):

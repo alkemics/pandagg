@@ -10,7 +10,7 @@ from pandagg.connections import get_connection
 from pandagg.query import Bool
 from pandagg.response import Response
 from pandagg.tree.mapping import _mapping
-from pandagg.tree.query.abstract import Query
+from pandagg.tree.query.abstract import Query, ADD
 from pandagg.tree.aggs.aggs import Aggs
 from pandagg.utils import DSLMixin
 
@@ -137,52 +137,138 @@ class Search(DSLMixin, Request):
         self._repr_auto_execute = repr_auto_execute
         super(Search, self).__init__(using=using, index=index)
 
-    def query(self, *args, **kwargs):
+    def query(self, type_or_query, insert_below=None, on=None, mode=ADD, **body):
         s = self._clone()
-        s._query = s._query.query(*args, **kwargs)
+        s._query = s._query.query(
+            type_or_query, insert_below=insert_below, on=on, mode=mode, **body
+        )
         return s
 
     query.__doc__ = Query.query.__doc__
 
-    def bool(self, *args, **kwargs):
+    def bool(
+        self,
+        must=None,
+        should=None,
+        must_not=None,
+        filter=None,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        **body
+    ):
         s = self._clone()
-        s._query = s._query.bool(*args, **kwargs)
+        s._query = s._query.bool(
+            must=must,
+            should=should,
+            filter=filter,
+            must_not=must_not,
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+            **body
+        )
         return s
 
     bool.__doc__ = Query.bool.__doc__
 
-    def filter(self, *args, **kwargs):
+    def filter(
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
+    ):
         s = self._clone()
-        s._query = s._query.filter(*args, **kwargs)
+        s._query = s._query.filter(
+            type_or_query,
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+            bool_body=bool_body,
+            **body
+        )
         return s
 
     filter.__doc__ = Query.filter.__doc__
 
-    def must_not(self, *args, **kwargs):
+    def must_not(
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
+    ):
         s = self._clone()
-        s._query = s._query.must_not(*args, **kwargs)
+        s._query = s._query.must_not(
+            type_or_query,
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+            bool_body=bool_body,
+            **body
+        )
         return s
 
     must_not.__doc__ = Query.must_not.__doc__
 
-    def should(self, *args, **kwargs):
+    def should(
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
+    ):
         s = self._clone()
-        s._query = s._query.should(*args, **kwargs)
+        s._query = s._query.should(
+            type_or_query,
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+            bool_body=bool_body,
+            **body
+        )
         return s
 
     should.__doc__ = Query.should.__doc__
 
-    def must(self, *args, **kwargs):
+    def must(
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
+    ):
         s = self._clone()
-        s._query = s._query.must(*args, **kwargs)
+        s._query = s._query.must(
+            type_or_query,
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+            bool_body=bool_body,
+            **body
+        )
         return s
 
     must.__doc__ = Query.must.__doc__
 
-    def exclude(self, *args, **kwargs):
+    def exclude(self, type_or_query, insert_below=None, on=None, mode=ADD, **body):
         """Must not wrapped in filter context."""
         s = self._clone()
-        s._query = s._query.filter(Bool(must_not=[Query(*args, **kwargs)]))
+        s._query = s._query.filter(
+            Bool(must_not=Query._translate_query(type_or_query=type_or_query, **body)),
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+        )
         return s
 
     def post_filter(self, *args, **kwargs):
@@ -258,7 +344,7 @@ class Search(DSLMixin, Request):
             if self._mapping:
                 for key in n:
                     try:
-                        self._mapping.get(key)
+                        self._mapping.id_from_key(key)
                     except NotFoundNodeError:
                         raise KeyError("%s not in index" % key)
             return self.source(includes=n)
@@ -628,7 +714,7 @@ class Search(DSLMixin, Request):
             import pandas as pd  # noqa
         except ImportError:
             return ImportError("repr_auto_execute requires pandas dependency")
-        if not self._aggs.is_empty():
+        if self._aggs.to_dict():
             # hits are not necessary to display aggregation results
             r = self.size(0).execute()
             return r.aggregations.to_dataframe()

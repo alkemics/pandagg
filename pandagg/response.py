@@ -10,7 +10,7 @@ from builtins import str as text
 from future.utils import iterkeys, iteritems
 
 from pandagg.interactive.response import IResponse
-from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg
+from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root
 from pandagg.node.aggs.bucket import Nested
 from pandagg.tree.response import AggsResponseTree
 
@@ -162,20 +162,21 @@ class Aggregations:
         row_as_tuple=False,
         with_single_bucket_groups=False,
     ):
-        """Recursive parsing of succession of unique child bucket aggregations.
+        """Recursive parsing of succession of grouping aggregation clauses.
 
         Yields each row for which last bucket aggregation generated buckets.
         """
         # initialization: find ancestors once for faster computation
         if ancestors is None:
-            ancestors = self._aggs.ancestors(until, id_only=True)
+            until_id = self._aggs.id_from_key(until)
+            ancestors = self._aggs.ancestors(until_id, include_current=True)
             # remove eventual fake root
-            ancestors = [until] + [a for a in ancestors if a != "_"]
-            agg_name = ancestors[-1]
+            ancestors = [(k, n) for k, n in ancestors if k is not None]
+            agg_name, agg_node = ancestors[-1]
         if not row:
             row = [] if row_as_tuple else {}
         if agg_name in response:
-            agg_node = self._aggs.get(agg_name)
+            agg_node = [n for k, n in ancestors if k == agg_name][0]
             for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
                 sub_row = copy.copy(row)
                 if (
@@ -192,13 +193,13 @@ class Aggregations:
                         yield tuple(sub_row), raw_bucket
                     else:
                         yield sub_row, raw_bucket
-                elif agg_name in ancestors:
+                elif agg_name in {k for k, _ in ancestors}:
                     # yield children
-                    for child in self._aggs.children(agg_name, id_only=False):
+                    for child_key, _ in self._aggs.children(agg_node.identifier):
                         for nrow, nraw_bucket in self._parse_group_by(
                             row=sub_row,
                             response=raw_bucket,
-                            agg_name=child.name,
+                            agg_name=child_key,
                             until=until,
                             row_as_tuple=row_as_tuple,
                             ancestors=ancestors,
@@ -218,8 +219,9 @@ class Aggregations:
             }
         """
         agg_name = agg_name or self._aggs.root
-        agg_node = self._aggs.get(agg_name)
-        agg_children = self._aggs.children(agg_node.name, id_only=False)
+        id_ = self._aggs.id_from_key(agg_name)
+        agg_key, agg_node = self._aggs.get(id_)
+        agg_children = self._aggs.children(agg_node.identifier)
         for key, raw_bucket in agg_node.extract_buckets(agg_response[agg_name]):
             result = {
                 "level": agg_name,
@@ -228,9 +230,9 @@ class Aggregations:
             }
             normalized_children = [
                 normalized_child
-                for child in agg_children
+                for child_key, child in agg_children
                 for normalized_child in self._normalize_buckets(
-                    agg_name=child.name, agg_response=raw_bucket
+                    agg_name=child_key, agg_response=raw_bucket
                 )
             ]
             if normalized_children:
@@ -239,33 +241,30 @@ class Aggregations:
 
     def _grouping_agg(self, name=None):
         """Return aggregation node that used as grouping node.
-        Note: in case there is only a nested aggregation below that node, groupby nested clause.
+        Note: in case there is only a nested aggregation below that node, group-by nested clause.
         """
         # if provided
         if name is not None:
-            if name not in self._aggs:
-                raise ValueError("Cannot group by <%s>, agg node does not exist" % name)
-            if not self._aggs._is_eligible_grouping_node(name):
+            id_ = self._aggs.id_from_key(name)
+            if not self._aggs._is_eligible_grouping_node(id_):
                 raise ValueError(
                     "Cannot group by <%s>, not a valid grouping aggregation" % name
                 )
+            key, node = self._aggs.get(id_)
             # if parent of single nested clause and nested_autocorrect
-            node = self._aggs.get(name)
             if self._aggs.nested_autocorrect:
-                children = self._aggs.children(node.identifier, id_only=False)
-                if len(children) == 1 and isinstance(children[0], Nested):
-                    return children[0]
-            return node
+                children = self._aggs.children(node.identifier)
+                if len(children) == 1:
+                    child_key, child_node = children[0]
+                    if isinstance(child_node, Nested):
+                        return child_key, child_node
+            return key, node
         # if use of groupby method in Aggs class, use groupby pointer
         if self._aggs._groupby_ptr is not None:
             return self._aggs.get(self._aggs._groupby_ptr)
 
-        if isinstance(self._aggs.get(self._aggs.root), ShadowRoot):
-            return None
-        name = self._aggs.deepest_linear_bucket_agg
-        if name is None:
-            return None
-        return self._aggs.get(name)
+        id_ = self._aggs.deepest_linear_bucket_agg
+        return self._aggs.get(id_)
 
     def to_tabular(
         self,
@@ -299,24 +298,24 @@ class Aggregations:
         :param normalize: if True, normalize columns buckets
         :return: index, index_names, values
         """
-        grouping_agg = self._grouping_agg(grouped_by)
-        if grouping_agg is None:
+        grouping_key, grouping_agg = self._grouping_agg(grouped_by)
+        if grouping_key is None:
             index_values = [(tuple() if index_orient else dict(), self.data)]
             index_names = []
         else:
             index_names = [
-                a.name
-                for a in self._aggs.ancestors(
-                    grouping_agg.name, id_only=False, from_root=True
+                k
+                for k, a in self._aggs.ancestors(
+                    grouping_agg.identifier, from_root=True, include_current=True
                 )
-                + [grouping_agg]
-                if not isinstance(a, UniqueBucketAgg) or with_single_bucket_groups
+                if (not isinstance(a, UniqueBucketAgg) or with_single_bucket_groups)
+                and k is not None
             ]
             index_values = list(
                 self._parse_group_by(
                     response=self.data,
                     row_as_tuple=index_orient,
-                    until=grouping_agg.name,
+                    until=grouping_key,
                     with_single_bucket_groups=with_single_bucket_groups,
                 )
             )
@@ -355,29 +354,27 @@ class Aggregations:
     ):
         # extract value (usually 'doc_count') of grouping agg node
         result = {}
-        if total_agg is not None and not isinstance(total_agg, ShadowRoot):
+        if total_agg is not None and not isinstance(total_agg, Root):
             result[total_agg.VALUE_ATTRS[0]] = total_agg.extract_bucket_value(row_data)
-            grouping_agg_children = self._aggs.children(
-                total_agg.identifier, id_only=False
-            )
+            grouping_agg_children = self._aggs.children(total_agg.identifier)
         else:
-            grouping_agg_children = self._aggs.children(self._aggs.root, id_only=False)
+            grouping_agg_children = self._aggs.children(self._aggs.root)
 
         # extract values of children, one columns per child
-        for child in grouping_agg_children:
+        for child_key, child in grouping_agg_children:
             if isinstance(child, (UniqueBucketAgg, MetricAgg)):
-                result[child.name] = child.extract_bucket_value(row_data[child.name])
+                result[child_key] = child.extract_bucket_value(row_data[child_key])
             elif expand_columns:
-                for key, bucket in child.extract_buckets(row_data[child.name]):
+                for key, bucket in child.extract_buckets(row_data[child_key]):
                     result[
-                        "%s%s%s" % (child.name, expand_sep, key)
+                        "%s%s%s" % (child_key, expand_sep, key)
                     ] = child.extract_bucket_value(bucket)
             elif normalize:
-                result[child.name] = next(
-                    self._normalize_buckets(row_data, child.name), None
+                result[child_key] = next(
+                    self._normalize_buckets(row_data, child_key), None
                 )
             else:
-                result[child.name] = row_data[child.name]
+                result[child_key] = row_data[child_key]
         return result
 
     def to_dataframe(

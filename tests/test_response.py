@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from tests import PandaggTestCase
-
+from lighttree.exceptions import NotFoundNodeError
 import pandas as pd
 
 from pandagg.search import Search
@@ -160,7 +160,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         index_names, index_values = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
-        ).to_tabular(index_orient=True)
+        ).to_tabular(index_orient=True, grouped_by="global_metrics.field.name")
 
         self.assertEqual(
             index_names, ["classification_type", "global_metrics.field.name"]
@@ -194,7 +194,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         # index_orient = False
         index_names, index_values = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
-        ).to_tabular(index_orient=False)
+        ).to_tabular(index_orient=False, grouped_by="global_metrics.field.name")
 
         self.assertEqual(
             index_names, ["classification_type", "global_metrics.field.name"]
@@ -285,7 +285,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
         df = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
-        ).to_dataframe()
+        ).to_dataframe(grouped_by="global_metrics.field.name")
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(
             set(df.index.names), {"classification_type", "global_metrics.field.name"}
@@ -327,17 +327,15 @@ class AggregationsResponseTestCase(PandaggTestCase):
         )
 
         # none provided
-        self.assertEqual(
-            agg_response._grouping_agg().identifier, "global_metrics.field.name"
-        )
+        self.assertIsNone(agg_response._grouping_agg()[0])
         # fake provided
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             agg_response._grouping_agg("yolo")
         # not bucket provided
         with self.assertRaises(ValueError):
             agg_response._grouping_agg("avg_f1_micro")
         # real provided
         self.assertEqual(
-            agg_response._grouping_agg("global_metrics.field.name").identifier,
+            agg_response._grouping_agg("global_metrics.field.name")[0],
             "global_metrics.field.name",
         )

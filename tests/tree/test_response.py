@@ -21,7 +21,7 @@ class ResponseTestCase(TestCase):
         multiclass_gpc_bucket = next(
             (
                 b
-                for b in response_tree.list()
+                for k, b in response_tree.list()
                 if b.level == "global_metrics.field.name" and b.key == "gpc"
             )
         )

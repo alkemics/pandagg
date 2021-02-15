@@ -10,7 +10,7 @@ class IResponse(TreeBasedObj):
 
     """Interactive aggregation response."""
 
-    _NODE_PATH_ATTR = "attr_name"
+    _ATTR = "attr_name"
     _COERCE_ATTR = True
 
     def __init__(self, tree, search, depth, root_path=None, initial_tree=None):
@@ -29,7 +29,7 @@ class IResponse(TreeBasedObj):
 
     def _clone(self, nid, root_path, depth):
         return IResponse(
-            tree=self._tree.subtree(nid),
+            tree=self._tree.subtree(nid)[1],
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,

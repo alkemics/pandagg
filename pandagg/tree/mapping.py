@@ -138,6 +138,6 @@ class Mapping(Tree):
         # from deepest to highest
         return [
             self.get_path(nid)
-            for nid in self.ancestors_ids(path_nid) + [path_nid]
+            for nid in self.ancestors_ids(path_nid, include_current=True)
             if self.get(nid)[1].KEY == "nested"
         ]

@@ -23,7 +23,7 @@ from tests.testing_samples.mapping_example import MAPPING
 
 class IMappingTestCase(TestCase):
     def test_mapping_aggregations(self):
-        mapping_tree = Mapping(MAPPING)
+        mapping_tree = Mapping(**MAPPING)
         # check that leaves are expanded, based on 'field_name' attribute of nodes
         mapping = IMapping(mapping_tree, depth=1)
         for field_name in (
@@ -41,9 +41,9 @@ class IMappingTestCase(TestCase):
         self.assertEqual(
             dataset.__repr__(),
             """<Mapping subpart: global_metrics.dataset>
-dataset                                                      {Object}
-├── nb_classes                                                Integer
-└── support_train                                             Integer
+                                                    {Object}
+├── nb_classes                                       Integer
+└── support_train                                    Integer
 """,
         )
         # capture print statement
@@ -94,7 +94,7 @@ dataset                                                      {Object}
             },
         }
 
-        mapping_tree = Mapping(mapping_dict)
+        mapping_tree = Mapping(**mapping_dict)
         client_mock = {}
         index_name = "classification_report_index_name"
 
@@ -105,22 +105,24 @@ dataset                                                      {Object}
 
         # from nodes
         im3 = IMapping(
-            properties={
-                "classification_type": Keyword(fields={"raw": Text()}),
-                "local_metrics": Nested(
-                    dynamic=False,
-                    properties={
-                        "dataset": Object(
-                            dynamic=False,
-                            properties={
-                                "support_test": Integer(),
-                                "support_train": Integer(),
-                            },
-                        )
-                    },
-                ),
+            mapping={
+                "properties": {
+                    "classification_type": Keyword(fields={"raw": Text()}),
+                    "local_metrics": Nested(
+                        dynamic=False,
+                        properties={
+                            "dataset": Object(
+                                dynamic=False,
+                                properties={
+                                    "support_test": Integer(),
+                                    "support_train": Integer(),
+                                },
+                            )
+                        },
+                    ),
+                },
+                "dynamic": False,
             },
-            dynamic=False,
             client=client_mock,
             index=index_name,
         )
@@ -135,7 +137,7 @@ dataset                                                      {Object}
         """
         client_mock = {}
 
-        mapping_tree = Mapping(MAPPING)
+        mapping_tree = Mapping(**MAPPING)
         client_bound_mapping = IMapping(
             mapping_tree, client=client_mock, index="classification_report_index_name"
         )

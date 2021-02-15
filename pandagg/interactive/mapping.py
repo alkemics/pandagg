@@ -52,7 +52,7 @@ class IMapping(DSLMixin, TreeBasedObj):
 
     def _set_agg_property_if_required(self):
         if self._client is not None and not self._tree.children(self._tree.root):
-            field_node = self._tree.get(self._tree.root)
+            _, field_node = self._tree.get(self._tree.root)
             if field_node.KEY in field_classes_per_name:
                 search_class = self._get_dsl_type("search")
                 self.a = field_classes_per_name[field_node.KEY](
@@ -63,7 +63,7 @@ class IMapping(DSLMixin, TreeBasedObj):
                         repr_auto_execute=True,
                         nested_autocorrect=True,
                     ),
-                    field=self._initial_tree.node_path(field_node.identifier),
+                    field=self._root_path,
                 )
 
     def __call__(self, *args, **kwargs):

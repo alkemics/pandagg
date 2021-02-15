@@ -65,12 +65,10 @@ class Aggs(Tree):
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)
 
-    def id_from_key(self, key):
-        """Find node identifier based on key. If multiple nodes have the same key, takes the first found one."""
-        for k, n in self.list():
-            if k == key:
-                return n.identifier
-        raise KeyError('No node found with key "%s"' % key)
+    def __nonzero__(self):
+        return bool(self.to_dict())
+
+    __bool__ = __nonzero__
 
     def _insert_agg(self, name, node, insert_below=None, at_root=None, groupby=False):
         """

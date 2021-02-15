@@ -155,7 +155,7 @@ class Query(Tree):
             return cls.get_node_dsl_class(type_)(**body_)
         if isinstance(type_or_query, text_type):
             return cls.get_node_dsl_class(type_or_query)(**body)
-        raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
+        raise ValueError('"type_or_query" must be among "dict", "AggNode", "str"')
 
     def _insert_query_at(
         self, node, mode, on=None, insert_below=None, compound_param=None
@@ -195,9 +195,11 @@ class Query(Tree):
                 pid = self.parent_id(on)
                 existing_k, _ = self.drop_subtree(on)
                 self._insert_query(node, insert_below=pid)
+                existing.body = node.body
                 return
 
             # merge
+            existing.body.update(node.body)
             for param_key, children in node._children.items():
                 if not children:
                     continue
@@ -602,14 +604,14 @@ class Query(Tree):
         compound_key,
         compound_param_key,
         mode,
-        type_or_agg,
+        type_or_query,
         insert_below=None,
         on=None,
         compound_body=None,
         **body
     ):
         q = self.clone(with_nodes=True)
-        node = self._translate_query(type_or_agg, **body)
+        node = self._translate_query(type_or_query, **body)
         compound_body = compound_body or {}
         compound_body[compound_param_key] = node
         compound_node = self.get_node_dsl_class(compound_key)(**compound_body)
@@ -617,35 +619,59 @@ class Query(Tree):
         return q
 
     def must(
-        self, type_or_agg, insert_below=None, on=None, mode=ADD, bool_body=None, **body
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
     ):
         """
         >>> Query().must('term', some_field=1)
         >>> Query().must({'term': {'some_field': 1}})
         """
         return self._compound_param_insert(
-            "bool", "must", mode, type_or_agg, insert_below, on, bool_body, **body
+            "bool", "must", mode, type_or_query, insert_below, on, bool_body, **body
         )
 
     def should(
-        self, type_or_agg, insert_below=None, on=None, mode=ADD, bool_body=None, **body
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
     ):
         return self._compound_param_insert(
-            "bool", "should", mode, type_or_agg, insert_below, on, bool_body, **body
+            "bool", "should", mode, type_or_query, insert_below, on, bool_body, **body
         )
 
     def must_not(
-        self, type_or_agg, insert_below=None, on=None, mode=ADD, bool_body=None, **body
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
     ):
         return self._compound_param_insert(
-            "bool", "must_not", mode, type_or_agg, insert_below, on, bool_body, **body
+            "bool", "must_not", mode, type_or_query, insert_below, on, bool_body, **body
         )
 
     def filter(
-        self, type_or_agg, insert_below=None, on=None, mode=ADD, bool_body=None, **body
+        self,
+        type_or_query,
+        insert_below=None,
+        on=None,
+        mode=ADD,
+        bool_body=None,
+        **body
     ):
         return self._compound_param_insert(
-            "bool", "filter", mode, type_or_agg, insert_below, on, bool_body, **body
+            "bool", "filter", mode, type_or_query, insert_below, on, bool_body, **body
         )
 
     def show(self, *args, line_max_length=80, **kwargs):
