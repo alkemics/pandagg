@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from tests import PandaggTestCase
-from lighttree.exceptions import NotFoundNodeError
 import pandas as pd
 
 from pandagg.search import Search

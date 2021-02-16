@@ -37,7 +37,8 @@ class IResponse(TreeBasedObj):
         )
 
     def get_bucket_filter(self):
-        """Build filters to select documents belonging to that bucket, independently from initial search query clauses."""
+        """Build filters to select documents belonging to that bucket, independently from initial search query
+        clauses."""
         return self._initial_tree.get_bucket_filter(self._tree.root)
 
     def search(self):

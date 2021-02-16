@@ -7,14 +7,10 @@
 
 from __future__ import unicode_literals
 from unittest import TestCase
-from lighttree.exceptions import NotFoundNodeError
 from mock import patch
 
 from pandagg.tree.aggs.aggs import Aggs
-from pandagg.exceptions import (
-    AbsentMappingFieldError,
-    InvalidOperationMappingFieldError,
-)
+from pandagg.exceptions import InvalidOperationMappingFieldError
 from pandagg.aggs import DateHistogram, Terms, Filter, Avg, Min
 
 import tests.testing_samples.data_sample as sample

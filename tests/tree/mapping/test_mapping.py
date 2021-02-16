@@ -3,8 +3,6 @@
 
 from unittest import TestCase
 
-from mock import patch
-
 from pandagg.exceptions import AbsentMappingFieldError
 from pandagg.mapping import Keyword, Object, Text, Nested, Integer, Mapping
 from pandagg.node.mapping.abstract import Field

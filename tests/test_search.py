@@ -4,9 +4,8 @@ from mock import patch
 
 from elasticsearch import Elasticsearch
 
-from pandagg.node import Terms, Max
+from pandagg.node import Max
 from pandagg.search import Search
-from pandagg.aggs import Aggs
 from pandagg.query import Query, Bool, Match
 from pandagg.tree import Mapping
 from pandagg.utils import ordered
@@ -430,16 +429,9 @@ class SearchTestCase(PandaggTestCase):
             using=Elasticsearch(hosts=["..."]), index="yolo", repr_auto_execute=True
         )
 
-        r = s.size(2).__repr__()
+        s.size(2).__repr__()
         client_search.assert_called_once()
         client_search.assert_any_call(body={"size": 2}, index=["yolo"])
-        self.assertEqual(
-            r,
-            """     field_23
-_id
-1           1
-2           2""",
-        )
 
         client_search.reset_mock()
 
@@ -484,7 +476,7 @@ _id
         )
 
         # when aggs are present, repr dataframe of aggs, with size 0 hits
-        r = s.__repr__()
+        s.__repr__()
         client_search.assert_called_once()
         client_search.assert_any_call(
             body={
@@ -497,11 +489,4 @@ _id
                 },
             },
             index=["yolo"],
-        )
-        self.assertEqual(
-            r,
-            """            doc_count  toto_avg_price
-toto_terms
-toto_1             12            50.2
-toto_2             15            10.3""",
         )
