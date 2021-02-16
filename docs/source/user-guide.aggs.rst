@@ -41,16 +41,6 @@ To declare :class:`~pandagg.tree.aggs.aggs.Aggs`, simply pass "dict" query as ar
     >>> from pandagg.agg import Aggs
     >>> a = Aggs(expected_aggs)
 
-A visual representation of the query is available with
-
-    >>> from pandagg.agg import Aggs
-    >>> a = Aggs(expected_aggs)
-
-A visual representation of the query is available with
-
-    >>> from pandagg.aggs import Aggs
-    >>> a = Aggs(expected_aggs)
-
 A visual representation of the query is available with :func:`~pandagg.tree.aggs.aggs.Aggs.show`:
 
     >>> a.show()
@@ -80,39 +70,9 @@ Pandagg provides a DSL to declare this query in a quite similar fashion:
     >>>     ]),
     >>> ])
 
-All these classes inherit from
-
-    >>> from pandagg.agg import Histogram, Terms, Max, Avg
-    >>>
-    >>> a = Histogram("decade", field='year', interval=10, aggs=[
-    >>>     Terms("genres", field="genres", size=3, aggs=[
-    >>>         Max("max_nb_roles", field="nb_roles"),
-    >>>         Avg("avg_rank", field="range")
-    >>>     ]),
-    >>> ])
-
-All these classes inherit from
-
-    >>> from pandagg.aggs import Histogram, Terms, Max, Avg
-    >>>
-    >>> a = Histogram("decade", field='year', interval=10, aggs=[
-    >>>     Terms("genres", field="genres", size=3, aggs=[
-    >>>         Max("max_nb_roles", field="nb_roles"),
-    >>>         Avg("avg_rank", field="range")
-    >>>     ]),
-    >>> ])
-
 All these classes inherit from :class:`~pandagg.tree.aggs.aggs.Aggs` and thus provide the same interface.
 
     >>> from pandagg.agg import Aggs
-    >>> isinstance(a, Aggs)
-    True
-
-    >>> from pandagg.agg import Aggs
-    >>> isinstance(a, Aggs)
-    True
-
-    >>> from pandagg.aggs import Aggs
     >>> isinstance(a, Aggs)
     True
 
@@ -143,54 +103,6 @@ For instance:
     >>> from pandagg.aggs import Aggs
     >>> initial_a = Aggs()
     >>> enriched_a = initial_a.agg('genres_agg', 'terms', field='genres')
-
-    >>> initial_q.to_dict()
-    None
-
-    >>> enriched_q.to_dict()
-    {'genres_agg': {'terms': {'field': 'genres'}}}
-
-For instance:
-
-    >>> from pandagg.aggs import Aggs
-    >>> initial_a = Aggs()
-    >>> enriched_a = initial_a.agg('genres_agg', 'terms', field='genres')
-
-    >>> initial_q.to_dict()
-    None
-
-    >>> enriched_q.to_dict()
-    {'genres_agg': {'terms': {'field': 'genres'}}}
-
-For instance:
-
-    >>> from pandagg.agg import Aggs
-    >>> initial_a = Aggs()
-    >>> enriched_a = initial_a.agg('genres_agg', 'terms', field='genres')
-
-    >>> initial_q.to_dict()
-    None
-
-    >>> enriched_q.to_dict()
-    {'genres_agg': {'terms': {'field': 'genres'}}}
-
-For instance:
-
-    >>> from pandagg.agg import Aggs
-    >>> initial_a = Aggs()
-    >>> enriched_a = initial_a.agg('genres_agg', 'terms', field='genres')
-
-    >>> initial_q.to_dict()
-    None
-
-    >>> enriched_q.to_dict()
-    {'genres_agg': {'terms': {'field': 'genres'}}}
-
-For instance:
-
-    >>> from pandagg.aggs import Aggs
-    >>> initial_a = Aggs()
-    >>> enriched_a = initial_a.aggs('genres_agg', 'terms', field='genres')
 
     >>> initial_q.to_dict()
     None
