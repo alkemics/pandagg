@@ -8,9 +8,6 @@ Submodules
    :maxdepth: 8
 
    pandagg.tree.aggs.aggs
-   pandagg.tree.aggs.bucket
-   pandagg.tree.aggs.metric
-   pandagg.tree.aggs.pipeline
 
 Module contents
 ---------------

@@ -8,10 +8,9 @@ from pandagg.tree.aggs.aggs import Aggs
 
 class IResponse(TreeBasedObj):
 
-    """Interactive aggregation response.
-    """
+    """Interactive aggregation response."""
 
-    _NODE_PATH_ATTR = "attr_name"
+    _ATTR = "attr_name"
     _COERCE_ATTR = True
 
     def __init__(self, tree, search, depth, root_path=None, initial_tree=None):
@@ -30,7 +29,7 @@ class IResponse(TreeBasedObj):
 
     def _clone(self, nid, root_path, depth):
         return IResponse(
-            tree=self._tree.subtree(nid),
+            tree=self._tree.subtree(nid)[1],
             root_path=root_path,
             depth=depth,
             initial_tree=self._initial_tree,
@@ -38,8 +37,8 @@ class IResponse(TreeBasedObj):
         )
 
     def get_bucket_filter(self):
-        """Build filters to select documents belonging to that bucket, independently from initial search query clauses.
-        """
+        """Build filters to select documents belonging to that bucket, independently from initial search query
+        clauses."""
         return self._initial_tree.get_bucket_filter(self._tree.root)
 
     def search(self):

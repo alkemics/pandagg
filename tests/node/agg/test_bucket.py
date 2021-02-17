@@ -58,14 +58,14 @@ class BucketAggNodesTestCase(PandaggTestCase):
 
         # test query dict
         self.assertEqual(
-            Terms("name", field="field", size=10).to_dict(),
+            Terms(field="field", size=10).to_dict(),
             {"terms": {"field": "field", "size": 10}},
         )
 
     def test_filter(self):
         es_raw_response = {"doc_count": 12, "sub_aggs": {}}
         # test extract_buckets
-        buckets_iterator = Filter("name", {}).extract_buckets(es_raw_response)
+        buckets_iterator = Filter({}).extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -77,10 +77,10 @@ class BucketAggNodesTestCase(PandaggTestCase):
         )
 
         # test extract bucket value
-        self.assertEqual(Filter("name", {}).extract_bucket_value({"doc_count": 12}), 12)
+        self.assertEqual(Filter({}).extract_bucket_value({"doc_count": 12}), 12)
 
         # test get_filter
-        filter_agg = Filter(name="some_agg", filter={"term": {"some_path": 1}})
+        filter_agg = Filter(filter={"term": {"some_path": 1}})
         self.assertEqual(filter_agg.get_filter(None), {"term": {"some_path": 1}})
 
         # test query dict
@@ -89,9 +89,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
     def test_nested(self):
         es_raw_response = {"doc_count": 12, "sub_aggs": {}}
         # test extract_buckets
-        buckets_iterator = Nested("agg_name", path="some_nested").extract_buckets(
-            es_raw_response
-        )
+        buckets_iterator = Nested(path="some_nested").extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -106,7 +104,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
         self.assertEqual(Nested.extract_bucket_value({"doc_count": 12}), 12)
 
         # test get_filter
-        nested_agg = Nested(name="some_agg", path="nested_path")
+        nested_agg = Nested(path="nested_path")
         self.assertEqual(nested_agg.get_filter(None), None)
 
         # test query dict
@@ -120,7 +118,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
             }
         }
         # test extract_buckets
-        buckets_iterator = Filters("name", None).extract_buckets(es_raw_response)
+        buckets_iterator = Filters(None).extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
         buckets = list(buckets_iterator)
         self.assertEqual(
@@ -133,16 +131,11 @@ class BucketAggNodesTestCase(PandaggTestCase):
         )
 
         # test extract bucket value
-        self.assertEqual(
-            Filters("name", None).extract_bucket_value({"doc_count": 1}), 1
-        )
-        self.assertEqual(
-            Filters("name", None).extract_bucket_value({"doc_count": 2}), 2
-        )
+        self.assertEqual(Filters(None).extract_bucket_value({"doc_count": 1}), 1)
+        self.assertEqual(Filters(None).extract_bucket_value({"doc_count": 2}), 2)
 
         # test get_filter
         filters_agg = Filters(
-            name="some_agg",
             filters={
                 "first_bucket": {"term": {"some_path": 1}},
                 "second_bucket": {"term": {"some_path": 2}},
@@ -186,15 +179,13 @@ class BucketAggNodesTestCase(PandaggTestCase):
 
     def test_range(self):
         query = {
-            "price_ranges": {
-                "range": {
-                    "field": "price",
-                    "ranges": [
-                        {"to": 100.0},
-                        {"from": 100.0, "to": 200.0},
-                        {"from": 200.0},
-                    ],
-                }
+            "range": {
+                "field": "price",
+                "ranges": [
+                    {"to": 100.0},
+                    {"from": 100.0, "to": 200.0},
+                    {"from": 200.0},
+                ],
             }
         }
         es_raw_response = {
@@ -206,11 +197,10 @@ class BucketAggNodesTestCase(PandaggTestCase):
         }
 
         range_agg = Range(
-            name="price_ranges",
             field="price",
             ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}],
         )
-        self.assertEqual(range_agg.to_dict(with_name=True), query)
+        self.assertEqual(range_agg.to_dict(), query)
 
         buckets_iterator = range_agg.extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
@@ -230,16 +220,14 @@ class BucketAggNodesTestCase(PandaggTestCase):
 
     def test_range_keyed_response(self):
         query = {
-            "price_ranges": {
-                "range": {
-                    "field": "price",
-                    "keyed": True,
-                    "ranges": [
-                        {"to": 100.0},
-                        {"from": 100.0, "to": 200.0},
-                        {"from": 200.0},
-                    ],
-                }
+            "range": {
+                "field": "price",
+                "keyed": True,
+                "ranges": [
+                    {"to": 100.0},
+                    {"from": 100.0, "to": 200.0},
+                    {"from": 200.0},
+                ],
             }
         }
         es_raw_response = {
@@ -251,12 +239,11 @@ class BucketAggNodesTestCase(PandaggTestCase):
         }
 
         range_agg = Range(
-            name="price_ranges",
             field="price",
             keyed=True,
             ranges=[{"to": 100.0}, {"from": 100.0, "to": 200.0}, {"from": 200.0}],
         )
-        self.assertEqual(range_agg.to_dict(with_name=True), query)
+        self.assertEqual(range_agg.to_dict(), query)
 
         buckets_iterator = range_agg.extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
@@ -272,7 +259,7 @@ class BucketAggNodesTestCase(PandaggTestCase):
         )
 
     def test_histogram(self):
-        query = {"prices": {"histogram": {"field": "price", "interval": 50}}}
+        query = {"histogram": {"field": "price", "interval": 50}}
         es_raw_response = {
             "buckets": [
                 {"key": 0.0, "doc_count": 1},
@@ -283,8 +270,8 @@ class BucketAggNodesTestCase(PandaggTestCase):
             ]
         }
 
-        hist_agg = Histogram(name="prices", field="price", interval=50)
-        self.assertEqual(hist_agg.to_dict(with_name=True), query)
+        hist_agg = Histogram(field="price", interval=50)
+        self.assertEqual(hist_agg.to_dict(), query)
         self.assertEqual(
             hist_agg.get_filter(100), {"range": {"price": {"gte": 100.0, "lt": 150.0}}}
         )

@@ -34,37 +34,34 @@ EXPECTED_AGG_QUERY = {
 def get_wrapper_declared_agg():
     return (
         Aggs(mapping=MAPPING)
-        .groupby(["classification_type", "global_metrics.field.name"])
-        .aggs(
-            [
-                Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
-                Avg(
-                    "avg_f1_micro",
-                    field="global_metrics.performance.test.micro.f1_score",
-                ),
-            ]
+        .groupby("classification_type")
+        .groupby("global_metrics.field.name")
+        .agg("avg_nb_classes", Avg(field="global_metrics.dataset.nb_classes"))
+        .agg(
+            "avg_f1_micro", Avg(field="global_metrics.performance.test.micro.f1_score")
         )
     )
 
 
 def get_node_hierarchy():
-    return Terms(
-        name="classification_type",
-        field="classification_type",
-        aggs=[
-            Terms(
-                name="global_metrics.field.name",
-                field="global_metrics.field.name",
-                aggs=[
-                    Avg("avg_nb_classes", field="global_metrics.dataset.nb_classes"),
-                    Avg(
-                        "avg_f1_micro",
-                        field="global_metrics.performance.test.micro.f1_score",
-                    ),
-                ],
-            )
-        ],
-    )
+    return {
+        "classification_type": Terms(
+            field="classification_type",
+            aggs={
+                "global_metrics.field.name": Terms(
+                    field="global_metrics.field.name",
+                    aggs={
+                        "avg_nb_classes": Avg(
+                            field="global_metrics.dataset.nb_classes"
+                        ),
+                        "avg_f1_micro": Avg(
+                            field="global_metrics.performance.test.micro.f1_score"
+                        ),
+                    },
+                )
+            },
+        )
+    }
 
 
 ES_AGG_RESPONSE = {
@@ -120,21 +117,21 @@ ES_AGG_RESPONSE = {
     }
 }
 
-EXPECTED_RESP_REPR = """root
-├── classification_type=multiclass                       568
-│   ├── global_metrics.field.name=gpc                    198
-│   │   ├── avg_f1_micro                                0.93
-│   │   └── avg_nb_classes                            211.12
-│   └── global_metrics.field.name=kind                   370
-│       ├── avg_f1_micro                                0.89
-│       └── avg_nb_classes                             206.5
-└── classification_type=multilabel                      1797
-    ├── global_metrics.field.name=ispracticecompatible    128
-    │   ├── avg_f1_micro                                0.72
-    │   └── avg_nb_classes                             18.71
-    └── global_metrics.field.name=preservationmethods     76
-        ├── avg_f1_micro                                 0.8
-        └── avg_nb_classes                              9.97
+EXPECTED_RESP_REPR = """[]
+├── classification_type=multilabel                      1797
+│   ├── global_metrics.field.name=ispracticecompatible   128
+│   │   ├── avg_f1_micro                                0.72
+│   │   └── avg_nb_classes                             18.71
+│   └── global_metrics.field.name=preservationmethods     76
+│       ├── avg_f1_micro                                 0.8
+│       └── avg_nb_classes                              9.97
+└── classification_type=multiclass                       568
+    ├── global_metrics.field.name=kind                   370
+    │   ├── avg_f1_micro                                0.89
+    │   └── avg_nb_classes                             206.5
+    └── global_metrics.field.name=gpc                    198
+        ├── avg_f1_micro                                0.93
+        └── avg_nb_classes                            211.12
 """
 EXPECTED_RESPONSE_REPR = """<IResponse>\n%s""" % EXPECTED_RESP_REPR
 EXPECTED_RESPONSE_TREE_REPR = """<AggsResponseTree>\n%s""" % EXPECTED_RESP_REPR

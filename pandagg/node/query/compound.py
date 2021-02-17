@@ -16,23 +16,29 @@ class CompoundClause(QueryClause):
     """
 
     _default_operator = None
-    _parent_params = None
+    # key -> multiple / single
+    _parent_params = {}
 
-    @classmethod
-    def operator(cls, key):
-        if key is None:
-            return cls._get_dsl_class(cls._default_operator)
-        if key not in cls._parent_params:
-            raise ValueError(
-                "Child operator <%s> not permitted for compound query of type <%s>"
-                % (key, cls.__name__)
-            )
-        return cls._get_dsl_class(key)
+    def __init__(self, _name=None, **body):
+        b = body.copy()
+        children = {}
+        for param in self._parent_params:
+            v = b.pop(param, None)
+            if not v:
+                continue
+            children[param] = v if isinstance(v, list) else [v]
+        super(CompoundClause, self).__init__(
+            _name=_name, accept_children=True, keyed=True, _children=children, **b
+        )
 
 
 class Bool(CompoundClause):
+    """
+    >>> Bool(must=[], should=[], filter=[], must_not=[], boost=1.2)
+    """
+
     _default_operator = "must"
-    _parent_params = ["should", "must", "must_not", "filter"]
+    _parent_params = {"should": True, "must": True, "must_not": True, "filter": True}
     KEY = "bool"
 
 

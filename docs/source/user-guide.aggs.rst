@@ -38,7 +38,7 @@ Given the following aggregation:
 
 To declare :class:`~pandagg.tree.aggs.aggs.Aggs`, simply pass "dict" query as argument:
 
-    >>> from pandagg.aggs import Aggs
+    >>> from pandagg.agg import Aggs
     >>> a = Aggs(expected_aggs)
 
 A visual representation of the query is available with :func:`~pandagg.tree.aggs.aggs.Aggs.show`:
@@ -61,7 +61,7 @@ With DSL classes
 
 Pandagg provides a DSL to declare this query in a quite similar fashion:
 
-    >>> from pandagg.aggs import Histogram, Terms, Max, Avg
+    >>> from pandagg.agg import Histogram, Terms, Max, Avg
     >>>
     >>> a = Histogram("decade", field='year', interval=10, aggs=[
     >>>     Terms("genres", field="genres", size=3, aggs=[
@@ -72,7 +72,7 @@ Pandagg provides a DSL to declare this query in a quite similar fashion:
 
 All these classes inherit from :class:`~pandagg.tree.aggs.aggs.Aggs` and thus provide the same interface.
 
-    >>> from pandagg.aggs import Aggs
+    >>> from pandagg.agg import Aggs
     >>> isinstance(a, Aggs)
     True
 
@@ -102,7 +102,7 @@ For instance:
 
     >>> from pandagg.aggs import Aggs
     >>> initial_a = Aggs()
-    >>> enriched_a = initial_a.aggs('genres_agg', 'terms', field='genres')
+    >>> enriched_a = initial_a.agg('genres_agg', 'terms', field='genres')
 
     >>> initial_q.to_dict()
     None
@@ -114,7 +114,12 @@ For instance:
 
     Calling :func:`~pandagg.tree.aggs.aggs.Aggs.to_dict` on an empty Aggregation returns `None`
 
-        >>> from pandagg.aggs import Aggs
+        >>> from pandagg.agg import Aggs
+                >>> Aggs().to_dict()
+                None
+
+
+        TODO
         >>> Aggs().to_dict()
         None
 

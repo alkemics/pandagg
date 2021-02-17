@@ -27,7 +27,7 @@ class GeoDistance(AbstractSingleFieldQueryClause):
         )
 
     def line_repr(self, depth, **kwargs):
-        return "%s, field=%s" % (self.KEY, self.field)
+        return self.KEY, "field=%s" % self.field
 
 
 class GeoPolygone(KeyFieldQueryClause):

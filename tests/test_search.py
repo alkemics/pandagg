@@ -3,8 +3,9 @@ from copy import deepcopy
 from mock import patch
 
 from elasticsearch import Elasticsearch
+
+from pandagg.node import Max
 from pandagg.search import Search
-from pandagg.aggs import Aggs
 from pandagg.query import Query, Bool, Match
 from pandagg.tree import Mapping
 from pandagg.utils import ordered
@@ -46,8 +47,9 @@ class SearchTestCase(PandaggTestCase):
         )
 
         with self.assertRaises(KeyError):
-            mapping = Mapping(properties={"example": {"type": "keyword"}})
-            Search(mapping=mapping)[["col1", "col2"]]
+            Search(mapping=Mapping(properties={"example": {"type": "keyword"}}))[
+                ["col1", "col2"]
+            ]
 
     def test_using(self):
         o = object()
@@ -88,7 +90,7 @@ class SearchTestCase(PandaggTestCase):
     def test_aggs_allow_two_metric(self):
         s = Search()
 
-        s = s.aggs([Aggs("a", "max", field="a"), Aggs("b", "max", field="b")])
+        s = s.aggs({"a": Max(field="a"), "b": Max(field="b")})
 
         self.assertEqual(
             s.to_dict(),
@@ -158,7 +160,7 @@ class SearchTestCase(PandaggTestCase):
             size=10
         )
 
-        s = s.aggs("per_tag", "terms", field="f").aggs(
+        s = s.groupby("per_tag", "terms", field="f").agg(
             "max_score", "max", field="score"
         )
         d = {
@@ -182,52 +184,49 @@ class SearchTestCase(PandaggTestCase):
             Search()
             .query("match", title="python")
             .must_not("match", title="ruby")
-            .should(
-                Query("term", category="meetup"), Query("term", category="conference")
-            )
+            .should("term", category="meetup")
+            .should("term", category="conference")
             .post_filter("terms", tags=["prague", "czech"])
             .script_fields(more_attendees="doc['attendees'].value + 42")
-            .aggs("per_country", "terms", field="country")
-            .aggs("avg_attendees", "avg", field="attendees")
+            .groupby("per_country", "terms", field="country")
+            .agg("avg_attendees", "avg", field="attendees")
             .bool(minimum_should_match=2)
             .highlight_options(order="score")
             .highlight("title", "body", fragment_size=50)
         )
 
-        self.assertEqual(
-            ordered(
-                {
-                    "aggs": {
-                        "per_country": {
-                            "aggs": {"avg_attendees": {"avg": {"field": "attendees"}}},
-                            "terms": {"field": "country"},
-                        }
+        self.assertUnorderedEqual(
+            {
+                "aggs": {
+                    "per_country": {
+                        "aggs": {"avg_attendees": {"avg": {"field": "attendees"}}},
+                        "terms": {"field": "country"},
+                    }
+                },
+                "highlight": {
+                    "fields": {
+                        "body": {"fragment_size": 50},
+                        "title": {"fragment_size": 50},
                     },
-                    "highlight": {
-                        "fields": {
-                            "body": {"fragment_size": 50},
-                            "title": {"fragment_size": 50},
-                        },
-                        "order": "score",
-                    },
-                    "post_filter": {"terms": {"tags": ["prague", "czech"]}},
-                    "query": {
-                        "bool": {
-                            "minimum_should_match": 2,
-                            "must": [{"match": {"title": {"query": "python"}}}],
-                            "must_not": [{"match": {"title": {"query": "ruby"}}}],
-                            "should": [
-                                {"term": {"category": {"value": "conference"}}},
-                                {"term": {"category": {"value": "meetup"}}},
-                            ],
-                        }
-                    },
-                    "script_fields": {
-                        "more_attendees": {"script": "doc['attendees'].value + 42"}
-                    },
-                }
-            ),
-            ordered(s.to_dict()),
+                    "order": "score",
+                },
+                "post_filter": {"terms": {"tags": ["prague", "czech"]}},
+                "query": {
+                    "bool": {
+                        "minimum_should_match": 2,
+                        "must": [{"match": {"title": {"query": "python"}}}],
+                        "must_not": [{"match": {"title": {"query": "ruby"}}}],
+                        "should": [
+                            {"term": {"category": {"value": "conference"}}},
+                            {"term": {"category": {"value": "meetup"}}},
+                        ],
+                    }
+                },
+                "script_fields": {
+                    "more_attendees": {"script": "doc['attendees'].value + 42"}
+                },
+            },
+            s.to_dict(),
         )
 
     def test_reverse(self):
@@ -439,3 +438,55 @@ class SearchTestCase(PandaggTestCase):
         s.size(2)._repr_html_()
         client_search.assert_called_once()
         client_search.assert_any_call(body={"size": 2}, index=["yolo"])
+
+    @patch.object(Elasticsearch, "search")
+    def test_repr_aggs_execution(self, client_search):
+        client_search.return_value = {
+            "took": 42,
+            "timed_out": False,
+            "_shards": {"total": 10, "successful": 10, "skipped": 0, "failed": 0},
+            "hits": {
+                "total": {"value": 34, "relation": "eq"},
+                "max_score": 0.0,
+                "hits": [],
+            },
+            "aggregations": {
+                "toto_terms": {
+                    "buckets": [
+                        {
+                            "doc_count": 12,
+                            "key": "toto_1",
+                            "toto_avg_price": {"value": 50.2},
+                        },
+                        {
+                            "doc_count": 15,
+                            "key": "toto_2",
+                            "toto_avg_price": {"value": 10.3},
+                        },
+                    ]
+                }
+            },
+        }
+        s = (
+            Search(
+                using=Elasticsearch(hosts=["..."]), index="yolo", repr_auto_execute=True
+            )
+            .groupby("toto_terms", "terms", field="toto")
+            .agg("toto_avg_price", "avg", field="price")
+        )
+
+        # when aggs are present, repr dataframe of aggs, with size 0 hits
+        s.__repr__()
+        client_search.assert_called_once()
+        client_search.assert_any_call(
+            body={
+                "size": 0,
+                "aggs": {
+                    "toto_terms": {
+                        "terms": {"field": "toto"},
+                        "aggs": {"toto_avg_price": {"avg": {"field": "price"}}},
+                    }
+                },
+            },
+            index=["yolo"],
+        )

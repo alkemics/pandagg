@@ -31,7 +31,7 @@ User Guide
     >>>     .size(2)\
     >>>     .groupby('decade', 'histogram', interval=10, field='year')\
     >>>     .groupby('genres', size=3)\
-    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
     >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
     >>>     .filter('range', year={"gte": 1990})
 
@@ -67,6 +67,7 @@ User Guide
       },
       "size": 2
     }
+
 
 It relies on:
 

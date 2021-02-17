@@ -27,7 +27,9 @@ class TermLevelQueriesTestCase(TestCase):
         for q in (q1, q2, q3):
             self.assertEqual(q.body, body)
             self.assertEqual(q.to_dict(), expected)
-            self.assertEqual(q.line_repr(depth=None), 'fuzzy, field=user, value="ki"')
+            self.assertEqual(
+                q.line_repr(depth=None), ("fuzzy", 'field=user, value="ki"')
+            )
 
     def test_exists_clause(self):
         body = {"field": "user"}
@@ -36,7 +38,7 @@ class TermLevelQueriesTestCase(TestCase):
         q = Exists(field="user")
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
-        self.assertEqual(q.line_repr(depth=None), "exists, field=user")
+        self.assertEqual(q.line_repr(depth=None), ("exists", "field=user"))
 
     def test_ids_clause(self):
         body = {"values": [1, 4, 100]}
@@ -45,7 +47,7 @@ class TermLevelQueriesTestCase(TestCase):
         q = Ids(values=[1, 4, 100])
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
-        self.assertEqual(q.line_repr(depth=None), "ids, values=[1, 4, 100]")
+        self.assertEqual(q.line_repr(depth=None), ("ids", "values=[1, 4, 100]"))
 
     def test_prefix_clause(self):
         body = {"user": {"value": "ki"}}
@@ -54,7 +56,7 @@ class TermLevelQueriesTestCase(TestCase):
         q = Prefix(field="user", value="ki")
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
-        self.assertEqual(q.line_repr(depth=None), 'prefix, field=user, value="ki"')
+        self.assertEqual(q.line_repr(depth=None), ("prefix", 'field=user, value="ki"'))
 
     def test_range_clause(self):
         body = {"age": {"gte": 10, "lte": 20, "boost": 2}}
@@ -66,7 +68,7 @@ class TermLevelQueriesTestCase(TestCase):
             self.assertEqual(q.body, body)
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
-                q.line_repr(depth=None), "range, field=age, boost=2, gte=10, lte=20"
+                q.line_repr(depth=None), ("range", "field=age, boost=2, gte=10, lte=20")
             )
 
     def test_regexp_clause(self):
@@ -79,7 +81,11 @@ class TermLevelQueriesTestCase(TestCase):
             }
         }
         expected = {"regexp": body}
-        tag = 'regexp, field=user, flags="ALL", max_determinized_states=10000, rewrite="constant_score", value="k.*y"'
+        repr_ = (
+            "regexp",
+            'field=user, flags="ALL", max_determinized_states=10000, '
+            'rewrite="constant_score", value="k.*y"',
+        )
 
         q1 = Regexp(
             field="user",
@@ -99,7 +105,7 @@ class TermLevelQueriesTestCase(TestCase):
         for q in (q1, q2):
             self.assertEqual(q.body, body)
             self.assertEqual(q.to_dict(), expected)
-            self.assertEqual(q.line_repr(depth=None), tag)
+            self.assertEqual(q.line_repr(depth=None), repr_)
 
     def test_term_clause(self):
         body = {"user": {"value": "Kimchy", "boost": 1}}
@@ -111,14 +117,16 @@ class TermLevelQueriesTestCase(TestCase):
             self.assertEqual(q.body, body)
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
-                q.line_repr(depth=None), 'term, field=user, boost=1, value="Kimchy"'
+                q.line_repr(depth=None), ("term", 'field=user, boost=1, value="Kimchy"')
             )
 
         # other format
         q3 = Term(user="Kimchy")
         self.assertEqual(q3.body, {"user": {"value": "Kimchy"}})
         self.assertEqual(q3.to_dict(), {"term": {"user": {"value": "Kimchy"}}})
-        self.assertEqual(q3.line_repr(depth=None), 'term, field=user, value="Kimchy"')
+        self.assertEqual(
+            q3.line_repr(depth=None), ("term", 'field=user, value="Kimchy"')
+        )
 
     def test_terms_clause(self):
         # note: != syntax than term (...), the "boost" parameter is at same level that "user"
@@ -129,7 +137,8 @@ class TermLevelQueriesTestCase(TestCase):
         self.assertEqual(q.body, body)
         self.assertEqual(q.to_dict(), expected)
         self.assertEqual(
-            q.line_repr(depth=None), 'terms, boost=1, user=["kimchy", "elasticsearch"]'
+            q.line_repr(depth=None),
+            ("terms", 'boost=1, user=["kimchy", "elasticsearch"]'),
         )
 
     def test_terms_set_clause(self):
@@ -157,7 +166,11 @@ class TermLevelQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'terms_set, field=programming_languages, minimum_should_match_field="required_matches", terms=["c++", "java", "php"]',
+                (
+                    "terms_set",
+                    'field=programming_languages, minimum_should_match_field="required_matches", '
+                    'terms=["c++", "java", "php"]',
+                ),
             )
 
     def test_wildcard_clause(self):
@@ -171,5 +184,8 @@ class TermLevelQueriesTestCase(TestCase):
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
                 q.line_repr(depth=None),
-                'wildcard, field=user, boost=1.0, rewrite="constant_score", value="ki*y"',
+                (
+                    "wildcard",
+                    'field=user, boost=1.0, rewrite="constant_score", value="ki*y"',
+                ),
             )

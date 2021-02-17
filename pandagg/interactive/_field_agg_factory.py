@@ -25,10 +25,9 @@ def field_klass_init(self, field, search):
 
 def aggregator_factory(agg_klass):
     def aggregator(self, **kwargs):
-        return self._search.aggs(
-            agg_klass(
-                name="%s_%s" % (agg_klass.KEY, self._field), field=self._field, **kwargs
-            )
+        return self._search.agg(
+            "%s_%s" % (agg_klass.KEY, self._field),
+            agg_klass(field=self._field, **kwargs),
         )
 
     aggregator.__doc__ = agg_klass.__init__.__doc__ or agg_klass.__doc__

@@ -12,7 +12,7 @@ a :class:`~pandagg.response.Response` instance is returned.
     >>> response = Search(using=client, index='movies')\
     >>>     .size(2)\
     >>>     .filter('term', genres='Documentary')\
-    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
     >>>     .execute()
 
     >>> response
@@ -20,7 +20,6 @@ a :class:`~pandagg.response.Response` instance is returned.
 
     >>> response.__class__
     pandagg.response.Response
-
 
 ElasticSearch raw dict response is available under `data` attribute:
 
@@ -121,7 +120,7 @@ Let's build a bit more complex aggregation query to showcase its functionalities
     >>>     .size(0)\
     >>>     .groupby('decade', 'histogram', interval=10, field='year')\
     >>>     .groupby('genres', size=3)\
-    >>>     .aggs('avg_rank', 'avg', field='rank')\
+    >>>     .agg('avg_rank', 'avg', field='rank')\
     >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
     >>>     .filter('range', year={"gte": 1990})\
     >>>     .execute()

@@ -14,7 +14,7 @@ Elasticsearch `search api <https://www.elastic.co/guide/en/elasticsearch/referen
     >>>     .groupby('decade', 'histogram', interval=10, field='year')\
     >>>     .groupby('genres', size=3)\
     >>>     .aggs('avg_rank', 'avg', field='rank')\
-    >>>     .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+    >>>     .agg('avg_nb_roles', 'avg', field='nb_roles')\
     >>>     .filter('range', year={"gte": 1990})
 
     >>> search
@@ -123,21 +123,6 @@ To enrich **query** of a search request, methods are exactly the same as for a
 
 See section :doc:`user-guide.query` for more details.
 
-
-To enrich **post_filter** of a search request, use :func:`~pandagg.search.post_filter`:
-
-    >>> Search().post_filter('term', genres='Short')
-    {
-      "post_filter": {
-        "term": {
-          "genres": {
-            "value": "Short"
-          }
-        }
-      }
-    }
-
-
 Aggregations part
 =================
 
@@ -158,7 +143,7 @@ To enrich **aggregations** of a search request, methods are exactly the same as 
 
     >>> Search()\
     >>> .groupby('decade', 'histogram', interval=10, field='year')\
-    >>> .aggs('avg_rank', 'avg', field='rank')
+    >>> .agg('avg_rank', 'avg', field='rank')
     {
       "aggs": {
         "decade": {

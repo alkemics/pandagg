@@ -1,7 +1,6 @@
 [![PyPI Latest Release](https://img.shields.io/pypi/v/pandagg.svg)](https://pypi.org/project/pandagg/)
 [![License](https://img.shields.io/pypi/l/pandagg.svg)](https://github.com/alkemics/pandagg/blob/master/LICENSE)
 ![Python package](https://github.com/alkemics/pandagg/workflows/Python%203%20Tests/badge.svg)
-![Python package](https://github.com/alkemics/pandagg/workflows/Python%202%20Tests/badge.svg)
 [![Coverage](https://codecov.io/github/alkemics/pandagg/coverage.svg?branch=master)](https://codecov.io/gh/alkemics/pandagg)
 [![Docs](https://readthedocs.org/projects/pandagg/badge/?version=latest&style=flat)](https://pandagg.readthedocs.io/en/latest/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -103,21 +102,22 @@ F    1135174   F
 ```
 
 Build search request:
+
 ```python
->>> search = movies\
-    .search()\
-    .size(2)\
-    .groupby('decade', 'histogram', interval=10, field='year')\
-    .groupby('genres', size=3)\
-    .aggs('avg_rank', 'avg', field='rank')\
-    .aggs('avg_nb_roles', 'avg', field='nb_roles')\
+>> > search = movies
+    .search()
+    .size(2)
+    .groupby('decade', 'histogram', interval=10, field='year')
+    .groupby('genres', size=3)
+    .agg('avg_rank', 'avg', field='rank')
+    .agg('avg_nb_roles', 'avg', field='nb_roles')
     .filter('range', year={"gte": 1990})
 
->>> search.to_dict()
+>> > search.to_dict()
 {'aggs': {'decade': {u'aggs': {'genres': {u'aggs': {'avg_nb_roles': {u'avg': {'field': 'nb_roles'}},
-      'avg_rank': {u'avg': {'field': 'rank'}}},
-     'terms': {'field': 'genres', 'size': 3}}},
-   'histogram': {'field': 'year', 'interval': 10}}},
+                                                    'avg_rank': {u'avg': {'field': 'rank'}}},
+                                          'terms': {'field': 'genres', 'size': 3}}},
+                     'histogram': {'field': 'year', 'interval': 10}}},
  'query': {'bool': {u'filter': [{'range': {'year': {'gte': 1990}}}]}},
  'size': 2}
 ```

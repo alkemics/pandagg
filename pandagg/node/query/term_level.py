@@ -13,7 +13,7 @@ class Exists(LeafQueryClause):
         super(Exists, self).__init__(_name=_name, field=field)
 
     def line_repr(self, depth, **kwargs):
-        return "%s, field=%s" % (self.KEY, self.field)
+        return self.KEY, "field=%s" % self.field
 
 
 class Fuzzy(KeyFieldQueryClause):
@@ -36,7 +36,7 @@ class Ids(LeafQueryClause):
         return {self.KEY: b}
 
     def line_repr(self, depth, **kwargs):
-        return "%s, values=%s" % (self.KEY, self.values)
+        return self.KEY, "values=%s" % self.values
 
 
 class Prefix(KeyFieldQueryClause):

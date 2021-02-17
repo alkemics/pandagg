@@ -21,12 +21,10 @@ class AbstractAggNodesTestCase(TestCase):
             def extract_buckets(self, response_value):
                 yield (None, response_value)
 
-        node = CustomAgg(name="custom_agg_name", custom_body={"stuff": 2})
+        node = CustomAgg(custom_body={"stuff": 2})
         self.assertEqual(node.to_dict(), {"custom_type": {"custom_body": {"stuff": 2}}})
 
-        node = CustomAgg(
-            name="custom_agg_name", custom_body={"stuff": 2}, meta="meta_stuff"
-        )
+        node = CustomAgg(custom_body={"stuff": 2}, meta="meta_stuff")
         self.assertEqual(
             node.to_dict(),
             {"custom_type": {"custom_body": {"stuff": 2}}, "meta": "meta_stuff"},
@@ -34,7 +32,7 @@ class AbstractAggNodesTestCase(TestCase):
 
         self.assertEqual(
             node.__str__(),
-            u'<CustomAgg, name=custom_agg_name, type=custom_type, body={"custom_body": {"stuff": 2}}>',
+            u'<CustomAgg, type=custom_type, body={"custom_body": {"stuff": 2}}>',
         )
 
         # suppose this aggregation type provide buckets in the following format

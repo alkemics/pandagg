@@ -69,4 +69,4 @@ class ClientBoundResponseTestCase(PandaggTestCase):
                 }
             },
         )
-        self.assertTrue(srequest._aggs.is_empty())
+        self.assertEqual(srequest._aggs.to_dict(), {})
