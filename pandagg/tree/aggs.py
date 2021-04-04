@@ -139,6 +139,49 @@ class Aggs(Tree):
             return False
         return True
 
+    @property
+    def _deepest_linear_bucket_agg(self):
+        """
+        Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
+        neither has siblings, nor has an ancestor with siblings.
+        """
+        if len(self._nodes_map) <= 1:
+            return self.root
+        last_bucket_agg_id = self.root
+        children = [
+            c
+            for k, c in self.children(last_bucket_agg_id)
+            if self._is_eligible_grouping_node(c.identifier)
+        ]
+        while len(children) == 1:
+            last_agg_node = children[0]
+            if not self._is_eligible_grouping_node(last_agg_node.identifier):
+                break
+            last_bucket_agg_id = last_agg_node.identifier
+            children = [
+                c
+                for k, c in self.children(last_bucket_agg_id)
+                if self._is_eligible_grouping_node(c.identifier)
+            ]
+        return last_bucket_agg_id
+
+    def grouped_by(self, agg_name=None, deepest=False):
+        """Define which aggregation will be used as current grouping pointer.
+
+        Either provide an aggregation name, either specify 'deepest=True' to consider deepest linear eligible
+        aggregation node as pointer.
+        """
+        if agg_name and deepest:
+            raise ValueError('Should provide only one of "agg_name" or "deepest".')
+        new_agg = self.clone()
+        if agg_name:
+            if not new_agg._is_eligible_grouping_node(agg_name):
+                raise ValueError("Cannot group by <%s> aggregation" % agg_name)
+            new_agg._groupby_ptr = agg_name
+            return new_agg
+        new_agg._groupby_ptr = new_agg._deepest_linear_bucket_agg
+        return new_agg
+
     def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
         """
         Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
@@ -168,7 +211,7 @@ class Aggs(Tree):
 
         :rtype: pandagg.aggs.Aggs
         """
-        new_agg = self.clone(with_nodes=True)
+        new_agg = self.clone()
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
         node = A(name, type_or_agg, **body)

@@ -11,7 +11,7 @@ from mock import patch
 
 from pandagg.tree.aggs import Aggs
 from pandagg.exceptions import InvalidOperationMappingFieldError
-from pandagg.aggs import DateHistogram, Terms, Avg, Min
+from pandagg.aggs import DateHistogram, Terms, Avg, Min, Filter
 
 import tests.testing_samples.data_sample as sample
 
@@ -845,3 +845,56 @@ A                                                             <terms, field="a">
                 }
             },
         )
+
+    def test_deepest_linear_agg(self):
+        # deepest_linear_bucket_agg
+        """
+        week
+        └── nested_below_week
+            └── local_metrics.field_class.name   <----- HERE because then metric aggregation
+                └── avg_f1_score
+        """
+        node_hierarchy = {
+            "week": DateHistogram(
+                field="date",
+                interval="1w",
+                aggs={
+                    "local_metrics.field_class.name": Terms(
+                        field="local_metrics.field_class.name",
+                        size=10,
+                        aggs={
+                            "min_f1_score": Min(
+                                field="local_metrics.performance.test.f1_score"
+                            )
+                        },
+                    )
+                },
+            )
+        }
+        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
+        self.assertEqual(
+            agg.get_key(agg._deepest_linear_bucket_agg),
+            "local_metrics.field_class.name",
+        )
+
+        # week is last bucket linear bucket
+        node_hierarchy_2 = {
+            "week": DateHistogram(
+                field="date",
+                interval="1w",
+                aggs={
+                    "local_metrics.field_class.name": Terms(
+                        field="local_metrics.field_class.name", size=10
+                    ),
+                    "f1_score_above_threshold": Filter(
+                        filter={
+                            "range": {
+                                "local_metrics.performance.test.f1_score": {"gte": 0.5}
+                            }
+                        }
+                    ),
+                },
+            )
+        }
+        agg2 = Aggs(node_hierarchy_2, mapping=MAPPING, nested_autocorrect=True)
+        self.assertEqual(agg2.get_key(agg2._deepest_linear_bucket_agg), "week")
