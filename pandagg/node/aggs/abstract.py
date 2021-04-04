@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 from builtins import str as text
+from six import text_type
 
 import json
 
@@ -112,6 +113,51 @@ class AggNode(Node):
             return other.to_dict() == self.to_dict()
         # make sure we still equal to a dict with the same data
         return other == self.to_dict()
+
+    @classmethod
+    def deserialize_agg(cls, name, type_or_agg=None, **body):
+        """Accept multiple syntaxes, return a AggNode.
+        :param type_or_agg:
+        :param body:
+        :return: AggNode
+        """
+        if isinstance(type_or_agg, text_type):
+            # _translate_agg("per_user", "terms", field="user")
+            return cls._get_dsl_class(type_or_agg)(**body)
+        if isinstance(type_or_agg, AggNode):
+            # _translate_agg("per_user", Terms(field='user'))
+            if body:
+                raise ValueError(
+                    'Body cannot be added using "AggNode" declaration, got %s.' % body
+                )
+            return type_or_agg
+        if isinstance(type_or_agg, dict):
+            # _translate_agg("per_user", {"terms": {"field": "user"}})
+            if body:
+                raise ValueError(
+                    'Body cannot be added using "dict" agg declaration, got %s.' % body
+                )
+            type_or_agg = type_or_agg.copy()
+            children_aggs = (
+                    type_or_agg.pop("aggs", None)
+                    or type_or_agg.pop("aggregations", None)
+                    or {}
+            )
+            if len(type_or_agg) != 1:
+                raise ValueError(
+                    "Invalid aggregation declaration (two many keys): got <%s>"
+                    % type_or_agg
+                )
+            type_, body_ = type_or_agg.popitem()
+            body_ = body_.copy()
+            if children_aggs:
+                body_["aggs"] = children_aggs
+            return cls._get_dsl_class(type_)(**body_)
+        if type_or_agg is None:
+            # if type_or_agg is not provided, by default execute a terms aggregation
+            # _translate_agg("per_user")
+            return cls._get_dsl_class("terms")(field=name, **body)
+        raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
 
 
 class Root(AggNode):
@@ -233,9 +279,13 @@ class FieldOrScriptMetricAgg(MetricAgg):
 
     VALUE_ATTRS = None
 
-    def __init__(self, meta=None, **body):
-        self.field = body.get("field")
-        self.script = body.get("script")
+    def __init__(self, field=None, script=None, meta=None, **body):
+        self.field = field
+        self.script = script
+        if field is not None:
+            body['field'] = field
+        if script is not None:
+            body['script'] = script
         super(FieldOrScriptMetricAgg, self).__init__(meta=meta, **body)
 
 

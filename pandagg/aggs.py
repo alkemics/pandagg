@@ -11,7 +11,10 @@ from pandagg.node.aggs.bucket import (
     ReverseNested,
     Range,
     Missing,
+    MatchAll
 )
+
+from pandagg.node.aggs.composite import Composite
 
 from pandagg.node.aggs.metric import (
     Avg,
@@ -85,4 +88,6 @@ __all__ = [
     "BucketSelector",
     "BucketSort",
     "SerialDiff",
+    "MatchAll",
+    "Composite"
 ]

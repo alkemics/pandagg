@@ -117,7 +117,7 @@ class Aggs(Tree):
         # in aggs mode, do not move pointer
         self.insert_node(node=node, key=name, parent_id=insert_below)
         for child_name, child in _children_aggs.items():
-            child_node = self._translate_agg(child_name, child)
+            child_node = AggNode.deserialize_agg(child_name, child)
             self._insert_agg(
                 name=child_name, node=child_node, insert_below=node.identifier
             )
@@ -139,77 +139,6 @@ class Aggs(Tree):
             return False
         return True
 
-    @property
-    def deepest_linear_bucket_agg(self):
-        """
-        Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
-        neither has siblings, nor has an ancestor with siblings.
-        """
-        if len(self._nodes_map) <= 1:
-            return self.root
-        last_bucket_agg_id = self.root
-        children = [
-            c
-            for k, c in self.children(last_bucket_agg_id)
-            if self._is_eligible_grouping_node(c.identifier)
-        ]
-        while len(children) == 1:
-            last_agg_node = children[0]
-            if not self._is_eligible_grouping_node(last_agg_node.identifier):
-                break
-            last_bucket_agg_id = last_agg_node.identifier
-            children = [
-                c
-                for k, c in self.children(last_bucket_agg_id)
-                if self._is_eligible_grouping_node(c.identifier)
-            ]
-        return last_bucket_agg_id
-
-    def _validate_aggs_parent_id(self, pid):
-        """
-        If pid is not None, ensure that pid belongs to tree, and that it refers to a bucket aggregation.
-
-        If pid not provided:
-
-        - if previous groupby call, return deepest inserted node by last groupby call
-        - else return deepest bucket aggregation if there is no ambiguity (linear aggregations).
-
-        KO: non-ambiguous::
-            A──> B──> C1
-                 └──> C2
-            raise error
-
-        OK: non-ambiguous (linear)::
-
-            A──> B──> C1
-            return C1
-
-        """
-        if pid is not None:
-            if not self._is_eligible_grouping_node(pid):
-                raise ValueError("Node id <%s> is not a bucket aggregation." % pid)
-            return pid
-        if len(self._nodes_map) <= 1:
-            return self.root
-
-        # previous groupby calls defined grouping pointer
-        if self._groupby_ptr is not None:
-            return self._groupby_ptr
-
-        eligible_nids = [
-            n.identifier
-            for _, n in self.list()
-            if self._is_eligible_grouping_node(n.identifier)
-        ]
-        if len(eligible_nids) == 0:
-            return self.root
-        if len(eligible_nids) > 1:
-            raise ValueError(
-                "Declaration is ambiguous, you must declare the node id under which these "
-                "aggregations should be placed."
-            )
-        return eligible_nids[0]
-
     def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
         r"""
         Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
@@ -223,11 +152,6 @@ class Aggs(Tree):
 
             A──> new──> B
                   └──> C
-
-        If `insert_above` = 'B'::
-
-            A──> new──> B
-            └──> C
 
         >>> Aggs()\
         >>> .groupby('per_user_id', 'terms', field='user_id')
@@ -257,7 +181,7 @@ class Aggs(Tree):
         new_agg = self.clone(with_nodes=True)
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
-        node = self._translate_agg(name, type_or_agg, **body)
+        node = AggNode.deserialize_agg(name, type_or_agg, **body)
         new_agg._insert_agg(
             name=name,
             node=node,
@@ -268,8 +192,7 @@ class Aggs(Tree):
         return new_agg
 
     def aggs(self, aggs, insert_below=None, at_root=False):
-        r"""
-        Arrange passed aggregations "horizontally".
+        r"""Arrange passed aggregations "horizontally".
 
         Given the initial aggregation::
 
@@ -283,33 +206,8 @@ class Aggs(Tree):
             └──> new1
             └──> new2
 
-        Note: those will be placed under the `insert_below` aggregation clause id if provided, else under the deepest
-        linear bucket aggregation if there is no ambiguity:
-
-        OK::
-
-            A──> B ─> C ─> new
-
-        KO::
-
-            A──> B
-            └──> C
-
-        `args` accepts single occurrence or sequence of following formats:
-
-        * string (for terms agg concise declaration)
-        * regular Elasticsearch dict syntax
-        * AggNode instance (for instance Terms, Filters etc)
-
-
-        :Keyword Arguments:
-            * *insert_below* (``string``) --
-              Parent aggregation name under which these aggregations should be placed
-            * *at_root* (``string``) --
-              Insert aggregations at root of aggregation query
-
-            * remaining kwargs:
-              Used as body in aggregation
+        Note: those will be placed under the `insert_below` aggregation clause id if provided, else under the last
+        group by pointer.
 
         :rtype: pandagg.aggs.Aggs
         """
@@ -324,79 +222,22 @@ class Aggs(Tree):
             insert_below = self.root
         elif not insert_below:
             # parent based on last groupby pointer
-            if self._groupby_ptr:
-                insert_below = self._groupby_ptr
-            else:
-                insert_below = self.deepest_linear_bucket_agg
+            insert_below = self._groupby_ptr
         if isinstance(aggs, Aggs):
             self.merge(aggs, nid=insert_below)
             self._groupby_ptr = self.root
         elif isinstance(aggs, dict):
             for agg_name, agg_body in aggs.items():
-                node = self._translate_agg(agg_name, agg_body)
+                node = AggNode.deserialize_agg(agg_name, agg_body)
                 self._insert_agg(name=agg_name, node=node, insert_below=insert_below)
         elif aggs is not None:
             raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
 
-    @classmethod
-    def _translate_agg(cls, name, type_or_agg=None, **body):
-        """Accept multiple syntaxes, return a AggNode.
-        :param type_or_agg:
-        :param body:
-        :return: AggNode
-        """
-        if isinstance(type_or_agg, text_type):
-            # _translate_agg("per_user", "terms", field="user")
-            return cls.get_node_dsl_class(type_or_agg)(**body)
-        if isinstance(type_or_agg, AggNode):
-            # _translate_agg("per_user", Terms(field='user'))
-            if body:
-                raise ValueError(
-                    'Body cannot be added using "AggNode" declaration, got %s.' % body
-                )
-            return type_or_agg
-        if isinstance(type_or_agg, dict):
-            # _translate_agg("per_user", {"terms": {"field": "user"}})
-            if body:
-                raise ValueError(
-                    'Body cannot be added using "dict" agg declaration, got %s.' % body
-                )
-            type_or_agg = type_or_agg.copy()
-            children_aggs = (
-                type_or_agg.pop("aggs", None)
-                or type_or_agg.pop("aggregations", None)
-                or {}
-            )
-            if len(type_or_agg) != 1:
-                raise ValueError(
-                    "Invalid aggregation declaration (two many keys): got <%s>"
-                    % type_or_agg
-                )
-            type_, body_ = type_or_agg.popitem()
-            body_ = body_.copy()
-            if children_aggs:
-                body_["aggs"] = children_aggs
-            return cls.get_node_dsl_class(type_)(**body_)
-        if type_or_agg is None:
-            # if type_or_agg is not provided, by default execute a terms aggregation
-            # _translate_agg("per_user")
-            return cls.get_node_dsl_class("terms")(field=name, **body)
-        raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
-
     def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
-        """
-
-        :param name:
-        :param type_or_agg:
-        :param insert_below:
-        :param at_root:
-        :param body:
-        :return:
-        """
         new_agg = self.clone(with_nodes=True)
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
-        node = self._translate_agg(name, type_or_agg, **body)
+        node = AggNode.deserialize_agg(name, type_or_agg, **body)
         new_agg._insert_agg(
             name=name, node=node, insert_below=insert_below, at_root=at_root
         )
@@ -511,6 +352,11 @@ class Aggs(Tree):
                 )
                 parent_id = nested_node.identifier
         super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
+
+    def apply_reverse_nested(self, nid=None):
+        for k, leaf in self.leaves(nid):
+            if isinstance(leaf, BucketAggNode) and self.applied_nested_path_at_node(leaf.identifier):
+                self.add_node(ReverseNested(), insert_below=leaf.identifier, key='reverse_nested_%s' % leaf.identifier)
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)
