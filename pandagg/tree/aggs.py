@@ -12,7 +12,7 @@ from future.utils import python_2_unicode_compatible
 from pandagg.tree._tree import Tree
 from pandagg.tree.mapping import _mapping
 
-from pandagg.node.aggs.abstract import BucketAggNode, AggNode, Root
+from pandagg.node.aggs.abstract import BucketAggNode, AggNode, Root, A
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
 
@@ -117,7 +117,7 @@ class Aggs(Tree):
         # in aggs mode, do not move pointer
         self.insert_node(node=node, key=name, parent_id=insert_below)
         for child_name, child in _children_aggs.items():
-            child_node = AggNode.deserialize_agg(child_name, child)
+            child_node = A(child_name, child)
             self._insert_agg(
                 name=child_name, node=child_node, insert_below=node.identifier
             )
@@ -171,7 +171,7 @@ class Aggs(Tree):
         new_agg = self.clone(with_nodes=True)
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
-        node = AggNode.deserialize_agg(name, type_or_agg, **body)
+        node = A(name, type_or_agg, **body)
         new_agg._insert_agg(
             name=name,
             node=node,
@@ -218,7 +218,7 @@ class Aggs(Tree):
             self._groupby_ptr = self.root
         elif isinstance(aggs, dict):
             for agg_name, agg_body in aggs.items():
-                node = AggNode.deserialize_agg(agg_name, agg_body)
+                node = A(agg_name, agg_body)
                 self._insert_agg(name=agg_name, node=node, insert_below=insert_below)
         elif aggs is not None:
             raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
@@ -227,7 +227,7 @@ class Aggs(Tree):
         new_agg = self.clone(with_nodes=True)
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
-        node = AggNode.deserialize_agg(name, type_or_agg, **body)
+        node = A(name, type_or_agg, **body)
         new_agg._insert_agg(
             name=name, node=node, insert_below=insert_below, at_root=at_root
         )
