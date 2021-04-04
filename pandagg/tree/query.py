@@ -4,12 +4,12 @@ from __future__ import unicode_literals
 
 import json
 
-from future.utils import python_2_unicode_compatible, text_type
+from future.utils import python_2_unicode_compatible
 from builtins import str as text
 
 from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
-from pandagg.node.query.abstract import QueryClause, LeafQueryClause
+from pandagg.node.query.abstract import QueryClause, LeafQueryClause, Q
 from pandagg.node.query.compound import CompoundClause, Bool
 from pandagg.node.query.joining import Nested
 
@@ -57,20 +57,8 @@ class Query(Tree):
         """
         Combination of query clauses.
 
-        Mapping declaration is optional, but doing so validates query validity and automatically inserts nested clauses
-        when necessary.
+        Mapping declaration is optional, but doing so validates query consistency.
 
-        :Keyword Arguments:
-            * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
-              Mapping of requested indice(s). Providing it will add validation features, and add required nested
-              clauses if missing.
-
-            * *nested_autocorrect* (``bool``) --
-              In case of missing nested clauses in query, if True, automatically add missing nested clauses, else raise
-              error.
-
-            * remaining kwargs:
-              Used as body in query clauses.
         :param q: optional, query (dict, or Query instance)
         :param mapping: ``dict`` or ``pandagg.tree.mapping.Mapping``
         Mapping of requested indice(s). Providing it will add validation features.
@@ -127,40 +115,10 @@ class Query(Tree):
         return param_node.identifier
 
     @classmethod
-    def _translate_query(cls, type_or_query=None, **body):
-        """Accept multiple syntaxes, return a QueryClause node.
-        :param type_or_query:
-        :param body:
-        :return: QueryClause
-        """
-        if isinstance(type_or_query, QueryClause):
-            if body:
-                raise ValueError(
-                    'Body cannot be added using "QueryClause" declaration, got %s.'
-                    % body
-                )
-            return type_or_query
+    def _q(cls, type_or_query, **body):
         if isinstance(type_or_query, Query):
             type_or_query = type_or_query.to_dict()
-        if isinstance(type_or_query, dict):
-            if body:
-                raise ValueError(
-                    'Body cannot be added using "dict" query clause declaration, got %s.'
-                    % body
-                )
-            type_or_query = type_or_query.copy()
-            # {"term": {"some_field": 1}}
-            # {"bool": {"filter": [{"term": {"some_field": 1}}]}}
-            if len(type_or_query) != 1:
-                raise ValueError(
-                    "Invalid query clause declaration (two many keys): got <%s>"
-                    % type_or_query
-                )
-            type_, body_ = type_or_query.popitem()
-            return cls.get_node_dsl_class(type_)(**body_)
-        if isinstance(type_or_query, text_type):
-            return cls.get_node_dsl_class(type_or_query)(**body)
-        raise ValueError('"type_or_query" must be among "dict", "AggNode", "str"')
+        return Q(type_or_query, **body)
 
     def _insert_query_at(
         self, node, mode, on=None, insert_below=None, compound_param=None
@@ -465,7 +423,7 @@ class Query(Tree):
 
         """
         q = self.clone(with_nodes=True)
-        node = self._translate_query(type_or_query, **body)
+        node = self._q(type_or_query, **body)
         q._insert_query_at(
             node,
             mode=mode,
@@ -616,7 +574,7 @@ class Query(Tree):
         **body
     ):
         q = self.clone(with_nodes=True)
-        node = self._translate_query(type_or_query, **body)
+        node = self._q(type_or_query, **body)
         compound_body = compound_body or {}
         compound_body[compound_param_key] = node
         compound_node = self.get_node_dsl_class(compound_key)(**compound_body)
