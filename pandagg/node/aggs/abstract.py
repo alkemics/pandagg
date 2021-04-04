@@ -139,9 +139,9 @@ class AggNode(Node):
                 )
             type_or_agg = type_or_agg.copy()
             children_aggs = (
-                    type_or_agg.pop("aggs", None)
-                    or type_or_agg.pop("aggregations", None)
-                    or {}
+                type_or_agg.pop("aggs", None)
+                or type_or_agg.pop("aggregations", None)
+                or {}
             )
             if len(type_or_agg) != 1:
                 raise ValueError(
@@ -283,9 +283,9 @@ class FieldOrScriptMetricAgg(MetricAgg):
         self.field = field
         self.script = script
         if field is not None:
-            body['field'] = field
+            body["field"] = field
         if script is not None:
-            body['script'] = script
+            body["script"] = script
         super(FieldOrScriptMetricAgg, self).__init__(meta=meta, **body)
 
 

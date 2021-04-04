@@ -345,8 +345,14 @@ class Aggs(Tree):
 
     def apply_reverse_nested(self, nid=None):
         for k, leaf in self.leaves(nid):
-            if isinstance(leaf, BucketAggNode) and self.applied_nested_path_at_node(leaf.identifier):
-                self.add_node(ReverseNested(), insert_below=leaf.identifier, key='reverse_nested_%s' % leaf.identifier)
+            if isinstance(leaf, BucketAggNode) and self.applied_nested_path_at_node(
+                leaf.identifier
+            ):
+                self.add_node(
+                    ReverseNested(),
+                    insert_below=leaf.identifier,
+                    key="reverse_nested_%s" % leaf.identifier,
+                )
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)

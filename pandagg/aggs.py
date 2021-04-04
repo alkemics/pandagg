@@ -9,7 +9,7 @@ from pandagg.node.aggs.bucket import (
     ReverseNested,
     Range,
     Missing,
-    MatchAll
+    MatchAll,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -89,5 +89,5 @@ __all__ = [
     "BucketSort",
     "SerialDiff",
     "MatchAll",
-    "Composite"
+    "Composite",
 ]

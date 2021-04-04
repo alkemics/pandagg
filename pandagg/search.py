@@ -10,7 +10,7 @@ from pandagg.connections import get_connection
 from pandagg.query import Bool
 from pandagg.response import Response
 from pandagg.tree.mapping import _mapping
-from pandagg.tree.query.abstract import Query, ADD
+from pandagg.tree.query import Query, ADD
 from pandagg.tree.aggs import Aggs
 from pandagg.utils import DSLMixin
 

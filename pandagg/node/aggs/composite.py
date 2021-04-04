@@ -1,9 +1,7 @@
-
 from .abstract import BucketAggNode
 
 
 class Composite(BucketAggNode):
-
     def __init__(self, sources, size=None, after_key=None, meta=None, **body):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
         :param sources:
@@ -12,20 +10,19 @@ class Composite(BucketAggNode):
         :param meta:
         :param body:
         """
-        identifier = body.pop("identifier", None)
         self._sources = sources
         self._size = size
         self._after_key = after_key
         self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
         if size is not None:
-            body['size'] = size
+            body["size"] = size
         if after_key is not None:
-            body['after_key'] = after_key
-        super(Composite, self).__init__(meta=meta, sources=sources **body)
+            body["after_key"] = after_key
+        super(Composite, self).__init__(meta=meta, sources=sources, **body)
 
     def extract_buckets(self, response_value):
         for bucket in response_value["buckets"]:
-            yield bucket['key'], bucket
+            yield bucket["key"], bucket
 
     def get_filter(self, key):
         """In composite aggregation, key is a map, source name -> value"""
@@ -41,4 +38,4 @@ class Composite(BucketAggNode):
             conditions.append(agg_instance.get_filter(key=key[name]))
         if not conditions:
             return
-        return {'bool': {'filter': conditions}}
+        return {"bool": {"filter": conditions}}

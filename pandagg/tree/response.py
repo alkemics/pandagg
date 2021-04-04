@@ -9,7 +9,7 @@ from pandagg.node.query.joining import Nested
 from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket, BucketNode
-from pandagg.tree.query.abstract import Query
+from pandagg.tree.query import Query
 
 
 class AggsResponseTree(Tree):
