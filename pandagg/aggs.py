@@ -1,5 +1,3 @@
-from pandagg.tree.aggs.aggs import Aggs
-
 from pandagg.node.aggs.bucket import (
     Terms,
     Filters,
@@ -48,6 +46,8 @@ from pandagg.node.aggs.pipeline import (
     BucketSort,
     SerialDiff,
 )
+
+from pandagg.tree.aggs import Aggs
 
 __all__ = [
     "Aggs",

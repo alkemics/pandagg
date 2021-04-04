@@ -2,7 +2,7 @@ from collections import OrderedDict
 from unittest import TestCase
 from mock import patch
 
-from pandagg.tree.aggs.aggs import Aggs
+from pandagg.tree.aggs import Aggs
 from pandagg.tree.response import AggsResponseTree
 
 from tests.testing_samples.mapping_example import MAPPING

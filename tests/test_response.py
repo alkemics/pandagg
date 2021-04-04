@@ -7,7 +7,7 @@ import pandas as pd
 from pandagg.search import Search
 from pandagg.tree.response import AggsResponseTree
 from pandagg.response import Response, Hits, Hit, Aggregations
-from pandagg.tree.aggs.aggs import Aggs
+from pandagg.tree.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
 from pandagg.utils import ordered

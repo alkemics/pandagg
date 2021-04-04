@@ -140,7 +140,7 @@ class Aggs(Tree):
         return True
 
     def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
-        r"""
+        """
         Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
 
         Given the initial aggregation::
@@ -165,16 +165,6 @@ class Aggs(Tree):
         >>> Aggs()\
         >>> .groupby('per_user_id', Terms(field="user_id"))
         {"per_user_id":{"terms":{"field":"user_id"}}}
-
-        Accepted declarations for multiple aggregations:
-
-        * *insert_below* (``string``) --
-          Parent aggregation name under which these aggregations should be placed
-        * *at_root* (``string``) --
-          Insert aggregations at root of aggregation query
-
-        * remaining kwargs:
-          Used as body in aggregation
 
         :rtype: pandagg.aggs.Aggs
         """
