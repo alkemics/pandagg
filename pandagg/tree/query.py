@@ -49,28 +49,33 @@ sub_insertion = Substitution(
 
 @python_2_unicode_compatible
 class Query(Tree):
-    r"""Combination of query clauses.
-
-    Mapping declaration is optional, but doing so validates query validity and automatically inserts nested clauses
-    when necessary.
-
-    :Keyword Arguments:
-        * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
-          Mapping of requested indice(s). Providing it will add validation features, and add required nested
-          clauses if missing.
-
-        * *nested_autocorrect* (``bool``) --
-          In case of missing nested clauses in query, if True, automatically add missing nested clauses, else raise
-          error.
-
-        * remaining kwargs:
-          Used as body in query clauses.
-    """
 
     KEY = None
     node_class = QueryClause
 
     def __init__(self, q=None, mapping=None, nested_autocorrect=False):
+        """
+        Combination of query clauses.
+
+        Mapping declaration is optional, but doing so validates query validity and automatically inserts nested clauses
+        when necessary.
+
+        :Keyword Arguments:
+            * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
+              Mapping of requested indice(s). Providing it will add validation features, and add required nested
+              clauses if missing.
+
+            * *nested_autocorrect* (``bool``) --
+              In case of missing nested clauses in query, if True, automatically add missing nested clauses, else raise
+              error.
+
+            * remaining kwargs:
+              Used as body in query clauses.
+        :param q: optional, query (dict, or Query instance)
+        :param mapping: ``dict`` or ``pandagg.tree.mapping.Mapping``
+        Mapping of requested indice(s). Providing it will add validation features.
+        :param nested_autocorrect: add required nested clauses if missing.
+        """
         self.mapping = _mapping(mapping)
         self.nested_autocorrect = nested_autocorrect
         super(Query, self).__init__()
