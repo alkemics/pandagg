@@ -1,5 +1,3 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 name: Python 3 Tests
 
@@ -10,15 +8,40 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  static_analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - uses: actions/checkout@v2
+    - name: Lint - flake8
+      run: |
+        pip install flake8
+        # ignore "line break before binary operator", and "invalid escape sequence '\_'" useful for doc
+        flake8 --count --ignore=W503,W605 --show-source --statistics pandagg
+        # on tests, more laxist: allow "missing whitespace after ','" and "line too long"
+        flake8 --count --ignore=W503,W605,E231,E501 --show-source --statistics tests
+    - name: Format - black
+      run: |
+        pip install black
+        black --check .
 
+  run_tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8, 3.9]
     env:
       PYTHON: ${{ matrix.python-version }}
       OS: 'ubuntu-latest'
+    services:
+      elasticsearch:
+        image: elasticsearch:7.11.1
+        env:
+          discovery.type: single-node
+          ES_JAVA_OPTS: -Xms1g -Xmx1g
 
     steps:
     - uses: actions/checkout@v2
@@ -31,15 +54,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-test.txt
         python setup.py develop
-    - name: Lint with flake8
-      run: |
-        # ignore "line break before binary operator", and "invalid escape sequence '\_'" useful for doc
-        flake8 --count --ignore=W503,W605 --show-source --statistics pandagg
-        # on tests, more laxist: allow "missing whitespace after ','" and "line too long"
-        flake8 --count --ignore=W503,W605,E231,E501 --show-source --statistics tests
-    - name: Lint with black
-      run: |
-        black --check .
     - name: Test with pytest and generate coverage report
       run:
         pytest --cov=./pandagg --cov-report=xml
