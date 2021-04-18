@@ -902,11 +902,54 @@ A                                                             <terms, field="a">
     def test_grouped_by(self):
         a = Aggs().aggs(
             {
-                "root_agg": {
+                "some_agg": {
                     "terms": {"field": "some_field"},
-                    "aggs": {"below_agg": {"avg": {"field": "other_field"}}},
+                    "aggs": {"below_agg": {"terms": {"field": "other_field"}}},
                 }
             }
         )
         self.assertEqual(a._groupby_ptr, a.root)
-        a.grouped_by()
+        self.assertEqual(
+            a.agg("age_avg", "avg", field="age").to_dict(),
+            {
+                "some_agg": {
+                    "terms": {"field": "some_field"},
+                    "aggs": {"below_agg": {"terms": {"field": "other_field"}}},
+                },
+                "age_avg": {"avg": {"field": "age"}},
+            },
+        )
+
+        # select a specific agg
+        new_a = a.grouped_by("some_agg")
+        self.assertEqual(new_a._groupby_ptr, new_a.id_from_key("some_agg"))
+        self.assertEqual(
+            new_a.agg("age_avg", "avg", field="age").to_dict(),
+            {
+                "some_agg": {
+                    "terms": {"field": "some_field"},
+                    "aggs": {
+                        "below_agg": {"terms": {"field": "other_field"}},
+                        "age_avg": {"avg": {"field": "age"}},
+                    },
+                }
+            },
+        )
+
+        # deepest
+        last_a = a.grouped_by(deepest=True)
+        self.assertEqual(last_a._groupby_ptr, new_a.id_from_key("below_agg"))
+        self.assertEqual(
+            last_a.agg("age_avg", "avg", field="age").to_dict(),
+            {
+                "some_agg": {
+                    "terms": {"field": "some_field"},
+                    "aggs": {
+                        "below_agg": {
+                            "terms": {"field": "other_field"},
+                            "aggs": {"age_avg": {"avg": {"field": "age"}}},
+                        }
+                    },
+                }
+            },
+        )
