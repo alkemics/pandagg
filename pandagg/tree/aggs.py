@@ -12,43 +12,41 @@ from future.utils import python_2_unicode_compatible
 from pandagg.tree._tree import Tree
 from pandagg.tree.mapping import _mapping
 
-from pandagg.node.aggs.abstract import BucketAggNode, AggNode, Root, A
+from pandagg.node.aggs.abstract import BucketAggNode, AggClause, Root, A
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
 
 
 @python_2_unicode_compatible
 class Aggs(Tree):
-    r"""
+    """
     Combination of aggregation clauses. This class provides handful methods to build an aggregation (see
     :func:`~pandagg.tree.aggs.Aggs.aggs` and :func:`~pandagg.tree.aggs.Aggs.groupby`), and is used as well
-    to parse aggregations response in handy formats.
+    to parse aggregations response in easy to manipulate formats.
 
     Mapping declaration is optional, but doing so validates aggregation validity and automatically handles missing
     nested clauses.
 
-    All following syntaxes are identical:
+    Accept following syntaxes:
 
-    From a dict:
+    from a dict:
     >>> Aggs({"per_user": {"terms": {"field": "user"}}})
 
-    from an other Aggregation (simply a copy):
+    from an other Aggs instance:
     >>> Aggs(Aggs({"per_user": {"terms": {"field": "user"}}}))
 
-    :Keyword Arguments:
-        * *mapping* (``dict`` or ``pandagg.tree.mapping.Mapping``) --
-          Mapping of requested indice(s). Providing it will validate aggregations validity, and add required nested
-          clauses if missing.
+    dict with AggClause instances as values:
+    >>> from pandagg.aggs import Terms, Avg
+    >>> Aggs({'per_user': Terms(field='user')})
 
-        * *nested_autocorrect* (``bool``) --
-          In case of missing nested clauses in aggregation, if True, automatically add missing nested clauses, else
-          raise error.
-
-        * remaining kwargs:
-          Used as body in aggregation
+    :param mapping: ``dict`` or ``pandagg.tree.mapping.Mapping`` Mapping of requested indice(s). If provided, will
+    check aggregations validity.
+    :param nested_autocorrect: ``bool`` In case of missing nested clauses in aggregation, if True, automatically
+    add missing nested clauses, else raise error. Ignored if mapping is not provided.
+    :param _groupby_ptr: ``str`` identifier of aggregation clause used as grouping element (used by `clone` method).
     """
 
-    node_class = AggNode
+    node_class = AggClause
 
     def __init__(
         self, aggs=None, mapping=None, nested_autocorrect=None, _groupby_ptr=None
@@ -60,6 +58,7 @@ class Aggs(Tree):
         # the root node of an aggregation is just the initial empty dict
         root_node = Root()
         self.insert_node(root_node)
+        # identifier of clause used for groupby
         self._groupby_ptr = self.root if _groupby_ptr is None else _groupby_ptr
 
         if aggs is not None:
@@ -70,7 +69,9 @@ class Aggs(Tree):
 
     __bool__ = __nonzero__
 
-    def _insert_agg(self, name, node, insert_below=None, at_root=None, groupby=False):
+    def _insert_agg(
+        self, name, node, insert_below_id=None, at_root=None, groupby_id=False
+    ):
         """
         Using flat declaration:
         >>> Aggs().agg("per_user", "terms", field="user")
@@ -90,24 +91,26 @@ class Aggs(Tree):
         - name="per_user", type_or_agg=Terms(field='user', aggs={"avg_spent_time": Avg(field="spent_time")})
         - name="per_user", type_or_agg={"field": "user", aggs: {"avg_spent_time": {"avg": {"field": "spent_time"}}}}
         """
-        if insert_below and at_root:
+        if insert_below_id and at_root:
             raise ValueError('Must define at most one of "insert_below" or "at_root".')
         if at_root:
-            insert_below = self.root
+            insert_below_id = self.root
         # based on last groupby pointer
-        if insert_below is None:
-            insert_below = self._groupby_ptr
+        if insert_below_id is None:
+            insert_below_id = self._groupby_ptr
 
         if not isinstance(name, text_type):
             raise ValueError('Agg "name" must be a str.')
 
         _children_aggs = node._children or {}
 
-        if groupby:
+        if groupby_id:
             if _children_aggs:
                 raise ValueError("Cannot group by multiple aggs at once.")
-            subs = [self.drop_subtree(cid) for cid in self.children_ids(insert_below)]
-            self.insert(node, key=name, parent_id=insert_below)
+            subs = [
+                self.drop_subtree(cid) for cid in self.children_ids(insert_below_id)
+            ]
+            self.insert(node, key=name, parent_id=insert_below_id)
             for sub_key, sub_tree in subs:
                 self.insert(sub_tree, key=sub_key, parent_id=node.identifier)
             # moving pointer when using groupby
@@ -115,11 +118,11 @@ class Aggs(Tree):
             return
 
         # in aggs mode, do not move pointer
-        self.insert_node(node=node, key=name, parent_id=insert_below)
+        self.insert_node(node=node, key=name, parent_id=insert_below_id)
         for child_name, child in _children_aggs.items():
             child_node = A(child_name, child)
             self._insert_agg(
-                name=child_name, node=child_node, insert_below=node.identifier
+                name=child_name, node=child_node, insert_below_id=node.identifier
             )
 
     def _clone_init(self, deep=False):
@@ -130,7 +133,9 @@ class Aggs(Tree):
         )
 
     def _is_eligible_grouping_node(self, nid):
-        """Return whether node can be used as grouping node."""
+        """
+        Return whether node can be used as grouping node.
+        """
         _, node = self.get(nid)
         if not isinstance(node, BucketAggNode):
             return False
@@ -142,8 +147,8 @@ class Aggs(Tree):
     @property
     def _deepest_linear_bucket_agg(self):
         """
-        Return deepest bucket aggregation node (pandagg.nodes.abstract.BucketAggNode) of that aggregation that
-        neither has siblings, nor has an ancestor with siblings.
+        Return deepest bucket aggregation node identifier (pandagg.nodes.abstract.BucketAggNode) of that aggregation
+        that neither has siblings, nor has an ancestor with siblings.
         """
         if len(self._nodes_map) <= 1:
             return self.root
@@ -166,7 +171,8 @@ class Aggs(Tree):
         return last_bucket_agg_id
 
     def grouped_by(self, agg_name=None, deepest=False):
-        """Define which aggregation will be used as current grouping pointer.
+        """
+        Define which aggregation will be used as grouping pointer.
 
         Either provide an aggregation name, either specify 'deepest=True' to consider deepest linear eligible
         aggregation node as pointer.
@@ -175,11 +181,16 @@ class Aggs(Tree):
             raise ValueError('Should provide only one of "agg_name" or "deepest".')
         new_agg = self.clone()
         if agg_name:
-            if not new_agg._is_eligible_grouping_node(agg_name):
+            nid = new_agg.id_from_key(agg_name)
+            if not new_agg._is_eligible_grouping_node(nid):
                 raise ValueError("Cannot group by <%s> aggregation" % agg_name)
-            new_agg._groupby_ptr = agg_name
+            new_agg._groupby_ptr = nid
             return new_agg
-        new_agg._groupby_ptr = new_agg._deepest_linear_bucket_agg
+        if deepest:
+            new_agg._groupby_ptr = new_agg._deepest_linear_bucket_agg
+            return new_agg
+        # no argument was provided, reset pointer to root
+        new_agg._groupby_ptr = new_agg.root
         return new_agg
 
     def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
@@ -212,67 +223,98 @@ class Aggs(Tree):
         :rtype: pandagg.aggs.Aggs
         """
         new_agg = self.clone()
-        if insert_below is not None:
-            insert_below = new_agg.id_from_key(insert_below)
+        insert_below_id = (
+            None if insert_below is None else new_agg.id_from_key(insert_below)
+        )
         node = A(name, type_or_agg, **body)
         new_agg._insert_agg(
             name=name,
             node=node,
-            insert_below=insert_below,
+            insert_below_id=insert_below_id,
             at_root=at_root,
-            groupby=True,
+            groupby_id=True,
         )
         return new_agg
 
     def aggs(self, aggs, insert_below=None, at_root=False):
-        r"""Arrange passed aggregations "horizontally".
+        """
+        Insert provided aggs in copy of initial Aggs.
 
-        Given the initial aggregation::
+        Accept following syntaxes for provided aggs:
 
-            A──> B
-            └──> C
+        python dict format:
+        >>> Aggs().aggs({'some_agg': {'terms': {'field': 'some_field'}}, 'other_agg': {'avg': {'field': 'age'}}})
 
-        If passing multiple aggregations with `insert_below` = 'A'::
+        Aggs instance:
+        >>> Aggs().aggs(Aggs({'some_agg': {'terms': {'field': 'some_field'}}, 'other_agg': {'avg': {'field': 'age'}}}))
 
-            A──> B
-            └──> C
-            └──> new1
-            └──> new2
+        dict with Agg clauses values:
+        >>> from pandagg.aggs import Terms, Avg
+        >>> Aggs().aggs({'some_agg': Terms(field='some_field'), 'other_agg': Avg(field='age')})
 
-        Note: those will be placed under the `insert_below` aggregation clause id if provided, else under the last
-        group by pointer.
-
-        :rtype: pandagg.aggs.Aggs
+        :param aggs: aggregations to insert into existing aggregation
+        :param insert_below: name of aggregation below which provided aggs should be inserted
+        :param at_root: if True, aggregation is inserted at root
+        :return: copy of initial Aggs with provided aggs inserted
         """
         new_agg = self.clone(with_nodes=True)
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
-        new_agg._insert_aggs(aggs=aggs, insert_below=insert_below, at_root=at_root)
+        new_agg._insert_aggs(aggs=aggs, insert_below_id=insert_below, at_root=at_root)
         return new_agg
 
-    def _insert_aggs(self, aggs, insert_below=None, at_root=False):
+    def _insert_aggs(self, aggs, insert_below_id=None, at_root=False):
+        """Insert aggs clauses in current Aggs (mutate current instance)"""
         if at_root:
-            insert_below = self.root
-        elif not insert_below:
+            insert_below_id = self.root
+        elif not insert_below_id:
             # parent based on last groupby pointer
-            insert_below = self._groupby_ptr
+            insert_below_id = self._groupby_ptr
+
+        if aggs is None:
+            return
         if isinstance(aggs, Aggs):
-            self.merge(aggs, nid=insert_below)
+            self.merge(aggs, nid=insert_below_id)
             self._groupby_ptr = self.root
-        elif isinstance(aggs, dict):
+            return
+        if isinstance(aggs, dict):
             for agg_name, agg_body in aggs.items():
                 node = A(agg_name, agg_body)
-                self._insert_agg(name=agg_name, node=node, insert_below=insert_below)
-        elif aggs is not None:
-            raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
+                self._insert_agg(
+                    name=agg_name, node=node, insert_below_id=insert_below_id
+                )
+            return
+        raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
 
     def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
+        """
+        Insert provided agg clause in copy of initial Aggs.
+
+        Accept following syntaxes for type_or_agg argument:
+
+        string, with body provided in kwargs
+        >>> Aggs().agg(name='some_agg', type_or_agg='terms', field='some_field')
+
+        python dict format:
+        >>> Aggs().agg(name='some_agg', type_or_agg={'terms': {'field': 'some_field'})
+
+        AggClause instance:
+        >>> from pandagg.aggs import Terms
+        >>> Aggs().agg(name='some_agg', type_or_agg=Terms(field='some_field'))
+
+        :param name: inserted agg clause name
+        :param type_or_agg: either agg type (str), or agg clause of dict format, or AggClause instance
+        :param insert_below: name of aggregation below which provided aggs should be inserted
+        :param at_root: if True, aggregation is inserted at root
+        :param body: aggregation clause body when providing string type_of_agg (remaining kwargs)
+        :return: copy of initial Aggs with provided agg inserted
+        """
         new_agg = self.clone(with_nodes=True)
         if insert_below is not None:
             insert_below = new_agg.id_from_key(insert_below)
         node = A(name, type_or_agg, **body)
         new_agg._insert_agg(
-            name=name, node=node, insert_below=insert_below, at_root=at_root
+            name=name, node=node, insert_below_id=insert_below, at_root=at_root
         )
         return new_agg
 
@@ -305,7 +347,9 @@ class Aggs(Tree):
         return None
 
     def _insert_node_below(self, node, parent_id, key, by_path):
-        """If mapping is provided, nested aggregations are automatically applied."""
+        """
+        If mapping is provided, nested aggregations are automatically applied.
+        """
         # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
         if (
             isinstance(node, Nested)

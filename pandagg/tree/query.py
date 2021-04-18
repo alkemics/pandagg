@@ -62,7 +62,7 @@ class Query(Tree):
         :param q: optional, query (dict, or Query instance)
         :param mapping: ``dict`` or ``pandagg.tree.mapping.Mapping``
         Mapping of requested indice(s). Providing it will add validation features.
-        :param nested_autocorrect: add required nested clauses if missing.
+        :param nested_autocorrect: add required nested clauses if missing. Ignored if mapping is not provided.
         """
         self.mapping = _mapping(mapping)
         self.nested_autocorrect = nested_autocorrect

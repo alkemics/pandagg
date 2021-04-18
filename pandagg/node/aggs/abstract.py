@@ -18,8 +18,8 @@ def A(name, type_or_agg=None, **body):
     """
     if isinstance(type_or_agg, text_type):
         # _translate_agg("per_user", "terms", field="user")
-        return AggNode._get_dsl_class(type_or_agg)(**body)
-    if isinstance(type_or_agg, AggNode):
+        return AggClause._get_dsl_class(type_or_agg)(**body)
+    if isinstance(type_or_agg, AggClause):
         # _translate_agg("per_user", Terms(field='user'))
         if body:
             raise ValueError(
@@ -45,15 +45,15 @@ def A(name, type_or_agg=None, **body):
         body_ = body_.copy()
         if children_aggs:
             body_["aggs"] = children_aggs
-        return AggNode._get_dsl_class(type_)(**body_)
+        return AggClause._get_dsl_class(type_)(**body_)
     if type_or_agg is None:
         # if type_or_agg is not provided, by default execute a terms aggregation
         # _translate_agg("per_user")
-        return AggNode._get_dsl_class("terms")(field=name, **body)
+        return AggClause._get_dsl_class("terms")(field=name, **body)
     raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
 
 
-class AggNode(Node):
+class AggClause(Node):
     """Wrapper around elasticsearch aggregation concept.
     https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
 
@@ -73,7 +73,7 @@ class AggNode(Node):
         self.body = body
         self.meta = meta
         self._children = {}
-        super(AggNode, self).__init__(identifier=identifier)
+        super(AggClause, self).__init__(identifier=identifier)
 
     def line_repr(self, depth, **kwargs):
         # root node
@@ -152,13 +152,13 @@ class AggNode(Node):
         )
 
     def __eq__(self, other):
-        if isinstance(other, AggNode):
+        if isinstance(other, AggClause):
             return other.to_dict() == self.to_dict()
         # make sure we still equal to a dict with the same data
         return other == self.to_dict()
 
 
-class Root(AggNode):
+class Root(AggClause):
     """Not a real aggregation. Just the initial empty dict."""
 
     KEY = "_root"
@@ -174,7 +174,7 @@ class Root(AggNode):
         return None
 
 
-class MetricAgg(AggNode):
+class MetricAgg(AggClause):
     """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
 
     VALUE_ATTRS = None
@@ -186,7 +186,7 @@ class MetricAgg(AggNode):
         return None
 
 
-class BucketAggNode(AggNode):
+class BucketAggNode(AggClause):
     """Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
     Each time, the extracted value is a 'doc_count'.
 
@@ -212,7 +212,7 @@ class BucketAggNode(AggNode):
         self.body = body
         self.meta = meta
         self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
-        super(AggNode, self).__init__(identifier=identifier)
+        super(AggClause, self).__init__(identifier=identifier)
 
     def extract_buckets(self, response_value):
         raise NotImplementedError()

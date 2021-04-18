@@ -898,3 +898,15 @@ A                                                             <terms, field="a">
         }
         agg2 = Aggs(node_hierarchy_2, mapping=MAPPING, nested_autocorrect=True)
         self.assertEqual(agg2.get_key(agg2._deepest_linear_bucket_agg), "week")
+
+    def test_grouped_by(self):
+        a = Aggs().aggs(
+            {
+                "root_agg": {
+                    "terms": {"field": "some_field"},
+                    "aggs": {"below_agg": {"avg": {"field": "other_field"}}},
+                }
+            }
+        )
+        self.assertEqual(a._groupby_ptr, a.root)
+        a.grouped_by()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.node.aggs.abstract import AggNode
+from pandagg.node.aggs.abstract import AggClause
 
 from pandagg.node.types import MAPPING_TYPES
 
@@ -13,7 +13,7 @@ def list_available_aggs_on_field(field_type):
     """
     return [
         agg_class
-        for agg_class in AggNode._classes.values()
+        for agg_class in AggClause._classes.values()
         if agg_class.valid_on_field_type(field_type)
     ]
 
