@@ -1,11 +1,11 @@
 from unittest import TestCase
 
-from pandagg.node.aggs.abstract import AggNode
+from pandagg.node.aggs.abstract import AggClause
 
 
 class AbstractAggNodesTestCase(TestCase):
     def test_abstract_agg_node(self):
-        class CustomAgg(AggNode):
+        class CustomAgg(AggClause):
             KEY = "custom_type"
             VALUE_ATTRS = ["bucket_value_path"]
             # would mean this agg can be applied only on boolean fields

@@ -260,11 +260,7 @@ class Aggregations:
                         return child_key, child_node
             return key, node
         # if use of groupby method in Aggs class, use groupby pointer
-        if self._aggs._groupby_ptr is not None:
-            return self._aggs.get(self._aggs._groupby_ptr)
-
-        id_ = self._aggs.deepest_linear_bucket_agg
-        return self._aggs.get(id_)
+        return self._aggs.get(self._aggs._groupby_ptr)
 
     def to_tabular(
         self,

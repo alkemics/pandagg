@@ -6,7 +6,43 @@ from __future__ import unicode_literals
 from builtins import str as text
 import json
 
+from six import text_type
+
 from pandagg.node._node import Node
+
+
+def Q(type_or_query=None, **body):
+    """Accept multiple syntaxes, return a QueryClause node.
+    :param type_or_query:
+    :param body:
+    :return: QueryClause
+    """
+    if isinstance(type_or_query, QueryClause):
+        if body:
+            raise ValueError(
+                'Body cannot be added using "QueryClause" declaration, got %s.' % body
+            )
+        return type_or_query
+
+    if isinstance(type_or_query, dict):
+        if body:
+            raise ValueError(
+                'Body cannot be added using "dict" query clause declaration, got %s.'
+                % body
+            )
+        type_or_query = type_or_query.copy()
+        # {"term": {"some_field": 1}}
+        # {"bool": {"filter": [{"term": {"some_field": 1}}]}}
+        if len(type_or_query) != 1:
+            raise ValueError(
+                "Invalid query clause declaration (two many keys): got <%s>"
+                % type_or_query
+            )
+        type_, body_ = type_or_query.popitem()
+        return QueryClause._get_dsl_class(type_)(**body_)
+    if isinstance(type_or_query, text_type):
+        return QueryClause._get_dsl_class(type_or_query)(**body)
+    raise ValueError('"type_or_query" must be among "dict", "AggNode", "str"')
 
 
 class QueryClause(Node):

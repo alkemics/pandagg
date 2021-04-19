@@ -32,15 +32,15 @@ class Filter(UniqueBucketAgg):
     KEY = "filter"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, filter=None, meta=None, **kwargs):
-        if (filter is not None) != (not kwargs):
+    def __init__(self, filter=None, meta=None, **body):
+        if (filter is not None) != (not body):
             raise ValueError(
-                'Filter aggregation requires exactly one of "filter" or "kwargs"'
+                'Filter aggregation requires exactly one of "filter" or "body"'
             )
         if filter:
             filter_ = filter.copy()
         else:
-            filter_ = kwargs.copy()
+            filter_ = body.copy()
         self.filter = filter_
         super(Filter, self).__init__(meta=meta, **filter_)
 
@@ -49,8 +49,8 @@ class Filter(UniqueBucketAgg):
 
 
 class MatchAll(Filter):
-    def __init__(self, meta=None):
-        super(MatchAll, self).__init__(filter={"match_all": {}}, meta=meta)
+    def __init__(self, meta=None, **body):
+        super(MatchAll, self).__init__(filter={"match_all": {}}, meta=meta, **body)
 
 
 class Nested(UniqueBucketAgg):

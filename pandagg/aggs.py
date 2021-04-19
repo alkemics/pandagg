@@ -1,5 +1,3 @@
-from pandagg.tree.aggs.aggs import Aggs
-
 from pandagg.node.aggs.bucket import (
     Terms,
     Filters,
@@ -11,7 +9,10 @@ from pandagg.node.aggs.bucket import (
     ReverseNested,
     Range,
     Missing,
+    MatchAll,
 )
+
+from pandagg.node.aggs.composite import Composite
 
 from pandagg.node.aggs.metric import (
     Avg,
@@ -45,6 +46,8 @@ from pandagg.node.aggs.pipeline import (
     BucketSort,
     SerialDiff,
 )
+
+from pandagg.tree.aggs import Aggs
 
 __all__ = [
     "Aggs",
@@ -85,4 +88,6 @@ __all__ = [
     "BucketSelector",
     "BucketSort",
     "SerialDiff",
+    "MatchAll",
+    "Composite",
 ]

@@ -1,4 +1,3 @@
-from pandagg.tree.query.abstract import Query
 from pandagg.node.query.shape import Shape
 from pandagg.node.query.term_level import (
     Exists,
@@ -42,6 +41,7 @@ from pandagg.node.query.specialized import (
     Wrapper,
 )
 from pandagg.node.query.specialized_compound import ScriptScore, PinnedQuery
+from pandagg.tree.query import Query
 
 __all__ = [
     "Query",

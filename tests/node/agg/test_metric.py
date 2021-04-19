@@ -12,10 +12,10 @@ class MetricAggNodesTestCase(TestCase):
 
         es_raw_response = {"some_attr_name": 345}
 
-        metric_agg = MyMetricAgg("name", field="my_field")
+        metric_agg = MyMetricAgg(field="my_field")
         self.assertEqual(metric_agg.field, "my_field")
 
-        buckets_iterator = MyMetricAgg("name", field="my_field").extract_buckets(
+        buckets_iterator = MyMetricAgg(field="my_field").extract_buckets(
             es_raw_response
         )
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))

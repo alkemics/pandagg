@@ -3,7 +3,7 @@
 
 from lighttree import TreeBasedObj
 
-from pandagg.tree.aggs.aggs import Aggs
+from pandagg.tree.aggs import Aggs
 
 
 class IResponse(TreeBasedObj):

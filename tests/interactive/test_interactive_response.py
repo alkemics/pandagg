@@ -1,7 +1,7 @@
 from mock import Mock, patch
 
 from pandagg import Search
-from pandagg.tree.aggs.aggs import Aggs
+from pandagg.tree.aggs import Aggs
 from pandagg.tree.response import AggsResponseTree
 from pandagg.interactive.response import IResponse
 from tests import PandaggTestCase
