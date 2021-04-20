@@ -1,5 +1,4 @@
 # copied from elasticsearch-dsl/connections.py
-from six import string_types
 
 from elasticsearch import Elasticsearch
 
@@ -77,7 +76,7 @@ class Connections(object):
         """
         # do not check isinstance(Elasticsearch) so that people can wrap their
         # clients
-        if not isinstance(alias, string_types):
+        if not isinstance(alias, str):
             return alias
 
         # connection already established

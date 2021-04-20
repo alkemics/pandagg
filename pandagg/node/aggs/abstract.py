@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from builtins import str as text
-from six import text_type
-
 import json
 
 from pandagg.node._node import Node
@@ -16,7 +12,7 @@ def A(name, type_or_agg=None, **body):
     :param body:
     :return: AggNode
     """
-    if isinstance(type_or_agg, text_type):
+    if isinstance(type_or_agg, str):
         # _translate_agg("per_user", "terms", field="user")
         return AggClause._get_dsl_class(type_or_agg)(**body)
     if isinstance(type_or_agg, AggClause):
@@ -79,7 +75,7 @@ class AggClause(Node):
         # root node
         if self.KEY is None:
             return "_", ""
-        repr_args = [text(self.KEY)]
+        repr_args = [str(self.KEY)]
         if self.body:
             repr_args.append(self._params_repr(self.body))
         unnamed = "<%s>" % ", ".join(repr_args)
@@ -89,7 +85,7 @@ class AggClause(Node):
     def _params_repr(params):
         params = params or {}
         return ", ".join(
-            "%s=%s" % (text(k), text(json.dumps(params[k], sort_keys=True)))
+            "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
             for k in sorted(params.keys())
         )
 
@@ -146,8 +142,8 @@ class AggClause(Node):
 
     def __str__(self):
         return "<{class_}, type={type}, body={body}>".format(
-            class_=text(self.__class__.__name__),
-            type=text(self.KEY),
+            class_=str(self.__class__.__name__),
+            type=str(self.KEY),
             body=json.dumps(self.body),
         )
 

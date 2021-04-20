@@ -3,7 +3,6 @@ import copy
 import json
 
 from elasticsearch.helpers import scan
-from future.utils import string_types
 from lighttree.exceptions import NotFoundNodeError
 
 from pandagg.connections import get_connection
@@ -63,7 +62,7 @@ class Request(object):
         else:
             indexes = []
             for i in index:
-                if isinstance(i, string_types):
+                if isinstance(i, str):
                     indexes.append(i)
                 elif isinstance(i, list):
                     indexes += i
@@ -467,7 +466,7 @@ class Search(DSLMixin, Request):
         """
         s = self._clone()
         for name in kwargs:
-            if isinstance(kwargs[name], string_types):
+            if isinstance(kwargs[name], str):
                 kwargs[name] = {"script": kwargs[name]}
         s._script_fields.update(kwargs)
         return s
@@ -543,7 +542,7 @@ class Search(DSLMixin, Request):
         s = self._clone()
         s._sort = []
         for k in keys:
-            if isinstance(k, string_types) and k.startswith("-"):
+            if isinstance(k, str) and k.startswith("-"):
                 if k[1:] == "_score":
                     raise ValueError("Sorting by `-_score` is not allowed.")
                 k = {k[1:]: {"order": "desc"}}

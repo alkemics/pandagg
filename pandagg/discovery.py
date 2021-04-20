@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from future.utils import iteritems, python_2_unicode_compatible
 from lighttree.interactive import Obj
 
 from pandagg.interactive.mappings import IMappings
@@ -15,7 +13,7 @@ def discover(using, index="*"):
     :param index: Comma-separated list or wildcard expression of index names used to limit the request.
     """
     indices = Indices()
-    for index_name, index_detail in iteritems(using.indices.get(index=index)):
+    for index_name, index_detail in using.indices.get(index=index).items():
         indices[index_name] = Index(
             client=using,
             name=index_name,
@@ -29,7 +27,6 @@ def discover(using, index="*"):
 # until Proper Index class is written
 
 
-@python_2_unicode_compatible
 class Index(object):
     def __init__(self, name, settings, mappings, aliases, client=None):
         super(Index, self).__init__()

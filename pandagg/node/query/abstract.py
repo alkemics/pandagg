@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from builtins import str as text
 import json
-
-from six import text_type
 
 from pandagg.node._node import Node
 
@@ -40,7 +35,7 @@ def Q(type_or_query=None, **body):
             )
         type_, body_ = type_or_query.popitem()
         return QueryClause._get_dsl_class(type_)(**body_)
-    if isinstance(type_or_query, text_type):
+    if isinstance(type_or_query, str):
         return QueryClause._get_dsl_class(type_or_query)(**body)
     raise ValueError('"type_or_query" must be among "dict", "AggNode", "str"')
 
@@ -62,7 +57,7 @@ class QueryClause(Node):
     def line_repr(self, depth, **kwargs):
         repr_args = []
         if self._named:
-            repr_args.append("_name=%s" % text(self.identifier))
+            repr_args.append("_name=%s" % str(self.identifier))
         if self.body:
             repr_args.append(self._params_repr(self.body))
         return self.KEY, ", ".join(repr_args)
@@ -71,7 +66,7 @@ class QueryClause(Node):
     def _params_repr(params):
         params = params or {}
         return ", ".join(
-            "%s=%s" % (text(k), text(json.dumps(params[k], sort_keys=True)))
+            "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
             for k in sorted(params.keys())
         )
 
@@ -91,9 +86,9 @@ class QueryClause(Node):
 
     def __str__(self):
         return "<{class_}, id={id}, type={type}, body={body}>".format(
-            class_=text(self.__class__.__name__),
-            type=text(self.KEY),
-            id=text(self.identifier),
+            class_=str(self.__class__.__name__),
+            type=str(self.KEY),
+            id=str(self.identifier),
             body=self.body,
         )
 
@@ -188,11 +183,11 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
 
     def line_repr(self, depth, **kwargs):
         if not self.inner_body:
-            return "", ", ".join([text(self.KEY), "field=%s" % text(self.field)])
+            return "", ", ".join([str(self.KEY), "field=%s" % str(self.field)])
         return (
             self.KEY,
             ", ".join(
-                ["field=%s" % text(self.field), self._params_repr(self.inner_body)]
+                ["field=%s" % str(self.field), self._params_repr(self.inner_body)]
             ),
         )
 
@@ -203,7 +198,7 @@ class MultiFieldsQueryClause(LeafQueryClause):
         super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
 
     def line_repr(self, depth, **kwargs):
-        return self.KEY, "fields=%s" % (list(map(text, self.fields)))
+        return self.KEY, "fields=%s" % (list(map(str, self.fields)))
 
 
 class ParentParameterClause(QueryClause):

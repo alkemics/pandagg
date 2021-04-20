@@ -3,8 +3,6 @@
 
 from collections import OrderedDict, defaultdict
 
-from future.utils import iteritems
-
 from pandagg.node.query.joining import Nested
 from pandagg.tree._tree import Tree
 
@@ -125,7 +123,7 @@ class AggsResponseTree(Tree):
         bucket_properties = self.bucket_properties(selected_bucket)
         agg_node_key_tuples = [
             (self.__aggs.get(self.__aggs.id_from_key(level))[1], key)
-            for level, key in iteritems(bucket_properties)
+            for level, key in bucket_properties.items()
         ]
 
         filters_per_nested_level = defaultdict(list)

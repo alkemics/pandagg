@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import json
-
-from future.utils import python_2_unicode_compatible
-from builtins import str as text
 
 from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
@@ -47,7 +43,6 @@ sub_insertion = Substitution(
 )
 
 
-@python_2_unicode_compatible
 class Query(Tree):
 
     KEY = None
@@ -638,7 +633,7 @@ class Query(Tree):
         )
 
     def show(self, *args, line_max_length=80, **kwargs):
-        return "<Query>\n%s" % text(
+        return "<Query>\n%s" % str(
             super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)
         )
 

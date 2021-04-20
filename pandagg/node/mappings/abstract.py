@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-from builtins import str as text
-
 
 from pandagg.node._node import Node
 
@@ -42,8 +40,8 @@ class Field(Node):
 
     def __str__(self):
         return "<%s field>:\n%s" % (
-            text(self.KEY).capitalize(),
-            text(json.dumps(self.body, indent=4)),
+            str(self.KEY).capitalize(),
+            str(json.dumps(self.body, indent=4)),
         )
 
 

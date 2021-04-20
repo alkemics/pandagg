@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from builtins import str as text
-from six import text_type
-
 import json
-
-from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
 from pandagg.tree.mappings import _mappings
@@ -17,7 +11,6 @@ from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
 
 
-@python_2_unicode_compatible
 class Aggs(Tree):
     """
     Combination of aggregation clauses. This class provides handful methods to build an aggregation (see
@@ -265,13 +258,13 @@ class Aggs(Tree):
             return "<Aggregations> empty"
         if len(root_children) == 1:
             child_id = root_children[0][1].identifier
-            return "<Aggregations>\n%s" % text(
+            return "<Aggregations>\n%s" % str(
                 super(Tree, self).show(
                     child_id, *args, line_max_length=line_max_length, **kwargs
                 )
             )
 
-        return "<Aggregations>\n%s" % text(
+        return "<Aggregations>\n%s" % str(
             super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)
         )
 
@@ -301,7 +294,7 @@ class Aggs(Tree):
         if insert_below_id is None:
             insert_below_id = self._groupby_ptr
 
-        if not isinstance(name, text_type):
+        if not isinstance(name, str):
             raise ValueError('Agg "name" must be a str.')
 
         _children_aggs = node._children or {}

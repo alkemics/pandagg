@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from future.utils import iteritems
 
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
 
@@ -189,7 +188,7 @@ class Mappings(Tree):
         """
         if not isinstance(properties, dict):
             raise ValueError("Wrong declaration, got %s" % properties)
-        for field_name, field in iteritems(properties):
+        for field_name, field in properties.items():
             if isinstance(field, dict):
                 field = field.copy()
                 field = Field._get_dsl_class(field.pop("type", "object"))(

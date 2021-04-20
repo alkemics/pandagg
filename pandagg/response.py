@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
 import copy
-
-from builtins import str as text
 
 from future.utils import iterkeys, iteritems
 
@@ -102,9 +98,9 @@ class Hits:
 
     def __repr__(self):
         if not isinstance(self.total, dict):
-            total_repr = text(self.total)
+            total_repr = str(self.total)
         elif self.total.get("relation") == "eq":
-            total_repr = text(self.total["value"])
+            total_repr = str(self.total["value"])
         elif self.total.get("relation") == "gte":
             total_repr = ">%d" % self.total["value"]
         else:
@@ -435,4 +431,4 @@ class Aggregations:
     def __repr__(self):
         if not self.keys():
             return "<Aggregations> empty"
-        return "<Aggregations> %s" % list(map(text, self.keys()))
+        return "<Aggregations> %s" % list(map(str, self.keys()))
