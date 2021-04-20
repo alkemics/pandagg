@@ -64,32 +64,237 @@ class Aggs(Tree):
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)
 
+    def grouped_by(self, agg_name=None, deepest=False):
+        """
+        Define which aggregation will be used as grouping pointer.
+
+        Either provide an aggregation name, either specify 'deepest=True' to consider deepest linear eligible
+        aggregation node as pointer.
+        """
+        if agg_name and deepest:
+            raise ValueError('Should provide only one of "agg_name" or "deepest".')
+        new_agg = self.clone()
+        if agg_name:
+            nid = new_agg.id_from_key(agg_name)
+            if not new_agg._is_eligible_grouping_node(nid):
+                raise ValueError("Cannot group by <%s> aggregation" % agg_name)
+            new_agg._groupby_ptr = nid
+            return new_agg
+        if deepest:
+            new_agg._groupby_ptr = new_agg._deepest_linear_bucket_agg
+            return new_agg
+        # no argument was provided, reset pointer to root
+        new_agg._groupby_ptr = new_agg.root
+        return new_agg
+
+    def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
+        """
+        Insert provided aggregation clause in copy of initial Aggs.
+
+        Given the initial aggregation::
+
+            A──> B
+            └──> C
+
+        If `insert_below` = 'A'::
+
+            A──> new──> B
+                   └──> C
+
+        >>> Aggs()\
+        >>> .groupby('per_user_id', 'terms', field='user_id')
+        {"per_user_id":{"terms":{"field":"user_id"}}}
+
+        >>> Aggs()\
+        >>> .groupby('per_user_id', {'terms': {"field": "user_id"}})
+        {"per_user_id":{"terms":{"field":"user_id"}}}
+
+        >>> from pandagg.aggs import Terms
+        >>> Aggs()\
+        >>> .groupby('per_user_id', Terms(field="user_id"))
+        {"per_user_id":{"terms":{"field":"user_id"}}}
+
+        :rtype: pandagg.aggs.Aggs
+        """
+        new_agg = self.clone()
+        insert_below_id = (
+            None if insert_below is None else new_agg.id_from_key(insert_below)
+        )
+        node = A(name, type_or_agg, **body)
+        new_agg._insert_agg(
+            name=name,
+            node=node,
+            insert_below_id=insert_below_id,
+            at_root=at_root,
+            groupby=True,
+        )
+        return new_agg
+
+    def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
+        """
+        Insert provided agg clause in copy of initial Aggs.
+
+        Accept following syntaxes for type_or_agg argument:
+
+        string, with body provided in kwargs
+        >>> Aggs().agg(name='some_agg', type_or_agg='terms', field='some_field')
+
+        python dict format:
+        >>> Aggs().agg(name='some_agg', type_or_agg={'terms': {'field': 'some_field'})
+
+        AggClause instance:
+        >>> from pandagg.aggs import Terms
+        >>> Aggs().agg(name='some_agg', type_or_agg=Terms(field='some_field'))
+
+        :param name: inserted agg clause name
+        :param type_or_agg: either agg type (str), or agg clause of dict format, or AggClause instance
+        :param insert_below: name of aggregation below which provided aggs should be inserted
+        :param at_root: if True, aggregation is inserted at root
+        :param body: aggregation clause body when providing string type_of_agg (remaining kwargs)
+        :return: copy of initial Aggs with provided agg inserted
+        """
+        new_agg = self.clone(with_nodes=True)
+        if insert_below is not None:
+            insert_below = new_agg.id_from_key(insert_below)
+        node = A(name, type_or_agg, **body)
+        new_agg._insert_agg(
+            name=name, node=node, insert_below_id=insert_below, at_root=at_root
+        )
+        return new_agg
+
+    def aggs(self, aggs, insert_below=None, at_root=False):
+        """
+        Insert provided aggs in copy of initial Aggs.
+
+        Accept following syntaxes for provided aggs:
+
+        python dict format:
+        >>> Aggs().aggs({'some_agg': {'terms': {'field': 'some_field'}}, 'other_agg': {'avg': {'field': 'age'}}})
+
+        Aggs instance:
+        >>> Aggs().aggs(Aggs({'some_agg': {'terms': {'field': 'some_field'}}, 'other_agg': {'avg': {'field': 'age'}}}))
+
+        dict with Agg clauses values:
+        >>> from pandagg.aggs import Terms, Avg
+        >>> Aggs().aggs({'some_agg': Terms(field='some_field'), 'other_agg': Avg(field='age')})
+
+        :param aggs: aggregations to insert into existing aggregation
+        :param insert_below: name of aggregation below which provided aggs should be inserted
+        :param at_root: if True, aggregation is inserted at root
+        :return: copy of initial Aggs with provided aggs inserted
+        """
+        new_agg = self.clone(with_nodes=True)
+        if insert_below is not None:
+            insert_below = new_agg.id_from_key(insert_below)
+        new_agg._insert_aggs(aggs=aggs, insert_below_id=insert_below, at_root=at_root)
+        return new_agg
+
+    def to_dict(self, from_=None, depth=None):
+        """
+        Serialize Aggs as dict.
+
+        :param from_: identifier of aggregation clause, if provided, limits serialization to this clause and its
+        children (used for recursion, shouldn't be useful)
+        :param depth: integer, if provided, limit the serialization to a given depth
+        :return: dict
+        """
+        if self.root is None:
+            return None
+        from_ = self.root if from_ is None else from_
+        _, node = self.get(from_)
+        children_queries = {}
+        if depth is None or depth > 0:
+            if depth is not None:
+                depth -= 1
+            for child_name, child_node in self.children(node.identifier):
+                children_queries[child_name] = self.to_dict(
+                    from_=child_node.identifier, depth=depth
+                )
+        if node.identifier == self.root:
+            return children_queries
+        node_query_dict = node.to_dict()
+        if children_queries:
+            node_query_dict["aggs"] = children_queries
+        return node_query_dict
+
+    def applied_nested_path_at_node(self, nid):
+        """
+        Return nested path applied at a clause.
+
+        :param nid: clause identifier
+        :return: None if no nested is applied, else applied path (str)
+        """
+        # iterate from provided clause to root clause
+        for id_ in self.ancestors_ids(nid, include_current=True):
+            _, node = self.get(id_)
+            if isinstance(node, (Nested, ReverseNested)):
+                return node.path
+        return None
+
+    def apply_reverse_nested(self, nid=None):
+        for k, leaf in self.leaves(nid):
+            if isinstance(leaf, BucketAggNode) and self.applied_nested_path_at_node(
+                leaf.identifier
+            ):
+                self.add_node(
+                    ReverseNested(),
+                    insert_below=leaf.identifier,
+                    key="reverse_nested_%s" % leaf.identifier,
+                )
+
+    def show(self, *args, line_max_length=80, **kwargs):
+        """
+        Return compact representation of Aggs.
+
+        >>> Aggs({
+        >>>     "genres": {
+        >>>         "terms": {"field": "genres", "size": 3},
+        >>>         "aggs": {
+        >>>             "movie_decade": {
+        >>>                 "date_histogram": {"field": "year", "fixed_interval": "3650d"}
+        >>>             }
+        >>>         },
+        >>>     }
+        >>> }).show()
+        <Aggregations>
+        genres                                           <terms, field="genres", size=3>
+        └── movie_decade          <date_histogram, field="year", fixed_interval="3650d">
+
+        All *args and **kwargs are propagated to `lighttree.Tree.show` method.
+        :return: str
+        """
+        root_children = self.children(self.root)
+        if len(root_children) == 0:
+            return "<Aggregations> empty"
+        if len(root_children) == 1:
+            child_id = root_children[0][1].identifier
+            return "<Aggregations>\n%s" % text(
+                super(Tree, self).show(
+                    child_id, *args, line_max_length=line_max_length, **kwargs
+                )
+            )
+
+        return "<Aggregations>\n%s" % text(
+            super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)
+        )
+
     def __nonzero__(self):
         return bool(self.to_dict())
 
     __bool__ = __nonzero__
 
     def _insert_agg(
-        self, name, node, insert_below_id=None, at_root=None, groupby_id=False
+        self, name, node, insert_below_id=None, at_root=None, groupby=False
     ):
         """
-        Using flat declaration:
-        >>> Aggs().agg("per_user", "terms", field="user")
-        >>> Aggs().agg("per_user", {"terms": {"field": "user"}})
+        Mutate current Aggs instance (no clone), inserting named AggClause instance at asked location.
 
-        Using DSL class:
-        >>> from pandagg.aggs import Terms
-        >>> Aggs().agg("per_user", Terms(field='user'))
-
-        Agg node insertion, accepts following syntax:
-        - name="per_user", type_or_agg="terms", field="user"
-        - name="per_user", type_or_agg=Terms(field='user')
-        - name="per_user", type_or_agg={"terms": {"field": "user"}}
-
-        insert children aggs as well:
-        - name="per_user", type_or_agg="terms", field="user", aggs={"avg_spent_time": {"avg": {"field": "spent_time"}}}
-        - name="per_user", type_or_agg=Terms(field='user', aggs={"avg_spent_time": Avg(field="spent_time")})
-        - name="per_user", type_or_agg={"field": "user", aggs: {"avg_spent_time": {"avg": {"field": "spent_time"}}}}
+        :param name: aggregation name
+        :param node: AggClause instance that should be inserted
+        :param insert_below_id: if provided, inserted clause is placed below this clause
+        :param at_root: boolean, if True inserted clause is placed on top of aggregation
+        :param groupby: boolean, if True, move all targeted clause children under inserted
+        clause and update groupby pointer
         """
         if insert_below_id and at_root:
             raise ValueError('Must define at most one of "insert_below" or "at_root".')
@@ -104,7 +309,7 @@ class Aggs(Tree):
 
         _children_aggs = node._children or {}
 
-        if groupby_id:
+        if groupby:
             if _children_aggs:
                 raise ValueError("Cannot group by multiple aggs at once.")
             subs = [
@@ -170,101 +375,10 @@ class Aggs(Tree):
             ]
         return last_bucket_agg_id
 
-    def grouped_by(self, agg_name=None, deepest=False):
-        """
-        Define which aggregation will be used as grouping pointer.
-
-        Either provide an aggregation name, either specify 'deepest=True' to consider deepest linear eligible
-        aggregation node as pointer.
-        """
-        if agg_name and deepest:
-            raise ValueError('Should provide only one of "agg_name" or "deepest".')
-        new_agg = self.clone()
-        if agg_name:
-            nid = new_agg.id_from_key(agg_name)
-            if not new_agg._is_eligible_grouping_node(nid):
-                raise ValueError("Cannot group by <%s> aggregation" % agg_name)
-            new_agg._groupby_ptr = nid
-            return new_agg
-        if deepest:
-            new_agg._groupby_ptr = new_agg._deepest_linear_bucket_agg
-            return new_agg
-        # no argument was provided, reset pointer to root
-        new_agg._groupby_ptr = new_agg.root
-        return new_agg
-
-    def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
-        """
-        Arrange passed aggregations in vertical/nested manner, above or below another agg clause.
-
-        Given the initial aggregation::
-
-            A──> B
-            └──> C
-
-        If `insert_below` = 'A'::
-
-            A──> new──> B
-                  └──> C
-
-        >>> Aggs()\
-        >>> .groupby('per_user_id', 'terms', field='user_id')
-        {"per_user_id":{"terms":{"field":"user_id"}}}
-
-        >>> Aggs()\
-        >>> .groupby('per_user_id', {'terms': {"field": "user_id"}})
-        {"per_user_id":{"terms":{"field":"user_id"}}}
-
-        >>> from pandagg.aggs import Terms
-        >>> Aggs()\
-        >>> .groupby('per_user_id', Terms(field="user_id"))
-        {"per_user_id":{"terms":{"field":"user_id"}}}
-
-        :rtype: pandagg.aggs.Aggs
-        """
-        new_agg = self.clone()
-        insert_below_id = (
-            None if insert_below is None else new_agg.id_from_key(insert_below)
-        )
-        node = A(name, type_or_agg, **body)
-        new_agg._insert_agg(
-            name=name,
-            node=node,
-            insert_below_id=insert_below_id,
-            at_root=at_root,
-            groupby_id=True,
-        )
-        return new_agg
-
-    def aggs(self, aggs, insert_below=None, at_root=False):
-        """
-        Insert provided aggs in copy of initial Aggs.
-
-        Accept following syntaxes for provided aggs:
-
-        python dict format:
-        >>> Aggs().aggs({'some_agg': {'terms': {'field': 'some_field'}}, 'other_agg': {'avg': {'field': 'age'}}})
-
-        Aggs instance:
-        >>> Aggs().aggs(Aggs({'some_agg': {'terms': {'field': 'some_field'}}, 'other_agg': {'avg': {'field': 'age'}}}))
-
-        dict with Agg clauses values:
-        >>> from pandagg.aggs import Terms, Avg
-        >>> Aggs().aggs({'some_agg': Terms(field='some_field'), 'other_agg': Avg(field='age')})
-
-        :param aggs: aggregations to insert into existing aggregation
-        :param insert_below: name of aggregation below which provided aggs should be inserted
-        :param at_root: if True, aggregation is inserted at root
-        :return: copy of initial Aggs with provided aggs inserted
-        """
-        new_agg = self.clone(with_nodes=True)
-        if insert_below is not None:
-            insert_below = new_agg.id_from_key(insert_below)
-        new_agg._insert_aggs(aggs=aggs, insert_below_id=insert_below, at_root=at_root)
-        return new_agg
-
     def _insert_aggs(self, aggs, insert_below_id=None, at_root=False):
-        """Insert aggs clauses in current Aggs (mutate current instance)"""
+        """
+        Insert aggs clauses in current Aggs (mutate current instance)
+        """
         if at_root:
             insert_below_id = self.root
         elif not insert_below_id:
@@ -286,71 +400,14 @@ class Aggs(Tree):
             return
         raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
 
-    def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
-        """
-        Insert provided agg clause in copy of initial Aggs.
-
-        Accept following syntaxes for type_or_agg argument:
-
-        string, with body provided in kwargs
-        >>> Aggs().agg(name='some_agg', type_or_agg='terms', field='some_field')
-
-        python dict format:
-        >>> Aggs().agg(name='some_agg', type_or_agg={'terms': {'field': 'some_field'})
-
-        AggClause instance:
-        >>> from pandagg.aggs import Terms
-        >>> Aggs().agg(name='some_agg', type_or_agg=Terms(field='some_field'))
-
-        :param name: inserted agg clause name
-        :param type_or_agg: either agg type (str), or agg clause of dict format, or AggClause instance
-        :param insert_below: name of aggregation below which provided aggs should be inserted
-        :param at_root: if True, aggregation is inserted at root
-        :param body: aggregation clause body when providing string type_of_agg (remaining kwargs)
-        :return: copy of initial Aggs with provided agg inserted
-        """
-        new_agg = self.clone(with_nodes=True)
-        if insert_below is not None:
-            insert_below = new_agg.id_from_key(insert_below)
-        node = A(name, type_or_agg, **body)
-        new_agg._insert_agg(
-            name=name, node=node, insert_below_id=insert_below, at_root=at_root
-        )
-        return new_agg
-
-    def to_dict(self, from_=None, depth=None):
-        if self.root is None:
-            return None
-        from_ = self.root if from_ is None else from_
-        _, node = self.get(from_)
-        children_queries = {}
-        if depth is None or depth > 0:
-            if depth is not None:
-                depth -= 1
-            for child_name, child_node in self.children(node.identifier):
-                children_queries[child_name] = self.to_dict(
-                    from_=child_node.identifier, depth=depth
-                )
-        if node.identifier == self.root:
-            return children_queries
-        node_query_dict = node.to_dict()
-        if children_queries:
-            node_query_dict["aggs"] = children_queries
-        return node_query_dict
-
-    def applied_nested_path_at_node(self, nid):
-        # from current node to root
-        for id_ in self.ancestors_ids(nid, include_current=True):
-            _, node = self.get(id_)
-            if isinstance(node, (Nested, ReverseNested)):
-                return node.path
-        return None
-
     def _insert_node_below(self, node, parent_id, key, by_path):
         """
-        If mapping is provided, nested aggregations are automatically applied.
+        If mapping is provided, check if aggregation complies with it (nested / reverse nested).
+
+        Note: overrides `lighttree.Tree._insert_node_below` method to handle automatic nested validation while inserting
+        a clause.
         """
-        # if aggregation node is explicitely nested or reverse nested aggregation, do not override, but validate
+        # if aggregation node is explicitly nested or reverse nested aggregation, do not override
         if (
             isinstance(node, Nested)
             or isinstance(node, ReverseNested)
@@ -430,32 +487,5 @@ class Aggs(Tree):
                 parent_id = nested_node.identifier
         super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
 
-    def apply_reverse_nested(self, nid=None):
-        for k, leaf in self.leaves(nid):
-            if isinstance(leaf, BucketAggNode) and self.applied_nested_path_at_node(
-                leaf.identifier
-            ):
-                self.add_node(
-                    ReverseNested(),
-                    insert_below=leaf.identifier,
-                    key="reverse_nested_%s" % leaf.identifier,
-                )
-
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)
-
-    def show(self, *args, line_max_length=80, **kwargs):
-        root_children = self.children(self.root)
-        if len(root_children) == 0:
-            return "<Aggregations> empty"
-        if len(root_children) == 1:
-            child_id = root_children[0][1].identifier
-            return "<Aggregations>\n%s" % text(
-                super(Tree, self).show(
-                    child_id, *args, line_max_length=line_max_length, **kwargs
-                )
-            )
-
-        return "<Aggregations>\n%s" % text(
-            super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)
-        )
