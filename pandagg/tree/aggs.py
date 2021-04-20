@@ -101,17 +101,14 @@ class Aggs(Tree):
             A──> new──> B
                    └──> C
 
-        >>> Aggs()\
-        >>> .groupby('per_user_id', 'terms', field='user_id')
+        >>> Aggs().groupby('per_user_id', 'terms', field='user_id')
         {"per_user_id":{"terms":{"field":"user_id"}}}
 
-        >>> Aggs()\
-        >>> .groupby('per_user_id', {'terms': {"field": "user_id"}})
+        >>> Aggs().groupby('per_user_id', {'terms': {"field": "user_id"}})
         {"per_user_id":{"terms":{"field":"user_id"}}}
 
         >>> from pandagg.aggs import Terms
-        >>> Aggs()\
-        >>> .groupby('per_user_id', Terms(field="user_id"))
+        >>> Aggs().groupby('per_user_id', Terms(field="user_id"))
         {"per_user_id":{"terms":{"field":"user_id"}}}
 
         :rtype: pandagg.aggs.Aggs
@@ -417,7 +414,7 @@ class Aggs(Tree):
         ):
             return super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
 
-        self.mapping.validate_agg_node(node)
+        self.mapping.validate_agg_clause(node)
 
         # from deepest to highest
         required_nested_level = self.mapping.nested_at_field(node.field)
