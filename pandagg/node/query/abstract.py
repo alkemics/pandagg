@@ -7,7 +7,9 @@ from pandagg.node._node import Node
 
 
 def Q(type_or_query=None, **body):
-    """Accept multiple syntaxes, return a QueryClause node.
+    """
+    Accept multiple syntaxes, return a QueryClause node.
+
     :param type_or_query:
     :param body:
     :return: QueryClause
@@ -118,20 +120,23 @@ class AbstractSingleFieldQueryClause(LeafQueryClause):
 
 
 class FlatFieldQueryClause(AbstractSingleFieldQueryClause):
-    """Query clause applied on one single field.
+    """
+    Query clause applied on one single field.
     Example:
 
     Exists:
     {"exists": {"field": "user"}}
     -> field = "user"
     -> body = {"field": "user"}
-    q = Exists(field="user")
+    >>> from pandagg.query import Exists
+    >>> q = Exists(field="user")
 
     DistanceFeature:
     {"distance_feature": {"field": "production_date", "pivot": "7d", "origin": "now"}}
     -> field = "production_date"
     -> body = {"field": "production_date", "pivot": "7d", "origin": "now"}
-    q = DistanceFeature(field="production_date", pivot="7d", origin="now")
+    >>> from pandagg.query import DistanceFeature
+    >>> q = DistanceFeature(field="production_date", pivot="7d", origin="now")
     """
 
     _FIELD_AT_BODY_ROOT = True
@@ -142,20 +147,22 @@ class FlatFieldQueryClause(AbstractSingleFieldQueryClause):
 
 
 class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
-    """Clause with field used as key in clause body:
+    """
+    Clause with field used as key in clause body:
 
     Term:
     {"term": {"user": {"value": "Kimchy", "boost": 1}}}
     -> field = "user"
     -> body = {"user": {"value": "Kimchy", "boost": 1}}
-    q1 = Term(user={"value": "Kimchy", "boost": 1}})
-    q2 = Term(field="user", value="Kimchy", boost=1}})
+    >>> from pandagg.query import Term
+    >>> q1 = Term(user={"value": "Kimchy", "boost": 1}})
+    >>> q2 = Term(field="user", value="Kimchy", boost=1}})
 
     Can accept a "_implicit_param" attribute specifying which is the equivalent key when inner body isn't a dict but a
     raw value.
     For Term:
     _implicit_param = "value"
-    q = Term(user="Kimchy")
+    >>> q = Term(user="Kimchy")
     {"term": {"user": {"value": "Kimchy"}}}
     -> field = "user"
     -> body = {"term": {"user": {"value": "Kimchy"}}}

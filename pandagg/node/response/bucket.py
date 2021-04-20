@@ -19,7 +19,8 @@ class Bucket(BucketNode):
 
     @property
     def attr_name(self):
-        """Determine under which attribute name the bucket will be available in response tree.
+        """
+        Determine under which attribute name the bucket will be available in response tree.
         Dots are replaced by `_` characters so that they don't prevent from accessing as attribute.
 
         Resulting attribute unfit for python attribute name syntax is still possible and will be accessible through

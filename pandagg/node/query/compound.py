@@ -2,7 +2,8 @@ from pandagg.node.query.abstract import QueryClause
 
 
 class CompoundClause(QueryClause):
-    """Compound clauses can encapsulate other query clauses:
+    """
+    Compound clauses can encapsulate other query clauses:
 
     .. code-block::
 

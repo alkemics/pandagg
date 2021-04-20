@@ -7,7 +7,9 @@ from pandagg.node._node import Node
 
 
 def A(name, type_or_agg=None, **body):
-    """Accept multiple syntaxes, return a AggNode instance.
+    """
+    Accept multiple syntaxes, return a AggNode instance.
+
     :param type_or_agg:
     :param body:
     :return: AggNode
@@ -50,7 +52,8 @@ def A(name, type_or_agg=None, **body):
 
 
 class AggClause(Node):
-    """Wrapper around elasticsearch aggregation concept.
+    """
+    Wrapper around elasticsearch aggregation concept.
     https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
 
     Each aggregation can be seen both a Node that can be encapsulated in a parent agg.
@@ -98,7 +101,8 @@ class AggClause(Node):
         return False
 
     def to_dict(self):
-        """ElasticSearch aggregation queries follow this formatting::
+        """
+        ElasticSearch aggregation queries follow this formatting::
 
             {
                 "<aggregation_name>" : {
@@ -124,7 +128,9 @@ class AggClause(Node):
         return aggs
 
     def get_filter(self, key):
-        """Return filter query to list documents having this aggregation key.
+        """
+        Return filter query to list documents having this aggregation key.
+
         :param key: string
         :return: elasticsearch filter query
         """
@@ -155,7 +161,9 @@ class AggClause(Node):
 
 
 class Root(AggClause):
-    """Not a real aggregation. Just the initial empty dict."""
+    """
+    Not a real aggregation. Just the initial empty dict (used as lighttree.Tree root).
+    """
 
     KEY = "_root"
 
@@ -171,7 +179,9 @@ class Root(AggClause):
 
 
 class MetricAgg(AggClause):
-    """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
+    """
+    Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted.
+    """
 
     VALUE_ATTRS = None
 
@@ -183,7 +193,8 @@ class MetricAgg(AggClause):
 
 
 class BucketAggNode(AggClause):
-    """Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
+    """
+    Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
     Each time, the extracted value is a 'doc_count'.
 
     Provide methods:
@@ -236,7 +247,8 @@ class MultipleBucketAgg(BucketAggNode):
     IMPLICIT_KEYED = False
 
     def __init__(self, keyed=None, key_path="key", meta=None, **body):
-        """Aggregation that return either a list or a map of buckets.
+        """
+        Aggregation that return either a list or a map of buckets.
 
         If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
         list item).
@@ -269,7 +281,9 @@ class MultipleBucketAgg(BucketAggNode):
 
 
 class FieldOrScriptMetricAgg(MetricAgg):
-    """Metric aggregation based on single field."""
+    """
+    Metric aggregation based on single field.
+    """
 
     VALUE_ATTRS = None
 
