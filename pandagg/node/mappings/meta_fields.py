@@ -11,7 +11,7 @@ class Index(Field):
 
 
 class Type(Field):
-    """The document’s mapping type."""
+    """The document’s mappings type."""
 
     KEY = "_type"
 

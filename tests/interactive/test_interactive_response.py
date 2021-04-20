@@ -5,7 +5,7 @@ from pandagg.tree.aggs import Aggs
 from pandagg.tree.response import AggsResponseTree
 from pandagg.interactive.response import IResponse
 from tests import PandaggTestCase
-from tests.testing_samples.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPINGS
 import tests.testing_samples.data_sample as sample
 
 
@@ -15,7 +15,7 @@ class ClientBoundResponseTestCase(PandaggTestCase):
         uuid_mock.side_effect = range(1000)
         client_mock = Mock(spec=["search"])
 
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         response_tree = AggsResponseTree(aggs=my_agg).parse(sample.ES_AGG_RESPONSE)
 
         response = IResponse(

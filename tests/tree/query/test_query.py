@@ -1021,7 +1021,7 @@ bool                                                             _name=root_bool
 
     def test_autonested(self):
         q = Query(
-            mapping={
+            mappings={
                 "properties": {
                     "actors": {
                         "type": "nested",

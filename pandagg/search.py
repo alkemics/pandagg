@@ -9,7 +9,7 @@ from lighttree.exceptions import NotFoundNodeError
 from pandagg.connections import get_connection
 from pandagg.query import Bool
 from pandagg.response import Response
-from pandagg.tree.mapping import _mapping
+from pandagg.tree.mappings import _mappings
 from pandagg.tree.query import Query, ADD
 from pandagg.tree.aggs import Aggs
 from pandagg.utils import DSLMixin
@@ -104,7 +104,7 @@ class Search(DSLMixin, Request):
         self,
         using=None,
         index=None,
-        mapping=None,
+        mappings=None,
         nested_autocorrect=False,
         repr_auto_execute=False,
     ):
@@ -113,12 +113,12 @@ class Search(DSLMixin, Request):
 
         :arg using: `Elasticsearch` instance to use
         :arg index: limit the search to index
-        :arg mapping: mapping used for query validation
+        :arg mappings: mappings used for query validation
         :arg nested_autocorrect: in case of missing nested clause, will insert it automatically
         :arg repr_auto_execute: execute query and display results as dataframe, requires client to be provided
 
         All the parameters supplied (or omitted) at creation type can be later
-        overridden by methods (`using`, `index` and `mapping` respectively).
+        overridden by methods (`using`, `index` and `mappings` respectively).
         """
 
         self._sort = []
@@ -127,12 +127,12 @@ class Search(DSLMixin, Request):
         self._highlight_opts = {}
         self._suggest = {}
         self._script_fields = {}
-        mapping = _mapping(mapping)
-        self._mapping = mapping
-        self._aggs = Aggs(mapping=mapping, nested_autocorrect=nested_autocorrect)
-        self._query = Query(mapping=mapping, nested_autocorrect=nested_autocorrect)
+        mappings = _mappings(mappings)
+        self._mappings = mappings
+        self._aggs = Aggs(mappings=mappings, nested_autocorrect=nested_autocorrect)
+        self._query = Query(mappings=mappings, nested_autocorrect=nested_autocorrect)
         self._post_filter = Query(
-            mapping=mapping, nested_autocorrect=nested_autocorrect
+            mappings=mappings, nested_autocorrect=nested_autocorrect
         )
         self._repr_auto_execute = repr_auto_execute
         super(Search, self).__init__(using=using, index=index)
@@ -341,10 +341,10 @@ class Search(DSLMixin, Request):
             return s
         elif isinstance(n, list):
             # Columns selection
-            if self._mapping:
+            if self._mappings:
                 for key in n:
                     try:
-                        self._mapping.id_from_key(key)
+                        self._mappings.id_from_key(key)
                     except NotFoundNodeError:
                         raise KeyError("%s not in index" % key)
             return self.source(includes=n)
@@ -395,7 +395,9 @@ class Search(DSLMixin, Request):
         of all the underlying objects. Used internally by most state modifying
         APIs.
         """
-        s = self.__class__(using=self._using, index=self._index, mapping=self._mapping)
+        s = self.__class__(
+            using=self._using, index=self._index, mappings=self._mappings
+        )
         s._params = self._params.copy()
         s._sort = self._sort[:]
         s._source = copy.copy(self._source) if self._source is not None else None
@@ -406,7 +408,7 @@ class Search(DSLMixin, Request):
         s._aggs = self._aggs.clone()
         s._query = self._query.clone()
         s._post_filter = self._post_filter.clone()
-        s._mapping = None if self._mapping is None else self._mapping.clone()
+        s._mappings = None if self._mappings is None else self._mappings.clone()
         s._repr_auto_execute = self._repr_auto_execute
         return s
 

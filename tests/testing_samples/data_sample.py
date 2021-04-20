@@ -6,7 +6,7 @@ results.
 """
 
 from pandagg.aggs import Aggs, Avg, Terms
-from tests.testing_samples.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPINGS
 
 
 EXPECTED_AGG_QUERY = {
@@ -33,7 +33,7 @@ EXPECTED_AGG_QUERY = {
 
 def get_wrapper_declared_agg():
     return (
-        Aggs(mapping=MAPPING)
+        Aggs(mappings=MAPPINGS)
         .groupby("classification_type")
         .groupby("global_metrics.field.name")
         .agg("avg_nb_classes", Avg(field="global_metrics.dataset.nb_classes"))

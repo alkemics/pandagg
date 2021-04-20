@@ -11,7 +11,7 @@ from pandagg.tree.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
 from pandagg.utils import ordered
-from tests.testing_samples.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPINGS
 
 
 class ResponseTestCase(PandaggTestCase):
@@ -138,7 +138,7 @@ class ResponseTestCase(PandaggTestCase):
 
 class AggregationsResponseTestCase(PandaggTestCase):
     def test_parse_as_tree(self, *_):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         response = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_tree()
@@ -146,7 +146,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
 
     def test_normalize_buckets(self):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         response = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_normalized()
@@ -156,7 +156,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
 
     def test_parse_as_tabular(self):
         # with single agg at root
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         index_names, index_values = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_tabular(index_orient=True, grouped_by="global_metrics.field.name")
@@ -281,7 +281,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         )
 
     def test_parse_as_dataframe(self):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         df = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         ).to_dataframe(grouped_by="global_metrics.field.name")
@@ -320,7 +320,7 @@ class AggregationsResponseTestCase(PandaggTestCase):
         )
 
     def test_grouping_agg(self):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mapping=MAPPING)
+        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         agg_response = Aggregations(
             data=sample.ES_AGG_RESPONSE, search=Search().aggs(my_agg)
         )

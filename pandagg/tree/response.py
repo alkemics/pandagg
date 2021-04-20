@@ -119,7 +119,7 @@ class AggsResponseTree(Tree):
               └── Nested_B              <- filter on B
 
         """
-        tree_mapping = self.__aggs.mapping
+        tree_mapping = self.__aggs.mappings
 
         b_key, selected_bucket = self.get(nid)
         bucket_properties = self.bucket_properties(selected_bucket)

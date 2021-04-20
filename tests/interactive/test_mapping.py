@@ -13,19 +13,19 @@ import sys
 
 from unittest import TestCase
 
-from pandagg.mapping import Keyword, Text, Nested, Object, Integer
-from pandagg.tree.mapping import Mapping
+from pandagg.mappings import Keyword, Text, Nested, Object, Integer
+from pandagg.tree.mappings import Mappings
 from pandagg.interactive._field_agg_factory import field_classes_per_name
-from pandagg.interactive.mapping import IMapping
+from pandagg.interactive.mappings import IMappings
 
-from tests.testing_samples.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPINGS
 
 
 class IMappingTestCase(TestCase):
     def test_mapping_aggregations(self):
-        mapping_tree = Mapping(**MAPPING)
+        mapping_tree = Mappings(**MAPPINGS)
         # check that leaves are expanded, based on 'field_name' attribute of nodes
-        mapping = IMapping(mapping_tree, depth=1)
+        mappings = IMappings(mapping_tree, depth=1)
         for field_name in (
             "classification_type",
             "date",
@@ -35,12 +35,12 @@ class IMappingTestCase(TestCase):
             "local_metrics",
             "workflow",
         ):
-            self.assertTrue(hasattr(mapping, field_name))
+            self.assertTrue(hasattr(mappings, field_name))
 
-        dataset = mapping.global_metrics.dataset
+        dataset = mappings.global_metrics.dataset
         self.assertEqual(
             dataset.__repr__(),
-            """<Mapping subpart: global_metrics.dataset>
+            """<Mappings subpart: global_metrics.dataset>
                                                     {Object}
 ├── nb_classes                                       Integer
 └── support_train                                    Integer
@@ -94,18 +94,18 @@ class IMappingTestCase(TestCase):
             },
         }
 
-        mapping_tree = Mapping(**mapping_dict)
+        mapping_tree = Mappings(**mapping_dict)
         client_mock = {}
         index_name = "classification_report_index_name"
 
         # from dict
-        im1 = IMapping(mapping_dict, client=client_mock, index=index_name)
+        im1 = IMappings(mapping_dict, client=client_mock, index=index_name)
         # from tree
-        im2 = IMapping(mapping_tree, client=client_mock, index=index_name)
+        im2 = IMappings(mapping_tree, client=client_mock, index=index_name)
 
         # from nodes
-        im3 = IMapping(
-            mapping={
+        im3 = IMappings(
+            mappings={
                 "properties": {
                     "classification_type": Keyword(fields={"raw": Text()}),
                     "local_metrics": Nested(
@@ -137,8 +137,8 @@ class IMappingTestCase(TestCase):
         """
         client_mock = {}
 
-        mapping_tree = Mapping(**MAPPING)
-        client_bound_mapping = IMapping(
+        mapping_tree = Mappings(**MAPPINGS)
+        client_bound_mapping = IMappings(
             mapping_tree, client=client_mock, index="classification_report_index_name"
         )
 

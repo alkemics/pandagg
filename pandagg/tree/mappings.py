@@ -3,7 +3,7 @@
 
 from future.utils import iteritems
 
-from pandagg.node.mapping.abstract import Field, RegularField, ComplexField
+from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
 
 
 from pandagg.exceptions import (
@@ -13,24 +13,24 @@ from pandagg.exceptions import (
 from pandagg.tree._tree import Tree
 
 
-def _mapping(m):
+def _mappings(m):
     if m is None:
         return None
     if isinstance(m, dict):
-        return Mapping(**m)
-    if isinstance(m, Mapping):
+        return Mappings(**m)
+    if isinstance(m, Mappings):
         return m
-    raise TypeError("Unsupported %s type for Mapping" % type(m))
+    raise TypeError("Unsupported %s type for Mappings" % type(m))
 
 
-class Mapping(Tree):
+class Mappings(Tree):
 
     node_class = Field
     KEY = None
 
     def __init__(self, properties=None, dynamic=False, **kwargs):
         """"""
-        super(Mapping, self).__init__()
+        super(Mappings, self).__init__()
         root_node = Field(dynamic=dynamic, **kwargs)
         self.insert_node(root_node)
         if properties:
@@ -38,7 +38,7 @@ class Mapping(Tree):
 
     def to_dict(self, from_=None, depth=None):
         """
-        Serialize Mapping as dict.
+        Serialize Mappings as dict.
 
         :param from_: identifier of a field, if provided, limits serialization to this field and its
         children (used for recursion, shouldn't be useful)
@@ -67,10 +67,10 @@ class Mapping(Tree):
 
     def validate_agg_clause(self, agg_clause, exc=True):
         """
-        Ensure that if aggregation clause relates to a field (`field` or `path`) this field exists in mapping, and that
+        Ensure that if aggregation clause relates to a field (`field` or `path`) this field exists in mappings, and that
         required aggregation type is allowed on this kind of field.
 
-        :param agg_clause: AggClause you want to validate on this mapping
+        :param agg_clause: AggClause you want to validate on these mappings
         :param exc: boolean, if set to True raise exception if invalid
         :rtype: boolean
         """
@@ -107,18 +107,18 @@ class Mapping(Tree):
         """
         Return field type of provided field path.
 
-        >>> mapping = Mapping(dynamic=False, properties={
+        >>> mappings = Mappings(dynamic=False, properties={
         >>>     'id': {'type': 'keyword'},
         >>>     'comments': {'type': 'nested', 'properties': {
         >>>         'comment_text': {'type': 'text'},
         >>>         'date': {'type': 'date'}
         >>>     }}
         >>> })
-        >>> mapping.mapping_type_of_field('id')
+        >>> mappings.mapping_type_of_field('id')
         'keyword'
-        >>> mapping.mapping_type_of_field('comments')
+        >>> mappings.mapping_type_of_field('comments')
         'nested'
-        >>> mapping.mapping_type_of_field('comments.comment_text')
+        >>> mappings.mapping_type_of_field('comments.comment_text')
         'text'
         """
         try:
@@ -126,25 +126,25 @@ class Mapping(Tree):
             return node.KEY
         except Exception:
             raise AbsentMappingFieldError(
-                u"<%s field is not present in mapping>" % field_path
+                u"<%s field is not present in mappings>" % field_path
             )
 
     def nested_at_field(self, field_path):
         """
         Return nested path applied on a given path. Return `None` is none applies.
 
-        >>> mapping = Mapping(dynamic=False, properties={
+        >>> mappings = Mappings(dynamic=False, properties={
         >>>     'id': {'type': 'keyword'},
         >>>     'comments': {'type': 'nested', 'properties': {
         >>>         'comment_text': {'type': 'text'},
         >>>         'date': {'type': 'date'}
         >>>     }}
         >>> })
-        >>> mapping.nested_at_field('id')
+        >>> mappings.nested_at_field('id')
         None
-        >>> mapping.nested_at_field('comments')
+        >>> mappings.nested_at_field('comments')
         'comments'
-        >>> mapping.nested_at_field('comments.comment_text')
+        >>> mappings.nested_at_field('comments.comment_text')
         'comments'
         """
         nesteds = self.list_nesteds_at_field(field_path)
@@ -156,18 +156,18 @@ class Mapping(Tree):
         """
         List nested paths that apply at a given path.
 
-        >>> mapping = Mapping(dynamic=False, properties={
+        >>> mappings = Mappings(dynamic=False, properties={
         >>>     'id': {'type': 'keyword'},
         >>>     'comments': {'type': 'nested', 'properties': {
         >>>         'comment_text': {'type': 'text'},
         >>>         'date': {'type': 'date'}
         >>>     }}
         >>> })
-        >>> mapping.list_nesteds_at_field('id')
+        >>> mappings.list_nesteds_at_field('id')
         []
-        >>> mapping.list_nesteds_at_field('comments')
+        >>> mappings.list_nesteds_at_field('comments')
         ['comments']
-        >>> mapping.list_nesteds_at_field('comments.comment_text')
+        >>> mappings.list_nesteds_at_field('comments.comment_text')
         ['comments']
         """
         path_nid = self.get_node_id_by_path(field_path)
@@ -180,11 +180,11 @@ class Mapping(Tree):
 
     def _insert(self, pid, properties, is_subfield):
         """
-        Recursive method to insert properties in current mapping.
+        Recursive method to insert properties in current mappings.
 
         :param pid: parent field identifier
         :param properties: fields definitions that are inserted below pid
-        :param is_subfield: are provided properties `fields` mapping parameter, cf
+        :param is_subfield: are provided properties `fields` mappings parameter, cf
         https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-fields.html
         """
         if not isinstance(properties, dict):

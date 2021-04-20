@@ -14,7 +14,7 @@ from pandagg.node.query.compound import CompoundClause, Bool
 from pandagg.node.query.joining import Nested
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mapping import _mapping
+from pandagg.tree.mappings import _mappings
 
 ADD = "add"
 REPLACE = "replace"
@@ -53,18 +53,18 @@ class Query(Tree):
     KEY = None
     node_class = QueryClause
 
-    def __init__(self, q=None, mapping=None, nested_autocorrect=False):
+    def __init__(self, q=None, mappings=None, nested_autocorrect=False):
         """
         Combination of query clauses.
 
-        Mapping declaration is optional, but doing so validates query consistency.
+        Mappings declaration is optional, but doing so validates query consistency.
 
         :param q: optional, query (dict, or Query instance)
-        :param mapping: ``dict`` or ``pandagg.tree.mapping.Mapping``
-        Mapping of requested indice(s). Providing it will add validation features.
-        :param nested_autocorrect: add required nested clauses if missing. Ignored if mapping is not provided.
+        :param mappings: ``dict`` or ``pandagg.tree.mappings.Mappings``
+        Mappings of requested indice(s). Providing it will add validation features.
+        :param nested_autocorrect: add required nested clauses if missing. Ignored if mappings is not provided.
         """
-        self.mapping = _mapping(mapping)
+        self.mappings = _mappings(mappings)
         self.nested_autocorrect = nested_autocorrect
         super(Query, self).__init__()
         if q:
@@ -77,9 +77,9 @@ class Query(Tree):
 
     def _clone_init(self, deep=False):
         return Query(
-            mapping=None
-            if self.mapping is None
-            else self.mapping.clone(with_nodes=True, deep=deep),
+            mappings=None
+            if self.mappings is None
+            else self.mappings.clone(with_nodes=True, deep=deep),
             nested_autocorrect=self.nested_autocorrect,
         )
 
@@ -312,11 +312,11 @@ class Query(Tree):
                     )
 
         # automatic handling of nested clauses
-        if isinstance(node, Nested) or not self.mapping or not hasattr(node, "field"):
+        if isinstance(node, Nested) or not self.mappings or not hasattr(node, "field"):
             return super(Query, self)._insert_node_below(
                 node=node, parent_id=parent_id, key=key, by_path=by_path
             )
-        required_nested_level = self.mapping.nested_at_field(node.field)
+        required_nested_level = self.mappings.nested_at_field(node.field)
         if len(self.list()) <= 1:
             # empty
             current_nested_level = None
@@ -333,7 +333,7 @@ class Query(Tree):
             )
         # requires nested - apply all required nested fields
         to_insert = node
-        for nested_lvl in self.mapping.list_nesteds_at_field(node.field):
+        for nested_lvl in self.mappings.list_nesteds_at_field(node.field):
             if current_nested_level != nested_lvl:
                 to_insert = self.get_node_dsl_class("nested")(
                     path=nested_lvl, query=to_insert

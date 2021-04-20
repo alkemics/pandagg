@@ -10,7 +10,7 @@ import json
 from future.utils import python_2_unicode_compatible
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mapping import _mapping
+from pandagg.tree.mappings import _mappings
 
 from pandagg.node.aggs.abstract import BucketAggNode, AggClause, Root, A
 from pandagg.node.aggs.bucket import Nested, ReverseNested
@@ -24,7 +24,7 @@ class Aggs(Tree):
     :func:`~pandagg.tree.aggs.Aggs.aggs` and :func:`~pandagg.tree.aggs.Aggs.groupby`), and is used as well
     to parse aggregations response in easy to manipulate formats.
 
-    Mapping declaration is optional, but doing so validates aggregation validity and automatically handles missing
+    Mappings declaration is optional, but doing so validates aggregation validity and automatically handles missing
     nested clauses.
 
     Accept following syntaxes:
@@ -39,19 +39,19 @@ class Aggs(Tree):
     >>> from pandagg.aggs import Terms, Avg
     >>> Aggs({'per_user': Terms(field='user')})
 
-    :param mapping: ``dict`` or ``pandagg.tree.mapping.Mapping`` Mapping of requested indice(s). If provided, will
+    :param mappings: ``dict`` or ``pandagg.tree.mappings.Mappings`` Mappings of requested indice(s). If provided, will
     check aggregations validity.
     :param nested_autocorrect: ``bool`` In case of missing nested clauses in aggregation, if True, automatically
-    add missing nested clauses, else raise error. Ignored if mapping is not provided.
+    add missing nested clauses, else raise error. Ignored if mappings are not provided.
     :param _groupby_ptr: ``str`` identifier of aggregation clause used as grouping element (used by `clone` method).
     """
 
     node_class = AggClause
 
     def __init__(
-        self, aggs=None, mapping=None, nested_autocorrect=None, _groupby_ptr=None
+        self, aggs=None, mappings=None, nested_autocorrect=None, _groupby_ptr=None
     ):
-        self.mapping = _mapping(mapping)
+        self.mappings = _mappings(mappings)
         self.nested_autocorrect = nested_autocorrect
         super(Aggs, self).__init__()
 
@@ -329,7 +329,9 @@ class Aggs(Tree):
 
     def _clone_init(self, deep=False):
         return Aggs(
-            mapping=self.mapping.clone(deep=deep) if self.mapping is not None else None,
+            mappings=self.mappings.clone(deep=deep)
+            if self.mappings is not None
+            else None,
             nested_autocorrect=self.nested_autocorrect,
             _groupby_ptr=self._groupby_ptr,
         )
@@ -399,7 +401,7 @@ class Aggs(Tree):
 
     def _insert_node_below(self, node, parent_id, key, by_path):
         """
-        If mapping is provided, check if aggregation complies with it (nested / reverse nested).
+        If mappings is provided, check if aggregation complies with it (nested / reverse nested).
 
         Note: overrides `lighttree.Tree._insert_node_below` method to handle automatic nested validation while inserting
         a clause.
@@ -408,16 +410,16 @@ class Aggs(Tree):
         if (
             isinstance(node, Nested)
             or isinstance(node, ReverseNested)
-            or not self.mapping
+            or not self.mappings
             or not hasattr(node, "field")
             or self.root is None
         ):
             return super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
 
-        self.mapping.validate_agg_clause(node)
+        self.mappings.validate_agg_clause(node)
 
         # from deepest to highest
-        required_nested_level = self.mapping.nested_at_field(node.field)
+        required_nested_level = self.mappings.nested_at_field(node.field)
 
         current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
@@ -456,7 +458,7 @@ class Aggs(Tree):
                 )
 
         # requires nested - apply all required nested fields
-        for nested_lvl in reversed(self.mapping.list_nesteds_at_field(node.field)):
+        for nested_lvl in reversed(self.mappings.list_nesteds_at_field(node.field)):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(

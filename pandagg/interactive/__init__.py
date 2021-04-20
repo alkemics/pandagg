@@ -1,2 +1,2 @@
-from .mapping import *
+from .mappings import *
 from .response import *
