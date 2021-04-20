@@ -9,6 +9,7 @@ Submodules
 
    pandagg.node.aggs.abstract
    pandagg.node.aggs.bucket
+   pandagg.node.aggs.composite
    pandagg.node.aggs.metric
    pandagg.node.aggs.pipeline
 

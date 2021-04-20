@@ -8,7 +8,7 @@ Subpackages
    :maxdepth: 8
 
    pandagg.node.aggs
-   pandagg.node.mapping
+   pandagg.node.mappings
    pandagg.node.query
    pandagg.node.response
 

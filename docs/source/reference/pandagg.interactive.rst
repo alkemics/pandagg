@@ -7,7 +7,7 @@ Submodules
 .. toctree::
    :maxdepth: 8
 
-   pandagg.interactive.mapping
+   pandagg.interactive.mappings
    pandagg.interactive.response
 
 Module contents

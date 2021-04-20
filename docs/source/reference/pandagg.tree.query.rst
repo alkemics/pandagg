@@ -1,16 +1,5 @@
-pandagg.tree.query package
-==========================
-
-Submodules
-----------
-
-.. toctree::
-   :maxdepth: 8
-
-   pandagg.tree.query.abstract
-
-Module contents
----------------
+pandagg.tree.query module
+=========================
 
 .. automodule:: pandagg.tree.query
    :members:
