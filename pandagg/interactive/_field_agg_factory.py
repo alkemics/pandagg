@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pandagg.node.aggs.abstract import AggClause
+from pandagg.node.aggs.abstract import AggClause, BucketAggNode
 
 from pandagg.node.types import MAPPING_TYPES
 
@@ -25,6 +25,11 @@ def field_klass_init(self, field, search):
 
 def aggregator_factory(agg_klass):
     def aggregator(self, **kwargs):
+        if issubclass(agg_klass, BucketAggNode):
+            return self._search.groupby(
+                "%s_%s" % (agg_klass.KEY, self._field),
+                agg_klass(field=self._field, **kwargs),
+            )
         return self._search.agg(
             "%s_%s" % (agg_klass.KEY, self._field),
             agg_klass(field=self._field, **kwargs),
