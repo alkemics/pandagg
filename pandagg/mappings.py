@@ -3,6 +3,8 @@ from pandagg.interactive.mappings import IMappings
 from pandagg.node.mappings.field_datatypes import (
     Text,
     Keyword,
+    ConstantKeyword,
+    WildCard,
     Long,
     Integer,
     Short,
@@ -58,6 +60,8 @@ __all__ = [
     "IMappings",
     "Text",
     "Keyword",
+    "ConstantKeyword",
+    "WildCard",
     "Long",
     "Integer",
     "Short",
