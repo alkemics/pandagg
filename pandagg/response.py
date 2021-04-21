@@ -7,7 +7,7 @@ from future.utils import iterkeys, iteritems
 
 from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root
-from pandagg.node.aggs.bucket import Nested
+from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.tree.response import AggsResponseTree
 
 
@@ -239,24 +239,25 @@ class Aggregations:
         """Return aggregation node that used as grouping node.
         Note: in case there is only a nested aggregation below that node, group-by nested clause.
         """
-        # if provided
         if name is not None:
+            # override existing groupby_ptr
             id_ = self._aggs.id_from_key(name)
             if not self._aggs._is_eligible_grouping_node(id_):
                 raise ValueError(
                     "Cannot group by <%s>, not a valid grouping aggregation" % name
                 )
             key, node = self._aggs.get(id_)
-            # if parent of single nested clause and nested_autocorrect
-            if self._aggs.nested_autocorrect:
-                children = self._aggs.children(node.identifier)
-                if len(children) == 1:
-                    child_key, child_node = children[0]
-                    if isinstance(child_node, Nested):
-                        return child_key, child_node
-            return key, node
-        # if use of groupby method in Aggs class, use groupby pointer
-        return self._aggs.get(self._aggs._groupby_ptr)
+        else:
+            key, node = self._aggs.get(self._aggs._groupby_ptr)
+
+        # if parent of single nested clause and nested_autocorrect
+        if self._aggs.nested_autocorrect:
+            children = self._aggs.children(node.identifier)
+            if len(children) == 1:
+                child_key, child_node = children[0]
+                if isinstance(child_node, (Nested, ReverseNested)):
+                    return child_key, child_node
+        return key, node
 
     def to_tabular(
         self,
