@@ -17,7 +17,7 @@ REPLACE = "replace"
 REPLACE_ALL = "replace_all"
 
 sub_insertion = Substitution(
-    insertion_doc="""
+    location_kwargs="""
     * *insert_below* (``str``) --
       named query clause under which the inserted clauses should be placed.
 
@@ -25,7 +25,7 @@ sub_insertion = Substitution(
       param under which inserted clause will be placed in compound query
 
     * *on* (``str``) --
-      named compound query clause on which the inserted clauses should be merged.
+      named compound query clause on which the inserted compound clause should be merged.
 
     * *mode* (``str`` one of 'add', 'replace', 'replace_all') --
       merging strategy when inserting clauses on a existing compound clause.
@@ -40,7 +40,6 @@ sub_insertion = Substitution(
 
 class Query(Tree):
 
-    KEY = None
     node_class = QueryClause
 
     def __init__(self, q=None, mappings=None, nested_autocorrect=False):
@@ -70,35 +69,21 @@ class Query(Tree):
         compound_param=None,
         **body
     ):
-        r"""Insert new clause(s) in current query.
-
-        Inserted clause can accepts following syntaxes.
-
-        Given an empty query:
+        r"""
+        Insert provided clause in copy of initial Query.
 
         >>> from pandagg.query import Query
-        >>> q = Query()
-
-        flat syntax: clause type, followed by query clause body as keyword arguments:
-
-        >>> q.query('term', some_field=23)
+        >>> Query().query('term', some_field=23)
         {'term': {'some_field': 23}}
-
-        using pandagg DSL:
 
         >>> from pandagg.query import Term
-        >>> q.query(Term(field=23))
-        {'term': {'some_field': 23}}
-
-        >>> q.query({'bool': {'must': [{'term': {'some_field': 1}}]}})
-        {'bool': {'must': [{'term': {'some_field': 1}}]}}
-
-        >>> from pandagg.query import Bool
-        >>> q.query(Bool(must=[{'term': {'some_field': 1}}], boost=1))
+        >>> Query()\
+        >>> .query({'term': {'some_field': 23})\
+        >>> .query(Term(other_field=24))\
+        {'bool': {'must': [{'term': {'some_field': 23}}, {'term': {'other_field': 24}}]}}
 
         :Keyword Arguments:
-        %(insertion_doc)s
-
+        %(location_kwargs)s
         """
         q = self.clone(with_nodes=True)
         node = self._q(type_or_query, **body)
@@ -111,6 +96,7 @@ class Query(Tree):
         )
         return q
 
+    @sub_insertion
     def must(
         self,
         type_or_query,
@@ -120,9 +106,16 @@ class Query(Tree):
         bool_body=None,
         **body
     ):
-        """
+        r"""
+        Create copy of initial Query and insert provided clause under "bool" query "must".
+
         >>> Query().must('term', some_field=1)
         >>> Query().must({'term': {'some_field': 1}})
+        >>> from pandagg.query import Term
+        >>> Query().must(Term(some_field=1))
+
+        :Keyword Arguments:
+        %(location_kwargs)s
         """
         return self._compound_param_insert(
             "bool", "must", mode, type_or_query, insert_below, on, bool_body, **body
@@ -571,6 +564,13 @@ class Query(Tree):
         """
         Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent (for instance
         only compounds queries can have children clauses).
+        If mappings are provided, ensure that nested fields are properly handled. If nested_autocorrect is set to True
+        at __init__, automatically add it if necessary.
+
+        Note: automatic handling can be ambiguous in case of multiple nested clauses, ie should it operate a must clause
+        at root document level, or at nested level. Example: difference between "a car with a rectangular window, and a blue
+        window" (can be different windows), and "a car with a rectangular and blue window" (same window must hold same
+        characteristics).
         """
         if parent_id is not None:
             _, pnode = self.get(parent_id)

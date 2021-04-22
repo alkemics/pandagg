@@ -25,10 +25,8 @@ def _mappings(m):
 class Mappings(Tree):
 
     node_class = Field
-    KEY = None
 
     def __init__(self, properties=None, dynamic=False, **kwargs):
-        """"""
         super(Mappings, self).__init__()
         root_node = Field(dynamic=dynamic, **kwargs)
         self.insert_node(root_node)
