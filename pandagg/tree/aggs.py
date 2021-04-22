@@ -6,7 +6,7 @@ import json
 from pandagg.tree._tree import Tree
 from pandagg.tree.mappings import _mappings
 
-from pandagg.node.aggs.abstract import BucketAggNode, AggClause, Root, A
+from pandagg.node.aggs.abstract import BucketAggClause, AggClause, Root, A
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
 
@@ -223,7 +223,7 @@ class Aggs(Tree):
 
     def apply_reverse_nested(self, nid=None):
         for k, leaf in self.leaves(nid):
-            if isinstance(leaf, BucketAggNode) and self.applied_nested_path_at_node(
+            if isinstance(leaf, BucketAggClause) and self.applied_nested_path_at_node(
                 leaf.identifier
             ):
                 self.add_node(
@@ -334,7 +334,7 @@ class Aggs(Tree):
         Return whether node can be used as grouping node.
         """
         _, node = self.get(nid)
-        if not isinstance(node, BucketAggNode):
+        if not isinstance(node, BucketAggClause):
             return False
         # special aggregations not returning anything
         if isinstance(node, (BucketSelector, BucketSort)):
@@ -344,7 +344,7 @@ class Aggs(Tree):
     @property
     def _deepest_linear_bucket_agg(self):
         """
-        Return deepest bucket aggregation node identifier (pandagg.nodes.abstract.BucketAggNode) of that aggregation
+        Return deepest bucket aggregation node identifier (pandagg.nodes.abstract.BucketAggClause) of that aggregation
         that neither has siblings, nor has an ancestor with siblings.
         """
         if len(self._nodes_map) <= 1:
@@ -369,7 +369,13 @@ class Aggs(Tree):
 
     def _insert_aggs(self, aggs, insert_below_id=None, at_root=False):
         """
-        Insert aggs clauses in current Aggs (mutate current instance)
+        Insert multiple aggregation clauses in current Aggs (mutate current instance).
+        By default place them under groupby pointer if none of `insert_below_id` or `at_root` is provided.
+
+        :param aggs: Aggs instance, or dict
+        :param insert_below_id: clause identifier under which inserted aggs should be placed
+        :param at_root: if True, place inserted aggs at root, instead of placing them under Aggs._groupby_ptr.
+        :return:
         """
         if at_root:
             insert_below_id = self.root

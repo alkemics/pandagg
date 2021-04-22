@@ -192,7 +192,7 @@ class MetricAgg(AggClause):
         return None
 
 
-class BucketAggNode(AggClause):
+class BucketAggClause(AggClause):
     """
     Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
     Each time, the extracted value is a 'doc_count'.
@@ -229,7 +229,7 @@ class BucketAggNode(AggClause):
         raise NotImplementedError()
 
 
-class UniqueBucketAgg(BucketAggNode):
+class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
     VALUE_ATTRS = None
@@ -241,7 +241,7 @@ class UniqueBucketAgg(BucketAggNode):
         raise NotImplementedError()
 
 
-class MultipleBucketAgg(BucketAggNode):
+class MultipleBucketAgg(BucketAggClause):
 
     VALUE_ATTRS = None
     IMPLICIT_KEYED = False
