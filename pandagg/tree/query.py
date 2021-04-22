@@ -568,9 +568,9 @@ class Query(Tree):
         at __init__, automatically add it if necessary.
 
         Note: automatic handling can be ambiguous in case of multiple nested clauses, ie should it operate a must clause
-        at root document level, or at nested level. Example: difference between "a car with a rectangular window, and a blue
-        window" (can be different windows), and "a car with a rectangular and blue window" (same window must hold same
-        characteristics).
+        at root document level, or at nested level. Example: difference between "a car with a rectangular window, and a
+        blue window" (can be different windows), and "a car with a rectangular and blue window" (same window must hold
+        same characteristics).
         """
         if parent_id is not None:
             _, pnode = self.get(parent_id)
