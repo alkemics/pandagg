@@ -131,3 +131,87 @@ _
         self.assertEqual(
             mapping_tree.get_path(node.identifier), "local_metrics.dataset.support_test"
         )
+
+    def test_validate_doc(self):
+        tts = [
+            {
+                "name": "non nullable",
+                "properties": {"pizza": Keyword(nullable=False)},
+                "documents_expected_results": [
+                    ({"pizza": "yolo"}, None),
+                    ({"pizza": None}, "Field <pizza> cannot be null"),
+                    ({}, "Field <pizza> cannot be null"),
+                    ({"pizza": ["yo", "lo"]}, None),
+                ],
+            },
+            {
+                "name": "nullable",
+                "properties": {"pizza": Keyword(nullable=True)},
+                "documents_expected_results": [
+                    ({"pizza": "yolo"}, None),
+                    ({"pizza": None}, None),
+                    ({}, None),
+                    ({"pizza": ["yo", "lo"]}, None),
+                ],
+            },
+            {
+                "name": "multiple nullable",
+                "properties": {"pizza": Keyword(multiple=True)},
+                "documents_expected_results": [
+                    ({"pizza": "yolo"}, "Field <pizza> should be a array"),
+                    ({"pizza": None}, None),
+                    ({}, None),
+                    ({"pizza": ["yo", "lo"]}, None),
+                ],
+            },
+            {
+                "name": "multiple non nullable",
+                "properties": {"pizza": Keyword(multiple=True, nullable=False)},
+                "documents_expected_results": [
+                    ({"pizza": "yolo"}, "Field <pizza> should be a array"),
+                    ({"pizza": None}, "Field <pizza> cannot be null"),
+                    ({}, "Field <pizza> cannot be null"),
+                    ({"pizza": ["yo", "lo"]}, None),
+                ],
+            },
+            {
+                "name": "non multiple",
+                "properties": {"pizza": Keyword(multiple=False)},
+                "documents_expected_results": [
+                    ({"pizza": "yolo"}, None),
+                    ({"pizza": None}, None),
+                    ({}, None),
+                    ({"pizza": ["yo", "lo"]}, "Field <pizza> should not be an array"),
+                ],
+            },
+            {
+                "name": "nested multiple non nullable",
+                "properties": {
+                    "some_good": Object(
+                        properties={"pizza": Keyword(multiple=True, nullable=False)}
+                    )
+                },
+                "documents_expected_results": [
+                    (
+                        {"some_good": {"pizza": "yolo"}},
+                        "Field <some_good.pizza> should be a array",
+                    ),
+                    (
+                        {"some_good": {"pizza": None}},
+                        "Field <some_good.pizza> cannot be null",
+                    ),
+                    ({}, "Field <some_good.pizza> cannot be null"),
+                    ({"some_good": {"pizza": ["yo", "lo"]}}, None),
+                ],
+            },
+        ]
+        for tt in tts:
+            mappings = Mappings(properties=tt["properties"])
+            for doc, expected_error in tt["documents_expected_results"]:
+                if expected_error:
+                    with self.assertRaises(ValueError, msg=tt["name"]) as e:
+                        mappings.validate_document(doc)
+                    self.assertEqual(e.exception.args, (expected_error,), tt["name"])
+                else:
+                    # must not raise error
+                    mappings.validate_document(doc)
