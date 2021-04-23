@@ -158,7 +158,8 @@ class Aggregations:
         row_as_tuple=False,
         with_single_bucket_groups=False,
     ):
-        """Recursive parsing of succession of grouping aggregation clauses.
+        """
+        Recursive parsing of succession of grouping aggregation clauses.
 
         Yields each row for which last bucket aggregation generated buckets.
         """
@@ -203,7 +204,8 @@ class Aggregations:
                             yield nrow, nraw_bucket
 
     def _normalize_buckets(self, agg_response, agg_name=None):
-        """Recursive function to parse aggregation response as a normalized entities.
+        """
+        Recursive function to parse aggregation response as a normalized entities.
         Each response bucket is represented as a dict with keys (key, level, value, children)::
 
             {
@@ -236,7 +238,8 @@ class Aggregations:
             yield result
 
     def _grouping_agg(self, name=None):
-        """Return aggregation node that used as grouping node.
+        """
+        Return aggregation node that used as grouping node.
         Note: in case there is only a nested aggregation below that node, group-by nested clause.
         """
         if name is not None:
@@ -268,7 +271,8 @@ class Aggregations:
         normalize=True,
         with_single_bucket_groups=False,
     ):
-        """Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
+        """
+        Build tabular view of ES response grouping levels (rows) until 'grouped_by' aggregation node included is
         reached, and using children aggregations of grouping level as values for each of generated groups (columns).
 
         Suppose an aggregation of this shape (A & B bucket aggregations)::

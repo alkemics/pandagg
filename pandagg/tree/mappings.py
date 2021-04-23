@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
+from pandagg.node import Object, Nested
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
 
 
@@ -207,3 +206,52 @@ class Mappings(Tree):
                         % field_name
                     )
                 self._insert(field.identifier, field.fields, True)
+
+    def validate_document(self, d):
+        self._validate_document(d, pid=self.root)
+
+    def _validate_document(self, d, pid, path=""):
+        if d is None:
+            d = {}
+        if not isinstance(d, dict):
+            raise ValueError(
+                "Invalid document type, expected dict, got <%s> at '%s'"
+                % (type(d), path)
+            )
+        for field_name, field in self.children(pid):
+            full_path = ".".join([path, field_name]) if path else field_name
+            field_value = d.get(field_name)
+            if not field._nullable and not field_value:
+                raise ValueError("Field <%s> cannot be null" % full_path)
+
+            if field._multiple is True:
+                if field_value is not None:
+                    if not isinstance(field_value, list):
+                        raise ValueError("Field <%s> should be a array" % full_path)
+                    field_value_list = field_value
+                else:
+                    field_value_list = []
+                if not field._nullable and not any(field_value_list):
+                    # deal with case: [None]
+                    raise ValueError("Field <%s> cannot be null" % full_path)
+            elif field._multiple is False:
+                if isinstance(field_value, list):
+                    raise ValueError("Field <%s> should not be an array" % full_path)
+                field_value_list = [field_value] if field_value else []
+            else:
+                # field._multiple is None -> no restriction
+                if isinstance(field_value, list):
+                    field_value_list = field_value
+                else:
+                    field_value_list = [field_value]
+
+            for value in field_value_list:
+                # nullable check has been done beforehands
+                if value:
+                    if not field.is_valid_value(value):
+                        raise ValueError(
+                            "Field <%s> value <%s> is not compatible with field of type %s"
+                            % (full_path, value, field.KEY)
+                        )
+                if isinstance(field, (Object, Nested)):
+                    self._validate_document(value, field.identifier, path=full_path)
