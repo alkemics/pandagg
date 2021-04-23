@@ -7,7 +7,7 @@ from elasticsearch import Elasticsearch
 from pandagg.node import Max
 from pandagg.search import Search
 from pandagg.query import Query, Bool, Match
-from pandagg.tree import Mapping
+from pandagg.tree import Mappings
 from pandagg.utils import ordered
 from tests import PandaggTestCase
 
@@ -38,16 +38,16 @@ class SearchTestCase(PandaggTestCase):
         )
 
     def test_search_column_selection(self):
-        mapping = Mapping(
+        mappings = Mappings(
             properties={"col1": {"type": "keyword"}, "col2": {"type": "integer"}}
         )
         self.assertEqual(
-            Search(mapping=mapping)[["col1", "col2"]].to_dict(),
+            Search(mappings=mappings)[["col1", "col2"]].to_dict(),
             {"_source": {"includes": ["col1", "col2"]}},
         )
 
         with self.assertRaises(KeyError):
-            Search(mapping=Mapping(properties={"example": {"type": "keyword"}}))[
+            Search(mappings=Mappings(properties={"example": {"type": "keyword"}}))[
                 ["col1", "col2"]
             ]
 

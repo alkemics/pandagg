@@ -21,9 +21,9 @@ and is intended to make it more convenient to deal with deeply nested queries an
 ## Features
 
 - flexible aggregation and search queries declaration, with ability to insert clauses at specific points (and not only below last manipulated clause)
-- query validation based on provided mapping
+- query validation based on provided mappings
 - parsing of aggregation results in convenient formats: tree with interactive navigation, csv-like tabular breakdown, pandas dataframe, and others
-- cluster indices discovery module, and mapping interactive navigation
+- cluster indices discovery module, and mappings interactive navigation
 
 
 ## Documentation
@@ -56,12 +56,12 @@ Discover indices on cluster with matching pattern:
 <Indices> ['movies', 'movies_fake']
 ```
 
-Explore index mapping:
+Explore index mappings:
 
 ```python
 >>> movies = indices.movies
->>> movies.mapping
-<Mapping>
+>>> movies.mappings
+<Mappings>
 _
 ├── directors                                                [Nested]
 │   ├── director_id                                           Keyword
@@ -78,8 +78,8 @@ _
 ...
 ```
 ```python
->>> movies.mapping.roles
-<Mapping subpart: roles>
+>>> movies.mappings.roles
+<Mappings subpart: roles>
 roles                                                        [Nested]
 ├── actor_id                                                  Keyword
 ├── first_name                                                Text
@@ -95,7 +95,7 @@ roles                                                        [Nested]
 Execute aggregation on field:
 
 ```python
->>> movies.mapping.roles.gender.a.terms()
+>>> movies.mappings.roles.gender.a.terms()
    doc_count key
 M    2296792   M
 F    1135174   F

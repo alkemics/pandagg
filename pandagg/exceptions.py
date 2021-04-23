@@ -1,24 +1,21 @@
-from __future__ import unicode_literals
-
-
 class InvalidAggregation(Exception):
     """Wrong aggregation definition"""
 
 
 class MappingError(Exception):
-    """Basic Mapping Error"""
+    """Basic Mappings Error"""
 
     pass
 
 
 class AbsentMappingFieldError(MappingError):
-    """Field is not present in mapping."""
+    """Field is not present in mappings."""
 
     pass
 
 
 class InvalidOperationMappingFieldError(MappingError):
-    """Invalid aggregation type on this mapping field."""
+    """Invalid aggregation type on this mappings field."""
 
     pass
 

@@ -1,16 +1,5 @@
-pandagg.tree.aggs package
-=========================
-
-Submodules
-----------
-
-.. toctree::
-   :maxdepth: 8
-
-   pandagg.tree.aggs.aggs
-
-Module contents
----------------
+pandagg.tree.aggs module
+========================
 
 .. automodule:: pandagg.tree.aggs
    :members:

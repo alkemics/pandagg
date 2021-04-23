@@ -11,15 +11,15 @@ from elasticsearch.client import IndicesClient
 from pandagg.discovery import discover, Index
 from mock import patch
 
-from pandagg.interactive.mapping import IMapping
-from tests.testing_samples.mapping_example import MAPPING
+from pandagg.interactive.mappings import IMappings
+from tests.testing_samples.mapping_example import MAPPINGS
 from tests.testing_samples.settings_example import SETTINGS
 
 indices_mock = {
     # index name
     "classification_report_one": {
         "aliases": {},
-        "mappings": MAPPING,
+        "mappings": MAPPINGS,
         "settings": SETTINGS,
     }
 }
@@ -42,5 +42,5 @@ class WrapperTestCase(TestCase):
         self.assertEqual(report_index.__str__(), "<Index 'classification_report_one'>")
         self.assertEqual(report_index.name, "classification_report_one")
 
-        # ensure mapping presence
-        self.assertIsInstance(report_index.mapping, IMapping)
+        # ensure mappings presence
+        self.assertIsInstance(report_index.mappings, IMappings)

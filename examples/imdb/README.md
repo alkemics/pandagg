@@ -27,7 +27,7 @@ Relational schema is the following:
 
 ![imdb tables](ressources/imdb_ijs.svg)
 
-## Index mapping
+## Index mappings
 
 #### Overview
 The base unit (document) will be a movie, having a name, rank (ratings), year of release, a list of actors
@@ -46,7 +46,7 @@ Movie:
 
 #### Which fields require nesting?
 Since genres contain a single keyword field, in no case we need it to be stored as a nested field.
-On the contrary, actor roles and directors require a nested mapping if we consider applying multiple
+On the contrary, actor roles and directors require a nested field if we consider applying multiple
 simultanous query clauses on their sub-fields (for instance search movie in which actor is a woman AND whose role is
 nurse).
 More information on distinction between array and nested fields [here](
@@ -61,10 +61,10 @@ opt for a text field. Yet we might want to aggregate on exact keywords to count 
 More inforamtion on distinction between text and keyword fields [here](
 https://www.elastic.co/fr/blog/strings-are-dead-long-live-strings)
 
-#### Mapping
+#### Mappings
 
 ```
-<Mapping>
+<Mappings>
 _
 ├── directors                                                [Nested]
 │   ├── director_id                                           Keyword
@@ -151,7 +151,7 @@ OUTPUT_FILE_NAME = 'serialized.json'
 # can take a while
 python examples/imdb/serialize.py
 
-# create index with mapping if necessary, bulk insert documents in ES
+# create index with mappings if necessary, bulk insert documents in ES
 python examples/imdb/load.py
 ```
 

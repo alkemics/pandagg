@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from future.utils import iteritems, python_2_unicode_compatible
 from lighttree.interactive import Obj
 
-from pandagg.interactive.mapping import IMapping
+from pandagg.interactive.mappings import IMappings
 from pandagg.search import Search
 
 
@@ -15,11 +13,11 @@ def discover(using, index="*"):
     :param index: Comma-separated list or wildcard expression of index names used to limit the request.
     """
     indices = Indices()
-    for index_name, index_detail in iteritems(using.indices.get(index=index)):
+    for index_name, index_detail in using.indices.get(index=index).items():
         indices[index_name] = Index(
             client=using,
             name=index_name,
-            mapping=index_detail["mappings"],
+            mappings=index_detail["mappings"],
             settings=index_detail["settings"],
             aliases=index_detail["aliases"],
         )
@@ -29,21 +27,20 @@ def discover(using, index="*"):
 # until Proper Index class is written
 
 
-@python_2_unicode_compatible
 class Index(object):
-    def __init__(self, name, settings, mapping, aliases, client=None):
+    def __init__(self, name, settings, mappings, aliases, client=None):
         super(Index, self).__init__()
         self.client = client
         self.name = name
         self.settings = settings
-        self._mapping = mapping
-        self.mapping = IMapping(mapping, client=client, index=name)
+        self._mappings = mappings
+        self.mappings = IMappings(mappings, client=client, index=name)
         self.aliases = aliases
 
     def search(self, nested_autocorrect=True, repr_auto_execute=True):
         return Search(
             using=self.client,
-            mapping=self._mapping,
+            mappings=self._mappings,
             index=self.name,
             nested_autocorrect=nested_autocorrect,
             repr_auto_execute=repr_auto_execute,

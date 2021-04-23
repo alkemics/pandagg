@@ -1,7 +1,7 @@
-from .abstract import BucketAggNode
+from .abstract import BucketAggClause
 
 
-class Composite(BucketAggNode):
+class Composite(BucketAggClause):
     def __init__(self, sources, size=None, after_key=None, meta=None, **body):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
         :param sources:

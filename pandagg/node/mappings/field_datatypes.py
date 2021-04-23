@@ -13,6 +13,14 @@ class Keyword(RegularField):
     KEY = "keyword"
 
 
+class ConstantKeyword(RegularField):
+    KEY = "constant_keyword"
+
+
+class WildCard(RegularField):
+    KEY = "wildcard"
+
+
 # numeric
 class Long(RegularField):
     KEY = "long"
@@ -112,7 +120,7 @@ class GeoShape(RegularField):
 class IP(RegularField):
     """for IPv4 and IPv6 addresses"""
 
-    KEY = "IP"
+    KEY = "ip"
 
 
 class Completion(RegularField):

@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from builtins import str as text
-from six import text_type
-
 import json
 
 from pandagg.node._node import Node
 
 
 def A(name, type_or_agg=None, **body):
-    """Accept multiple syntaxes, return a AggNode instance.
+    """
+    Accept multiple syntaxes, return a AggNode instance.
+
     :param type_or_agg:
     :param body:
     :return: AggNode
     """
-    if isinstance(type_or_agg, text_type):
+    if isinstance(type_or_agg, str):
         # _translate_agg("per_user", "terms", field="user")
         return AggClause._get_dsl_class(type_or_agg)(**body)
     if isinstance(type_or_agg, AggClause):
@@ -54,7 +52,8 @@ def A(name, type_or_agg=None, **body):
 
 
 class AggClause(Node):
-    """Wrapper around elasticsearch aggregation concept.
+    """
+    Wrapper around elasticsearch aggregation concept.
     https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
 
     Each aggregation can be seen both a Node that can be encapsulated in a parent agg.
@@ -79,7 +78,7 @@ class AggClause(Node):
         # root node
         if self.KEY is None:
             return "_", ""
-        repr_args = [text(self.KEY)]
+        repr_args = [str(self.KEY)]
         if self.body:
             repr_args.append(self._params_repr(self.body))
         unnamed = "<%s>" % ", ".join(repr_args)
@@ -89,7 +88,7 @@ class AggClause(Node):
     def _params_repr(params):
         params = params or {}
         return ", ".join(
-            "%s=%s" % (text(k), text(json.dumps(params[k], sort_keys=True)))
+            "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
             for k in sorted(params.keys())
         )
 
@@ -102,7 +101,8 @@ class AggClause(Node):
         return False
 
     def to_dict(self):
-        """ElasticSearch aggregation queries follow this formatting::
+        """
+        ElasticSearch aggregation queries follow this formatting::
 
             {
                 "<aggregation_name>" : {
@@ -128,7 +128,9 @@ class AggClause(Node):
         return aggs
 
     def get_filter(self, key):
-        """Return filter query to list documents having this aggregation key.
+        """
+        Return filter query to list documents having this aggregation key.
+
         :param key: string
         :return: elasticsearch filter query
         """
@@ -146,8 +148,8 @@ class AggClause(Node):
 
     def __str__(self):
         return "<{class_}, type={type}, body={body}>".format(
-            class_=text(self.__class__.__name__),
-            type=text(self.KEY),
+            class_=str(self.__class__.__name__),
+            type=str(self.KEY),
             body=json.dumps(self.body),
         )
 
@@ -159,7 +161,9 @@ class AggClause(Node):
 
 
 class Root(AggClause):
-    """Not a real aggregation. Just the initial empty dict."""
+    """
+    Not a real aggregation. Just the initial empty dict (used as lighttree.Tree root).
+    """
 
     KEY = "_root"
 
@@ -175,7 +179,9 @@ class Root(AggClause):
 
 
 class MetricAgg(AggClause):
-    """Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted."""
+    """
+    Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted.
+    """
 
     VALUE_ATTRS = None
 
@@ -186,8 +192,9 @@ class MetricAgg(AggClause):
         return None
 
 
-class BucketAggNode(AggClause):
-    """Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
+class BucketAggClause(AggClause):
+    """
+    Bucket aggregation have special abilities: they can encapsulate other aggregations as children.
     Each time, the extracted value is a 'doc_count'.
 
     Provide methods:
@@ -222,7 +229,7 @@ class BucketAggNode(AggClause):
         raise NotImplementedError()
 
 
-class UniqueBucketAgg(BucketAggNode):
+class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
     VALUE_ATTRS = None
@@ -234,13 +241,14 @@ class UniqueBucketAgg(BucketAggNode):
         raise NotImplementedError()
 
 
-class MultipleBucketAgg(BucketAggNode):
+class MultipleBucketAgg(BucketAggClause):
 
     VALUE_ATTRS = None
     IMPLICIT_KEYED = False
 
     def __init__(self, keyed=None, key_path="key", meta=None, **body):
-        """Aggregation that return either a list or a map of buckets.
+        """
+        Aggregation that return either a list or a map of buckets.
 
         If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
         list item).
@@ -273,7 +281,9 @@ class MultipleBucketAgg(BucketAggNode):
 
 
 class FieldOrScriptMetricAgg(MetricAgg):
-    """Metric aggregation based on single field."""
+    """
+    Metric aggregation based on single field.
+    """
 
     VALUE_ATTRS = None
 

@@ -4,15 +4,15 @@
 from unittest import TestCase
 
 from pandagg.exceptions import AbsentMappingFieldError
-from pandagg.mapping import Keyword, Object, Text, Nested, Integer, Mapping
-from pandagg.node.mapping.abstract import Field
-from tests.testing_samples.mapping_example import MAPPING, EXPECTED_MAPPING_TREE_REPR
+from pandagg.mappings import Keyword, Object, Text, Nested, Integer, Mappings
+from pandagg.node.mappings.abstract import Field
+from tests.testing_samples.mapping_example import MAPPINGS, EXPECTED_MAPPING_TREE_REPR
 
 
-class MappingTreeTestCase(TestCase):
+class MappingsTreeTestCase(TestCase):
     """All tree logic is tested in utils.
     Here, check that:
-     - a dict mapping is correctly parsed into a tree,
+     - a dict mappings is correctly parsed into a tree,
      - it has the right representation.
     """
 
@@ -45,9 +45,9 @@ class MappingTreeTestCase(TestCase):
             },
         }
 
-        m1 = Mapping(**mapping_dict)
+        m1 = Mappings(**mapping_dict)
 
-        m2 = Mapping(
+        m2 = Mappings(
             dynamic=False,
             properties={
                 "classification_type": Keyword(fields={"raw": Text()}),
@@ -66,7 +66,7 @@ class MappingTreeTestCase(TestCase):
             },
         )
 
-        expected_repr = """<Mapping>
+        expected_repr = """<Mappings>
 _
 ├── classification_type                              Keyword
 │   └── raw                                           ~ Text
@@ -80,12 +80,12 @@ _
             self.assertEqual(m.to_dict(), mapping_dict, "failed at m%d" % (i + 1))
 
     def test_parse_tree_from_dict(self):
-        mapping_tree = Mapping(**MAPPING)
+        mapping_tree = Mappings(**MAPPINGS)
 
         self.assertEqual(mapping_tree.__str__(), EXPECTED_MAPPING_TREE_REPR)
 
     def test_nesteds_applied_at_field(self):
-        mapping_tree = Mapping(**MAPPING)
+        mapping_tree = Mappings(**MAPPINGS)
 
         self.assertEqual(mapping_tree.nested_at_field("classification_type"), None)
         self.assertEqual(mapping_tree.list_nesteds_at_field("classification_type"), [])
@@ -108,7 +108,7 @@ _
         )
 
     def test_mapping_type_of_field(self):
-        mapping_tree = Mapping(**MAPPING)
+        mapping_tree = Mappings(**MAPPINGS)
         with self.assertRaises(AbsentMappingFieldError):
             self.assertEqual(mapping_tree.mapping_type_of_field("yolo"), False)
 
@@ -124,7 +124,7 @@ _
         )
 
     def test_node_path(self):
-        mapping_tree = Mapping(**MAPPING)
+        mapping_tree = Mappings(**MAPPINGS)
         # get node by path syntax
         k, node = mapping_tree.get("local_metrics.dataset.support_test", by_path=True)
         self.assertIsInstance(node, Field)

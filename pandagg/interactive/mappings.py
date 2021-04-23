@@ -5,43 +5,43 @@ import json
 
 from lighttree import TreeBasedObj
 
-from pandagg.tree.mapping import _mapping
+from pandagg.tree.mappings import _mappings
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.utils import DSLMixin
 
 
-class IMapping(DSLMixin, TreeBasedObj):
-    """Interactive wrapper upon mapping tree, allowing field navigation and quick access to single clause aggregations
+class IMappings(DSLMixin, TreeBasedObj):
+    """Interactive wrapper upon mappings tree, allowing field navigation and quick access to single clause aggregations
     computation.
     """
 
-    _REPR_NAME = "Mapping"
+    _REPR_NAME = "Mappings"
     _NODE_PATH_ATTR = "name"
 
     def __init__(
         self,
-        mapping,
+        mappings,
         client=None,
         index=None,
         depth=1,
         root_path=None,
         initial_tree=None,
     ):
-        if mapping is None:
-            raise ValueError("mapping cannot be None")
+        if mappings is None:
+            raise ValueError("mappings cannot be None")
         self._client = client
         self._index = index
-        super(IMapping, self).__init__(
-            tree=_mapping(mapping),
+        super(IMappings, self).__init__(
+            tree=_mappings(mappings),
             root_path=root_path,
             depth=depth,
             initial_tree=initial_tree,
         )
-        # if we reached a leave, add aggregation capabilities based on reached mapping type
+        # if we reached a leave, add aggregation capabilities based on reached mappings type
         self._set_agg_property_if_required()
 
     def _clone(self, nid, root_path, depth):
-        return IMapping(
+        return IMappings(
             self._tree.subtree(nid)[1],
             client=self._client,
             root_path=root_path,
@@ -59,7 +59,7 @@ class IMapping(DSLMixin, TreeBasedObj):
                     search=search_class(
                         using=self._client,
                         index=self._index,
-                        mapping=self._initial_tree,
+                        mappings=self._initial_tree,
                         repr_auto_execute=True,
                         nested_autocorrect=True,
                     ),

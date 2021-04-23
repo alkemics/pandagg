@@ -2,10 +2,10 @@ import json
 from os.path import join
 from elasticsearch import Elasticsearch, helpers
 from examples.imdb.conf import ES_HOST, ES_USE_AUTH, ES_PASSWORD, ES_USER, DATA_DIR
-from pandagg.mapping import Mapping, Keyword, Text, Float, Nested, Integer
+from pandagg.mappings import Mappings, Keyword, Text, Float, Nested, Integer
 
 index_name = "movies"
-mapping = Mapping(
+mappings = Mappings(
     dynamic=False,
     properties={
         "movie_id": Keyword(),
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     print("CREATE INDEX\n")
     es_client.indices.create(index_name)
     print("-" * 50)
-    print("UPDATE MAPPING\n")
-    es_client.indices.put_mapping(index=index_name, body=mapping)
+    print("UPDATE MAPPINGS\n")
+    es_client.indices.put_mapping(index=index_name, body=mappings)
 
     print("-" * 50)
     print("WRITE DOCUMENTS\n")

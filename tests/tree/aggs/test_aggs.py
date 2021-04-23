@@ -15,7 +15,7 @@ from pandagg.aggs import DateHistogram, Terms, Avg, Min, Filter
 
 import tests.testing_samples.data_sample as sample
 
-from tests.testing_samples.mapping_example import MAPPING
+from tests.testing_samples.mapping_example import MAPPINGS
 
 
 class AggTestCase(TestCase):
@@ -101,7 +101,7 @@ genres                                           <terms, field="genres", size=3>
             )
 
     def test_add_node_with_mapping(self):
-        with_mapping = Aggs(mapping=MAPPING, nested_autocorrect=True)
+        with_mapping = Aggs(mappings=MAPPINGS, nested_autocorrect=True)
 
         # add regular node
         with_mapping = with_mapping.agg("workflow", Terms(field="workflow"))
@@ -249,7 +249,7 @@ workflow                                               <terms, field="workflow">
                     }
                 }
             },
-            mapping=MAPPING,
+            mappings=MAPPINGS,
         )
         self.assertEqual({k for k, _ in initial_agg_1.list()}, {None, "week"})
         pasted_agg_1 = Aggs(
@@ -314,7 +314,7 @@ workflow                                               <terms, field="workflow">
                     }
                 }
             },
-            mapping=MAPPING,
+            mappings=MAPPINGS,
             nested_autocorrect=True,
         )
         self.assertEqual({k for k, _ in initial_agg_2.list()}, {None, "week"})
@@ -460,7 +460,7 @@ workflow                                               <terms, field="workflow">
         # with required nested
         some_agg = Aggs(
             {"term_workflow": {"terms": {"field": "workflow", "size": 5}}},
-            mapping=MAPPING,
+            mappings=MAPPINGS,
             nested_autocorrect=True,
         )
         some_agg = some_agg.agg(
@@ -495,7 +495,7 @@ workflow                                               <terms, field="workflow">
         # with parent with required nested
         some_agg = Aggs(
             {"term_workflow": {"terms": {"field": "workflow", "size": 5}}},
-            mapping=MAPPING,
+            mappings=MAPPINGS,
             nested_autocorrect=True,
         )
         node = Avg(field="local_metrics.performance.test.f1_score")
@@ -572,7 +572,7 @@ workflow                                               <terms, field="workflow">
     def test_init_from_node_hierarchy(self):
         node_hierarchy = sample.get_node_hierarchy()
 
-        agg = Aggs(node_hierarchy, mapping=MAPPING)
+        agg = Aggs(node_hierarchy, mappings=MAPPINGS)
         self.assertEqual(agg.to_dict(), sample.EXPECTED_AGG_QUERY)
 
         # with nested
@@ -593,7 +593,7 @@ workflow                                               <terms, field="workflow">
                 },
             )
         }
-        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
+        agg = Aggs(node_hierarchy, mappings=MAPPINGS, nested_autocorrect=True)
         self.assertEqual(
             agg.to_dict(),
             {
@@ -796,7 +796,7 @@ workflow                                               <terms, field="workflow">
                 },
             )
         }
-        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
+        agg = Aggs(node_hierarchy, mappings=MAPPINGS, nested_autocorrect=True)
 
         self.assertEqual(agg.applied_nested_path_at_node(agg.id_from_key("week")), None)
         for node_key in (
@@ -871,7 +871,7 @@ A                                                             <terms, field="a">
                 },
             )
         }
-        agg = Aggs(node_hierarchy, mapping=MAPPING, nested_autocorrect=True)
+        agg = Aggs(node_hierarchy, mappings=MAPPINGS, nested_autocorrect=True)
         self.assertEqual(
             agg.get_key(agg._deepest_linear_bucket_agg),
             "local_metrics.field_class.name",
@@ -896,7 +896,7 @@ A                                                             <terms, field="a">
                 },
             )
         }
-        agg2 = Aggs(node_hierarchy_2, mapping=MAPPING, nested_autocorrect=True)
+        agg2 = Aggs(node_hierarchy_2, mappings=MAPPINGS, nested_autocorrect=True)
         self.assertEqual(agg2.get_key(agg2._deepest_linear_bucket_agg), "week")
 
     def test_grouped_by(self):

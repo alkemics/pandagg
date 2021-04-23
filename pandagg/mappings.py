@@ -1,8 +1,10 @@
-from pandagg.tree.mapping import Mapping
-from pandagg.interactive.mapping import IMapping
-from pandagg.node.mapping.field_datatypes import (
+from pandagg.tree.mappings import Mappings
+from pandagg.interactive.mappings import IMappings
+from pandagg.node.mappings.field_datatypes import (
     Text,
     Keyword,
+    ConstantKeyword,
+    WildCard,
     Long,
     Integer,
     Short,
@@ -41,7 +43,7 @@ from pandagg.node.mapping.field_datatypes import (
     Shape,
     Histogram,
 )
-from pandagg.node.mapping.meta_fields import (
+from pandagg.node.mappings.meta_fields import (
     Index,
     Type,
     Id,
@@ -54,10 +56,12 @@ from pandagg.node.mapping.meta_fields import (
 )
 
 __all__ = [
-    "Mapping",
-    "IMapping",
+    "Mappings",
+    "IMappings",
     "Text",
     "Keyword",
+    "ConstantKeyword",
+    "WildCard",
     "Long",
     "Integer",
     "Short",

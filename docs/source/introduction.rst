@@ -15,7 +15,7 @@ Elasticsearch tree structures
 
 Many Elasticsearch objects have a **tree** structure, ie they are built from a hierarchy of **nodes**:
 
-* a `mapping <https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html>`_ (tree) is a hierarchy of `fields <https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html>`_ (nodes)
+* a `mappings <https://www.elastic.co/guide/en/elasticsearch/reference/current/mappings.html>`_ (tree) is a hierarchy of `fields <https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html>`_ (nodes)
 * a `query <https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html>`_ (tree) is a hierarchy of query clauses (nodes)
 * an `aggregation <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html>`_ (tree) is a hierarchy of aggregation clauses (nodes)
 * an aggregation response (tree) is a hierarchy of response buckets (nodes)

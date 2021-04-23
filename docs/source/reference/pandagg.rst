@@ -21,7 +21,7 @@ Submodules
    pandagg.connections
    pandagg.discovery
    pandagg.exceptions
-   pandagg.mapping
+   pandagg.mappings
    pandagg.query
    pandagg.response
    pandagg.search

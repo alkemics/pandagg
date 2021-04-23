@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-MAPPING = {
+MAPPINGS = {
     "dynamic": False,
     "properties": {
         "classification_type": {"type": "keyword"},
@@ -136,5 +136,5 @@ EXPECTED_MAPPING_REPR = """_
 └── workflow                                         Keyword
 """
 
-EXPECTED_MAPPING_TREE_REPR = """<Mapping>\n%s""" % EXPECTED_MAPPING_REPR
-EXPECTED_CLIENT_BOUND_MAPPING_REPR = """<IMapping>\n%s""" % EXPECTED_MAPPING_REPR
+EXPECTED_MAPPING_TREE_REPR = """<Mappings>\n%s""" % EXPECTED_MAPPING_REPR
+EXPECTED_CLIENT_BOUND_MAPPING_REPR = """<IMappings>\n%s""" % EXPECTED_MAPPING_REPR

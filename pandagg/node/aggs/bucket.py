@@ -9,7 +9,6 @@
 - significant terms
 """
 
-from builtins import str as text
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
@@ -267,7 +266,7 @@ class Range(MultipleBucketAgg):
         else:
             key = "*-"
         if self.to_key in bucket:
-            key += text(bucket[self.to_key])
+            key += str(bucket[self.to_key])
         else:
             key += "*"
         return key
