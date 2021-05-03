@@ -46,11 +46,6 @@ class SearchTestCase(PandaggTestCase):
             {"_source": {"includes": ["col1", "col2"]}},
         )
 
-        with self.assertRaises(KeyError):
-            Search(mappings=Mappings(properties={"example": {"type": "keyword"}}))[
-                ["col1", "col2"]
-            ]
-
     def test_using(self):
         o = object()
         o2 = object()

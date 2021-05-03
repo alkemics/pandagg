@@ -3,7 +3,6 @@ import copy
 import json
 
 from elasticsearch.helpers import scan
-from lighttree.exceptions import NotFoundNodeError
 
 from pandagg.connections import get_connection
 from pandagg.query import Bool
@@ -338,22 +337,15 @@ class Search(DSLMixin, Request):
             s._params["from"] = n.start or 0
             s._params["size"] = n.stop - (n.start or 0) if n.stop is not None else 10
             return s
-        elif isinstance(n, list):
-            # Columns selection
-            if self._mappings:
-                for key in n:
-                    try:
-                        self._mappings.id_from_key(key)
-                    except NotFoundNodeError:
-                        raise KeyError("%s not in index" % key)
-            return self.source(includes=n)
-        else:  # This is an index lookup, equivalent to slicing by [n:n+1].
-            # If negative index, abort.
-            if n < 0:
-                raise ValueError("Search does not support negative indexing.")
-            s._params["from"] = n
-            s._params["size"] = 1
-            return s
+        if isinstance(n, list):
+            return s.source(includes=n)
+        # This is an index lookup, equivalent to slicing by [n:n+1].
+        # If negative index, abort.
+        if n < 0:
+            raise ValueError("Search does not support negative indexing.")
+        s._params["from"] = n
+        s._params["size"] = 1
+        return s
 
     def size(self, size):
         """
