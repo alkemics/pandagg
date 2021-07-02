@@ -25,6 +25,9 @@ develop:
 doc-references:
 	-make -C docs api-doc
 
+tests:
+    pytest
+
 coverage:
 	coverage run --source=./pandagg -m pytest
 	coverage report

@@ -14,6 +14,15 @@ README = open(os.path.join(here, "README.md")).read()
 
 install_requires = ["six", "future", "lighttree==1.1.1", "elasticsearch>=7.0.0,<8.0.0"]
 
+develop_requires = [
+    "pre-commit",
+    "black",
+    "flake8",
+    "pytest",
+    "pytest-cov",
+    "mock",
+    "pandas",
+]
 
 setup(
     name="pandagg",
@@ -30,6 +39,7 @@ setup(
     test_suite="pandagg.tests",
     zip_safe=False,
     install_requires=install_requires,
-    setup_requires=["pytest-runner"],
+    extras_require={"develop": develop_requires},
+    tests_require=develop_requires,
     license="Apache-2.0",
 )
