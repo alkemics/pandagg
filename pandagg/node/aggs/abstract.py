@@ -98,7 +98,9 @@ class AggClause(Node):
             return field_type in cls.WHITELISTED_MAPPING_TYPES
         if cls.BLACKLISTED_MAPPING_TYPES is not None:
             return field_type not in cls.BLACKLISTED_MAPPING_TYPES
-        return False
+        # by default laxist
+        # TODO - constraint to only allowed types
+        return True
 
     def to_dict(self):
         """
