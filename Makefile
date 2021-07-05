@@ -20,7 +20,7 @@ black:
 	black examples docs pandagg tests setup.py
 
 develop:
-	-python -m pip install -e .
+	-python -m pip install -e ".[develop]"
 
 doc-references:
 	-make -C docs api-doc
