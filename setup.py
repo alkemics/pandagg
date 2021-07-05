@@ -17,6 +17,7 @@ install_requires = ["six", "future", "lighttree==1.1.1", "elasticsearch>=7.0.0,<
 develop_requires = [
     "pre-commit",
     "black",
+    "coverage",
     "flake8",
     "pytest",
     "pytest-cov",
