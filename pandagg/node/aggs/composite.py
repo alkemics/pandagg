@@ -2,6 +2,10 @@ from .abstract import BucketAggClause
 
 
 class Composite(BucketAggClause):
+
+    KEY = "composite"
+    VALUE_ATTRS = ["doc_count"]
+
     def __init__(self, sources, size=None, after_key=None, meta=None, **body):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
         :param sources:
