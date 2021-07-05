@@ -163,45 +163,47 @@ class Aggregations:
 
         Yields each row for which last bucket aggregation generated buckets.
         """
-        # initialization: find ancestors once for faster computation
+        # initialization: cache ancestors once for faster computation, that will be passed as arguments to downside
+        # recursive calls
         if ancestors is None:
             until_id = self._aggs.id_from_key(until)
             ancestors = self._aggs.ancestors(until_id, include_current=True)
-            # remove eventual fake root
-            ancestors = [(k, n) for k, n in ancestors if k is not None]
+            # remove root (not an aggregation clause)
+            ancestors = [(k, n) for k, n in ancestors[:-1]]
             agg_name, agg_node = ancestors[-1]
+
+        if agg_name not in response:
+            return
+
         if not row:
             row = [] if row_as_tuple else {}
-        if agg_name in response:
-            agg_node = [n for k, n in ancestors if k == agg_name][0]
-            for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
-                sub_row = copy.copy(row)
-                if (
-                    not isinstance(agg_node, UniqueBucketAgg)
-                    or with_single_bucket_groups
-                ):
-                    if row_as_tuple:
-                        sub_row.append(key)
-                    else:
-                        sub_row[agg_name] = key
-                if agg_name == until:
-                    # end real yield
-                    if row_as_tuple:
-                        yield tuple(sub_row), raw_bucket
-                    else:
-                        yield sub_row, raw_bucket
-                elif agg_name in {k for k, _ in ancestors}:
-                    # yield children
-                    for child_key, _ in self._aggs.children(agg_node.identifier):
-                        for nrow, nraw_bucket in self._parse_group_by(
-                            row=sub_row,
-                            response=raw_bucket,
-                            agg_name=child_key,
-                            until=until,
-                            row_as_tuple=row_as_tuple,
-                            ancestors=ancestors,
-                        ):
-                            yield nrow, nraw_bucket
+
+        agg_node = [n for k, n in ancestors if k == agg_name][0]
+        for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
+            sub_row = copy.copy(row)
+            if not isinstance(agg_node, UniqueBucketAgg) or with_single_bucket_groups:
+                if row_as_tuple:
+                    sub_row.append(key)
+                else:
+                    sub_row[agg_name] = key
+            if agg_name == until:
+                # end real yield
+                if row_as_tuple:
+                    yield tuple(sub_row), raw_bucket
+                else:
+                    yield sub_row, raw_bucket
+            elif agg_name in {k for k, _ in ancestors}:
+                # yield children
+                for child_key, _ in self._aggs.children(agg_node.identifier):
+                    for nrow, nraw_bucket in self._parse_group_by(
+                        row=sub_row,
+                        response=raw_bucket,
+                        agg_name=child_key,
+                        until=until,
+                        row_as_tuple=row_as_tuple,
+                        ancestors=ancestors,
+                    ):
+                        yield nrow, nraw_bucket
 
     def _normalize_buckets(self, agg_response, agg_name=None):
         """
@@ -293,7 +295,7 @@ class Aggregations:
         :param index_orient: if True, level-key samples are returned as tuples, else in a dictionnary
         :param grouped_by: name of the aggregation node used as last grouping level
         :param normalize: if True, normalize columns buckets
-        :return: index, index_names, values
+        :return: index_names, values
         """
         grouping_key, grouping_agg = self._grouping_agg(grouped_by)
         if grouping_key is None:
@@ -431,7 +433,7 @@ class Aggregations:
         elif output == "dataframe":
             return self.to_dataframe(**kwargs)
         else:
-            raise NotImplementedError("Unkown %s output format." % output)
+            raise NotImplementedError("Unknown %s output format." % output)
 
     def __repr__(self):
         if not self.keys():
