@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 import os
 
@@ -17,11 +17,14 @@ install_requires = ["six", "future", "lighttree==1.1.1", "elasticsearch>=7.0.0,<
 develop_requires = [
     "pre-commit",
     "black",
+    "coverage",
     "flake8",
     "pytest",
     "pytest-cov",
     "mock",
     "pandas",
+    "Sphinx",
+    "twine",
 ]
 
 setup(

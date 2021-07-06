@@ -20,16 +20,25 @@ black:
 	black examples docs pandagg tests setup.py
 
 develop:
-	-python -m pip install -e .
+	-python -m pip install -e ".[develop]"
 
 doc-references:
 	-make -C docs api-doc
 
 tests:
-    pytest
+	pytest
 
 coverage:
 	coverage run --source=./pandagg -m pytest
 	coverage report
 
-check: black doc-references
+check: doc-references black lint
+
+create_dist: check
+	python setup.py sdist bdist_wheel
+
+test_dist: create_dist
+	twine upload -r testpypi dist/*
+
+upload_dist:
+	twine upload dist/*
