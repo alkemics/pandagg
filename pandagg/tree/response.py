@@ -59,9 +59,9 @@ class AggsResponseTree(Tree):
             properties[bucket.level] = bucket.key
         if depth is not None:
             depth -= 1
-        _, parent = self.parent(bucket.identifier)
-        if bucket.level == end_level or depth == 0 or parent is None:
+        if bucket.identifier == self.root or bucket.level == end_level or depth == 0:
             return properties
+        _, parent = self.parent(bucket.identifier)
         return self.bucket_properties(parent, properties, end_level, depth)
 
     def get_bucket_filter(self, nid):

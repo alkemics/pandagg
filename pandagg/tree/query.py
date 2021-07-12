@@ -453,7 +453,7 @@ class Query(Tree):
                     % (node.KEY, existing.KEY)
                 )
             if mode == REPLACE_ALL:
-                pid = self.parent_id(on)
+                pid = None if on == self.root else self.parent_id(on)
                 existing_k, _ = self.drop_subtree(on)
                 self._insert_query(node, insert_below=pid)
                 existing.body = node.body
