@@ -4,7 +4,7 @@ from pandagg.node.query.compound import CompoundClause
 
 class Nested(CompoundClause):
     _default_operator = "query"
-    _parent_params = {"query": False}
+    _parent_params = ["query"]
     KEY = "nested"
 
     def __init__(self, path, **kwargs):
@@ -14,13 +14,13 @@ class Nested(CompoundClause):
 
 class HasChild(CompoundClause):
     _default_operator = "query"
-    _parent_params = {"query": False}
+    _parent_params = ["query"]
     KEY = "has_child"
 
 
 class HasParent(CompoundClause):
     _default_operator = "query"
-    _parent_params = {"query": False}
+    _parent_params = ["query"]
     KEY = "has_parent"
 
 

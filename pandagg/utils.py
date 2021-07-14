@@ -4,6 +4,7 @@
 
 # adapted from https://github.com/elastic/elasticsearch-dsl-py/blob/master/elasticsearch_dsl/utils.py#L162
 from six import add_metaclass
+from typing import Dict, Any
 
 
 class DslMeta(type):
@@ -17,7 +18,7 @@ class DslMeta(type):
     on it's name.
     """
 
-    _types = {}
+    _types: Dict[str, Any] = {}
 
     def __init__(cls, name, bases, attrs):
         super(DslMeta, cls).__init__(name, bases, attrs)

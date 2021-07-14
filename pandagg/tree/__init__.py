@@ -1,3 +1,3 @@
-from .aggs import *
-from .query import *
-from .mappings import *
+import pandagg.tree.aggs
+import pandagg.tree.query
+import pandagg.tree.mappings

@@ -86,7 +86,6 @@ class ReverseNested(UniqueBucketAgg):
 class Missing(UniqueBucketAgg):
     KEY = "missing"
     VALUE_ATTRS = ["doc_count"]
-    BLACKLISTED_MAPPING_TYPES = []
 
     def __init__(self, field, meta=None, **body):
         super(UniqueBucketAgg, self).__init__(field=field, meta=meta, **body)
@@ -100,7 +99,6 @@ class Terms(MultipleBucketAgg):
 
     KEY = "terms"
     VALUE_ATTRS = ["doc_count", "doc_count_error_upper_bound", "sum_other_doc_count"]
-    BLACKLISTED_MAPPING_TYPES = []
 
     def __init__(self, field, missing=None, size=None, meta=None, **body):
         self.field = field
@@ -291,10 +289,3 @@ class DateRange(Range):
     def __init__(self, field, key_as_string=True, meta=None, **body):
         self.key_as_string = key_as_string
         super(DateRange, self).__init__(field=field, keyed=True, meta=meta, **body)
-
-
-class Composite(MultipleBucketAgg):
-    KEY = "composite"
-
-    def get_filter(self, key):
-        raise NotImplementedError()

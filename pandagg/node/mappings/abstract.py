@@ -4,11 +4,12 @@
 import json
 
 from pandagg.node._node import Node
+from typing import Optional
 
 
 class Field(Node):
     _type_name = "field"
-    KEY = None
+    KEY: Optional[str] = None
 
     def __init__(self, multiple=None, nullable=True, **body):
         """
@@ -56,8 +57,6 @@ class Field(Node):
 
 
 class ComplexField(Field):
-    KEY = None
-
     def __init__(self, **body):
         properties = body.pop("properties", None)
         if properties and not isinstance(properties, dict):
@@ -70,8 +69,6 @@ class ComplexField(Field):
 
 
 class RegularField(Field):
-    KEY = None
-
     def __init__(self, **body):
         fields = body.pop("fields", None)
         if fields and not isinstance(fields, dict):

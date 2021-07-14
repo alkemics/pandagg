@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from collections import OrderedDict, defaultdict
 
 from pandagg.node.query.joining import Nested

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from pandagg.node import Object, Nested
+from pandagg.node.mappings import Object, Nested
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
 
 

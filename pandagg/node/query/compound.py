@@ -1,4 +1,5 @@
 from pandagg.node.query.abstract import QueryClause
+from typing import List, Optional
 
 
 class CompoundClause(QueryClause):
@@ -16,9 +17,8 @@ class CompoundClause(QueryClause):
 
     """
 
-    _default_operator = None
-    # key -> multiple / single
-    _parent_params = {}
+    _default_operator: Optional[str] = None
+    _parent_params: List[str] = []
 
     def __init__(self, _name=None, **body):
         b = body.copy()
@@ -39,7 +39,7 @@ class Bool(CompoundClause):
     """
 
     _default_operator = "must"
-    _parent_params = {"should": True, "must": True, "must_not": True, "filter": True}
+    _parent_params = ["should", "must", "must_not", "filter"]
     KEY = "bool"
 
 

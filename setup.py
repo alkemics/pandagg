@@ -12,7 +12,7 @@ from setuptools import find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
 
-install_requires = ["six", "future", "lighttree==1.1.2", "elasticsearch>=7.0.0,<8.0.0"]
+install_requires = ["six", "lighttree==1.1.4", "elasticsearch>=7.0.0,<8.0.0"]
 
 develop_requires = [
     "pre-commit",
@@ -22,6 +22,7 @@ develop_requires = [
     "pytest",
     "pytest-cov",
     "mock",
+    "mypy",
     "pandas",
     "Sphinx",
     "twine",

@@ -4,47 +4,46 @@
 from pandagg.node.query.abstract import ParentParameterClause
 
 
-class Filter(ParentParameterClause):
+class _Filter(ParentParameterClause):
     KEY = "filter"
     MULTIPLE = True
 
 
-class Must(ParentParameterClause):
+class _Must(ParentParameterClause):
     KEY = "must"
     MULTIPLE = True
 
 
-class MustNot(ParentParameterClause):
+class _MustNot(ParentParameterClause):
     KEY = "must_not"
     MULTIPLE = True
 
 
-class Negative(ParentParameterClause):
+class _Negative(ParentParameterClause):
     KEY = "negative"
     MULTIPLE = False
 
 
-class Organic(ParentParameterClause):
+class _Organic(ParentParameterClause):
     KEY = "organic"
     MULTIPLE = False
 
 
-class Positive(ParentParameterClause):
+class _Positive(ParentParameterClause):
     KEY = "positive"
     MULTIPLE = False
 
 
-class Queries(ParentParameterClause):
+class _Queries(ParentParameterClause):
     KEY = "queries"
     MULTIPLE = True
 
 
-class QueryP(ParentParameterClause):
-    # different name to avoid confusion with Query "tree" class
+class _Query(ParentParameterClause):
     KEY = "query"
     MULTIPLE = False
 
 
-class Should(ParentParameterClause):
+class _Should(ParentParameterClause):
     KEY = "should"
     MULTIPLE = True

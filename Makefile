@@ -28,6 +28,9 @@ doc-references:
 tests:
 	pytest
 
+mypy:
+	mypy --install-types pandagg
+
 coverage:
 	coverage run --source=./pandagg -m pytest
 	coverage report

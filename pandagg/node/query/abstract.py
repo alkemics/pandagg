@@ -4,6 +4,7 @@
 import json
 
 from pandagg.node._node import Node
+from typing import Optional
 
 
 def Q(type_or_query=None, **body):
@@ -44,7 +45,6 @@ def Q(type_or_query=None, **body):
 
 class QueryClause(Node):
     _type_name = "query"
-    KEY = None
 
     def __init__(
         self, _name=None, accept_children=True, keyed=True, _children=None, **body
@@ -168,7 +168,7 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
     -> body = {"term": {"user": {"value": "Kimchy"}}}
     """
 
-    _implicit_param = None
+    _implicit_param: Optional[str] = None
 
     def __init__(self, field=None, _name=None, _expand__to_dot=True, **params):
         if field is None:

@@ -4,12 +4,13 @@
 from lighttree import Node as OriginalNode
 
 from pandagg.utils import DSLMixin
+from typing import Optional
 
 
 class Node(DSLMixin, OriginalNode):
 
-    KEY = None
-    _type_name = None
+    KEY: Optional[str] = None
+    _type_name: Optional[str] = None
 
     NID_SIZE = 8
 

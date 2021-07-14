@@ -4,6 +4,7 @@
 import json
 
 from pandagg.node._node import Node
+from typing import Optional, List
 
 
 def A(name, type_or_agg=None, **body):
@@ -62,10 +63,10 @@ class AggClause(Node):
     """
 
     _type_name = "agg"
-    KEY = None
-    VALUE_ATTRS = None
-    WHITELISTED_MAPPING_TYPES = None
-    BLACKLISTED_MAPPING_TYPES = None
+    KEY: Optional[str] = None
+    VALUE_ATTRS: Optional[List[str]] = None
+    WHITELISTED_MAPPING_TYPES: Optional[List[str]] = None
+    BLACKLISTED_MAPPING_TYPES: Optional[List[str]] = None
 
     def __init__(self, meta=None, **body):
         identifier = body.pop("identifier", None)
@@ -185,8 +186,6 @@ class MetricAgg(AggClause):
     Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted.
     """
 
-    VALUE_ATTRS = None
-
     def extract_buckets(self, response_value):
         yield None, response_value
 
@@ -214,8 +213,6 @@ class BucketAggClause(AggClause):
     >>> )
     """
 
-    VALUE_ATTRS = None
-
     def __init__(self, meta=None, **body):
         identifier = body.pop("identifier", None)
         self.body = body
@@ -234,8 +231,6 @@ class BucketAggClause(AggClause):
 class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
-    VALUE_ATTRS = None
-
     def extract_buckets(self, response_value):
         yield None, response_value
 
@@ -245,7 +240,6 @@ class UniqueBucketAgg(BucketAggClause):
 
 class MultipleBucketAgg(BucketAggClause):
 
-    VALUE_ATTRS = None
     IMPLICIT_KEYED = False
 
     def __init__(self, keyed=None, key_path="key", meta=None, **body):
@@ -287,8 +281,6 @@ class FieldOrScriptMetricAgg(MetricAgg):
     Metric aggregation based on single field.
     """
 
-    VALUE_ATTRS = None
-
     def __init__(self, field=None, script=None, meta=None, **body):
         self.field = field
         self.script = script
@@ -300,9 +292,6 @@ class FieldOrScriptMetricAgg(MetricAgg):
 
 
 class Pipeline(UniqueBucketAgg):
-
-    VALUE_ATTRS = None
-
     def __init__(self, buckets_path, gap_policy=None, meta=None, **body):
         self.buckets_path = buckets_path
         self.gap_policy = gap_policy
@@ -318,8 +307,7 @@ class Pipeline(UniqueBucketAgg):
 
 
 class ScriptPipeline(Pipeline):
-    KEY = None
-    VALUE_ATTRS = "value"
+    VALUE_ATTRS: Optional[List[str]] = ["value"]
 
     def __init__(self, script, buckets_path, gap_policy=None, meta=None, **body):
         super(ScriptPipeline, self).__init__(

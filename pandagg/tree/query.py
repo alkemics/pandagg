@@ -483,7 +483,7 @@ class Query(Tree):
                     % pnode.KEY
                 )
             compound_param = compound_param or pnode._default_operator
-            if compound_param not in pnode._parent_params.keys():
+            if compound_param not in pnode._parent_params:
                 raise ValueError(
                     "<%s> parameter for <%s> compound clause does not accept children clauses."
                     % (compound_param, pnode.KEY)
