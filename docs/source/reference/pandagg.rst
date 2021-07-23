@@ -25,6 +25,7 @@ Submodules
    pandagg.query
    pandagg.response
    pandagg.search
+   pandagg.types
    pandagg.utils
 
 Module contents

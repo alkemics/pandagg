@@ -1,4 +1,6 @@
 from .abstract import BucketAggClause
+from typing import Optional, Any, Dict
+from pandagg.types import Meta
 
 
 class Composite(BucketAggClause):
@@ -6,7 +8,14 @@ class Composite(BucketAggClause):
     KEY = "composite"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, sources, size=None, after_key=None, meta=None, **body):
+    def __init__(
+        self,
+        sources,
+        size: Optional[int] = None,
+        after_key: Optional[Dict[str, Any]] = None,
+        meta: Meta = None,
+        **body: Any
+    ):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
         :param sources:
         :param size:
@@ -15,9 +24,10 @@ class Composite(BucketAggClause):
         :param body:
         """
         self._sources = sources
-        self._size = size
-        self._after_key = after_key
-        self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
+        self._size: Optional[int] = size
+        self._after_key: Optional[Dict[str, Any]] = after_key
+        _children: Dict[str, Any] = body.pop("aggs", None) or body.pop("aggregations", None) or {}  # type: ignore
+        self._children: Dict[str, Any] = _children
         if size is not None:
             body["size"] = size
         if after_key is not None:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Not implemented aggregations include:
 - children agg
 - geo-distance
@@ -12,6 +10,8 @@
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
+from pandagg.types import Meta
+from typing import Any, Optional, Dict, Union
 
 
 class Global(UniqueBucketAgg):
@@ -19,7 +19,7 @@ class Global(UniqueBucketAgg):
     KEY = "global"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, meta=None):
+    def __init__(self, meta: Meta = None):
         super(Global, self).__init__(agg_body={}, meta=meta)
 
     def get_filter(self, key):
@@ -31,7 +31,9 @@ class Filter(UniqueBucketAgg):
     KEY = "filter"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, filter=None, meta=None, **body):
+    def __init__(
+        self, filter: Optional[Dict[str, Any]] = None, meta: Meta = None, **body: Any
+    ):
         if (filter is not None) != (not body):
             raise ValueError(
                 'Filter aggregation requires exactly one of "filter" or "body"'
@@ -48,7 +50,7 @@ class Filter(UniqueBucketAgg):
 
 
 class MatchAll(Filter):
-    def __init__(self, meta=None, **body):
+    def __init__(self, meta: Meta = None, **body: Any):
         super(MatchAll, self).__init__(filter={"match_all": {}}, meta=meta, **body)
 
 
@@ -58,7 +60,7 @@ class Nested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, path, meta=None, **body):
+    def __init__(self, path: str, meta: Meta = None, **body: Any):
         self.path = path
         super(Nested, self).__init__(path=path, meta=meta, **body)
 
@@ -72,7 +74,7 @@ class ReverseNested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, path=None, meta=None, **body):
+    def __init__(self, path: Optional[str] = None, meta: Meta = None, **body: Any):
         self.path = path
         body_kwargs = dict(body)
         if path:
@@ -87,7 +89,7 @@ class Missing(UniqueBucketAgg):
     KEY = "missing"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, field, meta=None, **body):
+    def __init__(self, field: str, meta: Meta = None, **body: Any):
         super(UniqueBucketAgg, self).__init__(field=field, meta=meta, **body)
 
     def get_filter(self, key):
@@ -100,7 +102,14 @@ class Terms(MultipleBucketAgg):
     KEY = "terms"
     VALUE_ATTRS = ["doc_count", "doc_count_error_upper_bound", "sum_other_doc_count"]
 
-    def __init__(self, field, missing=None, size=None, meta=None, **body):
+    def __init__(
+        self,
+        field: str,
+        missing: Union[int, str] = None,
+        size: Optional[int] = None,
+        meta: Meta = None,
+        **body: Any
+    ):
         self.field = field
         self.missing = missing
         self.size = size
@@ -128,7 +137,12 @@ class Filters(MultipleBucketAgg):
     IMPLICIT_KEYED = True
 
     def __init__(
-        self, filters, other_bucket=False, other_bucket_key=None, meta=None, **body
+        self,
+        filters: Dict[str, Any],
+        other_bucket: bool = False,
+        other_bucket_key: Optional[str] = None,
+        meta: Meta = None,
+        **body: Any
     ):
         self.filters = filters
         self.other_bucket = other_bucket
@@ -161,7 +175,7 @@ class Histogram(MultipleBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
-    def __init__(self, field, interval, meta=None, **body):
+    def __init__(self, field: str, interval: int, meta: Meta = None, **body: Any):
         self.field = field
         self.interval = interval
         super(Histogram, self).__init__(
@@ -187,15 +201,15 @@ class DateHistogram(MultipleBucketAgg):
 
     def __init__(
         self,
-        field,
-        interval=None,
-        calendar_interval=None,
-        fixed_interval=None,
-        meta=None,
-        keyed=False,
-        key_as_string=True,
-        **body
-    ):
+        field: str,
+        interval: str = None,
+        calendar_interval: str = None,
+        fixed_interval: str = None,
+        meta: Meta = None,
+        keyed: bool = False,
+        key_as_string: bool = True,
+        **body: Any
+    ) -> None:
         """Date Histogram aggregation.
         Note: interval is deprecated from 7.2 in favor of calendar_interval and fixed interval
         :param keyed: defines returned buckets format: if True, as dict.
@@ -232,10 +246,14 @@ class Range(MultipleBucketAgg):
     KEY = "range"
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
-    KEY_SEP = "-"
+    KEY_SEP: str = "-"
 
-    def __init__(self, field, ranges, keyed=False, meta=None, **body):
-        self.field = field
+    bucket_key_suffix: Optional[str]
+
+    def __init__(
+        self, field: str, ranges, keyed: bool = False, meta: Meta = None, **body: Any
+    ):
+        self.field: str = field
         self.ranges = ranges
         body_kwargs = dict(body)
         if keyed:
@@ -247,18 +265,18 @@ class Range(MultipleBucketAgg):
         )
 
     @property
-    def from_key(self):
+    def from_key(self) -> str:
         if self.bucket_key_suffix:
             return "from%s" % self.bucket_key_suffix
         return "from"
 
     @property
-    def to_key(self):
+    def to_key(self) -> str:
         if self.bucket_key_suffix:
             return "to%s" % self.bucket_key_suffix
         return "to"
 
-    def _extract_bucket_key(self, bucket):
+    def _extract_bucket_key(self, bucket) -> str:
         if self.from_key in bucket:
             key = "%s%s" % (bucket[self.from_key], self.KEY_SEP)
         else:
@@ -269,7 +287,7 @@ class Range(MultipleBucketAgg):
             key += "*"
         return key
 
-    def get_filter(self, key):
+    def get_filter(self, key: str) -> Dict[str, Any]:
         from_, to_ = key.split(self.KEY_SEP)
         inner = {}
         if from_ != "*":
@@ -284,8 +302,10 @@ class DateRange(Range):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["date"]
     # cannot use range '-' separator since some keys contain it
-    KEY_SEP = "::"
+    KEY_SEP: str = "::"
 
-    def __init__(self, field, key_as_string=True, meta=None, **body):
+    def __init__(
+        self, field: str, key_as_string: bool = True, meta: Meta = None, **body: Any
+    ):
         self.key_as_string = key_as_string
         super(DateRange, self).__init__(field=field, keyed=True, meta=meta, **body)

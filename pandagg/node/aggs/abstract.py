@@ -4,13 +4,133 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, List
+from typing import Optional, List, Union, Dict, Any, Tuple
+
+from pandagg.types import Meta
 
 
-def A(name, type_or_agg=None, **body):
+class AggClause(Node):
+    """
+    Wrapper around elasticsearch aggregation concept.
+    https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
+
+    Each aggregation can be seen both a Node that can be encapsulated in a parent agg.
+
+    Define a method to build aggregation request.
+    """
+
+    _type_name = "agg"
+    KEY: str
+
+    VALUE_ATTRS: List[str]
+    WHITELISTED_MAPPING_TYPES: List[str]
+    BLACKLISTED_MAPPING_TYPES: List[str]
+
+    def __init__(self, meta: Optional[Dict[str, Any]] = None, **body: Any) -> None:
+        identifier: Optional[str] = body.pop("identifier", None)
+        self.body: Dict[str, Any] = body
+        self.meta: Optional[Dict[str, Any]] = meta
+        self._children: Dict[str, Any] = {}
+        super(AggClause, self).__init__(identifier=identifier)
+
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
+        # root node
+        if not self.KEY:
+            return "_", ""
+        repr_args = [str(self.KEY)]
+        if self.body:
+            repr_args.append(self._params_repr(self.body))
+        unnamed = "<%s>" % ", ".join(repr_args)
+        return "", unnamed
+
+    @staticmethod
+    def _params_repr(params: Dict[str, Any]) -> str:
+        params = params or {}
+        return ", ".join(
+            "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
+            for k in sorted(params.keys())
+        )
+
+    @classmethod
+    def valid_on_field_type(cls, field_type: str) -> bool:
+        if hasattr(cls, "WHITELISTED_MAPPING_TYPES"):
+            return field_type in cls.WHITELISTED_MAPPING_TYPES
+        if hasattr(cls, "BLACKLISTED_MAPPING_TYPES"):
+            return field_type not in cls.BLACKLISTED_MAPPING_TYPES
+        # by default laxist
+        # TODO - constraint to only allowed types
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        ElasticSearch aggregation queries follow this formatting::
+
+            {
+                "<aggregation_name>" : {
+                    "<aggregation_type>" : {
+                        <aggregation_body>
+                    }
+                    [,"meta" : {  [<meta_data_body>] } ]?
+                }
+            }
+
+        to_dict() returns the following part (without aggregation name)::
+
+            {
+                "<aggregation_type>" : {
+                    <aggregation_body>
+                }
+                [,"meta" : {  [<meta_data_body>] } ]?
+            }
+        """
+        if self.KEY is None:
+            raise ValueError("For typing only")
+        aggs = {self.KEY: self.body}
+        if self.meta:
+            aggs["meta"] = self.meta
+        return aggs
+
+    def get_filter(self, key: str):
+        """
+        Return filter query to list documents having this aggregation key.
+
+        :param key: string
+        :return: elasticsearch filter query
+        """
+        raise NotImplementedError()
+
+    def extract_buckets(self, response_value):
+        raise NotImplementedError()
+
+    @classmethod
+    def extract_bucket_value(cls, response, value_as_dict=False):
+        attrs = cls.VALUE_ATTRS
+        if value_as_dict:
+            return {attr_: response.get(attr_) for attr_ in attrs}
+        return response.get(attrs[0])
+
+    def __str__(self):
+        return "<{class_}, type={type}, body={body}>".format(
+            class_=str(self.__class__.__name__),
+            type=str(self.KEY),
+            body=json.dumps(self.body),
+        )
+
+    def __eq__(self, other):
+        if isinstance(other, AggClause):
+            return other.to_dict() == self.to_dict()
+        # make sure we still equal to a dict with the same data
+        return other == self.to_dict()
+
+
+TypeOrAgg = Union[str, Dict[str, Any], AggClause]
+
+
+def A(name: str, type_or_agg: Optional[TypeOrAgg] = None, **body: Any) -> AggClause:
     """
     Accept multiple syntaxes, return a AggNode instance.
 
+    :param name: aggregation clause name
     :param type_or_agg:
     :param body:
     :return: AggNode
@@ -52,125 +172,14 @@ def A(name, type_or_agg=None, **body):
     raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
 
 
-class AggClause(Node):
-    """
-    Wrapper around elasticsearch aggregation concept.
-    https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations.html
-
-    Each aggregation can be seen both a Node that can be encapsulated in a parent agg.
-
-    Define a method to build aggregation request.
-    """
-
-    _type_name = "agg"
-    KEY: Optional[str] = None
-    VALUE_ATTRS: Optional[List[str]] = None
-    WHITELISTED_MAPPING_TYPES: Optional[List[str]] = None
-    BLACKLISTED_MAPPING_TYPES: Optional[List[str]] = None
-
-    def __init__(self, meta=None, **body):
-        identifier = body.pop("identifier", None)
-        self.body = body
-        self.meta = meta
-        self._children = {}
-        super(AggClause, self).__init__(identifier=identifier)
-
-    def line_repr(self, depth, **kwargs):
-        # root node
-        if self.KEY is None:
-            return "_", ""
-        repr_args = [str(self.KEY)]
-        if self.body:
-            repr_args.append(self._params_repr(self.body))
-        unnamed = "<%s>" % ", ".join(repr_args)
-        return "", unnamed
-
-    @staticmethod
-    def _params_repr(params):
-        params = params or {}
-        return ", ".join(
-            "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
-            for k in sorted(params.keys())
-        )
-
-    @classmethod
-    def valid_on_field_type(cls, field_type):
-        if cls.WHITELISTED_MAPPING_TYPES is not None:
-            return field_type in cls.WHITELISTED_MAPPING_TYPES
-        if cls.BLACKLISTED_MAPPING_TYPES is not None:
-            return field_type not in cls.BLACKLISTED_MAPPING_TYPES
-        # by default laxist
-        # TODO - constraint to only allowed types
-        return True
-
-    def to_dict(self):
-        """
-        ElasticSearch aggregation queries follow this formatting::
-
-            {
-                "<aggregation_name>" : {
-                    "<aggregation_type>" : {
-                        <aggregation_body>
-                    }
-                    [,"meta" : {  [<meta_data_body>] } ]?
-                }
-            }
-
-        to_dict() returns the following part (without aggregation name)::
-
-            {
-                "<aggregation_type>" : {
-                    <aggregation_body>
-                }
-                [,"meta" : {  [<meta_data_body>] } ]?
-            }
-        """
-        aggs = {self.KEY: self.body}
-        if self.meta:
-            aggs["meta"] = self.meta
-        return aggs
-
-    def get_filter(self, key):
-        """
-        Return filter query to list documents having this aggregation key.
-
-        :param key: string
-        :return: elasticsearch filter query
-        """
-        raise NotImplementedError()
-
-    def extract_buckets(self, response_value):
-        raise NotImplementedError()
-
-    @classmethod
-    def extract_bucket_value(cls, response, value_as_dict=False):
-        attrs = cls.VALUE_ATTRS
-        if value_as_dict:
-            return {attr_: response.get(attr_) for attr_ in attrs}
-        return response.get(attrs[0])
-
-    def __str__(self):
-        return "<{class_}, type={type}, body={body}>".format(
-            class_=str(self.__class__.__name__),
-            type=str(self.KEY),
-            body=json.dumps(self.body),
-        )
-
-    def __eq__(self, other):
-        if isinstance(other, AggClause):
-            return other.to_dict() == self.to_dict()
-        # make sure we still equal to a dict with the same data
-        return other == self.to_dict()
-
-
 class Root(AggClause):
     """
     Not a real aggregation. Just the initial empty dict (used as lighttree.Tree root).
     """
 
-    KEY = "_root"
+    KEY: str = "_root"
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "_", ""
 
     def extract_buckets(self, response_value):
@@ -214,9 +223,9 @@ class BucketAggClause(AggClause):
     """
 
     def __init__(self, meta=None, **body):
-        identifier = body.pop("identifier", None)
-        self.body = body
-        self.meta = meta
+        identifier: Optional[str] = body.pop("identifier", None)
+        self.body: Dict[str, Any] = body
+        self.meta: Optional[Dict, str] = meta
         self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
         super(AggClause, self).__init__(identifier=identifier)
 
@@ -240,9 +249,11 @@ class UniqueBucketAgg(BucketAggClause):
 
 class MultipleBucketAgg(BucketAggClause):
 
-    IMPLICIT_KEYED = False
+    IMPLICIT_KEYED: bool = False
 
-    def __init__(self, keyed=None, key_path="key", meta=None, **body):
+    def __init__(
+        self, keyed: bool = False, key_path: str = "key", meta: Meta = None, **body: Any
+    ) -> None:
         """
         Aggregation that return either a list or a map of buckets.
 
@@ -254,8 +265,8 @@ class MultipleBucketAgg(BucketAggClause):
         :param body:
         """
         # keyed has another meaning in lighttree Node
-        self.keyed_ = keyed or self.IMPLICIT_KEYED
-        self.key_path = key_path
+        self.keyed_: bool = keyed or self.IMPLICIT_KEYED
+        self.key_path: str = key_path
         if keyed and not self.IMPLICIT_KEYED:
             body["keyed"] = keyed
         super(MultipleBucketAgg, self).__init__(meta=meta, **body)
@@ -264,10 +275,10 @@ class MultipleBucketAgg(BucketAggClause):
         buckets = response_value["buckets"]
         if self.keyed_:
             for key in sorted(buckets.keys()):
-                yield (key, buckets[key])
+                yield key, buckets[key]
         else:
             for bucket in buckets:
-                yield (self._extract_bucket_key(bucket), bucket)
+                yield self._extract_bucket_key(bucket), bucket
 
     def _extract_bucket_key(self, bucket):
         return bucket[self.key_path]
@@ -307,7 +318,7 @@ class Pipeline(UniqueBucketAgg):
 
 
 class ScriptPipeline(Pipeline):
-    VALUE_ATTRS: Optional[List[str]] = ["value"]
+    VALUE_ATTRS: List[str] = ["value"]
 
     def __init__(self, script, buckets_path, gap_policy=None, meta=None, **body):
         super(ScriptPipeline, self).__init__(

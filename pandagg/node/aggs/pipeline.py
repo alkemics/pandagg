@@ -3,6 +3,7 @@
 """Pipeline aggregations:
 https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations-pipeline.html
 """
+from typing import List
 
 from pandagg.node.aggs.abstract import Pipeline, ScriptPipeline
 
@@ -74,12 +75,12 @@ class BucketScript(ScriptPipeline):
 
 class BucketSelector(ScriptPipeline):
     KEY = "bucket_selector"
-    VALUE_ATTRS = None
+    VALUE_ATTRS: List[str] = []
 
 
 class BucketSort(ScriptPipeline):
     KEY = "bucket_sort"
-    VALUE_ATTRS = None
+    VALUE_ATTRS: List[str] = []
 
 
 class SerialDiff(Pipeline):
