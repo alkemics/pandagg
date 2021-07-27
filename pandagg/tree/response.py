@@ -12,8 +12,6 @@ class AggsResponseTree(Tree):
     Tree shaped representation of an ElasticSearch aggregations response.
     """
 
-    node_class = BucketNode
-
     def __init__(self, aggs, raw_response=None):
         """
         :param aggs: instance of pandagg.agg.Aggs from which this Elasticsearch response originates.

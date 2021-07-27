@@ -54,7 +54,7 @@ class IMappings(DSLMixin, TreeBasedObj):
         if self._client is not None and not self._tree.children(self._tree.root):
             _, field_node = self._tree.get(self._tree.root)
             if field_node.KEY in field_classes_per_name:
-                search_class = self._get_dsl_type("search")
+                search_class = self.get_dsl_type("search")
                 self.a = field_classes_per_name[field_node.KEY](
                     search=search_class(
                         using=self._client,

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
 
 from pandagg._decorators import Substitution
@@ -39,9 +36,6 @@ sub_insertion = Substitution(
 
 
 class Query(Tree):
-
-    node_class = QueryClause
-
     def __init__(self, q=None, mappings=None, nested_autocorrect=False):
         """
         Combination of query clauses.
@@ -375,7 +369,7 @@ class Query(Tree):
         node = self._q(type_or_query, **body)
         compound_body = compound_body or {}
         compound_body[compound_param_key] = node
-        compound_node = self.get_node_dsl_class(compound_key)(**compound_body)
+        compound_node = QueryClause.get_dsl_class(compound_key)(**compound_body)
         q._insert_query_at(compound_node, on=on, insert_below=insert_below, mode=mode)
         return q
 
@@ -410,8 +404,8 @@ class Query(Tree):
             if not create_if_not_exists:
                 raise
         # add key
-        param_node = self.get_node_dsl_class(key)()
-        self._insert_node_below(param_node, parent_id=nid, key=key, by_path=False)
+        param_node = QueryClause.get_dsl_class(key)()
+        self._insert_node_below(param_node, parent_id=nid, key=key)
         return param_node.identifier
 
     @classmethod
@@ -550,7 +544,7 @@ class Query(Tree):
 
         _children_clauses = node._children.copy()
         for param_name, child_nodes in _children_clauses.items():
-            param_node = self.get_node_dsl_class(param_name)()
+            param_node = QueryClause.get_dsl_class(param_name)()
             if not param_node.MULTIPLE and len(child_nodes) > 1:
                 raise ValueError(
                     "Cannot insert multiple query clauses under %s parameter"
@@ -560,7 +554,7 @@ class Query(Tree):
             for child in child_nodes:
                 self._insert_query(query=child, insert_below=param_node.identifier)
 
-    def _insert_node_below(self, node, parent_id, key, by_path):
+    def _insert_node_below(self, node, parent_id, key):
         """
         Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent (for instance
         only compounds queries can have children clauses).
@@ -594,7 +588,7 @@ class Query(Tree):
         # automatic handling of nested clauses
         if isinstance(node, Nested) or not self.mappings or not hasattr(node, "field"):
             return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id, key=key, by_path=by_path
+                node=node, parent_id=parent_id, key=key
             )
         required_nested_level = self.mappings.nested_at_field(node.field)
         if len(self.list()) <= 1:
@@ -604,7 +598,7 @@ class Query(Tree):
             current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
             return super(Query, self)._insert_node_below(
-                node=node, parent_id=parent_id, key=key, by_path=by_path
+                node=node, parent_id=parent_id, key=key
             )
         if not self.nested_autocorrect:
             raise ValueError(
@@ -615,7 +609,7 @@ class Query(Tree):
         to_insert = node
         for nested_lvl in self.mappings.list_nesteds_at_field(node.field):
             if current_nested_level != nested_lvl:
-                to_insert = self.get_node_dsl_class("nested")(
+                to_insert = QueryClause.get_dsl_class("nested")(
                     path=nested_lvl, query=to_insert
                 )
         self._insert_query(to_insert, parent_id)

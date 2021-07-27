@@ -48,7 +48,7 @@ class Composite(BucketAggClause):
             if name not in key:
                 continue
             agg_type, agg_body = source.popitem()
-            agg_instance = self._get_dsl_class(agg_type)(**agg_body)
+            agg_instance = self.get_dsl_class(agg_type)(**agg_body)
             conditions.append(agg_instance.get_filter(key=key[name]))
         if not conditions:
             return

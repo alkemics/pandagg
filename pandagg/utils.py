@@ -41,12 +41,12 @@ class DslMeta(type):
 
 
 @add_metaclass(DslMeta)
-class DSLMixin(object):
+class DSLMixin:
     """Base class for all DSL objects - queries, filters, aggregations etc. Wraps
     a dictionary representing the object's json."""
 
     @classmethod
-    def _get_dsl_class(cls, name: str) -> DslMeta:
+    def get_dsl_class(cls, name: str) -> DslMeta:
         try:
             return cls._classes[name]
         except KeyError:
@@ -55,7 +55,7 @@ class DSLMixin(object):
             )
 
     @staticmethod
-    def _get_dsl_type(name: str) -> DslMeta:
+    def get_dsl_type(name: str) -> DslMeta:
         try:
             return DslMeta._types[name]
         except KeyError:

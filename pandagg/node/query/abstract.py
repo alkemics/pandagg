@@ -4,43 +4,9 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional
+from typing import Optional, Union, Dict, Any, Tuple, List
 
-
-def Q(type_or_query=None, **body):
-    """
-    Accept multiple syntaxes, return a QueryClause node.
-
-    :param type_or_query:
-    :param body:
-    :return: QueryClause
-    """
-    if isinstance(type_or_query, QueryClause):
-        if body:
-            raise ValueError(
-                'Body cannot be added using "QueryClause" declaration, got %s.' % body
-            )
-        return type_or_query
-
-    if isinstance(type_or_query, dict):
-        if body:
-            raise ValueError(
-                'Body cannot be added using "dict" query clause declaration, got %s.'
-                % body
-            )
-        type_or_query = type_or_query.copy()
-        # {"term": {"some_field": 1}}
-        # {"bool": {"filter": [{"term": {"some_field": 1}}]}}
-        if len(type_or_query) != 1:
-            raise ValueError(
-                "Invalid query clause declaration (two many keys): got <%s>"
-                % type_or_query
-            )
-        type_, body_ = type_or_query.popitem()
-        return QueryClause._get_dsl_class(type_)(**body_)
-    if isinstance(type_or_query, str):
-        return QueryClause._get_dsl_class(type_or_query)(**body)
-    raise ValueError('"type_or_query" must be among "dict", "AggNode", "str"')
+QueryClauseDict = Dict[str, Any]
 
 
 class QueryClause(Node):
@@ -101,17 +67,56 @@ class QueryClause(Node):
         return other == self.to_dict()
 
 
+TypeOrQuery = Union[str, QueryClauseDict, QueryClause]
+
+
+def Q(type_or_query: Optional[TypeOrQuery] = None, **body: Any) -> QueryClause:
+    """
+    Accept multiple syntaxes, return a QueryClause node.
+
+    :param type_or_query:
+    :param body:
+    :return: QueryClause
+    """
+    if isinstance(type_or_query, QueryClause):
+        if body:
+            raise ValueError(
+                'Body cannot be added using "QueryClause" declaration, got %s.' % body
+            )
+        return type_or_query
+
+    if isinstance(type_or_query, dict):
+        if body:
+            raise ValueError(
+                'Body cannot be added using "dict" query clause declaration, got %s.'
+                % body
+            )
+        type_or_query = type_or_query.copy()
+        # {"term": {"some_field": 1}}
+        # {"bool": {"filter": [{"term": {"some_field": 1}}]}}
+        if len(type_or_query) != 1:
+            raise ValueError(
+                "Invalid query clause declaration (two many keys): got <%s>"
+                % type_or_query
+            )
+        type_, body_ = type_or_query.popitem()
+        return QueryClause.get_dsl_class(type_)(**body_)
+    if isinstance(type_or_query, str):
+        return QueryClause.get_dsl_class(type_or_query)(**body)
+    raise ValueError('"type_or_query" must be among "dict", "AggNode", "str"')
+
+
 class LeafQueryClause(QueryClause):
-    def __init__(self, _name=None, **body):
+    def __init__(self, _name: Optional[str] = None, **body: Any):
         super(LeafQueryClause, self).__init__(
             _name=_name, accept_children=False, **body
         )
 
 
 class AbstractSingleFieldQueryClause(LeafQueryClause):
-    _FIELD_AT_BODY_ROOT = False
+    _FIELD_AT_BODY_ROOT: bool = False
 
-    def __init__(self, field, _name=None, **body):
+    def __init__(self, field: str, _name: Optional[str] = None, **body: Any):
         self.field = field
         if self._FIELD_AT_BODY_ROOT:
             super(LeafQueryClause, self).__init__(_name=_name, field=field, **body)
@@ -141,7 +146,7 @@ class FlatFieldQueryClause(AbstractSingleFieldQueryClause):
 
     _FIELD_AT_BODY_ROOT = True
 
-    def __init__(self, field, _name=None, **body):
+    def __init__(self, field: str, _name: Optional[str] = None, **body: Any) -> None:
         self.field = field
         super(FlatFieldQueryClause, self).__init__(_name=_name, field=field, **body)
 
@@ -169,8 +174,16 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
     """
 
     _implicit_param: Optional[str] = None
+    KEY: str
 
-    def __init__(self, field=None, _name=None, _expand__to_dot=True, **params):
+    def __init__(
+        self,
+        field: Optional[str] = None,
+        _name: Optional[str] = None,
+        _expand__to_dot: bool = True,
+        **params: Any
+    ) -> None:
+        field_: str
         if field is None:
             # Term(item__id=32) or Term(item__id={'value': 32, 'boost': 1})
             if len(params) != 1:
@@ -179,16 +192,30 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
                     % (self.__class__.__name__, params)
                 )
             if _expand__to_dot:
-                field, value = self.expand__to_dot(params).copy().popitem()
+                params = self.expand__to_dot(params)
+            field_, value = params.copy().popitem()
+            if self._implicit_param is None:
+                # GeoBoundingBox(pin__location={"top_left": xxx, "bottom_right": xxx})
+                # -> {"top_left": xxx, "bottom_right": xxx}
+                params = value
+            elif isinstance(value, dict):
+                # Term(user={"value": "Kimchy", "boost": 1})  -> {"user": {"value": "Kimchy", "boost": 1}}
+                params = value
             else:
-                field, value = params.copy().popitem()
-            params = value if isinstance(value, dict) else {self._implicit_param: value}
-        self.inner_body = params
+                # Term(user="Kimchy")                         -> {"user": {"value": "Kimchy"}}
+                # in this case we normalize query so that both syntax generate same query:
+                # - `Term(user="Kimchy")`
+                # - `Term(user={"value": "Kimchy"})`
+                params = {self._implicit_param: value}
+        else:
+            # Term(field="user", value="Kimchy", boost=1)     -> {"user": {"value": "Kimchy", "boost": 1}}
+            field_ = field
+        self.inner_body: Dict[str, Any] = params
         super(KeyFieldQueryClause, self).__init__(
-            field=field, _name=_name, **{field: params}
+            field=field_, _name=_name, **{field_: params}
         )
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         if not self.inner_body:
             return "", ", ".join([str(self.KEY), "field=%s" % str(self.field)])
         return (
@@ -200,11 +227,14 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
 
 
 class MultiFieldsQueryClause(LeafQueryClause):
-    def __init__(self, fields, _name=None, **body):
+
+    KEY: str
+
+    def __init__(self, fields: List[str], _name: Optional[str] = None, **body: Any):
         self.fields = fields
         super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs) -> Tuple[str, str]:
         return self.KEY, "fields=%s" % (list(map(str, self.fields)))
 
 
@@ -212,5 +242,5 @@ class ParentParameterClause(QueryClause):
     def __init__(self):
         super(ParentParameterClause, self).__init__(accept_children=True, keyed=False)
 
-    def line_repr(self, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "", ""

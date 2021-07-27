@@ -1,5 +1,5 @@
 from pandagg.node.query.abstract import QueryClause
-from typing import List, Optional
+from typing import List
 
 
 class CompoundClause(QueryClause):
@@ -17,7 +17,7 @@ class CompoundClause(QueryClause):
 
     """
 
-    _default_operator: Optional[str] = None
+    _default_operator: str = ""
     _parent_params: List[str] = []
 
     def __init__(self, _name=None, **body):

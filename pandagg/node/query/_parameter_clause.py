@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from pandagg.node.query.abstract import ParentParameterClause
 
 

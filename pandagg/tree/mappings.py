@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from typing import Optional, Union, Dict, Any
+
 from pandagg.node.mappings import Object, Nested
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
 
@@ -11,7 +11,7 @@ from pandagg.exceptions import (
 from pandagg.tree._tree import Tree
 
 
-def _mappings(m):
+def _mappings(m: Union[None, Dict, "Mappings"]) -> Optional["Mappings"]:
     if m is None:
         return None
     if isinstance(m, dict):
@@ -22,15 +22,14 @@ def _mappings(m):
 
 
 class Mappings(Tree):
-
-    node_class = Field
-
-    def __init__(self, properties=None, dynamic=False, **kwargs):
+    def __init__(self, properties=None, dynamic: bool = False, **kwargs: Any):
         super(Mappings, self).__init__()
         root_node = Field(dynamic=dynamic, **kwargs)
-        self.insert_node(root_node)
+        self.insert_node(node=root_node)
         if properties:
-            self._insert(root_node.identifier, properties, False)
+            self._insert(
+                pid=root_node.identifier, properties=properties, is_subfield=False
+            )
 
     def to_dict(self, from_=None, depth=None):
         """
@@ -118,12 +117,13 @@ class Mappings(Tree):
         'text'
         """
         try:
-            _, node = self.get(field_path, by_path=True)
-            return node.KEY
-        except Exception:
+            nid = self.get_node_id_by_path(field_path)
+        except ValueError:
             raise AbsentMappingFieldError(
                 u"<%s field is not present in mappings>" % field_path
             )
+        _, node = self.get(nid)
+        return node.KEY
 
     def nested_at_field(self, field_path):
         """
@@ -188,7 +188,7 @@ class Mappings(Tree):
         for field_name, field in properties.items():
             if isinstance(field, dict):
                 field = field.copy()
-                field = Field._get_dsl_class(field.pop("type", "object"))(
+                field = Field.get_dsl_class(field.pop("type", "object"))(
                     _subfield=is_subfield, **field
                 )
             elif isinstance(field, Field):

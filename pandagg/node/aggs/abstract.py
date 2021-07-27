@@ -8,6 +8,8 @@ from typing import Optional, List, Union, Dict, Any, Tuple
 
 from pandagg.types import Meta
 
+AggClauseDict = Dict[str, Any]
+
 
 class AggClause(Node):
     """
@@ -123,7 +125,7 @@ class AggClause(Node):
         return other == self.to_dict()
 
 
-TypeOrAgg = Union[str, Dict[str, Any], AggClause]
+TypeOrAgg = Union[str, AggClauseDict, AggClause]
 
 
 def A(name: str, type_or_agg: Optional[TypeOrAgg] = None, **body: Any) -> AggClause:
@@ -137,7 +139,7 @@ def A(name: str, type_or_agg: Optional[TypeOrAgg] = None, **body: Any) -> AggCla
     """
     if isinstance(type_or_agg, str):
         # _translate_agg("per_user", "terms", field="user")
-        return AggClause._get_dsl_class(type_or_agg)(**body)
+        return AggClause.get_dsl_class(type_or_agg)(**body)
     if isinstance(type_or_agg, AggClause):
         # _translate_agg("per_user", Terms(field='user'))
         if body:
@@ -164,11 +166,11 @@ def A(name: str, type_or_agg: Optional[TypeOrAgg] = None, **body: Any) -> AggCla
         body_ = body_.copy()
         if children_aggs:
             body_["aggs"] = children_aggs
-        return AggClause._get_dsl_class(type_)(**body_)
+        return AggClause.get_dsl_class(type_)(**body_)
     if type_or_agg is None:
         # if type_or_agg is not provided, by default execute a terms aggregation
         # _translate_agg("per_user")
-        return AggClause._get_dsl_class("terms")(field=name, **body)
+        return AggClause.get_dsl_class("terms")(field=name, **body)
     raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
 
 

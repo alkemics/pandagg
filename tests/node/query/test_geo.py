@@ -30,7 +30,7 @@ class GeoQueriesTestCase(TestCase):
             self.assertEqual(q.body, body)
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
-                q.line_repr(depth=None),
+                q.line_repr(depth=0),
                 (
                     "geo_bounding_box",
                     'field=pin.location, bottom_right={"lat": 40.01, "lon": -71.12}, '
