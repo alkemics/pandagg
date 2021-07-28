@@ -1,5 +1,6 @@
 import json
-from typing import Optional, Union, Any, Literal, List, Dict
+from typing import Optional, Union, Any, List, Dict
+from typing_extensions import Literal
 
 from lighttree import Key
 from lighttree.node import NodeId

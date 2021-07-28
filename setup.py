@@ -9,7 +9,11 @@ from setuptools import find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
 
-install_requires = ["lighttree==1.3.1", "elasticsearch>=7.0.0,<8.0.0"]
+install_requires = [
+    "lighttree==1.3.1",
+    "elasticsearch>=7.0.0,<8.0.0",
+    "typing_extensions",
+]
 
 develop_requires = [
     "pre-commit",
