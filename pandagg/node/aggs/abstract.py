@@ -1,12 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, List, Union, Dict, Any, Tuple
+from typing import Optional, List, Union, Dict, Any, Tuple, Iterator
 
-from pandagg.types import Meta
+from pandagg.types import Meta, BucketKey, Bucket
 
 AggClauseDict = Dict[str, Any]
 
@@ -101,7 +98,7 @@ class AggClause(Node):
         """
         raise NotImplementedError()
 
-    def extract_buckets(self, response_value):
+    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
         raise NotImplementedError()
 
     @classmethod

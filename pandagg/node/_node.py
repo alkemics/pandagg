@@ -1,4 +1,4 @@
-from lighttree import Node as OriginalNode
+from lighttree import AutoIdNode as OriginalNode
 
 from pandagg.utils import DSLMixin
 from typing import Dict, Any

@@ -126,11 +126,14 @@ _
     def test_node_path(self):
         mapping_tree = Mappings(**MAPPINGS)
         # get node by path syntax
-        nid = mapping_tree.get_node_id_by_path("local_metrics.dataset.support_test")
+        nid = mapping_tree.get_node_id_by_path(
+            ["local_metrics", "dataset", "support_test"]
+        )
         k, node = mapping_tree.get(nid)
         self.assertIsInstance(node, Field)
         self.assertEqual(
-            mapping_tree.get_path(node.identifier), "local_metrics.dataset.support_test"
+            mapping_tree.get_path(node.identifier),
+            ["local_metrics", "dataset", "support_test"],
         )
 
     def test_validate_doc(self):

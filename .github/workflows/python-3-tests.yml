@@ -27,6 +27,11 @@ jobs:
       run: |
         pip install black
         black --check .
+    - name: Mypy check
+      run: |
+        pip install mypy
+        pip install -e ".[develop]"
+        mypy --install-types --non-interactive pandagg
 
   run_tests:
     runs-on: ubuntu-latest

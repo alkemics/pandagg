@@ -1,6 +1,5 @@
 # adapted from https://github.com/elastic/elasticsearch-dsl-py/blob/master/elasticsearch_dsl/utils.py#L162
-from six import add_metaclass
-from typing import Dict, Any
+from typing import Dict
 
 
 class DslMeta(type):
@@ -9,13 +8,13 @@ class DslMeta(type):
     for given DslBase subclass (== all the query types for the Query subclass
     of DslBase).
 
-    It then uses the information from that registry (as well as `name` and
-    `deserializer` attributes from the base class) to construct any subclass based
-    on it's name.
+    Types will be: 'agg', 'query', 'field'
+
+    Each of those types will hold a `_classes` dictionary pointing to all classes of same type.
     """
 
     # registry for types
-    _types: Dict[str, Any] = {}
+    _types: Dict[str, "DslMeta"] = {}
     # per type, registry for classes (not initialized here)
     _classes: Dict[str, "DslMeta"]
 
@@ -40,8 +39,7 @@ class DslMeta(type):
             cls._classes[cls.KEY] = cls
 
 
-@add_metaclass(DslMeta)
-class DSLMixin:
+class DSLMixin(metaclass=DslMeta):
     """Base class for all DSL objects - queries, filters, aggregations etc. Wraps
     a dictionary representing the object's json."""
 

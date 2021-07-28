@@ -1,8 +1,8 @@
 import json
-from typing import Optional
+from typing import Optional, Union
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mappings import _mappings
+from pandagg.tree.mappings import _mappings, Mappings, MappingDict
 
 from pandagg.node.aggs.abstract import BucketAggClause, Root, A
 from pandagg.node.aggs.bucket import Nested, ReverseNested
@@ -40,17 +40,16 @@ class Aggs(Tree):
     def __init__(
         self,
         aggs=None,
-        mappings=None,
+        mappings: Optional[Union[MappingDict, "Mappings"]] = None,
         nested_autocorrect: bool = False,
         _groupby_ptr: Optional[str] = None,
     ):
-        self.mappings = _mappings(mappings)
-        self.nested_autocorrect = nested_autocorrect
+        self.mappings: Optional[Mappings] = _mappings(mappings)
+        self.nested_autocorrect: bool = nested_autocorrect
         super(Aggs, self).__init__()
 
         # the root node of an aggregation is just the initial empty dict
-        root_node = Root()
-        self.insert_node(root_node)
+        self.insert_node(Root())
         # identifier of clause used for groupby
         self._groupby_ptr = self.root if _groupby_ptr is None else _groupby_ptr
 
@@ -484,6 +483,27 @@ class Aggs(Tree):
                 )
                 parent_id = nested_node.identifier
         super(Aggs, self)._insert_node_below(node, parent_id, key)
+
+    def id_from_key(self, key: str) -> str:
+        """
+        Find node identifier based on key. If multiple nodes have the same key, takes the first one.
+
+        Useful because of how pandagg implements lighttree.Tree.
+        A bit of context:
+
+        ElasticSearch allows queries to contain multiple similarly named clauses (for queries and aggregations).
+        As a consequence clauses names are not used as clauses identifier in Trees, and internally pandagg (as lighttree
+        ) uses auto-generated uuids to distinguish them.
+
+        But for usability reasons, notably when declaring that an aggregation clause must be placed relatively to
+        another one, the latter is identified by its name rather than its internal id. Since it is technically
+        possible that multiple clauses share the same name (not recommended, but allowed), some pandagg features are
+        ambiguous and not recommended in such context.
+        """
+        for k, n in self.list():
+            if k == key:
+                return n.identifier
+        raise KeyError('No node found with key "%s"' % key)
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)
