@@ -3,8 +3,6 @@
 
 import copy
 
-from future.utils import iterkeys, iteritems
-
 from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root
 from pandagg.node.aggs.bucket import Nested, ReverseNested
@@ -392,7 +390,7 @@ class Aggregations:
             normalize=normalize_children,
             with_single_bucket_groups=with_single_bucket_groups,
         )
-        index, values = zip(*iteritems(rows))
+        index, values = zip(*rows.items())
         if not index:
             return pd.DataFrame()
         if len(index[0]) == 0:
@@ -403,7 +401,7 @@ class Aggregations:
 
     def to_normalized(self):
         children = []
-        for k in sorted(iterkeys(self.data)):
+        for k in sorted(list((self.data.keys()))):
             for child in self._normalize_buckets(self.data, k):
                 children.append(child)
         return {"level": "root", "key": None, "value": None, "children": children}

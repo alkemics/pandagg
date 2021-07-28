@@ -28,6 +28,9 @@ doc-references:
 tests:
 	pytest
 
+mypy:
+	mypy --install-types pandagg
+
 coverage:
 	coverage run --source=./pandagg -m pytest
 	coverage report
@@ -38,7 +41,7 @@ create_dist: check
 	python setup.py sdist bdist_wheel
 
 test_dist: create_dist
-	twine upload -r testpypi dist/*
+	twine upload --skip-existing -r testpypi dist/*
 
 upload_dist:
-	twine upload dist/*
+	twine upload --skip-existing dist/*

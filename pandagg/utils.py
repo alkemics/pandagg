@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-
 # adapted from https://github.com/elastic/elasticsearch-dsl-py/blob/master/elasticsearch_dsl/utils.py#L162
 from six import add_metaclass
+from typing import Dict, Any
 
 
 class DslMeta(type):
@@ -17,15 +14,22 @@ class DslMeta(type):
     on it's name.
     """
 
-    _types = {}
+    # registry for types
+    _types: Dict[str, Any] = {}
+    # per type, registry for classes (not initialized here)
+    _classes: Dict[str, "DslMeta"]
+
+    # types keys
+    _type_name: str = ""
+    # classes keys
+    KEY: str = ""
 
     def __init__(cls, name, bases, attrs):
         super(DslMeta, cls).__init__(name, bases, attrs)
-        # skip for DSLMixin
-        if not hasattr(cls, "_type_name") or cls._type_name is None:
+        if not cls._type_name:
+            # skip for DSLMixin
             return
-
-        if not hasattr(cls, "KEY") or cls.KEY is None:
+        if not cls.KEY:
             # abstract base class, register its shortcut
             cls._types[cls._type_name] = cls
             # and create a registry for subclasses
@@ -37,12 +41,12 @@ class DslMeta(type):
 
 
 @add_metaclass(DslMeta)
-class DSLMixin(object):
+class DSLMixin:
     """Base class for all DSL objects - queries, filters, aggregations etc. Wraps
     a dictionary representing the object's json."""
 
     @classmethod
-    def _get_dsl_class(cls, name):
+    def get_dsl_class(cls, name: str) -> DslMeta:
         try:
             return cls._classes[name]
         except KeyError:
@@ -51,7 +55,7 @@ class DSLMixin(object):
             )
 
     @staticmethod
-    def _get_dsl_type(name):
+    def get_dsl_type(name: str) -> DslMeta:
         try:
             return DslMeta._types[name]
         except KeyError:

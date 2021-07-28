@@ -4,51 +4,11 @@
 import json
 
 from pandagg.node._node import Node
+from typing import Optional, List, Union, Dict, Any, Tuple
 
+from pandagg.types import Meta
 
-def A(name, type_or_agg=None, **body):
-    """
-    Accept multiple syntaxes, return a AggNode instance.
-
-    :param type_or_agg:
-    :param body:
-    :return: AggNode
-    """
-    if isinstance(type_or_agg, str):
-        # _translate_agg("per_user", "terms", field="user")
-        return AggClause._get_dsl_class(type_or_agg)(**body)
-    if isinstance(type_or_agg, AggClause):
-        # _translate_agg("per_user", Terms(field='user'))
-        if body:
-            raise ValueError(
-                'Body cannot be added using "AggNode" declaration, got %s.' % body
-            )
-        return type_or_agg
-    if isinstance(type_or_agg, dict):
-        # _translate_agg("per_user", {"terms": {"field": "user"}})
-        if body:
-            raise ValueError(
-                'Body cannot be added using "dict" agg declaration, got %s.' % body
-            )
-        type_or_agg = type_or_agg.copy()
-        children_aggs = (
-            type_or_agg.pop("aggs", None) or type_or_agg.pop("aggregations", None) or {}
-        )
-        if len(type_or_agg) != 1:
-            raise ValueError(
-                "Invalid aggregation declaration (two many keys): got <%s>"
-                % type_or_agg
-            )
-        type_, body_ = type_or_agg.popitem()
-        body_ = body_.copy()
-        if children_aggs:
-            body_["aggs"] = children_aggs
-        return AggClause._get_dsl_class(type_)(**body_)
-    if type_or_agg is None:
-        # if type_or_agg is not provided, by default execute a terms aggregation
-        # _translate_agg("per_user")
-        return AggClause._get_dsl_class("terms")(field=name, **body)
-    raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
+AggClauseDict = Dict[str, Any]
 
 
 class AggClause(Node):
@@ -62,21 +22,22 @@ class AggClause(Node):
     """
 
     _type_name = "agg"
-    KEY = None
-    VALUE_ATTRS = None
-    WHITELISTED_MAPPING_TYPES = None
-    BLACKLISTED_MAPPING_TYPES = None
+    KEY: str
 
-    def __init__(self, meta=None, **body):
-        identifier = body.pop("identifier", None)
-        self.body = body
-        self.meta = meta
-        self._children = {}
+    VALUE_ATTRS: List[str]
+    WHITELISTED_MAPPING_TYPES: List[str]
+    BLACKLISTED_MAPPING_TYPES: List[str]
+
+    def __init__(self, meta: Optional[Dict[str, Any]] = None, **body: Any) -> None:
+        identifier: Optional[str] = body.pop("identifier", None)
+        self.body: Dict[str, Any] = body
+        self.meta: Optional[Dict[str, Any]] = meta
+        self._children: Dict[str, Any] = {}
         super(AggClause, self).__init__(identifier=identifier)
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         # root node
-        if self.KEY is None:
+        if not self.KEY:
             return "_", ""
         repr_args = [str(self.KEY)]
         if self.body:
@@ -85,7 +46,7 @@ class AggClause(Node):
         return "", unnamed
 
     @staticmethod
-    def _params_repr(params):
+    def _params_repr(params: Dict[str, Any]) -> str:
         params = params or {}
         return ", ".join(
             "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
@@ -93,16 +54,16 @@ class AggClause(Node):
         )
 
     @classmethod
-    def valid_on_field_type(cls, field_type):
-        if cls.WHITELISTED_MAPPING_TYPES is not None:
+    def valid_on_field_type(cls, field_type: str) -> bool:
+        if hasattr(cls, "WHITELISTED_MAPPING_TYPES"):
             return field_type in cls.WHITELISTED_MAPPING_TYPES
-        if cls.BLACKLISTED_MAPPING_TYPES is not None:
+        if hasattr(cls, "BLACKLISTED_MAPPING_TYPES"):
             return field_type not in cls.BLACKLISTED_MAPPING_TYPES
         # by default laxist
         # TODO - constraint to only allowed types
         return True
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         ElasticSearch aggregation queries follow this formatting::
 
@@ -124,12 +85,14 @@ class AggClause(Node):
                 [,"meta" : {  [<meta_data_body>] } ]?
             }
         """
+        if self.KEY is None:
+            raise ValueError("For typing only")
         aggs = {self.KEY: self.body}
         if self.meta:
             aggs["meta"] = self.meta
         return aggs
 
-    def get_filter(self, key):
+    def get_filter(self, key: str):
         """
         Return filter query to list documents having this aggregation key.
 
@@ -162,14 +125,63 @@ class AggClause(Node):
         return other == self.to_dict()
 
 
+TypeOrAgg = Union[str, AggClauseDict, AggClause]
+
+
+def A(name: str, type_or_agg: Optional[TypeOrAgg] = None, **body: Any) -> AggClause:
+    """
+    Accept multiple syntaxes, return a AggNode instance.
+
+    :param name: aggregation clause name
+    :param type_or_agg:
+    :param body:
+    :return: AggNode
+    """
+    if isinstance(type_or_agg, str):
+        # _translate_agg("per_user", "terms", field="user")
+        return AggClause.get_dsl_class(type_or_agg)(**body)
+    if isinstance(type_or_agg, AggClause):
+        # _translate_agg("per_user", Terms(field='user'))
+        if body:
+            raise ValueError(
+                'Body cannot be added using "AggNode" declaration, got %s.' % body
+            )
+        return type_or_agg
+    if isinstance(type_or_agg, dict):
+        # _translate_agg("per_user", {"terms": {"field": "user"}})
+        if body:
+            raise ValueError(
+                'Body cannot be added using "dict" agg declaration, got %s.' % body
+            )
+        type_or_agg = type_or_agg.copy()
+        children_aggs = (
+            type_or_agg.pop("aggs", None) or type_or_agg.pop("aggregations", None) or {}
+        )
+        if len(type_or_agg) != 1:
+            raise ValueError(
+                "Invalid aggregation declaration (two many keys): got <%s>"
+                % type_or_agg
+            )
+        type_, body_ = type_or_agg.popitem()
+        body_ = body_.copy()
+        if children_aggs:
+            body_["aggs"] = children_aggs
+        return AggClause.get_dsl_class(type_)(**body_)
+    if type_or_agg is None:
+        # if type_or_agg is not provided, by default execute a terms aggregation
+        # _translate_agg("per_user")
+        return AggClause.get_dsl_class("terms")(field=name, **body)
+    raise ValueError('"type_or_agg" must be among "dict", "AggNode", "str"')
+
+
 class Root(AggClause):
     """
     Not a real aggregation. Just the initial empty dict (used as lighttree.Tree root).
     """
 
-    KEY = "_root"
+    KEY: str = "_root"
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "_", ""
 
     def extract_buckets(self, response_value):
@@ -184,8 +196,6 @@ class MetricAgg(AggClause):
     """
     Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted.
     """
-
-    VALUE_ATTRS = None
 
     def extract_buckets(self, response_value):
         yield None, response_value
@@ -214,12 +224,10 @@ class BucketAggClause(AggClause):
     >>> )
     """
 
-    VALUE_ATTRS = None
-
     def __init__(self, meta=None, **body):
-        identifier = body.pop("identifier", None)
-        self.body = body
-        self.meta = meta
+        identifier: Optional[str] = body.pop("identifier", None)
+        self.body: Dict[str, Any] = body
+        self.meta: Optional[Dict, str] = meta
         self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
         super(AggClause, self).__init__(identifier=identifier)
 
@@ -234,8 +242,6 @@ class BucketAggClause(AggClause):
 class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
-    VALUE_ATTRS = None
-
     def extract_buckets(self, response_value):
         yield None, response_value
 
@@ -245,10 +251,11 @@ class UniqueBucketAgg(BucketAggClause):
 
 class MultipleBucketAgg(BucketAggClause):
 
-    VALUE_ATTRS = None
-    IMPLICIT_KEYED = False
+    IMPLICIT_KEYED: bool = False
 
-    def __init__(self, keyed=None, key_path="key", meta=None, **body):
+    def __init__(
+        self, keyed: bool = False, key_path: str = "key", meta: Meta = None, **body: Any
+    ) -> None:
         """
         Aggregation that return either a list or a map of buckets.
 
@@ -260,8 +267,8 @@ class MultipleBucketAgg(BucketAggClause):
         :param body:
         """
         # keyed has another meaning in lighttree Node
-        self.keyed_ = keyed or self.IMPLICIT_KEYED
-        self.key_path = key_path
+        self.keyed_: bool = keyed or self.IMPLICIT_KEYED
+        self.key_path: str = key_path
         if keyed and not self.IMPLICIT_KEYED:
             body["keyed"] = keyed
         super(MultipleBucketAgg, self).__init__(meta=meta, **body)
@@ -270,10 +277,10 @@ class MultipleBucketAgg(BucketAggClause):
         buckets = response_value["buckets"]
         if self.keyed_:
             for key in sorted(buckets.keys()):
-                yield (key, buckets[key])
+                yield key, buckets[key]
         else:
             for bucket in buckets:
-                yield (self._extract_bucket_key(bucket), bucket)
+                yield self._extract_bucket_key(bucket), bucket
 
     def _extract_bucket_key(self, bucket):
         return bucket[self.key_path]
@@ -287,8 +294,6 @@ class FieldOrScriptMetricAgg(MetricAgg):
     Metric aggregation based on single field.
     """
 
-    VALUE_ATTRS = None
-
     def __init__(self, field=None, script=None, meta=None, **body):
         self.field = field
         self.script = script
@@ -300,9 +305,6 @@ class FieldOrScriptMetricAgg(MetricAgg):
 
 
 class Pipeline(UniqueBucketAgg):
-
-    VALUE_ATTRS = None
-
     def __init__(self, buckets_path, gap_policy=None, meta=None, **body):
         self.buckets_path = buckets_path
         self.gap_policy = gap_policy
@@ -318,8 +320,7 @@ class Pipeline(UniqueBucketAgg):
 
 
 class ScriptPipeline(Pipeline):
-    KEY = None
-    VALUE_ATTRS = "value"
+    VALUE_ATTRS: List[str] = ["value"]
 
     def __init__(self, script, buckets_path, gap_policy=None, meta=None, **body):
         super(ScriptPipeline, self).__init__(

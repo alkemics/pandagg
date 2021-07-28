@@ -4,10 +4,10 @@ from mock import patch
 
 from elasticsearch import Elasticsearch
 
-from pandagg.node import Max
+from pandagg.node.aggs import Max
 from pandagg.search import Search
 from pandagg.query import Query, Bool, Match
-from pandagg.tree import Mappings
+from pandagg.tree.mappings import Mappings
 from pandagg.utils import ordered
 from tests import PandaggTestCase
 

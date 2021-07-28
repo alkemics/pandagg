@@ -93,6 +93,5 @@ class PercentileRanks(FieldOrScriptMetricAgg):
 
 
 class ValueCount(FieldOrScriptMetricAgg):
-    BLACKLISTED_MAPPING_TYPES = []
     VALUE_ATTRS = ["value"]
     KEY = "value_count"

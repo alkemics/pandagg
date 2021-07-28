@@ -7,7 +7,7 @@ from mock import patch
 
 from lighttree.tree import NotFoundNodeError
 
-from pandagg.node.query._parameter_clause import Must
+from pandagg.node.query._parameter_clause import _Must
 from pandagg.query import Query, Range, Prefix, Ids, Term, Terms, Nested
 from pandagg.node.query.term_level import Term as TermNode, Exists as ExistsNode
 from pandagg.node.query.joining import Nested as NestedNode
@@ -436,7 +436,7 @@ bool                                                                     boost=2
         self.assertEqual(len(q_i1.list()), 0)
         bool_ = next((c for _, c in q1.list() if isinstance(c, Bool)))
         self.assertEqual(bool_.name, "bool_nid")
-        next((c for _, c in q1.list() if isinstance(c, Must)))
+        next((c for _, c in q1.list() if isinstance(c, _Must)))
         term = next((c for _, c in q1.list() if isinstance(c, TermNode)))
         self.assertEqual(term.name, "term_nid")
 
@@ -453,7 +453,7 @@ bool                                                              _name=bool_nid
         q2 = q_i2.must({"term": {"some_field": {"value": 2}}})
         self.assertEqual(len(q_i2.list()), 0)
         next((c for _, c in q2.list() if isinstance(c, Bool)))
-        next((c for _, c in q2.list() if isinstance(c, Must)))
+        next((c for _, c in q2.list() if isinstance(c, _Must)))
         next((c for _, c in q2.list() if isinstance(c, TermNode)))
         self.assertEqual(
             q2.show(stdout=False),
@@ -471,7 +471,7 @@ bool
         )
 
         next((c for _, c in q3.list() if isinstance(c, Bool)))
-        next((c for _, c in q3.list() if isinstance(c, Must)))
+        next((c for _, c in q3.list() if isinstance(c, _Must)))
         next((c for _, c in q3.list() if isinstance(c, TermNode)))
         next((c for _, c in q3.list() if isinstance(c, ExistsNode)))
         self.assertEqual(

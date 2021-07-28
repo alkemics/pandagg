@@ -1,21 +1,16 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from lighttree import Node as OriginalNode
 
 from pandagg.utils import DSLMixin
+from typing import Dict, Any
 
 
 class Node(DSLMixin, OriginalNode):
 
-    KEY = None
-    _type_name = None
-
-    NID_SIZE = 8
+    NID_SIZE: int = 8
 
     @staticmethod
-    def expand__to_dot(params):
-        nparams = {}
+    def expand__to_dot(params: Dict[str, Any]) -> Dict[str, Any]:
+        nparams: Dict[str, Any] = {}
         for pname, pvalue in params.items():
             if "__" in pname:
                 pname = pname.replace("__", ".")

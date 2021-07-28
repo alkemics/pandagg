@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
+from typing import Optional
 
 from pandagg.tree._tree import Tree
 from pandagg.tree.mappings import _mappings
 
-from pandagg.node.aggs.abstract import BucketAggClause, AggClause, Root, A
+from pandagg.node.aggs.abstract import BucketAggClause, Root, A
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
 
@@ -39,10 +37,12 @@ class Aggs(Tree):
     :param _groupby_ptr: ``str`` identifier of aggregation clause used as grouping element (used by `clone` method).
     """
 
-    node_class = AggClause
-
     def __init__(
-        self, aggs=None, mappings=None, nested_autocorrect=None, _groupby_ptr=None
+        self,
+        aggs=None,
+        mappings=None,
+        nested_autocorrect: bool = False,
+        _groupby_ptr: Optional[str] = None,
     ):
         self.mappings = _mappings(mappings)
         self.nested_autocorrect = nested_autocorrect
@@ -398,7 +398,7 @@ class Aggs(Tree):
             return
         raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
 
-    def _insert_node_below(self, node, parent_id, key, by_path):
+    def _insert_node_below(self, node, parent_id, key):
         """
         If mappings is provided, check if aggregation complies with it (nested / reverse nested).
 
@@ -413,7 +413,7 @@ class Aggs(Tree):
             or not hasattr(node, "field")
             or self.root is None
         ):
-            return super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
+            return super(Aggs, self)._insert_node_below(node, parent_id, key)
 
         self.mappings.validate_agg_clause(node)
 
@@ -422,7 +422,7 @@ class Aggs(Tree):
 
         current_nested_level = self.applied_nested_path_at_node(parent_id)
         if current_nested_level == required_nested_level:
-            return super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
+            return super(Aggs, self)._insert_node_below(node, parent_id, key)
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s agg on %s field. Invalid nested: expected %s, current %s."
@@ -443,7 +443,7 @@ class Aggs(Tree):
             )
             if child_reverse_nested:
                 return super(Aggs, self)._insert_node_below(
-                    node, child_reverse_nested.identifier, key, by_path
+                    node, child_reverse_nested.identifier, key
                 )
             else:
                 rv_node = ReverseNested()
@@ -453,7 +453,7 @@ class Aggs(Tree):
                     key="reverse_nested_below_%s" % self.get_key(parent_id),
                 )
                 return super(Aggs, self)._insert_node_below(
-                    node, rv_node.identifier, key, by_path
+                    node, rv_node.identifier, key
                 )
 
         # requires nested - apply all required nested fields
@@ -480,10 +480,10 @@ class Aggs(Tree):
                 )
                 nested_node = Nested(path=nested_lvl)
                 super(Aggs, self)._insert_node_below(
-                    nested_node, parent_id, nested_node_name, by_path
+                    nested_node, parent_id, nested_node_name
                 )
                 parent_id = nested_node.identifier
-        super(Aggs, self)._insert_node_below(node, parent_id, key, by_path)
+        super(Aggs, self)._insert_node_below(node, parent_id, key)
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=2)

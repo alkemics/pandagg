@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-NUMERIC_TYPES = [
+from typing import List
+
+NUMERIC_TYPES: List[str] = [
     "long",
     "integer",
     "short",
@@ -16,7 +18,7 @@ NUMERIC_TYPES = [
     "boolean",
 ]
 
-MAPPING_TYPES = [
+MAPPING_TYPES: List[str] = [
     "binary",
     "geo_point",
     "geo_shape",

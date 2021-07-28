@@ -81,7 +81,7 @@ class FullTextQueriesTestCase(TestCase):
             self.assertEqual(q.body, body)
             self.assertEqual(q.to_dict(), expected)
             self.assertEqual(
-                q.line_repr(depth=None),
+                q.line_repr(depth=0),
                 (
                     "intervals",
                     'field=some_field, all_of={"intervals": [{"match": {"query": "the"}}, '
