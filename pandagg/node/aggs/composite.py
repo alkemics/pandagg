@@ -1,6 +1,6 @@
 from .abstract import BucketAggClause
-from typing import Optional, Any, Dict
-from pandagg.types import Meta
+from typing import Optional, Any, Dict, List, Iterator, Tuple
+from pandagg.types import Meta, AfterKey, CompositeSource, BucketKey, Bucket
 
 
 class Composite(BucketAggClause):
@@ -10,9 +10,9 @@ class Composite(BucketAggClause):
 
     def __init__(
         self,
-        sources,
+        sources: List[CompositeSource],
         size: Optional[int] = None,
-        after_key: Optional[Dict[str, Any]] = None,
+        after_key: Optional[AfterKey] = None,
         meta: Meta = None,
         **body: Any
     ):
@@ -34,7 +34,7 @@ class Composite(BucketAggClause):
             body["after_key"] = after_key
         super(Composite, self).__init__(meta=meta, sources=sources, **body)
 
-    def extract_buckets(self, response_value):
+    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
         for bucket in response_value["buckets"]:
             yield bucket["key"], bucket
 

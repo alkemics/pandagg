@@ -10,8 +10,10 @@ from pandagg.exceptions import (
 )
 from pandagg.tree._tree import Tree
 
+MappingDict = Dict[str, Any]
 
-def _mappings(m: Union[None, Dict, "Mappings"]) -> Optional["Mappings"]:
+
+def _mappings(m: Optional[Union[MappingDict, "Mappings"]]) -> Optional["Mappings"]:
     if m is None:
         return None
     if isinstance(m, dict):
@@ -80,8 +82,8 @@ class Mappings(Tree):
 
         # TODO take into account flattened data type
         try:
-            nid = self.get_node_id_by_path(agg_clause.field)
-        except StopIteration:
+            nid = self.get_node_id_by_path(agg_clause.field.split("."))
+        except Exception:
             raise AbsentMappingFieldError(
                 u"Agg of type <%s> on non-existing field <%s>."
                 % (agg_clause.KEY, agg_clause.field)
@@ -117,7 +119,7 @@ class Mappings(Tree):
         'text'
         """
         try:
-            nid = self.get_node_id_by_path(field_path)
+            nid = self.get_node_id_by_path(field_path.split("."))
         except ValueError:
             raise AbsentMappingFieldError(
                 u"<%s field is not present in mappings>" % field_path
@@ -166,10 +168,10 @@ class Mappings(Tree):
         >>> mappings.list_nesteds_at_field('comments.comment_text')
         ['comments']
         """
-        path_nid = self.get_node_id_by_path(field_path)
+        path_nid = self.get_node_id_by_path(field_path.split("."))
         # from deepest to highest
         return [
-            self.get_path(nid)
+            ".".join(self.get_path(nid))
             for nid in self.ancestors_ids(path_nid, include_current=True)
             if self.get(nid)[1].KEY == "nested"
         ]

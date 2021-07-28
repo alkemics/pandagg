@@ -17,6 +17,7 @@ class CompoundClause(QueryClause):
 
     """
 
+    KEY: str
     _default_operator: str = ""
     _parent_params: List[str] = []
 

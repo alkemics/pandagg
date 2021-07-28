@@ -7,8 +7,8 @@ class Nested(CompoundClause):
     _parent_params = ["query"]
     KEY = "nested"
 
-    def __init__(self, path, **kwargs):
-        super(Nested, self).__init__(path=path, **kwargs)
+    def __init__(self, path, **body):
+        super(Nested, self).__init__(path=path, **body)
         self.path = path
 
 

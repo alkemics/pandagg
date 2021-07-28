@@ -1,15 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
 
 from pandagg.node._node import Node
 from typing import Optional, Union, Dict, Any, Tuple, List
 
+QueryType = str
 QueryClauseDict = Dict[str, Any]
 
 
 class QueryClause(Node):
+    KEY: str
     _type_name = "query"
 
     def __init__(
@@ -67,10 +66,10 @@ class QueryClause(Node):
         return other == self.to_dict()
 
 
-TypeOrQuery = Union[str, QueryClauseDict, QueryClause]
+TypeOrQuery_ = Union[QueryType, QueryClauseDict, QueryClause]
 
 
-def Q(type_or_query: Optional[TypeOrQuery] = None, **body: Any) -> QueryClause:
+def Q(type_or_query: Optional[TypeOrQuery_] = None, **body: Any) -> QueryClause:
     """
     Accept multiple syntaxes, return a QueryClause node.
 
@@ -107,6 +106,8 @@ def Q(type_or_query: Optional[TypeOrQuery] = None, **body: Any) -> QueryClause:
 
 
 class LeafQueryClause(QueryClause):
+    KEY: str
+
     def __init__(self, _name: Optional[str] = None, **body: Any):
         super(LeafQueryClause, self).__init__(
             _name=_name, accept_children=False, **body
@@ -239,6 +240,8 @@ class MultiFieldsQueryClause(LeafQueryClause):
 
 
 class ParentParameterClause(QueryClause):
+    KEY: str
+
     def __init__(self):
         super(ParentParameterClause, self).__init__(accept_children=True, keyed=False)
 

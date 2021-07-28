@@ -1,16 +1,12 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# =============================================================================
-#                                   IMPORTS
-# =============================================================================
-
 from __future__ import unicode_literals
 from unittest import TestCase
 from mock import patch
 
 from pandagg.tree.aggs import Aggs
-from pandagg.exceptions import InvalidOperationMappingFieldError
+from pandagg.exceptions import (
+    InvalidOperationMappingFieldError,
+    AbsentMappingFieldError,
+)
 from pandagg.aggs import DateHistogram, Terms, Avg, Min, Filter
 
 import tests.testing_samples.data_sample as sample
@@ -110,7 +106,7 @@ genres                                           <terms, field="genres", size=3>
         )
 
         # try to add field aggregation on non-existing field will fail
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AbsentMappingFieldError):
             with_mapping.agg(
                 "imaginary_agg", Terms(field="imaginary_field"), insert_below="workflow"
             )

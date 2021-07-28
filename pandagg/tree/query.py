@@ -1,17 +1,35 @@
 import json
+from typing import Optional, Union, Any, Literal, List, Dict
 
+from lighttree import Key
+from lighttree.node import NodeId
 from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
-from pandagg.node.query.abstract import QueryClause, LeafQueryClause, Q
+from pandagg.node.query.abstract import (
+    QueryClause,
+    LeafQueryClause,
+    Q,
+    QueryClauseDict,
+    QueryType,
+    TypeOrQuery_,
+)
 from pandagg.node.query.compound import CompoundClause, Bool
 from pandagg.node.query.joining import Nested
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mappings import _mappings
+from pandagg.tree.mappings import _mappings, MappingDict, Mappings
+from pandagg.types import QueryName, ClauseBody
 
-ADD = "add"
-REPLACE = "replace"
-REPLACE_ALL = "replace_all"
+# because a method `bool` shadows the real bool
+bool_ = bool
+InsertionModes = Literal["add", "replace", "replace_all"]
+ADD: InsertionModes = "add"
+REPLACE: InsertionModes = "replace"
+REPLACE_ALL: InsertionModes = "replace_all"
+
+
+SingleQueryClause = Union[QueryClauseDict, QueryClause]
+SingleOrMultipleQueryClause = Union[SingleQueryClause, List[SingleQueryClause]]
 
 sub_insertion = Substitution(
     location_kwargs="""
@@ -34,9 +52,16 @@ sub_insertion = Substitution(
 """
 )
 
+TypeOrQuery = Union[QueryType, QueryClauseDict, QueryClause, "Query"]
+
 
 class Query(Tree):
-    def __init__(self, q=None, mappings=None, nested_autocorrect=False):
+    def __init__(
+        self,
+        q: Optional[TypeOrQuery] = None,
+        mappings: Optional[Union[MappingDict, Mappings]] = None,
+        nested_autocorrect: bool = False,
+    ) -> None:
         """
         Combination of query clauses.
 
@@ -56,13 +81,13 @@ class Query(Tree):
     @sub_insertion
     def query(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        compound_param=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        compound_param: str = None,
+        **body: Any
+    ) -> "Query":
         r"""
         Insert provided clause in copy of initial Query.
 
@@ -79,8 +104,8 @@ class Query(Tree):
         :Keyword Arguments:
         %(location_kwargs)s
         """
-        q = self.clone(with_nodes=True)
-        node = self._q(type_or_query, **body)
+        q: Query = self.clone(with_nodes=True)
+        node: QueryClause = self._q(type_or_query, **body)
         q._insert_query_at(
             node,
             mode=mode,
@@ -93,13 +118,13 @@ class Query(Tree):
     @sub_insertion
     def must(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: Optional[ClauseBody] = None,
+        **body: Any
+    ) -> "Query":
         r"""
         Create copy of initial Query and insert provided clause under "bool" query "must".
 
@@ -117,38 +142,38 @@ class Query(Tree):
 
     def should(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: Optional[ClauseBody] = None,
+        **body: Any
+    ) -> "Query":
         return self._compound_param_insert(
             "bool", "should", mode, type_or_query, insert_below, on, bool_body, **body
         )
 
     def must_not(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
+    ) -> "Query":
         return self._compound_param_insert(
             "bool", "must_not", mode, type_or_query, insert_below, on, bool_body, **body
         )
 
     def filter(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
     ):
         return self._compound_param_insert(
             "bool", "filter", mode, type_or_query, insert_below, on, bool_body, **body
@@ -157,14 +182,14 @@ class Query(Tree):
     # compound
     def bool(
         self,
-        must=None,
-        should=None,
-        must_not=None,
-        filter=None,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        **body
+        must: Optional[SingleOrMultipleQueryClause] = None,
+        should: Optional[SingleOrMultipleQueryClause] = None,
+        must_not: Optional[SingleOrMultipleQueryClause] = None,
+        filter: Optional[SingleOrMultipleQueryClause] = None,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
     ):
         """
         >>> Query().bool(must={"term": {"some_field": "yolo"}})
@@ -182,7 +207,13 @@ class Query(Tree):
         )
 
     def boosting(
-        self, positive=None, negative=None, insert_below=None, on=None, mode=ADD, **body
+        self,
+        positive: Optional[SingleQueryClause] = None,
+        negative: Optional[SingleQueryClause] = None,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
     ):
         if not positive and not negative:
             raise ValueError('Expect at least one of "positive", "negative"')
@@ -197,7 +228,13 @@ class Query(Tree):
         )
 
     def constant_score(
-        self, filter=None, boost=None, insert_below=None, on=None, mode=ADD, **body
+        self,
+        filter: Optional[SingleQueryClause] = None,
+        boost: Optional[float] = None,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
     ):
         if not filter and not boost:
             raise ValueError('Expect at least one of "filter", "boost"')
@@ -211,7 +248,14 @@ class Query(Tree):
             **body
         )
 
-    def dis_max(self, queries, insert_below=None, on=None, mode=ADD, **body):
+    def dis_max(
+        self,
+        queries: List[SingleQueryClause],
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "dis_max",
             queries=queries,
@@ -221,7 +265,14 @@ class Query(Tree):
             **body
         )
 
-    def function_score(self, query, insert_below=None, on=None, mode=ADD, **body):
+    def function_score(
+        self,
+        query: Optional[SingleQueryClause],
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "function_score",
             query=query,
@@ -231,7 +282,15 @@ class Query(Tree):
             **body
         )
 
-    def nested(self, path, query=None, insert_below=None, on=None, mode=ADD, **body):
+    def nested(
+        self,
+        path: str,
+        query: Optional[SingleQueryClause] = None,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "nested",
             query=query,
@@ -242,7 +301,14 @@ class Query(Tree):
             **body
         )
 
-    def has_child(self, query, insert_below=None, on=None, mode=ADD, **body):
+    def has_child(
+        self,
+        query: Optional[SingleQueryClause],
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "has_child",
             query=query,
@@ -252,7 +318,14 @@ class Query(Tree):
             **body
         )
 
-    def has_parent(self, query, insert_below=None, on=None, mode=ADD, **body):
+    def has_parent(
+        self,
+        query: Optional[SingleQueryClause],
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "has_parent",
             query=query,
@@ -262,7 +335,14 @@ class Query(Tree):
             **body
         )
 
-    def script_score(self, query, insert_below=None, on=None, mode=ADD, **body):
+    def script_score(
+        self,
+        query: Optional[SingleQueryClause],
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "script_score",
             query=query,
@@ -272,7 +352,14 @@ class Query(Tree):
             **body
         )
 
-    def pinned_query(self, organic, insert_below=None, on=None, mode=ADD, **body):
+    def pinned_query(
+        self,
+        organic: Optional[SingleQueryClause],
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Query":
         return self.query(
             "pinned_query",
             organic=organic,
@@ -282,7 +369,7 @@ class Query(Tree):
             **body
         )
 
-    def show(self, *args, line_max_length=80, **kwargs):
+    def show(self, *args: Any, line_max_length: int = 80, **kwargs: Any) -> str:
         """
         Return compact representation of Query.
 
@@ -297,13 +384,10 @@ class Query(Tree):
             └── term                                          field=other_field, value=5
 
         All *args and **kwargs are propagated to `lighttree.Tree.show` method.
-        :return: str
         """
-        return "<Query>\n%s" % str(
-            super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)
-        )
+        return "<Query>\n%s" % super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)  # type: ignore
 
-    def applied_nested_path_at_node(self, nid):
+    def applied_nested_path_at_node(self, nid: NodeId) -> Optional[str]:
         """
         Return nested path applied at a clause.
 
@@ -317,7 +401,7 @@ class Query(Tree):
                 return node.path
         return None
 
-    def to_dict(self, from_=None):
+    def to_dict(self, from_=None) -> Optional[Dict[str, Any]]:
         """
         Serialize Query as dict.
         """
@@ -331,9 +415,11 @@ class Query(Tree):
         if not isinstance(node, CompoundClause):
             raise ValueError("Unexpected %s" % node.__class__)
 
-        d = {}
+        d: Dict[str, Any] = {}
         is_empty = True
-        for param_key, param_node in self.children(node.identifier):
+        param_key: str
+        # in such case, param key is always a string, thus ignore typing
+        for param_key, param_node in self.children(node.identifier):  # type: ignore
             children_serialized = [
                 self.to_dict(child_node.identifier)
                 for _, child_node in self.children(param_node.identifier)
@@ -356,15 +442,15 @@ class Query(Tree):
     # compound parameters
     def _compound_param_insert(
         self,
-        compound_key,
-        compound_param_key,
-        mode,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        compound_body=None,
-        **body
-    ):
+        compound_key: str,
+        compound_param_key: str,
+        mode: InsertionModes,
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        compound_body: ClauseBody = None,
+        **body: Any
+    ) -> "Query":
         q = self.clone(with_nodes=True)
         node = self._q(type_or_query, **body)
         compound_body = compound_body or {}
@@ -373,12 +459,12 @@ class Query(Tree):
         q._insert_query_at(compound_node, on=on, insert_below=insert_below, mode=mode)
         return q
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> bool_:
         return bool(self.to_dict())
 
     __bool__ = __nonzero__
 
-    def _clone_init(self, deep=False):
+    def _clone_init(self, deep: bool_ = False) -> "Query":
         return Query(
             mappings=None
             if self.mappings is None
@@ -386,13 +472,15 @@ class Query(Tree):
             nested_autocorrect=self.nested_autocorrect,
         )
 
-    def _has_bool_root(self):
+    def _has_bool_root(self) -> bool_:
         if not self.root:
             return False
         _, r = self.get(self.root)
         return isinstance(r, Bool)
 
-    def _compound_param_id(self, nid, key, create_if_not_exists=True):
+    def _compound_param_id(
+        self, nid: NodeId, key: str, create_if_not_exists: bool_ = True
+    ) -> str:
         """
         :param nid: id of compound node
         :param key: param key, for instance if compound if bool, can be 'must', 'should', 'must_not' etc
@@ -409,17 +497,25 @@ class Query(Tree):
         return param_node.identifier
 
     @classmethod
-    def _q(cls, type_or_query, **body):
+    def _q(cls, type_or_query: TypeOrQuery, **body) -> QueryClause:
         """
         Convert to QueryClause instance.
         """
+        type_or_query_: Optional[TypeOrQuery_]
         if isinstance(type_or_query, Query):
-            type_or_query = type_or_query.to_dict()
-        return Q(type_or_query, **body)
+            type_or_query_ = type_or_query.to_dict()
+        else:
+            type_or_query_ = type_or_query
+        return Q(type_or_query_, **body)
 
     def _insert_query_at(
-        self, node, mode, on=None, insert_below=None, compound_param=None
-    ):
+        self,
+        node: QueryClause,
+        mode: InsertionModes,
+        on: Optional[QueryName] = None,
+        insert_below: Optional[QueryName] = None,
+        compound_param: str = None,
+    ) -> None:
         """
         Insert clause (and its children) in Query.
 
@@ -512,14 +608,16 @@ class Query(Tree):
             self._insert_query(node)
             return
 
+        # ignore typing, in this case root cannot be None
+        root: str = self.root  # type: ignore
         if self._has_bool_root():
             # top query is bool
-            must_id = self._compound_param_id(self.root, "must")
+            must_id = self._compound_param_id(root, "must")
             self._insert_query(node, insert_below=must_id)
             return
 
         # top query is not bool
-        _, initial_query = self.drop_subtree(self.root)
+        _, initial_query = self.drop_subtree(root)
         if isinstance(node, Bool):
             # if inserted node is bool, placed on top, and previous query is added under "must" parameter
             self._insert_query(node)
@@ -531,7 +629,9 @@ class Query(Tree):
             self._insert_query(Bool(must=[node, initial_query.to_dict()]))
         return
 
-    def _insert_query(self, query=None, insert_below=None):
+    def _insert_query(
+        self, query: TypeOrQuery, insert_below: Optional[QueryName] = None
+    ) -> None:
         """
         Insert query clause and its children (recursively).
         Does not handle logic about where to insert it, should be handled before (dumb insert below insert_below).
@@ -554,7 +654,9 @@ class Query(Tree):
             for child in child_nodes:
                 self._insert_query(query=child, insert_below=param_node.identifier)
 
-    def _insert_node_below(self, node, parent_id, key):
+    def _insert_node_below(
+        self, node: QueryClause, parent_id: Optional[NodeId], key: Optional[Key]
+    ) -> None:
         """
         Override lighttree.Tree._insert_node_below method to ensure inserted query clause is consistent (for instance
         only compounds queries can have children clauses).
@@ -582,17 +684,21 @@ class Query(Tree):
                 if key not in pnode._parent_params:
                     raise ValueError(
                         "Expect a parameter clause of type %s under <%s> compound clause, got <%s>"
-                        % (pnode._parent_params.keys(), pnode.KEY, key)
+                        % (pnode._parent_params, pnode.KEY, key)
                     )
 
-        # automatic handling of nested clauses
+        # no mappings validation
         if isinstance(node, Nested) or not self.mappings or not hasattr(node, "field"):
             return super(Query, self)._insert_node_below(
                 node=node, parent_id=parent_id, key=key
             )
-        required_nested_level = self.mappings.nested_at_field(node.field)
-        if len(self.list()) <= 1:
-            # empty
+
+        # ignore type because cannot be None
+        field: str = node.field  # type: ignore
+
+        # automatic handling of nested clauses
+        required_nested_level = self.mappings.nested_at_field(field)
+        if self.is_empty() or parent_id is None:
             current_nested_level = None
         else:
             current_nested_level = self.applied_nested_path_at_node(parent_id)
@@ -603,16 +709,16 @@ class Query(Tree):
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s query clause on %s field. Invalid nested: expected %s, current %s."
-                % (node.KEY, node.field, required_nested_level, current_nested_level)
+                % (node.KEY, field, required_nested_level, current_nested_level)
             )
         # requires nested - apply all required nested fields
         to_insert = node
-        for nested_lvl in self.mappings.list_nesteds_at_field(node.field):
+        for nested_lvl in self.mappings.list_nesteds_at_field(field):
             if current_nested_level != nested_lvl:
                 to_insert = QueryClause.get_dsl_class("nested")(
                     path=nested_lvl, query=to_insert
                 )
         self._insert_query(to_insert, parent_id)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return json.dumps(self.to_dict(), indent=2)
