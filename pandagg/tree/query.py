@@ -386,7 +386,9 @@ class Query(Tree):
 
         All *args and **kwargs are propagated to `lighttree.Tree.show` method.
         """
-        return "<Query>\n%s" % super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)  # type: ignore
+        return "<Query>\n%s" % super(Tree, self).show(
+            *args, line_max_length=line_max_length, **kwargs
+        )  # type: ignore
 
     def applied_nested_path_at_node(self, nid: NodeId) -> Optional[str]:
         """
