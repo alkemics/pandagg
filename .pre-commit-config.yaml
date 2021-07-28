@@ -9,3 +9,11 @@ repos:
       rev: 19.3b0
       hooks:
         -   id: black
+  -   repo: local
+      hooks:
+        - id: mypy
+          name: mypy
+          entry: mypy --install-types --non-interactive pandagg
+          pass_filenames: false
+          language: system
+          types: [ python ]
