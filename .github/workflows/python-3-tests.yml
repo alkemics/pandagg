@@ -30,6 +30,7 @@ jobs:
     - name: Mypy check
       run: |
         pip install mypy
+        pip install -e ".[develop]"
         mypy --install-types --non-interactive pandagg
 
   run_tests:
