@@ -60,7 +60,7 @@ Explore index mappings:
 
 ```python
 >>> movies = indices.movies
->>> movies.mappings
+>>> movies.imappings
 <Mappings>
 _
 ├── directors                                                [Nested]
@@ -78,7 +78,7 @@ _
 ...
 ```
 ```python
->>> movies.mappings.roles
+>>> movies.imappings.roles
 <Mappings subpart: roles>
 roles                                                        [Nested]
 ├── actor_id                                                  Keyword
@@ -95,7 +95,7 @@ roles                                                        [Nested]
 Execute aggregation on field:
 
 ```python
->>> movies.mappings.roles.gender.a.terms()
+>>> movies.imappings.roles.gender.a.terms()
    doc_count key
 M    2296792   M
 F    1135174   F
