@@ -4,7 +4,7 @@ from typing import Optional, Union, Any, Dict
 from lighttree import Key
 from lighttree.node import NodeId
 from pandagg.tree._tree import Tree
-from pandagg.tree.mappings import _mappings, Mappings, MappingDict
+from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
 from pandagg.node.aggs.abstract import (
     BucketAggClause,
@@ -53,7 +53,7 @@ class Aggs(Tree):
     def __init__(
         self,
         aggs=None,
-        mappings: Optional[Union[MappingDict, "Mappings"]] = None,
+        mappings: Optional[Union[MappingsDict, "Mappings"]] = None,
         nested_autocorrect: bool = False,
         _groupby_ptr: Optional[str] = None,
     ):
@@ -70,7 +70,9 @@ class Aggs(Tree):
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)
 
-    def grouped_by(self, agg_name: Optional[AggName] = None, deepest: bool = False):
+    def grouped_by(
+        self, agg_name: Optional[AggName] = None, deepest: bool = False
+    ) -> "Aggs":
         """
         Define which aggregation will be used as grouping pointer.
 
