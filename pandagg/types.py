@@ -17,3 +17,8 @@ Bucket = Any
 CompositeSource = Dict[str, Any]
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html#_pagination
 AfterKey = Dict[str, Any]
+
+DocSource = Dict[str, Any]
+SettingsDict = Dict[str, Any]
+MappingsDict = Dict[str, Any]
+SearchDict = Dict[str, Any]

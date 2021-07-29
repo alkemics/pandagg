@@ -1,12 +1,25 @@
 import json
-from typing import Optional, Union
+from typing import Optional, Union, Any, Dict
 
+from lighttree import Key
+from lighttree.node import NodeId
 from pandagg.tree._tree import Tree
-from pandagg.tree.mappings import _mappings, Mappings, MappingDict
+from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
-from pandagg.node.aggs.abstract import BucketAggClause, Root, A
+from pandagg.node.aggs.abstract import (
+    BucketAggClause,
+    Root,
+    A,
+    TypeOrAgg,
+    AggClauseDict,
+    AggClause,
+)
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
+from pandagg.types import AggName
+
+
+AggsDict = Dict[AggName, Union[AggClauseDict, AggClause]]
 
 
 class Aggs(Tree):
@@ -40,7 +53,7 @@ class Aggs(Tree):
     def __init__(
         self,
         aggs=None,
-        mappings: Optional[Union[MappingDict, "Mappings"]] = None,
+        mappings: Optional[Union[MappingsDict, "Mappings"]] = None,
         nested_autocorrect: bool = False,
         _groupby_ptr: Optional[str] = None,
     ):
@@ -48,15 +61,18 @@ class Aggs(Tree):
         self.nested_autocorrect: bool = nested_autocorrect
         super(Aggs, self).__init__()
 
-        # the root node of an aggregation is just the initial empty dict
+        # an Aggs always has a root node, which is just the initial empty dict
         self.insert_node(Root())
+        self.root: str
         # identifier of clause used for groupby
         self._groupby_ptr = self.root if _groupby_ptr is None else _groupby_ptr
 
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)
 
-    def grouped_by(self, agg_name=None, deepest=False):
+    def grouped_by(
+        self, agg_name: Optional[AggName] = None, deepest: bool = False
+    ) -> "Aggs":
         """
         Define which aggregation will be used as grouping pointer.
 
@@ -79,7 +95,14 @@ class Aggs(Tree):
         new_agg._groupby_ptr = new_agg.root
         return new_agg
 
-    def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
+    def groupby(
+        self,
+        name: AggName,
+        type_or_agg: Optional[TypeOrAgg] = None,
+        insert_below: Optional[AggName] = None,
+        at_root: bool = False,
+        **body: Any
+    ) -> "Aggs":
         """
         Insert provided aggregation clause in copy of initial Aggs.
 
@@ -119,7 +142,14 @@ class Aggs(Tree):
         )
         return new_agg
 
-    def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
+    def agg(
+        self,
+        name: AggName,
+        type_or_agg: Optional[TypeOrAgg] = None,
+        insert_below: Optional[AggName] = None,
+        at_root: bool = False,
+        **body: Any
+    ) -> "Aggs":
         """
         Insert provided agg clause in copy of initial Aggs.
 
@@ -151,7 +181,12 @@ class Aggs(Tree):
         )
         return new_agg
 
-    def aggs(self, aggs, insert_below=None, at_root=False):
+    def aggs(
+        self,
+        aggs: Union[AggsDict, "Aggs"],
+        insert_below: Optional[AggName] = None,
+        at_root: bool = False,
+    ) -> "Aggs":
         """
         Insert provided aggs in copy of initial Aggs.
 
@@ -178,7 +213,9 @@ class Aggs(Tree):
         new_agg._insert_aggs(aggs=aggs, insert_below_id=insert_below, at_root=at_root)
         return new_agg
 
-    def to_dict(self, from_=None, depth=None):
+    def to_dict(
+        self, from_: Optional[NodeId] = None, depth: Optional[int] = None
+    ) -> AggsDict:
         """
         Serialize Aggs as dict.
 
@@ -187,15 +224,17 @@ class Aggs(Tree):
         :param depth: integer, if provided, limit the serialization to a given depth
         :return: dict
         """
-        if self.root is None:
-            return None
         from_ = self.root if from_ is None else from_
         _, node = self.get(from_)
-        children_queries = {}
+        children_queries: AggsDict = {}
         if depth is None or depth > 0:
             if depth is not None:
                 depth -= 1
-            for child_name, child_node in self.children(node.identifier):
+            child_name: str
+            # agg name is always a string (even though lighttree accepts other types of keys)
+            for child_name, child_node in self.children(  # type: ignore
+                node.identifier
+            ):
                 children_queries[child_name] = self.to_dict(
                     from_=child_node.identifier, depth=depth
                 )
@@ -206,7 +245,7 @@ class Aggs(Tree):
             node_query_dict["aggs"] = children_queries
         return node_query_dict
 
-    def applied_nested_path_at_node(self, nid):
+    def applied_nested_path_at_node(self, nid: NodeId) -> Optional[str]:
         """
         Return nested path applied at a clause.
 
@@ -220,18 +259,18 @@ class Aggs(Tree):
                 return node.path
         return None
 
-    def apply_reverse_nested(self, nid=None):
+    def apply_reverse_nested(self, nid: Optional[NodeId] = None) -> None:
         for k, leaf in self.leaves(nid):
             if isinstance(leaf, BucketAggClause) and self.applied_nested_path_at_node(
                 leaf.identifier
             ):
-                self.add_node(
+                self.insert_node(
                     ReverseNested(),
-                    insert_below=leaf.identifier,
+                    parent_id=leaf.identifier,
                     key="reverse_nested_%s" % leaf.identifier,
                 )
 
-    def show(self, *args, line_max_length=80, **kwargs):
+    def show(self, *args: Any, line_max_length: int = 80, **kwargs: Any) -> str:
         """
         Return compact representation of Aggs.
 
@@ -260,21 +299,28 @@ class Aggs(Tree):
             return "<Aggregations>\n%s" % str(
                 super(Tree, self).show(
                     child_id, *args, line_max_length=line_max_length, **kwargs
-                )
+                )  # type: ignore
             )
 
         return "<Aggregations>\n%s" % str(
-            super(Tree, self).show(*args, line_max_length=line_max_length, **kwargs)
+            super(Tree, self).show(
+                *args, line_max_length=line_max_length, **kwargs
+            )  # type: ignore
         )
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> bool:
         return bool(self.to_dict())
 
     __bool__ = __nonzero__
 
     def _insert_agg(
-        self, name, node, insert_below_id=None, at_root=None, groupby=False
-    ):
+        self,
+        name: AggName,
+        node: AggClause,
+        insert_below_id: Optional[NodeId] = None,
+        at_root: bool = False,
+        groupby: bool = False,
+    ) -> None:
         """
         Mutate current Aggs instance (no clone), inserting named AggClause instance at asked location.
 
@@ -319,7 +365,7 @@ class Aggs(Tree):
                 name=child_name, node=child_node, insert_below_id=node.identifier
             )
 
-    def _clone_init(self, deep=False):
+    def _clone_init(self, deep: bool = False) -> "Aggs":
         return Aggs(
             mappings=self.mappings.clone(deep=deep)
             if self.mappings is not None
@@ -328,7 +374,7 @@ class Aggs(Tree):
             _groupby_ptr=self._groupby_ptr,
         )
 
-    def _is_eligible_grouping_node(self, nid):
+    def _is_eligible_grouping_node(self, nid: NodeId) -> bool:
         """
         Return whether node can be used as grouping node.
         """
@@ -341,7 +387,7 @@ class Aggs(Tree):
         return True
 
     @property
-    def _deepest_linear_bucket_agg(self):
+    def _deepest_linear_bucket_agg(self) -> NodeId:
         """
         Return deepest bucket aggregation node identifier (pandagg.nodes.abstract.BucketAggClause) of that aggregation
         that neither has siblings, nor has an ancestor with siblings.
@@ -366,7 +412,12 @@ class Aggs(Tree):
             ]
         return last_bucket_agg_id
 
-    def _insert_aggs(self, aggs, insert_below_id=None, at_root=False):
+    def _insert_aggs(
+        self,
+        aggs: Union["Aggs", AggsDict],
+        insert_below_id: Optional[NodeId] = None,
+        at_root: bool = False,
+    ) -> None:
         """
         Insert multiple aggregation clauses in current Aggs (mutate current instance).
         By default place them under groupby pointer if none of `insert_below_id` or `at_root` is provided.
@@ -374,7 +425,6 @@ class Aggs(Tree):
         :param aggs: Aggs instance, or dict
         :param insert_below_id: clause identifier under which inserted aggs should be placed
         :param at_root: if True, place inserted aggs at root, instead of placing them under Aggs._groupby_ptr.
-        :return:
         """
         if at_root:
             insert_below_id = self.root
@@ -397,7 +447,9 @@ class Aggs(Tree):
             return
         raise TypeError("Unsupported aggs type %s for Aggs" % type(aggs))
 
-    def _insert_node_below(self, node, parent_id, key):
+    def _insert_node_below(
+        self, node: AggClause, parent_id: Optional[NodeId], key: Optional[Key]
+    ) -> None:
         """
         If mappings is provided, check if aggregation complies with it (nested / reverse nested).
 
@@ -410,22 +462,28 @@ class Aggs(Tree):
             or isinstance(node, ReverseNested)
             or not self.mappings
             or not hasattr(node, "field")
-            or self.root is None
+            # ignore for root insertion
+            or parent_id is None
         ):
             return super(Aggs, self)._insert_node_below(node, parent_id, key)
+
+        # ignore typing warning, since hasattr(node, "field") is checked above
+        field: str = node.field  # type: ignore
+        # parent_id cannot be null if inserting in a non-empty agg
+        parent_id_: str = parent_id
 
         self.mappings.validate_agg_clause(node)
 
         # from deepest to highest
-        required_nested_level = self.mappings.nested_at_field(node.field)
+        required_nested_level = self.mappings.nested_at_field(field)
 
-        current_nested_level = self.applied_nested_path_at_node(parent_id)
+        current_nested_level = self.applied_nested_path_at_node(parent_id_)
         if current_nested_level == required_nested_level:
-            return super(Aggs, self)._insert_node_below(node, parent_id, key)
+            return super(Aggs, self)._insert_node_below(node, parent_id_, key)
         if not self.nested_autocorrect:
             raise ValueError(
                 "Invalid %s agg on %s field. Invalid nested: expected %s, current %s."
-                % (node.KEY, node.field, required_nested_level, current_nested_level)
+                % (node.KEY, field, required_nested_level, current_nested_level)
             )
         if current_nested_level and (
             required_nested_level or "" in current_nested_level
@@ -435,7 +493,7 @@ class Aggs(Tree):
             child_reverse_nested = next(
                 (
                     n
-                    for k, n in self.children(parent_id)
+                    for k, n in self.children(parent_id_)
                     if isinstance(n, ReverseNested) and n.path == required_nested_level
                 ),
                 None,
@@ -448,43 +506,40 @@ class Aggs(Tree):
                 rv_node = ReverseNested()
                 super(Aggs, self).insert_node(
                     rv_node,
-                    parent_id=parent_id,
-                    key="reverse_nested_below_%s" % self.get_key(parent_id),
+                    parent_id=parent_id_,
+                    key="reverse_nested_below_%s"
+                    % (self.get_key(parent_id_) or "root"),
                 )
                 return super(Aggs, self)._insert_node_below(
                     node, rv_node.identifier, key
                 )
 
         # requires nested - apply all required nested fields
-        for nested_lvl in reversed(self.mappings.list_nesteds_at_field(node.field)):
+        for nested_lvl in reversed(self.mappings.list_nesteds_at_field(field)):
             if current_nested_level != nested_lvl:
                 # check if already exists in direct children, else create it
                 child_nested = next(
                     (
                         n
-                        for k, n in (
-                            self.children(parent_id) if parent_id is not None else []
-                        )
+                        for k, n in self.children(parent_id_)
                         if isinstance(n, Nested) and n.path == nested_lvl
                     ),
                     None,
                 )
                 if child_nested:
-                    parent_id = child_nested.identifier
+                    parent_id_ = child_nested.identifier
                     continue
-                nested_node_name = (
-                    "nested_below_root"
-                    if parent_id is None
-                    else "nested_below_%s" % self.get_key(parent_id)
+                nested_node_name = "nested_below_%s" % (
+                    self.get_key(parent_id_) or "root"
                 )
                 nested_node = Nested(path=nested_lvl)
                 super(Aggs, self)._insert_node_below(
-                    nested_node, parent_id, nested_node_name
+                    nested_node, parent_id_, nested_node_name
                 )
-                parent_id = nested_node.identifier
-        super(Aggs, self)._insert_node_below(node, parent_id, key)
+                parent_id_ = nested_node.identifier
+        super(Aggs, self)._insert_node_below(node, parent_id_, key)
 
-    def id_from_key(self, key: str) -> str:
+    def id_from_key(self, key: str) -> NodeId:
         """
         Find node identifier based on key. If multiple nodes have the same key, takes the first one.
 
@@ -505,5 +560,5 @@ class Aggs(Tree):
                 return n.identifier
         raise KeyError('No node found with key "%s"' % key)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return json.dumps(self.to_dict(), indent=2)

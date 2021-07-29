@@ -43,4 +43,4 @@ class WrapperTestCase(TestCase):
         self.assertEqual(report_index.name, "classification_report_one")
 
         # ensure mappings presence
-        self.assertIsInstance(report_index.mappings, IMappings)
+        self.assertIsInstance(report_index.imappings, IMappings)

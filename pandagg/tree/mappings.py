@@ -1,5 +1,7 @@
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union, Any, List
 
+from lighttree.node import NodeId
+from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.mappings import Object, Nested
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
 
@@ -9,11 +11,10 @@ from pandagg.exceptions import (
     InvalidOperationMappingFieldError,
 )
 from pandagg.tree._tree import Tree
+from pandagg.types import DocSource, MappingsDict
 
-MappingDict = Dict[str, Any]
 
-
-def _mappings(m: Optional[Union[MappingDict, "Mappings"]]) -> Optional["Mappings"]:
+def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mappings"]:
     if m is None:
         return None
     if isinstance(m, dict):
@@ -24,16 +25,25 @@ def _mappings(m: Optional[Union[MappingDict, "Mappings"]]) -> Optional["Mappings
 
 
 class Mappings(Tree):
-    def __init__(self, properties=None, dynamic: bool = False, **kwargs: Any):
+    def __init__(
+        self,
+        properties: Optional[Union[MappingsDict, "Mappings"]] = None,
+        dynamic: bool = False,
+        **body: Any
+    ) -> None:
         super(Mappings, self).__init__()
-        root_node = Field(dynamic=dynamic, **kwargs)
+        # a Mappings always has a root after __init__
+        self.root: str
+        root_node = Field(dynamic=dynamic, **body)
         self.insert_node(node=root_node)
         if properties:
             self._insert(
                 pid=root_node.identifier, properties=properties, is_subfield=False
             )
 
-    def to_dict(self, from_=None, depth=None):
+    def to_dict(
+        self, from_: Optional[NodeId] = None, depth: Optional[int] = None
+    ) -> MappingsDict:
         """
         Serialize Mappings as dict.
 
@@ -43,7 +53,7 @@ class Mappings(Tree):
         :return: dict
         """
         if self.root is None:
-            return None
+            return {}
         from_ = self.root if from_ is None else from_
         key, node = self.get(from_)
         children_queries = {}
@@ -62,7 +72,7 @@ class Mappings(Tree):
                 serialized_node["fields"] = children_queries
         return serialized_node
 
-    def validate_agg_clause(self, agg_clause, exc=True):
+    def validate_agg_clause(self, agg_clause: AggClause, exc: bool = True) -> bool:
         """
         Ensure that if aggregation clause relates to a field (`field` or `path`) this field exists in mappings, and that
         required aggregation type is allowed on this kind of field.
@@ -72,25 +82,33 @@ class Mappings(Tree):
         :rtype: boolean
         """
         if hasattr(agg_clause, "path"):
-            if agg_clause.path is None:
+            agg_path: Optional[str] = agg_clause.path  # type: ignore
+            if agg_path is None:
                 # reverse nested
                 return True
-            return self.resolve_path_to_id(agg_clause.path) in self
+            try:
+                # nested
+                self.get_node_id_by_path(agg_path.split("."))
+                return True
+            except Exception:
+                return False
 
         if not hasattr(agg_clause, "field"):
             return True
 
+        agg_field: str = agg_clause.field  # type: ignore
+
         # TODO take into account flattened data type
         try:
-            nid = self.get_node_id_by_path(agg_clause.field.split("."))
+            nid = self.get_node_id_by_path(agg_field.split("."))
         except Exception:
             raise AbsentMappingFieldError(
                 u"Agg of type <%s> on non-existing field <%s>."
-                % (agg_clause.KEY, agg_clause.field)
+                % (agg_clause.KEY, agg_field)
             )
-        _, field = self.get(nid)
+        _, field_node = self.get(nid)
 
-        field_type = field.KEY
+        field_type = field_node.KEY
         if not agg_clause.valid_on_field_type(field_type):
             if not exc:
                 return False
@@ -100,7 +118,7 @@ class Mappings(Tree):
             )
         return True
 
-    def mapping_type_of_field(self, field_path):
+    def mapping_type_of_field(self, field_path: str) -> str:
         """
         Return field type of provided field path.
 
@@ -150,7 +168,7 @@ class Mappings(Tree):
             return nesteds[0]
         return None
 
-    def list_nesteds_at_field(self, field_path):
+    def list_nesteds_at_field(self, field_path: str) -> List[str]:
         """
         List nested paths that apply at a given path.
 
@@ -171,7 +189,8 @@ class Mappings(Tree):
         path_nid = self.get_node_id_by_path(field_path.split("."))
         # from deepest to highest
         return [
-            ".".join(self.get_path(nid))
+            # all path items are strings
+            ".".join(self.get_path(nid))  # type: ignore
             for nid in self.ancestors_ids(path_nid, include_current=True)
             if self.get(nid)[1].KEY == "nested"
         ]
@@ -209,10 +228,10 @@ class Mappings(Tree):
                     )
                 self._insert(field.identifier, field.fields, True)
 
-    def validate_document(self, d):
+    def validate_document(self, d: DocSource) -> None:
         self._validate_document(d, pid=self.root)
 
-    def _validate_document(self, d, pid, path=""):
+    def _validate_document(self, d: Any, pid: NodeId, path: str = "") -> None:
         if d is None:
             d = {}
         if not isinstance(d, dict):
@@ -220,7 +239,8 @@ class Mappings(Tree):
                 "Invalid document type, expected dict, got <%s> at '%s'"
                 % (type(d), path)
             )
-        for field_name, field in self.children(pid):
+        field_name: str
+        for field_name, field in self.children(pid):  # type: ignore
             full_path = ".".join([path, field_name]) if path else field_name
             field_value = d.get(field_name)
             if not field._nullable and not field_value:

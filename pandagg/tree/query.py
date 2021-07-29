@@ -18,7 +18,7 @@ from pandagg.node.query.compound import CompoundClause, Bool
 from pandagg.node.query.joining import Nested
 
 from pandagg.tree._tree import Tree
-from pandagg.tree.mappings import _mappings, MappingDict, Mappings
+from pandagg.tree.mappings import _mappings, MappingsDict, Mappings
 from pandagg.types import QueryName, ClauseBody
 
 # because a method `bool` shadows the real bool
@@ -60,7 +60,7 @@ class Query(Tree):
     def __init__(
         self,
         q: Optional[TypeOrQuery] = None,
-        mappings: Optional[Union[MappingDict, Mappings]] = None,
+        mappings: Optional[Union[MappingsDict, Mappings]] = None,
         nested_autocorrect: bool = False,
     ) -> None:
         """
