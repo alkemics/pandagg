@@ -11,9 +11,7 @@ from pandagg.exceptions import (
     InvalidOperationMappingFieldError,
 )
 from pandagg.tree._tree import Tree
-from pandagg.types import DocSource
-
-MappingsDict = Dict[str, Any]
+from pandagg.types import DocSource, MappingsDict
 
 
 def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mappings"]:
@@ -32,7 +30,7 @@ class Mappings(Tree):
         properties: Optional[Union[MappingsDict, "Mappings"]] = None,
         dynamic: bool = False,
         **body: Any
-    ):
+    ) -> None:
         super(Mappings, self).__init__()
         # a Mappings always has a root after __init__
         self.root: str

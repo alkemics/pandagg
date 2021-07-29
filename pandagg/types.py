@@ -19,3 +19,5 @@ CompositeSource = Dict[str, Any]
 AfterKey = Dict[str, Any]
 
 DocSource = Dict[str, Any]
+SettingsDict = Dict[str, Any]
+MappingsDict = Dict[str, Any]
