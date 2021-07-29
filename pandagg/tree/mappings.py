@@ -1,4 +1,4 @@
-from typing import Optional, Union, Dict, Any, List
+from typing import Optional, Union, Any, List
 
 from lighttree.node import NodeId
 from pandagg.node.aggs.abstract import AggClause

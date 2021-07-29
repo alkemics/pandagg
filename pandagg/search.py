@@ -1,31 +1,51 @@
 # adapted from elasticsearch-dsl/search.py
 import copy
 import json
+from typing import Optional, Union, Tuple, List, Any, TypeVar, Dict
 
+import pandas as pd
+from elasticsearch import Elasticsearch
 from elasticsearch.helpers import scan
 
 from pandagg.connections import get_connection
+from pandagg.node.aggs.abstract import TypeOrAgg
 from pandagg.query import Bool
 from pandagg.response import Response
-from pandagg.tree.mappings import _mappings
-from pandagg.tree.query import Query, ADD
+from pandagg.tree.mappings import _mappings, Mappings
+from pandagg.tree.query import (
+    Query,
+    ADD,
+    TypeOrQuery,
+    InsertionModes,
+    SingleOrMultipleQueryClause,
+)
 from pandagg.tree.aggs import Aggs
+from pandagg.types import MappingsDict, QueryName, ClauseBody, AggName
 from pandagg.utils import DSLMixin
 
+# because Search.bool method shadows bool typing
+bool_ = bool
 
-class Request(object):
-    def __init__(self, using, index=None):
-        self._using = using
+T = TypeVar("T", bound="Request")
 
-        self._index = None
+
+class Request:
+    def __init__(
+        self: T,
+        using: Optional[Elasticsearch],
+        index: Optional[Union[str, Tuple[str], List[str]]] = None,
+    ) -> None:
+        self._using: Optional[Elasticsearch] = using
+        self._index: Optional[List[str]] = None
+
         if isinstance(index, (tuple, list)):
             self._index = list(index)
         elif index:
             self._index = [index]
 
-        self._params = {}
+        self._params: Dict[str, Any] = {}
 
-    def params(self, **kwargs):
+    def params(self: T, **kwargs: Any) -> T:
         """
         Specify query params to be used when executing the search. All the
         keyword arguments will override the current values. See
@@ -44,7 +64,7 @@ class Request(object):
         s._params.update(kwargs)
         return s
 
-    def index(self, *index):
+    def index(self: T, *index) -> T:
         """
         Set the index for the search. If called empty it will remove all information.
 
@@ -72,7 +92,7 @@ class Request(object):
 
         return s
 
-    def using(self, client):
+    def using(self: T, client: Elasticsearch) -> T:
         """
         Associate the search request with an elasticsearch client. A fresh copy
         will be returned with current instance remaining unchanged.
@@ -85,12 +105,12 @@ class Request(object):
         s._using = client
         return s
 
-    def _clone(self):
+    def _clone(self: T) -> T:
         s = self.__class__(using=self._using, index=self._index)
         s._params = self._params.copy()
         return s
 
-    def __copy__(self):
+    def __copy__(self: T) -> T:
         return self._clone()
 
 
@@ -100,12 +120,12 @@ class Search(DSLMixin, Request):
 
     def __init__(
         self,
-        using=None,
-        index=None,
-        mappings=None,
-        nested_autocorrect=False,
-        repr_auto_execute=False,
-    ):
+        using: Optional[Elasticsearch] = None,
+        index: Optional[Union[str, Tuple[str], List[str]]] = None,
+        mappings: Optional[Union[MappingsDict, Mappings]] = None,
+        nested_autocorrect: bool = False,
+        repr_auto_execute: bool = False,
+    ) -> None:
         """
         Search request to elasticsearch.
 
@@ -119,26 +139,43 @@ class Search(DSLMixin, Request):
         overridden by methods (`using`, `index` and `mappings` respectively).
         """
 
-        self._sort = []
-        self._source = None
-        self._highlight = {}
-        self._highlight_opts = {}
-        self._suggest = {}
-        self._script_fields = {}
+        self._sort: List = []
+        self._source: Any = None
+        self._highlight: Dict[str, Any] = {}
+        self._highlight_opts: Dict[str, Any] = {}
+        self._suggest: Dict[str, Any] = {}
+        self._script_fields: Dict[str, Any] = {}
         mappings = _mappings(mappings)
-        self._mappings = mappings
-        self._aggs = Aggs(mappings=mappings, nested_autocorrect=nested_autocorrect)
-        self._query = Query(mappings=mappings, nested_autocorrect=nested_autocorrect)
-        self._post_filter = Query(
+        self._mappings: Optional[Mappings] = mappings
+        self._aggs: Aggs = Aggs(
             mappings=mappings, nested_autocorrect=nested_autocorrect
         )
-        self._repr_auto_execute = repr_auto_execute
+        self._query: Query = Query(
+            mappings=mappings, nested_autocorrect=nested_autocorrect
+        )
+        self._post_filter: Query = Query(
+            mappings=mappings, nested_autocorrect=nested_autocorrect
+        )
+        self._repr_auto_execute: bool = repr_auto_execute
         super(Search, self).__init__(using=using, index=index)
 
-    def query(self, type_or_query, insert_below=None, on=None, mode=ADD, **body):
+    def query(
+        self,
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        compound_param: str = None,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._query = s._query.query(
-            type_or_query, insert_below=insert_below, on=on, mode=mode, **body
+            type_or_query,
+            insert_below=insert_below,
+            on=on,
+            mode=mode,
+            compound_param=compound_param,
+            **body
         )
         return s
 
@@ -146,15 +183,15 @@ class Search(DSLMixin, Request):
 
     def bool(
         self,
-        must=None,
-        should=None,
-        must_not=None,
-        filter=None,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        **body
-    ):
+        must: Optional[SingleOrMultipleQueryClause] = None,
+        should: Optional[SingleOrMultipleQueryClause] = None,
+        must_not: Optional[SingleOrMultipleQueryClause] = None,
+        filter: Optional[SingleOrMultipleQueryClause] = None,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._query = s._query.bool(
             must=must,
@@ -172,13 +209,13 @@ class Search(DSLMixin, Request):
 
     def filter(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._query = s._query.filter(
             type_or_query,
@@ -194,13 +231,13 @@ class Search(DSLMixin, Request):
 
     def must_not(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._query = s._query.must_not(
             type_or_query,
@@ -216,13 +253,13 @@ class Search(DSLMixin, Request):
 
     def should(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._query = s._query.should(
             type_or_query,
@@ -238,13 +275,13 @@ class Search(DSLMixin, Request):
 
     def must(
         self,
-        type_or_query,
-        insert_below=None,
-        on=None,
-        mode=ADD,
-        bool_body=None,
-        **body
-    ):
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._query = s._query.must(
             type_or_query,
@@ -258,7 +295,15 @@ class Search(DSLMixin, Request):
 
     must.__doc__ = Query.must.__doc__
 
-    def exclude(self, type_or_query, insert_below=None, on=None, mode=ADD, **body):
+    def exclude(
+        self,
+        type_or_query: TypeOrQuery,
+        insert_below: Optional[QueryName] = None,
+        on: Optional[QueryName] = None,
+        mode: InsertionModes = ADD,
+        bool_body: ClauseBody = None,
+        **body: Any
+    ) -> "Search":
         """Must not wrapped in filter context."""
         s = self._clone()
         s._query = s._query.filter(
@@ -266,15 +311,23 @@ class Search(DSLMixin, Request):
             insert_below=insert_below,
             on=on,
             mode=mode,
+            bool_body=bool_body,
         )
         return s
 
-    def post_filter(self, *args, **kwargs):
+    def post_filter(self, *args, **kwargs) -> "Search":
         s = self._clone()
         s._post_filter = s._post_filter.query(*args, **kwargs)
         return s
 
-    def agg(self, name, type_or_agg=None, insert_below=None, at_root=False, **body):
+    def agg(
+        self,
+        name: AggName,
+        type_or_agg: Optional[TypeOrAgg] = None,
+        insert_below: Optional[AggName] = None,
+        at_root: bool_ = False,
+        **body: Any
+    ) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.agg(
             name,
@@ -287,14 +340,16 @@ class Search(DSLMixin, Request):
 
     agg.__doc__ = Aggs.agg.__doc__
 
-    def aggs(self, aggs, insert_below=None, at_root=False):
+    def aggs(self, aggs, insert_below=None, at_root=False) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.aggs(aggs, insert_below=insert_below, at_root=at_root)
         return s
 
     aggs.__doc__ = Aggs.aggs.__doc__
 
-    def groupby(self, name, type_or_agg=None, insert_below=None, at_root=None, **body):
+    def groupby(
+        self, name, type_or_agg=None, insert_below=None, at_root=None, **body
+    ) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.groupby(
             name,
@@ -347,7 +402,7 @@ class Search(DSLMixin, Request):
         s._params["size"] = 1
         return s
 
-    def size(self, size):
+    def size(self, size) -> "Search":
         """
         Equivalent to::
 
@@ -359,7 +414,7 @@ class Search(DSLMixin, Request):
         return s
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d) -> "Search":
         """
         Construct a new `Search` instance from a raw dict containing the search
         body. Useful when migrating from raw dictionaries.
@@ -380,7 +435,7 @@ class Search(DSLMixin, Request):
         s.update_from_dict(d)
         return s
 
-    def _clone(self):
+    def _clone(self) -> "Search":
         """
         Return a clone of the current search request. Performs a shallow copy
         of all the underlying objects. Used internally by most state modifying
@@ -403,7 +458,7 @@ class Search(DSLMixin, Request):
         s._repr_auto_execute = self._repr_auto_execute
         return s
 
-    def update_from_dict(self, d):
+    def update_from_dict(self, d) -> "Search":
         """
         Apply options from a serialized body to the current instance. Modifies
         the object in-place. Used mostly by ``from_dict``.
@@ -436,7 +491,7 @@ class Search(DSLMixin, Request):
         self._params.update(d)
         return self
 
-    def script_fields(self, **kwargs):
+    def script_fields(self, **kwargs) -> "Search":
         """
         Define script fields to be calculated on hits. See
         https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
@@ -463,7 +518,7 @@ class Search(DSLMixin, Request):
         s._script_fields.update(kwargs)
         return s
 
-    def source(self, fields=None, **kwargs):
+    def source(self, fields=None, **kwargs) -> "Search":
         """
         Selectively control how the _source field is returned.
 
@@ -508,7 +563,7 @@ class Search(DSLMixin, Request):
 
         return s
 
-    def sort(self, *keys):
+    def sort(self, *keys) -> "Search":
         """
         Add sorting information to the search request. If called without
         arguments it will remove all sort requirements. Otherwise it will
@@ -541,7 +596,7 @@ class Search(DSLMixin, Request):
             s._sort.append(k)
         return s
 
-    def highlight_options(self, **kwargs):
+    def highlight_options(self, **kwargs) -> "Search":
         """
         Update the global highlighting options used for this request. For
         example::
@@ -553,7 +608,7 @@ class Search(DSLMixin, Request):
         s._highlight_opts.update(kwargs)
         return s
 
-    def highlight(self, *fields, **kwargs):
+    def highlight(self, *fields, **kwargs) -> "Search":
         """
         Request highlighting of some fields. All keyword arguments passed in will be
         used as parameters for all the fields in the ``fields`` parameter. Example::
@@ -592,7 +647,7 @@ class Search(DSLMixin, Request):
             s._highlight[f] = kwargs
         return s
 
-    def suggest(self, name, text, **kwargs):
+    def suggest(self, name, text, **kwargs) -> "Search":
         """
         Add a suggestions request to the search.
 
@@ -695,18 +750,18 @@ class Search(DSLMixin, Request):
 
         return es.delete_by_query(index=self._index, body=self.to_dict())
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool_:
         return (
             isinstance(other, Search)
             and other._index == self._index
             and other.to_dict() == self.to_dict()
         )
 
-    def _auto_execution_df_result(self):
+    def _auto_execution_df_result(self) -> pd.DataFrame:
         try:
             import pandas as pd  # noqa
         except ImportError:
-            return ImportError("repr_auto_execute requires pandas dependency")
+            raise ImportError("repr_auto_execute requires pandas dependency")
         if self._aggs.to_dict():
             # hits are not necessary to display aggregation results
             r = self.size(0).execute()
@@ -714,14 +769,14 @@ class Search(DSLMixin, Request):
         r = self.execute()
         return r.hits.to_dataframe()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         # inspired by https://github.com/elastic/eland/blob/master/eland/dataframe.py#L471 idea to execute search at
         # __repr__ to have more interactive experience
         if not self._repr_auto_execute:
             return json.dumps(self.to_dict(), indent=2)
         return self._auto_execution_df_result().__repr__()
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> Optional[str]:
         if not self._repr_auto_execute:
             return None
         return self._auto_execution_df_result()._repr_html_()
@@ -733,9 +788,9 @@ class MultiSearch(Request):
     request.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super(MultiSearch, self).__init__(**kwargs)
-        self._searches = []
+        self._searches: List = []
 
     def __getitem__(self, key):
         return self._searches[key]
@@ -780,12 +835,12 @@ class MultiSearch(Request):
         es = get_connection(self._using)
         return es.msearch(index=self._index, body=self.to_dict(), **self._params)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, Search)
             and other._index == self._index
             and other.to_dict() == self.to_dict()
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return json.dumps(self.to_dict(), indent=2)
