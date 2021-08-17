@@ -1,4 +1,5 @@
 from textwrap import dedent
+from typing import Any, Callable
 
 
 # Substitution and Appender are copied from pandas.util._decorators
@@ -34,17 +35,17 @@ class Substitution:
         "%s %s wrote the Raven"
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if args and kwargs:
             raise AssertionError("Only positional or keyword args are allowed")
 
         self.params = args or kwargs
 
-    def __call__(self, func):
+    def __call__(self, func: Callable) -> Callable:
         func.__doc__ = func.__doc__ and func.__doc__ % self.params
         return func
 
-    def update(self, *args, **kwargs):
+    def update(self, *args: Any, **kwargs: Any) -> None:
         """
         Update self.params with supplied args.
         """
@@ -73,14 +74,14 @@ class Appender:
         pass
     """
 
-    def __init__(self, addendum, join="", indents=0):
+    def __init__(self, addendum: str, join: str = "", indents: int = 0) -> None:
         if indents > 0:
             self.addendum = indent(addendum, indents=indents)
         else:
             self.addendum = addendum
         self.join = join
 
-    def __call__(self, func):
+    def __call__(self, func: Callable) -> Callable:
         func.__doc__ = func.__doc__ if func.__doc__ else ""
         self.addendum = self.addendum if self.addendum else ""
         docitems = [func.__doc__, self.addendum]
@@ -88,8 +89,6 @@ class Appender:
         return func
 
 
-def indent(text, indents=1):
-    if not text or not isinstance(text, str):
-        return ""
+def indent(text: str, indents: int = 1) -> str:
     jointext = "".join(["\n"] + ["    "] * indents)
     return jointext.join(text.split("\n"))

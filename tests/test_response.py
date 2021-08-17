@@ -16,14 +16,12 @@ class ResponseTestCase(PandaggTestCase):
         h = Hit(
             {
                 "_index": "my_index_01",
-                "_type": "_doc",
                 "_id": "1",
                 "_score": 1.0,
                 "_source": {"field_23": 1},
             }
         )
         self.assertEqual(h._index, "my_index_01")
-        self.assertEqual(h._type, "_doc")
         self.assertEqual(h._id, "1")
         self.assertEqual(h._score, 1.0)
         self.assertEqual(h._source, {"field_23": 1})

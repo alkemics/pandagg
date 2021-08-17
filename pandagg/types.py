@@ -1,5 +1,4 @@
-from typing import Optional, Dict, Any
-
+from typing import Optional, Dict, Any, TypedDict, Literal, List
 
 Meta = Optional[Dict[str, Any]]
 
@@ -22,3 +21,53 @@ DocSource = Dict[str, Any]
 SettingsDict = Dict[str, Any]
 MappingsDict = Dict[str, Any]
 SearchDict = Dict[str, Any]
+
+AggregationsDict = Dict[str, Any]
+
+
+class HitDict(TypedDict, total=False):
+    _index: str
+    _id: str
+    _source: DocSource
+    _score: float
+
+
+Relation = Literal["eq", "gte"]
+
+
+class TotalDict(TypedDict, total=False):
+    value: int
+    relation: Relation
+
+
+class HitsDict(TypedDict, total=False):
+    total: TotalDict
+    hits: List[HitDict]
+    max_score: Optional[float]
+
+
+class ShardsDict(TypedDict, total=False):
+    total: int
+    successful: int
+    skipped: int
+    failed: int
+
+
+class ProfileShardDict(TypedDict, total=False):
+    id: str
+    searches: List
+    aggregations: List
+
+
+class ProfileDict(TypedDict, total=False):
+    shards: List[ProfileShardDict]
+
+
+class QueryResponseDict(TypedDict, total=False):
+    _shards: ShardsDict
+    timed_out: bool
+    terminated_early: bool
+    took: int
+    hits: HitsDict
+    aggregations: AggregationsDict
+    profile: ProfileDict
