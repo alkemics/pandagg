@@ -1,4 +1,4 @@
-.PHONY : develop check clean clean_pyc doc lint lint-diff black doc-references coverage
+.PHONY : develop check clean clean_pyc doc lint lint-diff black doc-references coverage tests
 
 clean:
 	-python setup.py clean
