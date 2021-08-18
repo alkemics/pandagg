@@ -25,11 +25,6 @@ class Composite(BucketAggClause):
         **body: Any
     ):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
-        :param sources:
-        :param size:
-        :param after_key:
-        :param meta:
-        :param body:
         """
         self._sources = sources
         self._size: Optional[int] = size
