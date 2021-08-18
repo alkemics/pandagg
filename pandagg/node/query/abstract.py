@@ -3,8 +3,7 @@ import json
 from pandagg.node._node import Node
 from typing import Optional, Union, Dict, Any, Tuple, List
 
-QueryType = str
-QueryClauseDict = Dict[str, Any]
+from pandagg.types import QueryType, QueryClauseDict
 
 
 class QueryClause(Node):

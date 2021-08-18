@@ -1,14 +1,32 @@
 from typing import Optional, Dict, Any, TypedDict, Literal, List
 
-Meta = Optional[Dict[str, Any]]
-
 ClauseName = str
+ClauseType = str
 ClauseBody = Dict[str, Any]
-AggName = ClauseName
+Meta = Dict[str, Any]
+
+
+# Script
+class Script(TypedDict, total=False):
+    lang: str
+    id: str
+    source: str
+    params: Dict[str, Any]
+
+
+GapPolicy = Literal["skip", "insert_zeros", "keep_values"]
+
+# Query
+QueryType = ClauseType
 QueryName = ClauseName
-FieldName = ClauseName
+QueryClauseDict = Dict[QueryType, ClauseBody]
 
 # Aggs
+AggName = ClauseName
+AggType = ClauseType
+AggClauseDict = Dict[AggType, ClauseBody]
+NamedAggsDict = Dict[AggName, AggClauseDict]
+
 BucketKey = Any
 Bucket = Any
 
@@ -19,6 +37,8 @@ AfterKey = Dict[str, Any]
 
 DocSource = Dict[str, Any]
 SettingsDict = Dict[str, Any]
+
+FieldName = ClauseName
 MappingsDict = Dict[str, Any]
 SearchDict = Dict[str, Any]
 

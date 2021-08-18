@@ -18,7 +18,7 @@ from pandagg.tree.query import (
     InsertionModes,
     SingleOrMultipleQueryClause,
 )
-from pandagg.tree.aggs import Aggs, AggsDict
+from pandagg.tree.aggs import Aggs, AggsDictOrNode
 from pandagg.types import MappingsDict, QueryName, ClauseBody, AggName
 from pandagg.utils import DSLMixin
 
@@ -363,7 +363,7 @@ class Search(DSLMixin, Request):
 
     def aggs(
         self,
-        aggs: Union[AggsDict, "Aggs"],
+        aggs: Union[AggsDictOrNode, "Aggs"],
         insert_below: Optional[AggName] = None,
         at_root: bool_ = False,
     ) -> "Search":

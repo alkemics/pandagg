@@ -16,10 +16,10 @@ from pandagg.node.aggs.abstract import (
 )
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
-from pandagg.types import AggName
+from pandagg.types import AggName, NamedAggsDict
 
-
-AggsDict = Dict[AggName, Union[AggClauseDict, AggClause]]
+# {"my_agg": {"terms": "some_field"}} or {"my_agg": Terms(field="some_field")}
+AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]
 
 
 class Aggs(Tree):
@@ -183,7 +183,7 @@ class Aggs(Tree):
 
     def aggs(
         self,
-        aggs: Union[AggsDict, "Aggs"],
+        aggs: Union[AggsDictOrNode, "Aggs"],
         insert_below: Optional[AggName] = None,
         at_root: bool = False,
     ) -> "Aggs":
@@ -215,7 +215,7 @@ class Aggs(Tree):
 
     def to_dict(
         self, from_: Optional[NodeId] = None, depth: Optional[int] = None
-    ) -> AggsDict:
+    ) -> NamedAggsDict:
         """
         Serialize Aggs as dict.
 
@@ -226,7 +226,7 @@ class Aggs(Tree):
         """
         from_ = self.root if from_ is None else from_
         _, node = self.get(from_)
-        children_queries: AggsDict = {}
+        children_queries: NamedAggsDict = {}
         if depth is None or depth > 0:
             if depth is not None:
                 depth -= 1
@@ -414,7 +414,7 @@ class Aggs(Tree):
 
     def _insert_aggs(
         self,
-        aggs: Union["Aggs", AggsDict],
+        aggs: Union["Aggs", AggsDictOrNode],
         insert_below_id: Optional[NodeId] = None,
         at_root: bool = False,
     ) -> None:
