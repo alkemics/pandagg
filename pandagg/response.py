@@ -423,7 +423,7 @@ class Aggregations:
     def to_tree(self) -> AggsResponseTree:
         return AggsResponseTree(aggs=self._aggs).parse(self.data)
 
-    def to_interactive_tree(self):
+    def to_interactive_tree(self) -> IResponse:
         return IResponse(tree=self.to_tree(), search=self.__search, depth=1)
 
     def serialize(self, output="tabular", **kwargs):

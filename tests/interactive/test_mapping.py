@@ -99,36 +99,40 @@ class IMappingTestCase(TestCase):
         index_name = "classification_report_index_name"
 
         # from dict
-        im1 = IMappings(mapping_dict, client=client_mock, index=index_name)
+        im1 = IMappings(
+            Mappings(**mapping_dict), client=client_mock, index=[index_name]
+        )
         # from tree
-        im2 = IMappings(mapping_tree, client=client_mock, index=index_name)
+        im2 = IMappings(mapping_tree, client=client_mock, index=[index_name])
 
         # from nodes
         im3 = IMappings(
-            mappings={
-                "properties": {
-                    "classification_type": Keyword(fields={"raw": Text()}),
-                    "local_metrics": Nested(
-                        dynamic=False,
-                        properties={
-                            "dataset": Object(
-                                dynamic=False,
-                                properties={
-                                    "support_test": Integer(),
-                                    "support_train": Integer(),
-                                },
-                            )
-                        },
-                    ),
-                },
-                "dynamic": False,
-            },
+            mappings=Mappings(
+                **{
+                    "properties": {
+                        "classification_type": Keyword(fields={"raw": Text()}),
+                        "local_metrics": Nested(
+                            dynamic=False,
+                            properties={
+                                "dataset": Object(
+                                    dynamic=False,
+                                    properties={
+                                        "support_test": Integer(),
+                                        "support_train": Integer(),
+                                    },
+                                )
+                            },
+                        ),
+                    },
+                    "dynamic": False,
+                }
+            ),
             client=client_mock,
-            index=index_name,
+            index=[index_name],
         )
         for i, m in enumerate((im1, im2, im3)):
             self.assertEqual(m._tree.to_dict(), mapping_dict, "failed at m%d" % (i + 1))
-            self.assertEqual(m._index, index_name)
+            self.assertEqual(m._index, [index_name])
             self.assertIs(m._client, client_mock)
 
     def test_quick_agg(self):
@@ -139,7 +143,7 @@ class IMappingTestCase(TestCase):
 
         mapping_tree = Mappings(**MAPPINGS)
         client_bound_mapping = IMappings(
-            mapping_tree, client=client_mock, index="classification_report_index_name"
+            mapping_tree, client=client_mock, index=["classification_report_index_name"]
         )
 
         workflow_field = client_bound_mapping.workflow

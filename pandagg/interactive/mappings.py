@@ -1,16 +1,17 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
+from typing import Optional, List
+
+from elasticsearch import Elasticsearch
 
 from lighttree import TreeBasedObj
+from lighttree.node import NodeId
 
-from pandagg.tree.mappings import _mappings
+from pandagg.tree.mappings import Mappings
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.utils import DSLMixin
 
 
-class IMappings(DSLMixin, TreeBasedObj):
+class IMappings(DSLMixin, TreeBasedObj[Mappings]):
     """Interactive wrapper upon mappings tree, allowing field navigation and quick access to single clause aggregations
     computation.
     """
@@ -20,27 +21,22 @@ class IMappings(DSLMixin, TreeBasedObj):
 
     def __init__(
         self,
-        mappings,
-        client=None,
-        index=None,
-        depth=1,
-        root_path=None,
-        initial_tree=None,
-    ):
-        if mappings is None:
-            raise ValueError("mappings cannot be None")
-        self._client = client
-        self._index = index
+        mappings: Mappings,
+        client: Optional[Elasticsearch] = None,
+        index: Optional[List[str]] = None,
+        depth: int = 1,
+        root_path: Optional[str] = None,
+        initial_tree: Optional[Mappings] = None,
+    ) -> None:
+        self._client: Optional[Elasticsearch] = client
+        self._index: Optional[List[str]] = index
         super(IMappings, self).__init__(
-            tree=_mappings(mappings),
-            root_path=root_path,
-            depth=depth,
-            initial_tree=initial_tree,
+            tree=mappings, root_path=root_path, depth=depth, initial_tree=initial_tree
         )
         # if we reached a leave, add aggregation capabilities based on reached mappings type
         self._set_agg_property_if_required()
 
-    def _clone(self, nid, root_path, depth):
+    def _clone(self, nid: NodeId, root_path: Optional[str], depth: int) -> "IMappings":
         return IMappings(
             self._tree.subtree(nid)[1],
             client=self._client,
@@ -50,23 +46,27 @@ class IMappings(DSLMixin, TreeBasedObj):
             index=self._index,
         )
 
-    def _set_agg_property_if_required(self):
-        if self._client is not None and not self._tree.children(self._tree.root):
+    def _set_agg_property_if_required(self) -> None:
+        if (
+            self._client is not None
+            and self._root_path is not None
+            and not self._tree.children(self._tree.root)
+        ):
             _, field_node = self._tree.get(self._tree.root)
             if field_node.KEY in field_classes_per_name:
                 search_class = self.get_dsl_type("search")
                 self.a = field_classes_per_name[field_node.KEY](
-                    search=search_class(
+                    _search=search_class(
                         using=self._client,
                         index=self._index,
                         mappings=self._initial_tree,
                         repr_auto_execute=True,
                         nested_autocorrect=True,
                     ),
-                    field=self._root_path,
+                    _field=self._root_path,
                 )
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> None:  # type: ignore
         print(
             json.dumps(
                 self._tree.to_dict(), indent=2, sort_keys=True, separators=(",", ": ")

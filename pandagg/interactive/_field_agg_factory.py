@@ -1,11 +1,14 @@
-from typing import List, Type
+import dataclasses
+from typing import List, Type, Any, Callable, Dict
+
+from pandagg.search import Search
 
 from pandagg.node.aggs.abstract import AggClause, BucketAggClause
-
 from pandagg.node.types import MAPPING_TYPES
+from pandagg.types import FieldType
 
 
-def list_available_aggs_on_field(field_type: str) -> List[Type[AggClause]]:
+def list_available_aggs_on_field(field_type: FieldType) -> List[Type[AggClause]]:
     """For a given field type, return all aggregations that can be operated on this field.
     If WHITELISTED_MAPPING_TYPES is defined, field type must be in it. Else if BLACKLISTED_MAPPING_TYPES is defined,
     field type must not be in it.
@@ -17,13 +20,14 @@ def list_available_aggs_on_field(field_type: str) -> List[Type[AggClause]]:
     ]
 
 
-def field_klass_init(self, field, search):
-    self._field = field
-    self._search = search
+@dataclasses.dataclass
+class FieldAggregations:
+    _field: str
+    _search: Search
 
 
-def aggregator_factory(agg_klass):
-    def aggregator(self, **kwargs):
+def aggregator_factory(agg_klass: Type[AggClause]) -> Callable:
+    def aggregator(self: FieldAggregations, **kwargs: Any) -> Search:
         if issubclass(agg_klass, BucketAggClause):
             return self._search.groupby(
                 "%s_%s" % (agg_klass.KEY, self._field),
@@ -38,14 +42,14 @@ def aggregator_factory(agg_klass):
     return aggregator
 
 
-def field_type_klass_factory(field_type):
-    d = {"__init__": field_klass_init}
-    for agg_klass in list_available_aggs_on_field(field_type):
-        d[agg_klass.KEY] = aggregator_factory(agg_klass)
-    klass = type("%sAggs" % field_type.capitalize(), (), d)
-    return klass
+def field_type_klass_factory(field_type: str) -> Type[FieldAggregations]:
+    methods = {
+        agg_klass.KEY: aggregator_factory(agg_klass)
+        for agg_klass in list_available_aggs_on_field(field_type)
+    }
+    return type("%sAggs" % field_type.capitalize(), (FieldAggregations,), methods)
 
 
-field_classes_per_name = {
+field_classes_per_name: Dict[FieldType, Type[FieldAggregations]] = {
     field_type: field_type_klass_factory(field_type) for field_type in MAPPING_TYPES
 }
