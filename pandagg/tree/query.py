@@ -2,7 +2,7 @@ import json
 from typing import Optional, Union, Any, List, Dict
 from typing_extensions import Literal
 
-from lighttree import Key
+from lighttree import Key, Tree
 from lighttree.node import NodeId
 from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
@@ -17,7 +17,6 @@ from pandagg.node.query.abstract import (
 from pandagg.node.query.compound import CompoundClause, Bool
 from pandagg.node.query.joining import Nested
 
-from pandagg.tree._tree import Tree
 from pandagg.tree.mappings import _mappings, MappingsDict, Mappings
 from pandagg.types import QueryName, ClauseBody
 
@@ -56,7 +55,7 @@ sub_insertion = Substitution(
 TypeOrQuery = Union[QueryType, QueryClauseDict, QueryClause, "Query"]
 
 
-class Query(Tree):
+class Query(Tree[QueryClause]):
     def __init__(
         self,
         q: Optional[TypeOrQuery] = None,
@@ -386,7 +385,7 @@ class Query(Tree):
 
         All *args and **kwargs are propagated to `lighttree.Tree.show` method.
         """
-        return "<Query>\n%s" % super(Tree, self).show(
+        return "<Query>\n%s" % super(Query, self).show(
             *args, line_max_length=line_max_length, **kwargs
         )  # type: ignore
 

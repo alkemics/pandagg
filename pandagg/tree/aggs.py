@@ -1,9 +1,9 @@
 import json
 from typing import Optional, Union, Any, Dict
 
-from lighttree import Key
+from lighttree import Key, Tree
 from lighttree.node import NodeId
-from pandagg.tree._tree import Tree
+from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
 from pandagg.node.aggs.abstract import (
@@ -22,7 +22,7 @@ from pandagg.types import AggName, NamedAggsDict
 AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]
 
 
-class Aggs(Tree):
+class Aggs(TreeReprMixin, Tree[AggClause]):
     """
     Combination of aggregation clauses. This class provides handful methods to build an aggregation (see
     :func:`~pandagg.tree.aggs.Aggs.aggs` and :func:`~pandagg.tree.aggs.Aggs.groupby`), and is used as well
@@ -297,13 +297,13 @@ class Aggs(Tree):
         if len(root_children) == 1:
             child_id = root_children[0][1].identifier
             return "<Aggregations>\n%s" % str(
-                super(Tree, self).show(
+                super(Aggs, self).show(
                     child_id, *args, line_max_length=line_max_length, **kwargs
                 )  # type: ignore
             )
 
         return "<Aggregations>\n%s" % str(
-            super(Tree, self).show(
+            super(Aggs, self).show(
                 *args, line_max_length=line_max_length, **kwargs
             )  # type: ignore
         )

@@ -1,13 +1,14 @@
 from collections import OrderedDict, defaultdict
 
+from lighttree import Tree
 from pandagg.node.query.joining import Nested
-from pandagg.tree._tree import Tree
 
 from pandagg.node.response.bucket import Bucket, BucketNode
+from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.query import Query
 
 
-class AggsResponseTree(Tree):
+class AggsResponseTree(TreeReprMixin, Tree[BucketNode]):
     """
     Tree shaped representation of an ElasticSearch aggregations response.
     """

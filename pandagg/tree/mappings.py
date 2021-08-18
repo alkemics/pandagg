@@ -1,6 +1,7 @@
 from typing import Optional, Union, Any, List
 
 from lighttree.node import NodeId
+from lighttree import Tree
 from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.mappings import Object, Nested
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
@@ -10,7 +11,7 @@ from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
-from pandagg.tree._tree import Tree
+from pandagg.tree._tree import TreeReprMixin
 from pandagg.types import DocSource, MappingsDict
 
 
@@ -24,7 +25,7 @@ def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mapping
     raise TypeError("Unsupported %s type for Mappings" % type(m))
 
 
-class Mappings(Tree):
+class Mappings(TreeReprMixin, Tree[Field]):
     def __init__(
         self,
         properties: Optional[Union[MappingsDict, "Mappings"]] = None,

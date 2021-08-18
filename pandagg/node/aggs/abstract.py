@@ -1,7 +1,7 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, List, Union, Dict, Any, Tuple, Iterator, Literal
+from typing import Optional, List, Union, Dict, Any, Tuple, Iterator
 
 from pandagg.types import (
     Meta,
@@ -14,6 +14,7 @@ from pandagg.types import (
     Script,
     GapPolicy,
     AggName,
+    AggClauseResponse,
 )
 
 
@@ -107,7 +108,9 @@ class AggClause(Node):
         """
         raise NotImplementedError()
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponse
+    ) -> Iterator[Tuple[BucketKey, Bucket]]:
         raise NotImplementedError()
 
     @classmethod
@@ -193,7 +196,9 @@ class Root(AggClause):
     def get_filter(self, key: Optional[BucketKey]) -> Optional[QueryClauseDict]:
         return None
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponse
+    ) -> Iterator[Tuple[BucketKey, Bucket]]:
         yield None, response_value
 
     @classmethod
@@ -206,7 +211,9 @@ class MetricAgg(AggClause):
     Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted.
     """
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponse
+    ) -> Iterator[Tuple[BucketKey, Bucket]]:
         yield None, response_value
 
     def get_filter(self, key):
@@ -237,12 +244,13 @@ class BucketAggClause(AggClause):
         identifier: Optional[str] = body.pop("identifier", None)
         self.body: ClauseBody = body
         self.meta: Optional[Meta] = meta
-        self._children: Dict[AggName, Any] = body.pop("aggs", None) or body.pop(
-            "aggregations", None
-        ) or {}  # type: ignore
+        aggs = body.pop("aggs", None) or body.pop("aggregations", None)
+        self._children: Dict[AggName, Any] = aggs or {}  # type: ignore
         super(AggClause, self).__init__(identifier=identifier)
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponse
+    ) -> Iterator[Tuple[BucketKey, Bucket]]:
         raise NotImplementedError()
 
     def get_filter(self, key):
@@ -253,7 +261,9 @@ class BucketAggClause(AggClause):
 class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponse
+    ) -> Iterator[Tuple[BucketKey, Bucket]]:
         yield None, response_value
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
@@ -284,7 +294,9 @@ class MultipleBucketAgg(BucketAggClause):
             body["keyed"] = keyed
         super(MultipleBucketAgg, self).__init__(meta=meta, **body)
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponse
+    ) -> Iterator[Tuple[BucketKey, Bucket]]:
         buckets = response_value["buckets"]
         if self.keyed_:
             for key in sorted(buckets.keys()):

@@ -27,6 +27,7 @@ AggType = ClauseType
 AggClauseDict = Dict[AggType, ClauseBody]
 NamedAggsDict = Dict[AggName, AggClauseDict]
 
+AggClauseResponse = Dict[str, Any]
 BucketKey = Any
 Bucket = Any
 
