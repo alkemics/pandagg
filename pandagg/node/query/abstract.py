@@ -1,12 +1,15 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, Union, Dict, Any, Tuple, List
+from typing import Optional, Union, Dict, Any, Tuple, List, Type
 
 from pandagg.types import QueryType, QueryClauseDict
 
 
 class QueryClause(Node):
+
+    _classes: Dict[QueryType, Type["QueryClause"]]
+
     KEY: str
     _type_name = "query"
 

@@ -1,12 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from typing import List, Type
 
 from pandagg.node.aggs.abstract import AggClause, BucketAggClause
 
 from pandagg.node.types import MAPPING_TYPES
 
 
-def list_available_aggs_on_field(field_type):
+def list_available_aggs_on_field(field_type: str) -> List[Type[AggClause]]:
     """For a given field type, return all aggregations that can be operated on this field.
     If WHITELISTED_MAPPING_TYPES is defined, field type must be in it. Else if BLACKLISTED_MAPPING_TYPES is defined,
     field type must not be in it.

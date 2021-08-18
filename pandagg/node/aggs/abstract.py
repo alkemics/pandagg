@@ -1,12 +1,12 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, List, Union, Dict, Any, Tuple, Iterator
+from typing import Optional, List, Union, Dict, Any, Tuple, Iterator, Type
 
 from pandagg.types import (
     Meta,
     BucketKey,
-    Bucket,
+    BucketDict,
     AggClauseDict,
     AggType,
     QueryClauseDict,
@@ -27,6 +27,8 @@ class AggClause(Node):
 
     Define a method to build aggregation request.
     """
+
+    _classes: Dict[AggType, Type["AggClause"]]
 
     _type_name = "agg"
     KEY: str
@@ -110,11 +112,11 @@ class AggClause(Node):
 
     def extract_buckets(
         self, response_value: AggClauseResponse
-    ) -> Iterator[Tuple[BucketKey, Bucket]]:
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
     @classmethod
-    def extract_bucket_value(cls, response, value_as_dict=False):
+    def extract_bucket_value(cls, response, value_as_dict: bool = False) -> Any:
         attrs = cls.VALUE_ATTRS
         if value_as_dict:
             return {attr_: response.get(attr_) for attr_ in attrs}
@@ -198,7 +200,7 @@ class Root(AggClause):
 
     def extract_buckets(
         self, response_value: AggClauseResponse
-    ) -> Iterator[Tuple[BucketKey, Bucket]]:
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
     @classmethod
@@ -213,7 +215,7 @@ class MetricAgg(AggClause):
 
     def extract_buckets(
         self, response_value: AggClauseResponse
-    ) -> Iterator[Tuple[BucketKey, Bucket]]:
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
     def get_filter(self, key):
@@ -250,7 +252,7 @@ class BucketAggClause(AggClause):
 
     def extract_buckets(
         self, response_value: AggClauseResponse
-    ) -> Iterator[Tuple[BucketKey, Bucket]]:
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
     def get_filter(self, key):
@@ -263,7 +265,7 @@ class UniqueBucketAgg(BucketAggClause):
 
     def extract_buckets(
         self, response_value: AggClauseResponse
-    ) -> Iterator[Tuple[BucketKey, Bucket]]:
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
@@ -282,10 +284,6 @@ class MultipleBucketAgg(BucketAggClause):
 
         If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
         list item).
-        :param keyed:
-        :param meta:
-        :param aggs:
-        :param body:
         """
         # keyed has another meaning in lighttree Node
         self.keyed_: bool = keyed or self.IMPLICIT_KEYED
@@ -296,10 +294,10 @@ class MultipleBucketAgg(BucketAggClause):
 
     def extract_buckets(
         self, response_value: AggClauseResponse
-    ) -> Iterator[Tuple[BucketKey, Bucket]]:
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         buckets = response_value["buckets"]
         if self.keyed_:
-            for key in sorted(buckets.keys()):
+            for key in buckets.keys():
                 yield key, buckets[key]
         else:
             for bucket in buckets:

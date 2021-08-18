@@ -10,8 +10,8 @@
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta
-from typing import Any, Optional, Dict, Union
+from pandagg.types import Meta, BucketKey, QueryClauseDict, RangeDict
+from typing import Any, Optional, Dict, Union, List
 
 
 class Global(UniqueBucketAgg):
@@ -105,14 +105,14 @@ class Terms(MultipleBucketAgg):
     def __init__(
         self,
         field: str,
-        missing: Union[int, str] = None,
+        missing: Optional[Union[int, str]] = None,
         size: Optional[int] = None,
-        meta: Meta = None,
+        meta: Optional[Meta] = None,
         **body: Any
-    ):
-        self.field = field
-        self.missing = missing
-        self.size = size
+    ) -> None:
+        self.field: str = field
+        self.missing: Optional[Union[int, str]] = missing
+        self.size: Optional[int] = size
 
         body_kwargs = dict(body)
         if missing is not None:
@@ -122,7 +122,7 @@ class Terms(MultipleBucketAgg):
 
         super(Terms, self).__init__(field=field, meta=meta, **body_kwargs)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """Provide filter to get documents belonging to document of given key."""
         if key == "missing":
             return {"bool": {"must_not": {"exists": {"field": self.field}}}}
@@ -138,15 +138,16 @@ class Filters(MultipleBucketAgg):
 
     def __init__(
         self,
-        filters: Dict[str, Any],
+        filters: Dict[str, QueryClauseDict],
         other_bucket: bool = False,
         other_bucket_key: Optional[str] = None,
-        meta: Meta = None,
+        meta: Optional[Meta] = None,
         **body: Any
-    ):
-        self.filters = filters
-        self.other_bucket = other_bucket
-        self.other_bucket_key = other_bucket_key
+    ) -> None:
+        self.filters: Dict[str, QueryClauseDict] = filters
+        self.other_bucket: bool = other_bucket
+        self.other_bucket_key: Optional[str] = other_bucket_key
+
         body_kwargs = dict(body)
         if other_bucket:
             body_kwargs["other_bucket"] = other_bucket
@@ -155,7 +156,7 @@ class Filters(MultipleBucketAgg):
 
         super(Filters, self).__init__(filters=filters, meta=meta, **body_kwargs)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """Provide filter to get documents belonging to document of given key."""
         if key in self.filters.keys():
             return self.filters[key]
@@ -175,14 +176,16 @@ class Histogram(MultipleBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
-    def __init__(self, field: str, interval: int, meta: Meta = None, **body: Any):
-        self.field = field
-        self.interval = interval
+    def __init__(
+        self, field: str, interval: int, meta: Optional[Meta] = None, **body: Any
+    ) -> None:
+        self.field: str = field
+        self.interval: int = interval
         super(Histogram, self).__init__(
             field=field, interval=interval, meta=meta, **body
         )
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         try:
             key = float(key)
         except (TypeError, ValueError):
@@ -215,7 +218,8 @@ class DateHistogram(MultipleBucketAgg):
         :param keyed: defines returned buckets format: if True, as dict.
         :param key_as_string: if True extracted key of bucket will be the formatted date (applicable if keyed=False)
         """
-        self.field = field
+        self.field: str = field
+
         if not (interval or fixed_interval or calendar_interval):
             raise ValueError(
                 'One of "interval", "calendar_interval" or "fixed_interval" must be provided.'
@@ -226,6 +230,7 @@ class DateHistogram(MultipleBucketAgg):
             body["calendar_interval"] = calendar_interval
         if fixed_interval:
             body["fixed_interval"] = fixed_interval
+
         self.interval = interval or calendar_interval or fixed_interval
         super(DateHistogram, self).__init__(
             field=field,
@@ -235,7 +240,7 @@ class DateHistogram(MultipleBucketAgg):
             **body
         )
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         # https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
         return {
             "range": {self.field: {"gte": key, "lt": "%s||+%s" % (key, self.interval)}}
@@ -251,10 +256,17 @@ class Range(MultipleBucketAgg):
     bucket_key_suffix: Optional[str]
 
     def __init__(
-        self, field: str, ranges, keyed: bool = False, meta: Meta = None, **body: Any
-    ):
+        self,
+        field: str,
+        ranges: List[RangeDict],
+        keyed: bool = False,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
         self.field: str = field
-        self.ranges = ranges
+        self.ranges: List[RangeDict] = ranges
+        self.bucket_key_suffix: Optional[str]
+
         body_kwargs = dict(body)
         if keyed:
             self.bucket_key_suffix = "_as_string"
@@ -305,7 +317,12 @@ class DateRange(Range):
     KEY_SEP: str = "::"
 
     def __init__(
-        self, field: str, key_as_string: bool = True, meta: Meta = None, **body: Any
-    ):
-        self.key_as_string = key_as_string
+        self,
+        field: str,
+        key_as_string: bool = True,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
+        self.key_as_string: bool = key_as_string
+
         super(DateRange, self).__init__(field=field, keyed=True, meta=meta, **body)

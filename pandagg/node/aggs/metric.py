@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from typing import Optional, Any, List
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import FieldOrScriptMetricAgg, MetricAgg
+from pandagg.types import Meta
 
 
 class TopHits(MetricAgg):
@@ -86,7 +86,9 @@ class PercentileRanks(FieldOrScriptMetricAgg):
     VALUE_ATTRS = ["values"]
     KEY = "percentile_ranks"
 
-    def __init__(self, field, values, meta=None, **body):
+    def __init__(
+        self, field: str, values: List[float], meta: Optional[Meta] = None, **body: Any
+    ) -> None:
         super(PercentileRanks, self).__init__(
             field=field, meta=meta, values=values, **body
         )

@@ -29,7 +29,11 @@ NamedAggsDict = Dict[AggName, AggClauseDict]
 
 AggClauseResponse = Dict[str, Any]
 BucketKey = Any
-Bucket = Any
+BucketDict = Dict[str, Any]
+
+RangeDict = TypedDict("RangeDict", {"from": float, "to": float}, total=False)
+DistanceType = Literal["arc", "plane"]
+ValidationMethod = Literal["STRICT", "COERCE", "IGNORE_MALFORMED"]
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html#_value_sources
 CompositeSource = Dict[str, Any]
@@ -39,7 +43,9 @@ AfterKey = Dict[str, Any]
 DocSource = Dict[str, Any]
 SettingsDict = Dict[str, Any]
 
+# Mappings
 FieldName = ClauseName
+FieldType = ClauseType
 MappingsDict = Dict[str, Any]
 SearchDict = Dict[str, Any]
 

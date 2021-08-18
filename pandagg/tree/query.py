@@ -174,7 +174,7 @@ class Query(Tree[QueryClause]):
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
         **body: Any
-    ):
+    ) -> "Query":
         return self._compound_param_insert(
             "bool", "filter", mode, type_or_query, insert_below, on, bool_body, **body
         )
@@ -190,7 +190,7 @@ class Query(Tree[QueryClause]):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         **body: Any
-    ):
+    ) -> "Query":
         """
         >>> Query().bool(must={"term": {"some_field": "yolo"}})
         """
@@ -214,7 +214,7 @@ class Query(Tree[QueryClause]):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         **body: Any
-    ):
+    ) -> "Query":
         if not positive and not negative:
             raise ValueError('Expect at least one of "positive", "negative"')
         return self.query(
@@ -235,7 +235,7 @@ class Query(Tree[QueryClause]):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         **body: Any
-    ):
+    ) -> "Query":
         if not filter and not boost:
             raise ValueError('Expect at least one of "filter", "boost"')
         return self.query(
@@ -403,10 +403,7 @@ class Query(Tree[QueryClause]):
                 return node.path
         return None
 
-    def to_dict(self, from_=None) -> Optional[Dict[str, Any]]:
-        """
-        Serialize Query as dict.
-        """
+    def to_dict(self, from_: Optional[NodeId] = None) -> Optional[QueryClauseDict]:
         if self.root is None:
             return None
         from_ = self.root if from_ is None else from_
@@ -499,7 +496,7 @@ class Query(Tree[QueryClause]):
         return param_node.identifier
 
     @classmethod
-    def _q(cls, type_or_query: TypeOrQuery, **body) -> QueryClause:
+    def _q(cls, type_or_query: TypeOrQuery, **body: Any) -> QueryClause:
         """
         Convert to QueryClause instance.
         """

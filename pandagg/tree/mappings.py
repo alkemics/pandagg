@@ -4,8 +4,7 @@ from lighttree.node import NodeId
 from lighttree import Tree
 from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.mappings import Object, Nested
-from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
-
+from pandagg.node.mappings.abstract import Field, RegularField, ComplexField, Root
 
 from pandagg.exceptions import (
     AbsentMappingFieldError,
@@ -35,7 +34,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
         super(Mappings, self).__init__()
         # a Mappings always has a root after __init__
         self.root: str
-        root_node = Field(dynamic=dynamic, **body)
+        root_node = Root(dynamic=dynamic, **body)
         self.insert_node(node=root_node)
         if properties:
             self._insert(
@@ -53,8 +52,6 @@ class Mappings(TreeReprMixin, Tree[Field]):
         :param depth: integer, if provided, limit the serialization to a given depth
         :return: dict
         """
-        if self.root is None:
-            return {}
         from_ = self.root if from_ is None else from_
         key, node = self.get(from_)
         children_queries = {}
@@ -67,7 +64,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
                 )
         serialized_node = node.body
         if children_queries:
-            if node.KEY is None or node.KEY in ("object", "nested"):
+            if isinstance(node, Root) or node.KEY in ("object", "nested"):
                 serialized_node["properties"] = children_queries
             else:
                 serialized_node["fields"] = children_queries
