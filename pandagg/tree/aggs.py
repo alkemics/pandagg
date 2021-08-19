@@ -20,6 +20,7 @@ from pandagg.types import AggName, NamedAggsDict
 
 # {"my_agg": {"terms": "some_field"}} or {"my_agg": Terms(field="some_field")}
 AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]
+AggsOrDict = Union[AggsDictOrNode, "Aggs"]
 
 
 class Aggs(TreeReprMixin, Tree[AggClause]):
@@ -52,20 +53,23 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
 
     def __init__(
         self,
-        aggs=None,
+        aggs: Optional[AggsOrDict] = None,
         mappings: Optional[Union[MappingsDict, "Mappings"]] = None,
         nested_autocorrect: bool = False,
-        _groupby_ptr: Optional[str] = None,
-    ):
+        _groupby_ptr: Optional[NodeId] = None,
+    ) -> None:
+
         self.mappings: Optional[Mappings] = _mappings(mappings)
         self.nested_autocorrect: bool = nested_autocorrect
+
         super(Aggs, self).__init__()
 
         # an Aggs always has a root node, which is just the initial empty dict
+        self.root: NodeId
         self.insert_node(Root())
-        self.root: str
+
         # identifier of clause used for groupby
-        self._groupby_ptr = self.root if _groupby_ptr is None else _groupby_ptr
+        self._groupby_ptr: NodeId = self.root if _groupby_ptr is None else _groupby_ptr
 
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)

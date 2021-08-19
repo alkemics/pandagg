@@ -6,7 +6,7 @@ from pandagg.types import (
     CompositeSource,
     BucketKey,
     BucketDict,
-    AggClauseResponse,
+    AggClauseResponseDict,
     AggName,
     QueryClauseDict,
 )
@@ -39,7 +39,7 @@ class Composite(BucketAggClause):
         super(Composite, self).__init__(meta=meta, sources=sources, **body)
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         for bucket in response_value["buckets"]:
             yield bucket["key"], bucket

@@ -14,7 +14,7 @@ from pandagg.types import (
     Script,
     GapPolicy,
     AggName,
-    AggClauseResponse,
+    AggClauseResponseDict,
 )
 
 
@@ -111,7 +111,7 @@ class AggClause(Node):
         raise NotImplementedError()
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
@@ -199,7 +199,7 @@ class Root(AggClause):
         return None
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
@@ -214,7 +214,7 @@ class MetricAgg(AggClause):
     """
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
@@ -251,7 +251,7 @@ class BucketAggClause(AggClause):
         super(AggClause, self).__init__(identifier=identifier)
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
@@ -264,7 +264,7 @@ class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
@@ -293,7 +293,7 @@ class MultipleBucketAgg(BucketAggClause):
         super(MultipleBucketAgg, self).__init__(meta=meta, **body)
 
     def extract_buckets(
-        self, response_value: AggClauseResponse
+        self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         buckets = response_value["buckets"]
         if self.keyed_:

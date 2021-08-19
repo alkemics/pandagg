@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional
 from lighttree.interactive import Obj
 from elasticsearch import Elasticsearch
 
-from pandagg import Mappings
+from pandagg import Mappings, MappingsDict
 from pandagg.interactive.mappings import IMappings
 from pandagg.search import Search
 
@@ -13,7 +13,7 @@ from pandagg.search import Search
 class Index:
     name: str
     settings: Dict[str, Any]
-    mappings: Dict[str, Any]
+    mappings: MappingsDict
     aliases: Any
     client: Optional[Elasticsearch] = None
 

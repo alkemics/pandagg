@@ -27,7 +27,9 @@ AggType = ClauseType
 AggClauseDict = Dict[AggType, ClauseBody]
 NamedAggsDict = Dict[AggName, AggClauseDict]
 
-AggClauseResponse = Dict[str, Any]
+AggClauseResponseDict = Dict[str, Any]
+AggsResponseDict = Dict[AggName, AggClauseResponseDict]
+
 BucketKey = Any
 BucketDict = Dict[str, Any]
 
@@ -46,7 +48,15 @@ SettingsDict = Dict[str, Any]
 # Mappings
 FieldName = ClauseName
 FieldType = ClauseType
-MappingsDict = Dict[str, Any]
+FieldClauseDict = Dict[str, Any]
+FieldPropertiesDict = Dict[FieldName, FieldClauseDict]
+
+
+class MappingsDict(TypedDict, total=False):
+    properties: FieldPropertiesDict
+    dynamic: bool
+
+
 SearchDict = Dict[str, Any]
 
 AggregationsDict = Dict[str, Any]

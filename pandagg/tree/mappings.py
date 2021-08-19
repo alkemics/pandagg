@@ -1,4 +1,4 @@
-from typing import Optional, Union, Any, List
+from typing import Optional, Union, Any, List, Dict
 
 from lighttree.node import NodeId
 from lighttree import Tree
@@ -11,7 +11,13 @@ from pandagg.exceptions import (
     InvalidOperationMappingFieldError,
 )
 from pandagg.tree._tree import TreeReprMixin
-from pandagg.types import DocSource, MappingsDict
+from pandagg.types import (
+    DocSource,
+    MappingsDict,
+    FieldName,
+    FieldClauseDict,
+    FieldPropertiesDict,
+)
 
 
 def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mappings"]:
@@ -27,7 +33,7 @@ def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mapping
 class Mappings(TreeReprMixin, Tree[Field]):
     def __init__(
         self,
-        properties: Optional[Union[MappingsDict, "Mappings"]] = None,
+        properties: Optional[FieldPropertiesDict] = None,
         dynamic: bool = False,
         **body: Any
     ) -> None:
@@ -143,7 +149,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
         _, node = self.get(nid)
         return node.KEY
 
-    def nested_at_field(self, field_path):
+    def nested_at_field(self, field_path: str) -> Optional[str]:
         """
         Return nested path applied on a given path. Return `None` is none applies.
 
@@ -193,7 +199,12 @@ class Mappings(TreeReprMixin, Tree[Field]):
             if self.get(nid)[1].KEY == "nested"
         ]
 
-    def _insert(self, pid, properties, is_subfield):
+    def _insert(
+        self,
+        pid: NodeId,
+        properties: Dict[FieldName, FieldClauseDict],
+        is_subfield: bool,
+    ) -> None:
         """
         Recursive method to insert properties in current mappings.
 
@@ -204,17 +215,20 @@ class Mappings(TreeReprMixin, Tree[Field]):
         """
         if not isinstance(properties, dict):
             raise ValueError("Wrong declaration, got %s" % properties)
-        for field_name, field in properties.items():
-            if isinstance(field, dict):
-                field = field.copy()
-                field = Field.get_dsl_class(field.pop("type", "object"))(
-                    _subfield=is_subfield, **field
+
+        field: Field
+        for field_name, field_ in properties.items():
+            if isinstance(field_, dict):
+                field_ = field_.copy()
+                field = Field.get_dsl_class(field_.pop("type", "object"))(
+                    _subfield=is_subfield, **field_
                 )
-            elif isinstance(field, Field):
+            elif isinstance(field_, Field):
+                field = field_
                 field._subfield = is_subfield
                 pass
             else:
-                raise ValueError("Unsupported type %s" % type(field))
+                raise ValueError("Unsupported type %s" % type(field_))
             self.insert_node(field, key=field_name, parent_id=pid)
             if isinstance(field, ComplexField) and field.properties:
                 self._insert(field.identifier, field.properties, False)
