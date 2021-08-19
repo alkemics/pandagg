@@ -9,7 +9,14 @@ from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root, AggClause
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.tree.response import AggsResponseTree
-from pandagg.types import HitDict, HitsDict, DocSource, TotalDict, QueryResponseDict
+from pandagg.types import (
+    HitDict,
+    HitsDict,
+    DocSource,
+    TotalDict,
+    SearchResponseDict,
+    ShardsDict,
+)
 
 if TYPE_CHECKING:
     from pandagg.search import Search
@@ -30,11 +37,13 @@ class Hit:
 
 
 class Hits:
-    def __init__(self, hits: HitsDict) -> None:
-        self.data: HitsDict = hits
-        self.total: Optional[TotalDict] = hits["total"]
-        self.hits: List[Hit] = [Hit(hit) for hit in hits.get("hits", [])]
-        self.max_score: Optional[float] = hits.get("max_score")
+    def __init__(self, hits: Optional[HitsDict]) -> None:
+        self.data: Optional[HitsDict] = hits
+        self.total: Optional[TotalDict] = hits.get("total") if hits else None
+        self.hits: List[Hit] = (
+            [Hit(hit) for hit in hits.get("hits", [])] if hits else []
+        )
+        self.max_score: Optional[float] = hits.get("max_score") if hits else None
 
     def __len__(self) -> int:
         return len(self.hits)
@@ -43,8 +52,8 @@ class Hits:
         return iter(self.hits)
 
     def _total_repr(self) -> str:
-        if not isinstance(self.total, dict):
-            return str(self.total)
+        if self.total is None:
+            return 'Unknown total (probably filtered by "filter_path")'
         if self.total.get("relation") == "eq":
             return str(self.total["value"])
         if self.total.get("relation") == "gte":
@@ -67,7 +76,7 @@ class Hits:
                 'Using dataframe output format requires to install pandas. Please install "pandas" or '
                 "use another output format."
             )
-        hits = self.data.get("hits", [])
+        hits = self.data.get("hits", []) if self.data else []
         if not hits:
             return pd.DataFrame()
         if not expand_source:
@@ -95,16 +104,16 @@ class Hits:
         return "<Hits> total: %s, contains %d hits" % (total_repr, len(self.hits))
 
 
-class Response:
-    def __init__(self, data: QueryResponseDict, search: Search):
+class SearchResponse:
+    def __init__(self, data: SearchResponseDict, search: Search) -> None:
         self.data = data
         self.__search = search
 
-        self.took = data["took"]
-        self.timed_out = data["timed_out"]
-        self._shards = data["_shards"]
-        self.hits = Hits(data["hits"])
-        self.aggregations = Aggregations(
+        self.took: Optional[int] = data.get("took")
+        self.timed_out: Optional[int] = data.get("timed_out")
+        self._shards: Optional[ShardsDict] = data.get("_shards")
+        self.hits: Hits = Hits(data.get("hits"))
+        self.aggregations: Aggregations = Aggregations(
             data.get("aggregations", {}), search=self.__search
         )
         self.profile = data.get("profile")
@@ -114,6 +123,13 @@ class Response:
 
     @property
     def success(self) -> bool:
+        if (
+            self._shards is None
+            or self._shards.get("total") is None
+            or self._shards.get("successful") is None
+        ):
+            # if total result is filtered by 'filter_path', ignore
+            return False
         return (
             self._shards["total"] == self._shards["successful"] and not self.timed_out
         )
@@ -123,7 +139,7 @@ class Response:
 
     def __repr__(self) -> str:
         return (
-            "<Response> took %dms, success: %s, total result %s, contains %s hits"
+            "<Response> took %sms, success: %s, total result %s, contains %s hits"
             % (self.took, self.success, self.hits._total_repr(), len(self.hits))
         )
 

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from unittest import TestCase
 
 from pandagg.node.query import (

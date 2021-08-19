@@ -100,7 +100,7 @@ class ProfileDict(TypedDict, total=False):
     shards: List[ProfileShardDict]
 
 
-class QueryResponseDict(TypedDict, total=False):
+class SearchResponseDict(TypedDict, total=False):
     _shards: ShardsDict
     timed_out: bool
     terminated_early: bool
@@ -108,3 +108,23 @@ class QueryResponseDict(TypedDict, total=False):
     hits: HitsDict
     aggregations: AggregationsDict
     profile: ProfileDict
+
+
+class RetriesDict(TypedDict, total=False):
+    bulk: int
+    search: int
+
+
+class DeleteByQueryResponse(TypedDict, total=False):
+    took: int
+    timed_out: bool
+    total: int
+    deleted: int
+    batches: int
+    version_conflicts: int
+    noops: int
+    retries: RetriesDict
+    throttled_millis: int
+    requests_per_second: float
+    throttled_until_millis: int
+    failures: List[Dict[str, Any]]

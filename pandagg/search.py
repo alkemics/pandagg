@@ -9,7 +9,7 @@ from elasticsearch.helpers import scan
 
 from pandagg.node.aggs.abstract import TypeOrAgg
 from pandagg.query import Bool
-from pandagg.response import Response, Hit
+from pandagg.response import SearchResponse, Hit
 from pandagg.tree.mappings import _mappings, Mappings
 from pandagg.tree.query import (
     Query,
@@ -19,7 +19,16 @@ from pandagg.tree.query import (
     SingleOrMultipleQueryClause,
 )
 from pandagg.tree.aggs import Aggs, AggsDictOrNode
-from pandagg.types import MappingsDict, QueryName, ClauseBody, AggName
+from pandagg.types import (
+    MappingsDict,
+    QueryName,
+    ClauseBody,
+    AggName,
+    SearchResponseDict,
+    DeleteByQueryResponse,
+    HitDict,
+    SearchDict,
+)
 from pandagg.utils import DSLMixin
 
 # because Search.bool method shadows bool typing
@@ -697,7 +706,7 @@ class Search(DSLMixin, Request):
         s._suggest[name].update(kwargs)
         return s
 
-    def to_dict(self, count: bool_ = False, **kwargs: Any) -> Dict[str, Any]:
+    def to_dict(self, count: bool_ = False, **kwargs: Any) -> SearchDict:
         """
         Serialize the search into the dictionary that will be sent over as the
         request's body.
@@ -753,16 +762,16 @@ class Search(DSLMixin, Request):
         d = self.to_dict(count=True)
         return es.count(index=self._index, body=d)["count"]
 
-    def execute(self) -> Response:
+    def execute(self) -> SearchResponse:
         """
         Execute the search and return an instance of ``Response`` wrapping all
         the data.
         """
         es = self._get_connection()
         raw_data = es.search(index=self._index, body=self.to_dict())
-        return Response(data=raw_data, search=self)
+        return SearchResponse(data=raw_data, search=self)
 
-    def scan(self) -> Iterator[Dict[str, Any]]:
+    def scan(self) -> Iterator[Hit]:
         """
         Turn the search into a scan search and return a generator that will
         iterate over all the documents matching the query.
@@ -774,9 +783,9 @@ class Search(DSLMixin, Request):
         """
         es = self._get_connection()
         for hit in scan(es, query=self.to_dict(), index=self._index):
-            yield hit
+            yield Hit(hit)
 
-    def delete(self) -> Dict[str, Any]:
+    def delete(self) -> DeleteByQueryResponse:
         """
         delete() executes the query by delegating to delete_by_query()
         """
@@ -867,7 +876,7 @@ class MultiSearch(Request):
 
         return out
 
-    def execute(self) -> List[Dict[str, Any]]:
+    def execute(self) -> List[SearchResponseDict]:
         """
         Execute the multi search request and return a list of search results.
         """

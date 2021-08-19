@@ -3,7 +3,7 @@ import pandas as pd
 
 from pandagg.search import Search
 from pandagg.tree.response import AggsResponseTree
-from pandagg.response import Response, Hits, Hit, Aggregations
+from pandagg.response import SearchResponse, Hits, Hit, Aggregations
 from pandagg.tree.aggs import Aggs
 
 import tests.testing_samples.data_sample as sample
@@ -85,7 +85,7 @@ class ResponseTestCase(PandaggTestCase):
         self.assertEqual(non_expanded_df.index.tolist(), ["1", "2"])
 
     def test_response(self):
-        r = Response(
+        r = SearchResponse(
             {
                 "took": 42,
                 "timed_out": False,
