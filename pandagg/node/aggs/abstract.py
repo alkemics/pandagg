@@ -15,6 +15,7 @@ from pandagg.types import (
     GapPolicy,
     AggName,
     AggClauseResponseDict,
+    BucketsDict,
 )
 
 
@@ -116,7 +117,9 @@ class AggClause(Node):
         raise NotImplementedError()
 
     @classmethod
-    def extract_bucket_value(cls, response, value_as_dict: bool = False) -> Any:
+    def extract_bucket_value(
+        cls, response: Union[BucketsDict, BucketDict], value_as_dict: bool = False
+    ) -> Any:
         attrs = cls.VALUE_ATTRS
         if value_as_dict:
             return {attr_: response.get(attr_) for attr_ in attrs}
@@ -204,7 +207,9 @@ class Root(AggClause):
         yield None, response_value
 
     @classmethod
-    def extract_bucket_value(cls, response, value_as_dict=False):
+    def extract_bucket_value(
+        cls, response: Union[BucketsDict, BucketDict], value_as_dict: bool = False
+    ) -> Any:
         return None
 
 
@@ -218,7 +223,7 @@ class MetricAgg(AggClause):
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         yield None, response_value
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
 
 
@@ -255,7 +260,7 @@ class BucketAggClause(AggClause):
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """Provide filter to get documents belonging to document of given key."""
         raise NotImplementedError()
 
@@ -303,7 +308,7 @@ class MultipleBucketAgg(BucketAggClause):
             for bucket in buckets:
                 yield self._extract_bucket_key(bucket), bucket
 
-    def _extract_bucket_key(self, bucket):
+    def _extract_bucket_key(self, bucket: BucketDict) -> BucketKey:
         return bucket[self.key_path]
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:

@@ -7,19 +7,14 @@ Value = Union[float, str]
 Key = Union[float, str]
 
 
-class BucketNode(Node):
-    def __init__(self) -> None:
-        # level holds aggregation name
-        self.level: Optional[str] = None
-        super(BucketNode, self).__init__(keyed=False)
-
-
-class Bucket(BucketNode):
-    def __init__(self, value: Value, level: str, key: Optional[Key] = None) -> None:
-        super(Bucket, self).__init__()
-        self.level: str = level
+class Bucket(Node):
+    def __init__(
+        self, value: Optional[Value], level: Optional[str], key: Optional[Key] = None
+    ) -> None:
+        super(Bucket, self).__init__(keyed=False)
+        self.level: Optional[str] = level
         self.key: Optional[Key] = key
-        self.value: Value = value
+        self.value: Optional[Value] = value
 
     @property
     def attr_name(self) -> str:
@@ -30,6 +25,9 @@ class Bucket(BucketNode):
         Resulting attribute unfit for python attribute name syntax is still possible and will be accessible through
         item access (dict like), see more in 'utils.Obj' for more details.
         """
+        # only for root
+        if self.level is None:
+            return ""
         if self.key is not None:
             return "%s_%s" % (self.level.replace(".", "_"), self._coerced_key)
         return self.level.replace(".", "_")
@@ -50,3 +48,9 @@ class Bucket(BucketNode):
         except (ValueError, TypeError):
             pass
         return key
+
+
+class RootBucket(Bucket):
+    def __init__(self):
+        super(RootBucket, self).__init__(level=None, key=None, value=None)
+        self.keyed = False

@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, TypedDict, Literal, List
+from typing import Optional, Dict, Any, TypedDict, Literal, List, Union
 
 ClauseName = str
 ClauseType = str
@@ -45,6 +45,8 @@ AfterKey = Dict[str, Any]
 DocSource = Dict[str, Any]
 SettingsDict = Dict[str, Any]
 
+IndexName = str
+
 # Mappings
 FieldName = ClauseName
 FieldType = ClauseType
@@ -57,9 +59,64 @@ class MappingsDict(TypedDict, total=False):
     dynamic: bool
 
 
-SearchDict = Dict[str, Any]
+class SourceIncludeDict(TypedDict, total=False):
+    includes: Union[str, List[str]]
+    excludes: Union[str, List[str]]
 
-AggregationsDict = Dict[str, Any]
+
+class RunTimeMappingDict(TypedDict, total=False):
+    type: str
+    script: str
+
+
+class PointInTimeDict(TypedDict, total=False):
+    id: str
+    keep_alive: str
+
+
+class FieldDict(TypedDict, total=False):
+    field: str
+    format: str
+
+
+SearchDict = TypedDict(
+    "SearchDict",
+    {
+        "aggs": NamedAggsDict,
+        "aggregations": NamedAggsDict,
+        "docvalue_fields": List[Union[str, FieldDict]],
+        "fields": List[Union[str, FieldDict]],
+        "explain": bool,
+        "from": int,
+        "highlight": Dict[str, Any],
+        "indices_boost": List[Dict[IndexName, float]],
+        "min_score": float,
+        "pit": PointInTimeDict,
+        "query": QueryClauseDict,
+        "post_filter": QueryClauseDict,
+        "runtime_mappings": Dict[FieldName, RunTimeMappingDict],
+        "seq_no_primary_term": bool,
+        "script_fields": Dict[str, Any],
+        "size": int,
+        "suggest": Dict[str, Any],
+        "_source": Union[bool, str, List[str], SourceIncludeDict],
+        "sort": List[Union[str, Dict[str, Any]]],
+        "stats": List[str],
+        "terminate_after": int,
+        "timeout": Any,
+        "version": bool,
+    },
+    total=False,
+)
+
+
+class BucketsDict(TypedDict, total=False):
+    buckets: Union[Dict[BucketKey, BucketDict], List[BucketDict]]
+    doc_count_error_upper_bound: int
+    sum_other_doc_count: int
+
+
+AggregationsResponseDict = Dict[AggName, Union[BucketsDict, BucketDict]]
 
 
 class HitDict(TypedDict, total=False):
@@ -67,6 +124,8 @@ class HitDict(TypedDict, total=False):
     _id: str
     _source: DocSource
     _score: float
+    fields: Dict[str, List[Any]]
+    highlight: Dict[str, List[str]]
 
 
 Relation = Literal["eq", "gte"]
@@ -100,14 +159,23 @@ class ProfileDict(TypedDict, total=False):
     shards: List[ProfileShardDict]
 
 
+class SuggestedItemDict(TypedDict, total=False):
+    text: str
+    offset: int
+    length: int
+    options: List[Dict[str, Any]]
+
+
 class SearchResponseDict(TypedDict, total=False):
+    _scroll_id: str
     _shards: ShardsDict
     timed_out: bool
     terminated_early: bool
     took: int
     hits: HitsDict
-    aggregations: AggregationsDict
+    aggregations: AggregationsResponseDict
     profile: ProfileDict
+    suggest: Dict[str, List[SuggestedItemDict]]
 
 
 class RetriesDict(TypedDict, total=False):

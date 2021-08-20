@@ -10,7 +10,7 @@
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta, BucketKey, QueryClauseDict, RangeDict
+from pandagg.types import Meta, BucketKey, QueryClauseDict, RangeDict, BucketDict
 from typing import Any, Optional, Dict, Union, List
 
 
@@ -22,7 +22,7 @@ class Global(UniqueBucketAgg):
     def __init__(self, meta: Meta = None):
         super(Global, self).__init__(agg_body={}, meta=meta)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
 
 
@@ -45,7 +45,7 @@ class Filter(UniqueBucketAgg):
         self.filter = filter_
         super(Filter, self).__init__(meta=meta, **filter_)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return self.filter
 
 
@@ -64,7 +64,7 @@ class Nested(UniqueBucketAgg):
         self.path = path
         super(Nested, self).__init__(path=path, meta=meta, **body)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
 
 
@@ -81,7 +81,7 @@ class ReverseNested(UniqueBucketAgg):
             body_kwargs["path"] = path
         super(ReverseNested, self).__init__(meta=meta, **body_kwargs)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
 
 
@@ -90,9 +90,10 @@ class Missing(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
 
     def __init__(self, field: str, meta: Meta = None, **body: Any):
+        self.field: str = field
         super(UniqueBucketAgg, self).__init__(field=field, meta=meta, **body)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return {"bool": {"must_not": {"exists": {"field": self.field}}}}
 
 
@@ -288,7 +289,7 @@ class Range(MultipleBucketAgg):
             return "to%s" % self.bucket_key_suffix
         return "to"
 
-    def _extract_bucket_key(self, bucket) -> str:
+    def _extract_bucket_key(self, bucket: BucketDict) -> BucketKey:
         if self.from_key in bucket:
             key = "%s%s" % (bucket[self.from_key], self.KEY_SEP)
         else:

@@ -26,7 +26,6 @@ from pandagg.types import (
     AggName,
     SearchResponseDict,
     DeleteByQueryResponse,
-    HitDict,
     SearchDict,
 )
 from pandagg.utils import DSLMixin
@@ -154,7 +153,7 @@ class Search(DSLMixin, Request):
         overridden by methods (`using`, `index` and `mappings` respectively).
         """
 
-        self._sort: List = []
+        self._sort: List[Union[str, Dict[str, Any]]] = []
         self._source: Any = None
         self._highlight: Dict[str, Any] = {}
         self._highlight_opts: Dict[str, Any] = {}
@@ -481,9 +480,7 @@ class Search(DSLMixin, Request):
         of all the underlying objects. Used internally by most state modifying
         APIs.
         """
-        s = self.__class__(
-            using=self._using, index=self._index, mappings=self._mappings
-        )
+        s = Search(using=self._using, index=self._index, mappings=self._mappings)
         s._params = self._params.copy()
         s._sort = self._sort[:]
         s._source = copy.copy(self._source) if self._source is not None else None
@@ -716,24 +713,28 @@ class Search(DSLMixin, Request):
 
         All additional keyword arguments will be included into the dictionary.
         """
-        d = {}
+        d: SearchDict = {}
 
         if self._query:
-            d["query"] = self._query.to_dict()
+            dq = self._query.to_dict()
+            if dq:
+                d["query"] = dq
 
         # count request doesn't care for sorting and other things
         if not count:
             if self._post_filter:
-                d["post_filter"] = self._post_filter.to_dict()
+                pfd = self._post_filter.to_dict()
+                if pfd:
+                    d["post_filter"] = pfd
 
             if self._aggs:
                 d["aggs"] = self._aggs.to_dict()
 
             if self._sort:
-                # TODO - understand why typing fails here
-                d["sort"] = self._sort  # type: ignore
+                d["sort"] = self._sort
 
-            d.update(self._params)
+            # query params are not typed in search dict
+            d.update(self._params)  # type: ignore
 
             if self._source not in (None, {}):
                 d["_source"] = self._source
@@ -749,7 +750,8 @@ class Search(DSLMixin, Request):
             if self._script_fields:
                 d["script_fields"] = self._script_fields
 
-        d.update(kwargs)
+        # TODO: check if those kwargs are really useful
+        d.update(kwargs)  # type: ignore
         return d
 
     def count(self) -> int:
@@ -863,8 +865,9 @@ class MultiSearch(Request):
         ms._searches.append(search)
         return ms
 
-    def to_dict(self) -> List[Dict[str, Any]]:
-        out = []
+    def to_dict(self) -> List[Union[Dict, SearchDict]]:
+        out: List[Union[Dict, SearchDict]] = []
+        s: Search
         for s in self._searches:
             meta = {}
             if s._index:

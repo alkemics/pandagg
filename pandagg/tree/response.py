@@ -1,19 +1,19 @@
 from collections import OrderedDict, defaultdict
-from typing import Optional, Any
+from typing import Optional
 
 from lighttree import Tree
 from lighttree.node import NodeId
 from pandagg.node.aggs.abstract import AggClause
 
 from pandagg.node.query.joining import Nested
-from pandagg.node.response.bucket import Bucket, BucketNode
+from pandagg.node.response.bucket import Bucket, RootBucket
 from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.aggs import Aggs
 from pandagg.tree.query import Query
 from pandagg.types import AggsResponseDict, AggName
 
 
-class AggsResponseTree(TreeReprMixin, Tree[BucketNode]):
+class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
     """
     Tree shaped representation of an ElasticSearch aggregations response.
     """
@@ -25,7 +25,7 @@ class AggsResponseTree(TreeReprMixin, Tree[BucketNode]):
         self.__aggs: Aggs = aggs
 
         self.root: str
-        root_node = BucketNode()
+        root_node = RootBucket()
         self.insert_node(root_node)
         if raw_response:
             self.parse(raw_response)
@@ -46,7 +46,11 @@ class AggsResponseTree(TreeReprMixin, Tree[BucketNode]):
         return self
 
     def bucket_properties(
-        self, bucket, properties=None, end_level=None, depth: Optional[int] = None
+        self,
+        bucket: Bucket,
+        properties=None,
+        end_level=None,
+        depth: Optional[int] = None,
     ):
         """
         Recursive method returning a given bucket's properties in the form of an ordered dictionnary.

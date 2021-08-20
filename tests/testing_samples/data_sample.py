@@ -117,7 +117,7 @@ ES_AGG_RESPONSE = {
     }
 }
 
-EXPECTED_RESP_REPR = """[]
+EXPECTED_RESP_REPR = """
 ├── classification_type=multilabel                      1797
 │   ├── global_metrics.field.name=ispracticecompatible   128
 │   │   ├── avg_f1_micro                                0.72
