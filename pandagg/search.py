@@ -1,9 +1,21 @@
 # adapted from elasticsearch-dsl/search.py
+
+from __future__ import annotations
+
 import copy
 import json
-from typing import Optional, Union, Tuple, List, Any, TypeVar, Dict, Iterator
+from typing import (
+    Optional,
+    Union,
+    Tuple,
+    List,
+    Any,
+    TypeVar,
+    Dict,
+    Iterator,
+    TYPE_CHECKING,
+)
 
-import pandas as pd
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import scan
 
@@ -29,6 +41,9 @@ from pandagg.types import (
     SearchDict,
 )
 from pandagg.utils import DSLMixin
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # because Search.bool method shadows bool typing
 bool_ = bool

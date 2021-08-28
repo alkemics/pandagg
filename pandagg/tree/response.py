@@ -1,25 +1,27 @@
 from collections import OrderedDict, defaultdict
-from typing import Optional
+from typing import Optional, List, Set, Dict
 
 from lighttree import Tree
 from lighttree.node import NodeId
-from pandagg.node.aggs.abstract import AggClause
 
+from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.query.joining import Nested
 from pandagg.node.response.bucket import Bucket, RootBucket
 from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.aggs import Aggs
 from pandagg.tree.query import Query
-from pandagg.types import AggsResponseDict, AggName
+from pandagg.types import AggName, QueryClauseDict, AggregationsResponseDict
 
 
 class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
     """
     Tree shaped representation of an ElasticSearch aggregations response.
+
+    Note: this class is only used for interactive features, and is currently still experimental. Notably it lacks tests.
     """
 
     def __init__(
-        self, aggs: Aggs, raw_response: Optional[AggsResponseDict] = None
+        self, aggs: Aggs, raw_response: Optional[AggregationsResponseDict] = None
     ) -> None:
         super(AggsResponseTree, self).__init__()
         self.__aggs: Aggs = aggs
@@ -30,7 +32,7 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
         if raw_response:
             self.parse(raw_response)
 
-    def parse(self, raw_response: AggsResponseDict) -> "AggsResponseTree":
+    def parse(self, raw_response: AggregationsResponseDict) -> "AggsResponseTree":
         """
         Build response tree from ElasticSearch aggregation response
         """
@@ -48,10 +50,10 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
     def bucket_properties(
         self,
         bucket: Bucket,
-        properties=None,
-        end_level=None,
+        properties: Optional[OrderedDict] = None,
+        end_level: Optional[AggName] = None,
         depth: Optional[int] = None,
-    ):
+    ) -> OrderedDict:
         """
         Recursive method returning a given bucket's properties in the form of an ordered dictionnary.
         Travel from current bucket through all ancestors until reaching root.
@@ -73,7 +75,7 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
         _, parent = self.parent(bucket.identifier)
         return self.bucket_properties(parent, properties, end_level, depth)
 
-    def get_bucket_filter(self, nid):
+    def get_bucket_filter(self, nid: NodeId) -> Optional[QueryClauseDict]:
         """
         Build query filtering documents belonging to that bucket.
         Suppose the following configuration::
@@ -94,7 +96,9 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
             for level, key in bucket_properties.items()
         ]
 
-        filters_per_nested_level = defaultdict(list)
+        filters_per_nested_level: Dict[
+            Optional[str], List[QueryClauseDict]
+        ] = defaultdict(list)
 
         for agg_node, key in agg_node_key_tuples:
             level_agg_filter = agg_node.get_filter(key)
@@ -107,6 +111,9 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
 
         nested_with_conditions = [n for n in filters_per_nested_level.keys() if n]
 
+        if tree_mapping is None:
+            return self._build_filter({}, filters_per_nested_level).to_dict()
+
         all_nesteds = [
             n.identifier
             for _, n in tree_mapping.list(
@@ -115,13 +122,15 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
             )
         ]
 
-        nid_to_children = defaultdict(set)
+        nid_to_children: Dict[NodeId, Set[str]] = defaultdict(set)
         for nested in all_nesteds:
             nested_with_parents = [
                 n for _, n in tree_mapping.ancestors(nid=nested) if n.KEY == "nested"
             ]
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
-            nid_to_children[nearest_nested_parent].add(nested)
+            if nearest_nested_parent is None:
+                continue
+            nid_to_children[nearest_nested_parent.identifier].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level).to_dict()
 
     def _clone_init(self, deep: bool = False) -> "AggsResponseTree":
@@ -131,7 +140,7 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
         self,
         agg_name: AggName,
         agg_node: AggClause,
-        raw_response: AggsResponseDict,
+        raw_response: AggregationsResponseDict,
         pid: NodeId,
     ) -> None:
         """
@@ -160,12 +169,16 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
 
     @classmethod
     def _build_filter(
-        cls, nid_to_children, filters_per_nested_level, current_nested_path=None
-    ):
+        cls,
+        nid_to_children: Dict[NodeId, Set[str]],
+        filters_per_nested_level: Dict[Optional[str], List[QueryClauseDict]],
+        current_nested_path: Optional[str] = None,
+    ) -> Query:
         """
         Recursive function to build bucket filters from highest to deepest nested conditions."""
         current_conditions = filters_per_nested_level.get(current_nested_path, [])
-        nested_children = nid_to_children[current_nested_path]
+        # TODO - test this method
+        nested_children = nid_to_children[current_nested_path]  # type: ignore
         for nested_child in nested_children:
             nested_child_conditions = cls._build_filter(
                 nid_to_children=nid_to_children,
@@ -174,7 +187,7 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
             )
             if nested_child_conditions:
                 current_conditions.append(
-                    Nested(path=nested_child, query=nested_child_conditions)
+                    Nested(path=nested_child, query=nested_child_conditions).to_dict()
                 )
         q = Query()
         for clause in current_conditions:

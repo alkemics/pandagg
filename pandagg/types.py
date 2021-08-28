@@ -27,8 +27,6 @@ AggType = ClauseType
 AggClauseDict = Dict[AggType, ClauseBody]
 NamedAggsDict = Dict[AggName, AggClauseDict]
 
-AggClauseResponseDict = Dict[str, Any]
-AggsResponseDict = Dict[AggName, AggClauseResponseDict]
 
 BucketKey = Any
 BucketDict = Dict[str, Any]
@@ -116,7 +114,8 @@ class BucketsDict(TypedDict, total=False):
     sum_other_doc_count: int
 
 
-AggregationsResponseDict = Dict[AggName, Union[BucketsDict, BucketDict]]
+AggClauseResponseDict = Union[BucketsDict, BucketDict]
+AggregationsResponseDict = Dict[AggName, AggClauseResponseDict]
 
 
 class HitDict(TypedDict, total=False):

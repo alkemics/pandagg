@@ -9,7 +9,7 @@ from lighttree.node import NodeId
 
 from pandagg.tree.aggs import Aggs
 from pandagg.tree.response import AggsResponseTree
-
+from pandagg.types import QueryClauseDict
 
 if TYPE_CHECKING:
     from pandagg.search import Search
@@ -52,14 +52,18 @@ class IResponse(TreeBasedObj[AggsResponseTree]):
             search=self.__search,
         )
 
-    def get_bucket_filter(self):
+    def get_bucket_filter(self) -> Optional[QueryClauseDict]:
         """Build filters to select documents belonging to that bucket, independently from initial search query
         clauses."""
         return self._initial_tree.get_bucket_filter(self._tree.root)
 
     def search(self) -> Search:
-        # add bucket filter to initial query clauses
-        s = self.__search.query(self.get_bucket_filter())
+        s = self.__search._clone()
         # remove no-more necessary aggregations
         s._aggs = Aggs()
-        return s
+
+        q = self.get_bucket_filter()
+        if q is None:
+            return s
+        # add bucket filter to initial query clauses
+        return s.query(q)

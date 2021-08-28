@@ -3,8 +3,10 @@ from __future__ import annotations
 import copy
 from typing import Iterator, Optional, List, TYPE_CHECKING, Dict, Tuple
 
-import pandas as pd
+from elasticsearch import Elasticsearch
 
+from pandagg.query import Query
+from pandagg.aggs import Aggs
 from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root, AggClause
 from pandagg.node.aggs.bucket import Nested, ReverseNested
@@ -16,9 +18,12 @@ from pandagg.types import (
     TotalDict,
     SearchResponseDict,
     ShardsDict,
+    AggregationsResponseDict,
+    AggName,
 )
 
 if TYPE_CHECKING:
+    import pandas as pd
     from pandagg.search import Search
 
 
@@ -145,31 +150,28 @@ class SearchResponse:
 
 
 class Aggregations:
-    def __init__(self, data, search: Search):
-        self.data = data
-        self.__search = search
+    def __init__(self, data: AggregationsResponseDict, search: Search) -> None:
+        self.data: AggregationsResponseDict = data
+        self.__search: Search = search
 
     @property
-    def _aggs(self):
+    def _aggs(self) -> Aggs:
         return self.__search._aggs
 
     @property
-    def _query(self):
+    def _query(self) -> Query:
         return self.__search._query
 
     @property
-    def _client(self):
+    def _client(self) -> Optional[Elasticsearch]:
         return self.__search._using
 
     @property
-    def _index(self):
+    def _index(self) -> Optional[List[str]]:
         return self.__search._index
 
-    def keys(self):
-        return self.data.keys()
-
-    def get(self, key):
-        return self.data[key]
+    def keys(self) -> List[AggName]:
+        return list(self.data.keys())
 
     def _parse_group_by(
         self,
@@ -269,6 +271,7 @@ class Aggregations:
         Return aggregation node that used as grouping node.
         Note: in case there is only a nested aggregation below that node, group-by nested clause.
         """
+        key: str
         if name is not None:
             # override existing groupby_ptr
             id_ = self._aggs.id_from_key(name)
@@ -276,15 +279,16 @@ class Aggregations:
                 raise ValueError(
                     "Cannot group by <%s>, not a valid grouping aggregation" % name
                 )
-            key, node = self._aggs.get(id_)
+            key, node = self._aggs.get(id_)  # type: ignore
         else:
-            key, node = self._aggs.get(self._aggs._groupby_ptr)
+            key, node = self._aggs.get(self._aggs._groupby_ptr)  # type: ignore
 
         # if parent of single nested clause and nested_autocorrect
         if self._aggs.nested_autocorrect:
             children = self._aggs.children(node.identifier)
             if len(children) == 1:
-                child_key, child_node = children[0]
+                child_key: str
+                child_key, child_node = children[0]  # type: ignore
                 if isinstance(child_node, (Nested, ReverseNested)):
                     return child_key, child_node
         return key, node

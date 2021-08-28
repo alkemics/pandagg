@@ -1,5 +1,6 @@
 from typing import Optional, Union, Any, Tuple
 
+from pandagg.types import AggName
 from pandagg.node._node import Node
 
 
@@ -12,7 +13,7 @@ class Bucket(Node):
         self, value: Optional[Value], level: Optional[str], key: Optional[Key] = None
     ) -> None:
         super(Bucket, self).__init__(keyed=False)
-        self.level: Optional[str] = level
+        self.level: Optional[AggName] = level
         self.key: Optional[Key] = key
         self.value: Optional[Value] = value
 
@@ -51,6 +52,6 @@ class Bucket(Node):
 
 
 class RootBucket(Bucket):
-    def __init__(self):
+    def __init__(self) -> None:
         super(RootBucket, self).__init__(level=None, key=None, value=None)
-        self.keyed = False
+        self.keyed: bool = False

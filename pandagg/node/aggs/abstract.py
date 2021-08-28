@@ -204,7 +204,8 @@ class Root(AggClause):
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
-        yield None, response_value
+        # probably mypy bug in case of recursive typing
+        yield None, response_value  # type: ignore
 
     @classmethod
     def extract_bucket_value(
@@ -221,7 +222,8 @@ class MetricAgg(AggClause):
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
-        yield None, response_value
+        # probably mypy bug in case of recursive typing
+        yield None, response_value  # type: ignore
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
@@ -271,7 +273,8 @@ class UniqueBucketAgg(BucketAggClause):
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
-        yield None, response_value
+        # probably mypy bug in case of recursive typing
+        yield None, response_value  # type: ignore
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         raise NotImplementedError()
@@ -300,11 +303,15 @@ class MultipleBucketAgg(BucketAggClause):
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
+        # response_value: BucketsDict
         buckets = response_value["buckets"]
         if self.keyed_:
-            for key in buckets.keys():
+            # buckets: Dict[BucketKey, BucketDict]
+            # TODO: find how to properly type this
+            for key in buckets.keys():  # type: ignore
                 yield key, buckets[key]
         else:
+            # buckets: List[BucketDict]
             for bucket in buckets:
                 yield self._extract_bucket_key(bucket), bucket
 
