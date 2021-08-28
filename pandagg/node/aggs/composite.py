@@ -25,7 +25,7 @@ class Composite(BucketAggClause):
         meta: Meta = None,
         **body: Any
     ):
-        """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html"""
+        """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html"""  # noqa: E501
         self._sources: List[CompositeSource] = sources
         self._size: Optional[int] = size
         self._after_key: Optional[Dict[str, Any]] = after_key

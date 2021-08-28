@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 from typing import Iterator, Optional, List, TYPE_CHECKING, Dict, Tuple
 
 from elasticsearch import Elasticsearch
+from lighttree.node import NodeId
 
 from pandagg.query import Query
 from pandagg.aggs import Aggs
@@ -20,6 +22,7 @@ from pandagg.types import (
     ShardsDict,
     AggregationsResponseDict,
     AggName,
+    ProfileDict,
 )
 
 if TYPE_CHECKING:
@@ -119,9 +122,9 @@ class SearchResponse:
         self._shards: Optional[ShardsDict] = data.get("_shards")
         self.hits: Hits = Hits(data.get("hits"))
         self.aggregations: Aggregations = Aggregations(
-            data.get("aggregations", {}), search=self.__search
+            data.get("aggregations", {}), _search=self.__search
         )
-        self.profile = data.get("profile")
+        self.profile: Optional[ProfileDict] = data.get("profile")
 
     def __iter__(self) -> Iterator[Hit]:
         return iter(self.hits)
@@ -149,39 +152,39 @@ class SearchResponse:
         )
 
 
+@dataclasses.dataclass
 class Aggregations:
-    def __init__(self, data: AggregationsResponseDict, search: Search) -> None:
-        self.data: AggregationsResponseDict = data
-        self.__search: Search = search
+    data: AggregationsResponseDict
+    _search: Search
 
     @property
     def _aggs(self) -> Aggs:
-        return self.__search._aggs
+        return self._search._aggs
 
     @property
     def _query(self) -> Query:
-        return self.__search._query
+        return self._search._query
 
     @property
     def _client(self) -> Optional[Elasticsearch]:
-        return self.__search._using
+        return self._search._using
 
     @property
     def _index(self) -> Optional[List[str]]:
-        return self.__search._index
+        return self._search._index
 
     def keys(self) -> List[AggName]:
         return list(self.data.keys())
 
     def _parse_group_by(
         self,
-        response,
-        until,
+        response: AggregationsResponseDict,
+        until: AggName,
         row=None,
-        agg_name=None,
-        ancestors=None,
-        row_as_tuple=False,
-        with_single_bucket_groups=False,
+        agg_name: Optional[AggName] = None,
+        ancestors_: Optional[List[Tuple[str, AggClause]]] = None,
+        row_as_tuple: bool = False,
+        with_single_bucket_groups: bool = False,
     ):
         """
         Recursive parsing of succession of grouping aggregation clauses.
@@ -190,15 +193,21 @@ class Aggregations:
         """
         # initialization: cache ancestors once for faster computation, that will be passed as arguments to downside
         # recursive calls
-        if ancestors is None:
-            until_id = self._aggs.id_from_key(until)
-            ancestors = self._aggs.ancestors(until_id, include_current=True)
-            # remove root (not an aggregation clause)
-            ancestors = [(k, n) for k, n in ancestors[:-1]]
+        ancestors: List[Tuple[str, AggClause]]
+        if ancestors_ is None:
+            until_id: NodeId = self._aggs.id_from_key(until)
+            # remove root (not an aggregation clause), ignore type warning about key None (since only root
+            # can have a None key)
+            ancestors = [
+                (k, n)  # type: ignore
+                for k, n in self._aggs.ancestors(until_id, include_current=True)[:-1]
+            ]
             agg_name, agg_node = ancestors[-1]
+        else:
+            ancestors = ancestors_
 
         if agg_name not in response:
-            return
+            return None
 
         if not row:
             row = [] if row_as_tuple else {}
@@ -219,14 +228,17 @@ class Aggregations:
                     yield sub_row, raw_bucket
             elif agg_name in {k for k, _ in ancestors}:
                 # yield children
-                for child_key, _ in self._aggs.children(agg_node.identifier):
+                child_key: str
+                for child_key, _ in self._aggs.children(  # type: ignore
+                    agg_node.identifier
+                ):
                     for nrow, nraw_bucket in self._parse_group_by(
                         row=sub_row,
                         response=raw_bucket,
                         agg_name=child_key,
                         until=until,
                         row_as_tuple=row_as_tuple,
-                        ancestors=ancestors,
+                        ancestors_=ancestors,
                     ):
                         yield nrow, nraw_bucket
 
@@ -444,7 +456,7 @@ class Aggregations:
         return AggsResponseTree(aggs=self._aggs).parse(self.data)
 
     def to_interactive_tree(self) -> IResponse:
-        return IResponse(tree=self.to_tree(), search=self.__search, depth=1)
+        return IResponse(tree=self.to_tree(), search=self._search, depth=1)
 
     def serialize(self, output="tabular", **kwargs):
         """
