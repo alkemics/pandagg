@@ -94,6 +94,10 @@ class DateRange(RegularField):
     KEY = "date_range"
 
 
+class IpRange(RegularField):
+    KEY = "ip_range"
+
+
 # COMPLEX DATATYPES
 class Object(ComplexField):
     KEY = "object"

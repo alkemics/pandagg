@@ -1,6 +1,7 @@
 from pandagg.tree.mappings import Mappings
 from pandagg.interactive.mappings import IMappings
 from pandagg.node.mappings.field_datatypes import (
+    IpRange,
     Text,
     Keyword,
     ConstantKeyword,
@@ -58,6 +59,7 @@ from pandagg.node.mappings.meta_fields import (
 __all__ = [
     "Mappings",
     "IMappings",
+    "IpRange",
     "Text",
     "Keyword",
     "ConstantKeyword",
