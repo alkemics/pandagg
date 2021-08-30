@@ -1,11 +1,22 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, List, Union, Dict, Any, Tuple, Iterator
+from typing import Optional, List, Union, Dict, Any, Tuple, Iterator, Type
 
-from pandagg.types import Meta, BucketKey, Bucket
-
-AggClauseDict = Dict[str, Any]
+from pandagg.types import (
+    Meta,
+    BucketKey,
+    BucketDict,
+    AggClauseDict,
+    AggType,
+    QueryClauseDict,
+    ClauseBody,
+    Script,
+    GapPolicy,
+    AggName,
+    AggClauseResponseDict,
+    BucketsDict,
+)
 
 
 class AggClause(Node):
@@ -18,6 +29,8 @@ class AggClause(Node):
     Define a method to build aggregation request.
     """
 
+    _classes: Dict[AggType, Type["AggClause"]]
+
     _type_name = "agg"
     KEY: str
 
@@ -25,7 +38,7 @@ class AggClause(Node):
     WHITELISTED_MAPPING_TYPES: List[str]
     BLACKLISTED_MAPPING_TYPES: List[str]
 
-    def __init__(self, meta: Optional[Dict[str, Any]] = None, **body: Any) -> None:
+    def __init__(self, meta: Optional[Meta] = None, **body: Any) -> None:
         identifier: Optional[str] = body.pop("identifier", None)
         self.body: Dict[str, Any] = body
         self.meta: Optional[Dict[str, Any]] = meta
@@ -60,7 +73,7 @@ class AggClause(Node):
         # TODO - constraint to only allowed types
         return True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> AggClauseDict:
         """
         ElasticSearch aggregation queries follow this formatting::
 
@@ -89,7 +102,7 @@ class AggClause(Node):
             aggs["meta"] = self.meta
         return aggs
 
-    def get_filter(self, key: str):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """
         Return filter query to list documents having this aggregation key.
 
@@ -98,31 +111,35 @@ class AggClause(Node):
         """
         raise NotImplementedError()
 
-    def extract_buckets(self, response_value) -> Iterator[Tuple[BucketKey, Bucket]]:
+    def extract_buckets(
+        self, response_value: AggClauseResponseDict
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
     @classmethod
-    def extract_bucket_value(cls, response, value_as_dict=False):
+    def extract_bucket_value(
+        cls, response: Union[BucketsDict, BucketDict], value_as_dict: bool = False
+    ) -> Any:
         attrs = cls.VALUE_ATTRS
         if value_as_dict:
             return {attr_: response.get(attr_) for attr_ in attrs}
         return response.get(attrs[0])
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<{class_}, type={type}, body={body}>".format(
             class_=str(self.__class__.__name__),
             type=str(self.KEY),
             body=json.dumps(self.body),
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, AggClause):
             return other.to_dict() == self.to_dict()
         # make sure we still equal to a dict with the same data
         return other == self.to_dict()
 
 
-TypeOrAgg = Union[str, AggClauseDict, AggClause]
+TypeOrAgg = Union[AggType, AggClauseDict, AggClause]
 
 
 def A(name: str, type_or_agg: Optional[TypeOrAgg] = None, **body: Any) -> AggClause:
@@ -181,11 +198,19 @@ class Root(AggClause):
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "_", ""
 
-    def extract_buckets(self, response_value):
-        yield None, response_value
+    def get_filter(self, key: Optional[BucketKey]) -> Optional[QueryClauseDict]:
+        return None
+
+    def extract_buckets(
+        self, response_value: AggClauseResponseDict
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
+        # probably mypy bug in case of recursive typing
+        yield None, response_value  # type: ignore
 
     @classmethod
-    def extract_bucket_value(cls, response, value_as_dict=False):
+    def extract_bucket_value(
+        cls, response: Union[BucketsDict, BucketDict], value_as_dict: bool = False
+    ) -> Any:
         return None
 
 
@@ -194,10 +219,13 @@ class MetricAgg(AggClause):
     Metric aggregation are aggregations providing a single bucket, with value attributes to be extracted.
     """
 
-    def extract_buckets(self, response_value):
-        yield None, response_value
+    def extract_buckets(
+        self, response_value: AggClauseResponseDict
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
+        # probably mypy bug in case of recursive typing
+        yield None, response_value  # type: ignore
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
 
 
@@ -221,17 +249,20 @@ class BucketAggClause(AggClause):
     >>> )
     """
 
-    def __init__(self, meta=None, **body):
+    def __init__(self, meta: Optional[Meta] = None, **body: Any) -> None:
         identifier: Optional[str] = body.pop("identifier", None)
-        self.body: Dict[str, Any] = body
-        self.meta: Optional[Dict, str] = meta
-        self._children = body.pop("aggs", None) or body.pop("aggregations", None) or {}
+        self.body: ClauseBody = body
+        self.meta: Optional[Meta] = meta
+        aggs = body.pop("aggs", None) or body.pop("aggregations", None)
+        self._children: Dict[AggName, Any] = aggs or {}  # type: ignore
         super(AggClause, self).__init__(identifier=identifier)
 
-    def extract_buckets(self, response_value):
+    def extract_buckets(
+        self, response_value: AggClauseResponseDict
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """Provide filter to get documents belonging to document of given key."""
         raise NotImplementedError()
 
@@ -239,10 +270,13 @@ class BucketAggClause(AggClause):
 class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
 
-    def extract_buckets(self, response_value):
-        yield None, response_value
+    def extract_buckets(
+        self, response_value: AggClauseResponseDict
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
+        # probably mypy bug in case of recursive typing
+        yield None, response_value  # type: ignore
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         raise NotImplementedError()
 
 
@@ -258,10 +292,6 @@ class MultipleBucketAgg(BucketAggClause):
 
         If keyed, ES buckets are expected as dict, else as list (in this case key_path is used to extract key from each
         list item).
-        :param keyed:
-        :param meta:
-        :param aggs:
-        :param body:
         """
         # keyed has another meaning in lighttree Node
         self.keyed_: bool = keyed or self.IMPLICIT_KEYED
@@ -270,19 +300,25 @@ class MultipleBucketAgg(BucketAggClause):
             body["keyed"] = keyed
         super(MultipleBucketAgg, self).__init__(meta=meta, **body)
 
-    def extract_buckets(self, response_value):
+    def extract_buckets(
+        self, response_value: AggClauseResponseDict
+    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
+        # response_value: BucketsDict
         buckets = response_value["buckets"]
         if self.keyed_:
-            for key in sorted(buckets.keys()):
+            # buckets: Dict[BucketKey, BucketDict]
+            # TODO: find how to properly type this
+            for key in buckets.keys():  # type: ignore
                 yield key, buckets[key]
         else:
+            # buckets: List[BucketDict]
             for bucket in buckets:
                 yield self._extract_bucket_key(bucket), bucket
 
-    def _extract_bucket_key(self, bucket):
+    def _extract_bucket_key(self, bucket: BucketDict) -> BucketKey:
         return bucket[self.key_path]
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         raise NotImplementedError()
 
 
@@ -291,9 +327,15 @@ class FieldOrScriptMetricAgg(MetricAgg):
     Metric aggregation based on single field.
     """
 
-    def __init__(self, field=None, script=None, meta=None, **body):
-        self.field = field
-        self.script = script
+    def __init__(
+        self,
+        field: Optional[str] = None,
+        script: Optional[Script] = None,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
+        self.field: Optional[str] = field
+        self.script: Optional[Script] = script
         if field is not None:
             body["field"] = field
         if script is not None:
@@ -302,24 +344,35 @@ class FieldOrScriptMetricAgg(MetricAgg):
 
 
 class Pipeline(UniqueBucketAgg):
-    def __init__(self, buckets_path, gap_policy=None, meta=None, **body):
-        self.buckets_path = buckets_path
-        self.gap_policy = gap_policy
+    def __init__(
+        self,
+        buckets_path: str,
+        gap_policy: Optional[GapPolicy] = None,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
+        self.buckets_path: str = buckets_path
+        self.gap_policy: Optional[GapPolicy] = gap_policy
         body_kwargs = dict(body)
         if gap_policy is not None:
-            assert gap_policy in ("skip", "insert_zeros")
             body_kwargs["gap_policy"] = gap_policy
-
         super(Pipeline, self).__init__(meta=meta, buckets_path=buckets_path, **body)
 
-    def get_filter(self, key):
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         return None
 
 
 class ScriptPipeline(Pipeline):
     VALUE_ATTRS: List[str] = ["value"]
 
-    def __init__(self, script, buckets_path, gap_policy=None, meta=None, **body):
+    def __init__(
+        self,
+        script: Script,
+        buckets_path: str,
+        gap_policy: Optional[GapPolicy] = None,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
         super(ScriptPipeline, self).__init__(
             buckets_path=buckets_path,
             gap_policy=gap_policy,

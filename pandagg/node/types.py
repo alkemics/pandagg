@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from typing import List
 
 NUMERIC_TYPES: List[str] = [

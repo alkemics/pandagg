@@ -2,7 +2,7 @@ import json
 from typing import Optional, Union, Any, List, Dict
 from typing_extensions import Literal
 
-from lighttree import Key
+from lighttree import Key, Tree
 from lighttree.node import NodeId
 from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
@@ -17,7 +17,6 @@ from pandagg.node.query.abstract import (
 from pandagg.node.query.compound import CompoundClause, Bool
 from pandagg.node.query.joining import Nested
 
-from pandagg.tree._tree import Tree
 from pandagg.tree.mappings import _mappings, MappingsDict, Mappings
 from pandagg.types import QueryName, ClauseBody
 
@@ -56,7 +55,7 @@ sub_insertion = Substitution(
 TypeOrQuery = Union[QueryType, QueryClauseDict, QueryClause, "Query"]
 
 
-class Query(Tree):
+class Query(Tree[QueryClause]):
     def __init__(
         self,
         q: Optional[TypeOrQuery] = None,
@@ -175,7 +174,7 @@ class Query(Tree):
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
         **body: Any
-    ):
+    ) -> "Query":
         return self._compound_param_insert(
             "bool", "filter", mode, type_or_query, insert_below, on, bool_body, **body
         )
@@ -191,7 +190,7 @@ class Query(Tree):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         **body: Any
-    ):
+    ) -> "Query":
         """
         >>> Query().bool(must={"term": {"some_field": "yolo"}})
         """
@@ -215,7 +214,7 @@ class Query(Tree):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         **body: Any
-    ):
+    ) -> "Query":
         if not positive and not negative:
             raise ValueError('Expect at least one of "positive", "negative"')
         return self.query(
@@ -236,7 +235,7 @@ class Query(Tree):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         **body: Any
-    ):
+    ) -> "Query":
         if not filter and not boost:
             raise ValueError('Expect at least one of "filter", "boost"')
         return self.query(
@@ -386,7 +385,7 @@ class Query(Tree):
 
         All *args and **kwargs are propagated to `lighttree.Tree.show` method.
         """
-        return "<Query>\n%s" % super(Tree, self).show(
+        return "<Query>\n%s" % super(Query, self).show(
             *args, line_max_length=line_max_length, **kwargs
         )  # type: ignore
 
@@ -404,10 +403,7 @@ class Query(Tree):
                 return node.path
         return None
 
-    def to_dict(self, from_=None) -> Optional[Dict[str, Any]]:
-        """
-        Serialize Query as dict.
-        """
+    def to_dict(self, from_: Optional[NodeId] = None) -> Optional[QueryClauseDict]:
         if self.root is None:
             return None
         from_ = self.root if from_ is None else from_
@@ -500,7 +496,7 @@ class Query(Tree):
         return param_node.identifier
 
     @classmethod
-    def _q(cls, type_or_query: TypeOrQuery, **body) -> QueryClause:
+    def _q(cls, type_or_query: TypeOrQuery, **body: Any) -> QueryClause:
         """
         Convert to QueryClause instance.
         """

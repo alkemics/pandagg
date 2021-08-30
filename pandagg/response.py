@@ -1,70 +1,76 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from __future__ import annotations
 
 import copy
+import dataclasses
+from typing import Iterator, Optional, List, TYPE_CHECKING, Dict, Tuple
 
+from elasticsearch import Elasticsearch
+from lighttree.node import NodeId
+
+from pandagg.query import Query
+from pandagg.aggs import Aggs
 from pandagg.interactive.response import IResponse
-from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root
+from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root, AggClause
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.tree.response import AggsResponseTree
+from pandagg.types import (
+    HitDict,
+    HitsDict,
+    DocSource,
+    TotalDict,
+    SearchResponseDict,
+    ShardsDict,
+    AggregationsResponseDict,
+    AggName,
+    ProfileDict,
+)
+
+if TYPE_CHECKING:
+    import pandas as pd
+    from pandagg.search import Search
 
 
-class Response:
-    def __init__(self, data, search):
-        self.data = data
-        self.__search = search
+class Hit:
+    def __init__(self, data: HitDict) -> None:
+        self.data: HitDict = data
+        self._source: Optional[DocSource] = data.get("_source")
+        self._score: Optional[float] = data.get("_score")
+        self._id: Optional[str] = data.get("_id")
+        self._index: Optional[str] = data.get("_index")
 
-        self.took = data["took"]
-        self.timed_out = data["timed_out"]
-        self._shards = data["_shards"]
-        self.hits = Hits(data["hits"])
-        self.aggregations = Aggregations(
-            data.get("aggregations", {}), search=self.__search
-        )
-        self.profile = data.get("profile")
-
-    def __iter__(self):
-        return iter(self.hits)
-
-    @property
-    def success(self):
-        return (
-            self._shards["total"] == self._shards["successful"] and not self.timed_out
-        )
-
-    def __len__(self):
-        return len(self.hits)
-
-    def __repr__(self):
-        return (
-            "<Response> took %dms, success: %s, total result %s, contains %s hits"
-            % (self.took, self.success, self.hits._total_repr(), len(self.hits))
-        )
+    def __repr__(self) -> str:
+        if self._score is None:
+            return "<Hit %s>" % self._id
+        return "<Hit %s> score=%.2f" % (self._id, self._score)
 
 
 class Hits:
-    def __init__(self, hits):
-        self.data = hits
-        self.total = hits["total"]
-        self.hits = [Hit(hit) for hit in hits.get("hits", [])]
-        self.max_score = hits["max_score"]
+    def __init__(self, hits: Optional[HitsDict]) -> None:
+        self.data: Optional[HitsDict] = hits
+        self.total: Optional[TotalDict] = hits.get("total") if hits else None
+        self.hits: List[Hit] = (
+            [Hit(hit) for hit in hits.get("hits", [])] if hits else []
+        )
+        self.max_score: Optional[float] = hits.get("max_score") if hits else None
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.hits)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Hit]:
         return iter(self.hits)
 
-    def _total_repr(self):
-        if not isinstance(self.total, dict):
-            return str(self.total)
+    def _total_repr(self) -> str:
+        if self.total is None:
+            return 'Unknown total (probably filtered by "filter_path")'
         if self.total.get("relation") == "eq":
             return str(self.total["value"])
         if self.total.get("relation") == "gte":
             return ">=%d" % self.total["value"]
         raise ValueError("Invalid total %s" % self.total)
 
-    def to_dataframe(self, expand_source=True, source_only=True):
+    def to_dataframe(
+        self, expand_source: bool = True, source_only: bool = True
+    ) -> pd.DataFrame:
         """
         Return hits as pandas dataframe.
         Requires pandas dependency.
@@ -78,7 +84,7 @@ class Hits:
                 'Using dataframe output format requires to install pandas. Please install "pandas" or '
                 "use another output format."
             )
-        hits = self.data.get("hits", [])
+        hits = self.data.get("hits", []) if self.data else []
         if not hits:
             return pd.DataFrame()
         if not expand_source:
@@ -94,7 +100,7 @@ class Hits:
             flattened_hits.append(hit_source)
         return pd.DataFrame(flattened_hits).set_index("_id")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if not isinstance(self.total, dict):
             total_repr = str(self.total)
         elif self.total.get("relation") == "eq":
@@ -106,55 +112,79 @@ class Hits:
         return "<Hits> total: %s, contains %d hits" % (total_repr, len(self.hits))
 
 
-class Hit:
-    def __init__(self, data):
-        self.data = data
-        self._source = data.get("_source")
-        self._score = data.get("_score")
-        self._id = data.get("_id")
-        self._type = data.get("_type")
-        self._index = data.get("_index")
-
-    def __repr__(self):
-        return "<Hit %s> score=%.2f" % (self._id, self._score)
-
-
-class Aggregations:
-    def __init__(self, data, search):
+class SearchResponse:
+    def __init__(self, data: SearchResponseDict, search: Search) -> None:
         self.data = data
         self.__search = search
 
-    @property
-    def _aggs(self):
-        return self.__search._aggs
+        self.took: Optional[int] = data.get("took")
+        self.timed_out: Optional[int] = data.get("timed_out")
+        self._shards: Optional[ShardsDict] = data.get("_shards")
+        self.hits: Hits = Hits(data.get("hits"))
+        self.aggregations: Aggregations = Aggregations(
+            data.get("aggregations", {}), _search=self.__search
+        )
+        self.profile: Optional[ProfileDict] = data.get("profile")
+
+    def __iter__(self) -> Iterator[Hit]:
+        return iter(self.hits)
 
     @property
-    def _query(self):
-        return self.__search._query
+    def success(self) -> bool:
+        if (
+            self._shards is None
+            or self._shards.get("total") is None
+            or self._shards.get("successful") is None
+        ):
+            # if total result is filtered by 'filter_path', ignore
+            return False
+        return (
+            self._shards["total"] == self._shards["successful"] and not self.timed_out
+        )
+
+    def __len__(self) -> int:
+        return len(self.hits)
+
+    def __repr__(self) -> str:
+        return (
+            "<Response> took %sms, success: %s, total result %s, contains %s hits"
+            % (self.took, self.success, self.hits._total_repr(), len(self.hits))
+        )
+
+
+@dataclasses.dataclass
+class Aggregations:
+    data: AggregationsResponseDict
+    _search: Search
 
     @property
-    def _client(self):
-        return self.__search._using
+    def _aggs(self) -> Aggs:
+        return self._search._aggs
 
     @property
-    def _index(self):
-        return self.__search._index
+    def _query(self) -> Query:
+        return self._search._query
 
-    def keys(self):
-        return self.data.keys()
+    @property
+    def _client(self) -> Optional[Elasticsearch]:
+        return self._search._using
 
-    def get(self, key):
-        return self.data[key]
+    @property
+    def _index(self) -> Optional[List[str]]:
+        return self._search._index
+
+    def keys(self) -> List[AggName]:
+        return list(self.data.keys())
 
     def _parse_group_by(
         self,
-        response,
-        until,
+        response: AggregationsResponseDict,
+        until: AggName,
         row=None,
-        agg_name=None,
-        ancestors=None,
-        row_as_tuple=False,
-        with_single_bucket_groups=False,
+        agg_name: Optional[AggName] = None,
+        ancestors_: Optional[List[Tuple[str, AggClause]]] = None,
+        row_as_tuple: bool = False,
+        with_single_bucket_groups: bool = False,
     ):
         """
         Recursive parsing of succession of grouping aggregation clauses.
@@ -163,15 +193,21 @@ class Aggregations:
         """
         # initialization: cache ancestors once for faster computation, that will be passed as arguments to downside
         # recursive calls
-        if ancestors is None:
-            until_id = self._aggs.id_from_key(until)
-            ancestors = self._aggs.ancestors(until_id, include_current=True)
-            # remove root (not an aggregation clause)
-            ancestors = [(k, n) for k, n in ancestors[:-1]]
+        ancestors: List[Tuple[str, AggClause]]
+        if ancestors_ is None:
+            until_id: NodeId = self._aggs.id_from_key(until)
+            # remove root (not an aggregation clause), ignore type warning about key None (since only root
+            # can have a None key)
+            ancestors = [
+                (k, n)  # type: ignore
+                for k, n in self._aggs.ancestors(until_id, include_current=True)[:-1]
+            ]
             agg_name, agg_node = ancestors[-1]
+        else:
+            ancestors = ancestors_
 
         if agg_name not in response:
-            return
+            return None
 
         if not row:
             row = [] if row_as_tuple else {}
@@ -192,14 +228,17 @@ class Aggregations:
                     yield sub_row, raw_bucket
             elif agg_name in {k for k, _ in ancestors}:
                 # yield children
-                for child_key, _ in self._aggs.children(agg_node.identifier):
+                child_key: str
+                for child_key, _ in self._aggs.children(  # type: ignore
+                    agg_node.identifier
+                ):
                     for nrow, nraw_bucket in self._parse_group_by(
                         row=sub_row,
                         response=raw_bucket,
                         agg_name=child_key,
                         until=until,
                         row_as_tuple=row_as_tuple,
-                        ancestors=ancestors,
+                        ancestors_=ancestors,
                     ):
                         yield nrow, nraw_bucket
 
@@ -237,11 +276,14 @@ class Aggregations:
                 result["children"] = normalized_children
             yield result
 
-    def _grouping_agg(self, name=None):
+    def _grouping_agg(
+        self, name: Optional[str] = None
+    ) -> Tuple[Optional[str], AggClause]:
         """
         Return aggregation node that used as grouping node.
         Note: in case there is only a nested aggregation below that node, group-by nested clause.
         """
+        key: str
         if name is not None:
             # override existing groupby_ptr
             id_ = self._aggs.id_from_key(name)
@@ -249,15 +291,16 @@ class Aggregations:
                 raise ValueError(
                     "Cannot group by <%s>, not a valid grouping aggregation" % name
                 )
-            key, node = self._aggs.get(id_)
+            key, node = self._aggs.get(id_)  # type: ignore
         else:
-            key, node = self._aggs.get(self._aggs._groupby_ptr)
+            key, node = self._aggs.get(self._aggs._groupby_ptr)  # type: ignore
 
         # if parent of single nested clause and nested_autocorrect
         if self._aggs.nested_autocorrect:
             children = self._aggs.children(node.identifier)
             if len(children) == 1:
-                child_key, child_node = children[0]
+                child_key: str
+                child_key, child_node = children[0]  # type: ignore
                 if isinstance(child_node, (Nested, ReverseNested)):
                     return child_key, child_node
         return key, node
@@ -375,8 +418,11 @@ class Aggregations:
         return result
 
     def to_dataframe(
-        self, grouped_by=None, normalize_children=True, with_single_bucket_groups=False
-    ):
+        self,
+        grouped_by: Optional[str] = None,
+        normalize_children: bool = True,
+        with_single_bucket_groups: bool = False,
+    ) -> pd.DataFrame:
         try:
             import pandas as pd
         except ImportError:
@@ -397,20 +443,20 @@ class Aggregations:
             index = (None,) * len(index)
         else:
             index = pd.MultiIndex.from_tuples(index, names=index_names)
-        return pd.DataFrame(index=index, data=list(values))
+        return pd.DataFrame(index=index, data=list(values)).sort_index()
 
-    def to_normalized(self):
+    def to_normalized(self) -> Dict:
         children = []
         for k in sorted(list((self.data.keys()))):
             for child in self._normalize_buckets(self.data, k):
                 children.append(child)
         return {"level": "root", "key": None, "value": None, "children": children}
 
-    def to_tree(self):
+    def to_tree(self) -> AggsResponseTree:
         return AggsResponseTree(aggs=self._aggs).parse(self.data)
 
-    def to_interactive_tree(self):
-        return IResponse(tree=self.to_tree(), search=self.__search, depth=1)
+    def to_interactive_tree(self) -> IResponse:
+        return IResponse(tree=self.to_tree(), search=self._search, depth=1)
 
     def serialize(self, output="tabular", **kwargs):
         """
@@ -433,7 +479,7 @@ class Aggregations:
         else:
             raise NotImplementedError("Unknown %s output format." % output)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if not self.keys():
             return "<Aggregations> empty"
         return "<Aggregations> %s" % list(map(str, self.keys()))

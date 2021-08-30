@@ -1,5 +1,5 @@
 # adapted from https://github.com/elastic/elasticsearch-dsl-py/blob/master/elasticsearch_dsl/utils.py#L162
-from typing import Dict
+from typing import Dict, Tuple, Any
 
 
 class DslMeta(type):
@@ -23,7 +23,7 @@ class DslMeta(type):
     # classes keys
     KEY: str = ""
 
-    def __init__(cls, name, bases, attrs):
+    def __init__(cls, name: str, bases: Tuple, attrs: Dict) -> None:
         super(DslMeta, cls).__init__(name, bases, attrs)
         if not cls._type_name:
             # skip for DSLMixin
@@ -60,7 +60,7 @@ class DSLMixin(metaclass=DslMeta):
             raise ValueError("DSL type %s does not exist." % name)
 
 
-def ordered(obj):
+def ordered(obj: Any) -> Any:
     if isinstance(obj, dict):
         return sorted((k, ordered(v)) for k, v in obj.items())
     if isinstance(obj, list):
@@ -68,12 +68,12 @@ def ordered(obj):
     return obj
 
 
-def equal_queries(d1, d2):
+def equal_queries(d1: Any, d2: Any) -> bool:
     """Compares if two queries are equivalent (do not consider nested list orders)."""
     return ordered(d1) == ordered(d2)
 
 
-def equal_search(s1, s2):
+def equal_search(s1: Any, s2: Any) -> bool:
     if not isinstance(s1, dict) or not isinstance(s2, dict):
         raise ValueError("not a search")
     s1 = s1.copy()

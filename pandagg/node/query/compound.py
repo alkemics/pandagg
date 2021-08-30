@@ -1,5 +1,7 @@
+from typing import List, Optional, Any
+
+from pandagg.types import QueryName
 from pandagg.node.query.abstract import QueryClause
-from typing import List
 
 
 class CompoundClause(QueryClause):
@@ -21,7 +23,7 @@ class CompoundClause(QueryClause):
     _default_operator: str = ""
     _parent_params: List[str] = []
 
-    def __init__(self, _name=None, **body):
+    def __init__(self, _name: Optional[QueryName] = None, **body: Any) -> None:
         b = body.copy()
         children = {}
         for param in self._parent_params:

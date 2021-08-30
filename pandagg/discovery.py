@@ -3,6 +3,8 @@ from typing import Dict, Any, Optional
 
 from lighttree.interactive import Obj
 from elasticsearch import Elasticsearch
+
+from pandagg import Mappings, MappingsDict
 from pandagg.interactive.mappings import IMappings
 from pandagg.search import Search
 
@@ -11,13 +13,15 @@ from pandagg.search import Search
 class Index:
     name: str
     settings: Dict[str, Any]
-    mappings: Dict[str, Any]
+    mappings: MappingsDict
     aliases: Any
     client: Optional[Elasticsearch] = None
 
     @property
     def imappings(self) -> IMappings:
-        return IMappings(self.mappings, client=self.client, index=self.name)
+        return IMappings(
+            Mappings(**self.mappings), client=self.client, index=[self.name]
+        )
 
     def search(
         self, nested_autocorrect: bool = True, repr_auto_execute: bool = True

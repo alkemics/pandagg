@@ -1,3 +1,5 @@
+from typing import Any
+
 from pandagg.node.query.abstract import LeafQueryClause
 from pandagg.node.query.compound import CompoundClause
 
@@ -7,9 +9,9 @@ class Nested(CompoundClause):
     _parent_params = ["query"]
     KEY = "nested"
 
-    def __init__(self, path, **body):
+    def __init__(self, path: str, **body: Any) -> None:
         super(Nested, self).__init__(path=path, **body)
-        self.path = path
+        self.path: str = path
 
 
 class HasChild(CompoundClause):

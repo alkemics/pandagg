@@ -1,19 +1,21 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, Any, Tuple, Dict
+from typing import Optional, Any, Tuple, Dict, Type
+
+from pandagg.types import FieldType
 
 
 class Field(Node):
+
+    _classes: Dict[FieldType, Type["Field"]]
+
     _type_name = "field"
-    KEY: Optional[str] = None
+    KEY: str
 
     def __init__(
         self, multiple: Optional[bool] = None, nullable: bool = True, **body: Any
-    ):
+    ) -> None:
         """
         :param multiple: boolean, default None, if True field must be an array, if False field must be a single item
         :param nullable: boolean, default True, if False a `None` value will be considered as invalid.
@@ -26,8 +28,6 @@ class Field(Node):
         self._nullable = nullable
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
-        if self.KEY is None:
-            return "_", ""
         return "", self._display_pattern % self.KEY.capitalize()
 
     def is_valid_value(self, v: Any) -> bool:
@@ -36,7 +36,7 @@ class Field(Node):
     @property
     def body(self) -> Dict[str, Any]:
         b = self._body.copy()
-        if self.KEY in ("object", None):
+        if self.KEY in ("object", ""):
             return b
         b["type"] = self.KEY
         return b
@@ -81,3 +81,11 @@ class RegularField(Field):
     def is_valid_value(self, v: Any) -> bool:
         # TODO - implement per field type
         return True
+
+
+class Root(Field):
+    # used as root node for mappings
+    KEY = ""
+
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
+        return "_", ""

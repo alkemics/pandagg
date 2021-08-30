@@ -1,18 +1,21 @@
+from typing import Optional, Any, Tuple, List, Union
+
 from .abstract import (
     LeafQueryClause,
     AbstractSingleFieldQueryClause,
     KeyFieldQueryClause,
 )
+from pandagg.types import QueryName
 
 
 class Exists(LeafQueryClause):
     KEY = "exists"
 
-    def __init__(self, field, _name=None):
-        self.field = field
+    def __init__(self, field: str, _name: Optional[QueryName] = None) -> None:
+        self.field: str = field
         super(Exists, self).__init__(_name=_name, field=field)
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return self.KEY, "field=%s" % self.field
 
 
@@ -24,18 +27,15 @@ class Fuzzy(KeyFieldQueryClause):
 class Ids(LeafQueryClause):
     KEY = "ids"
 
-    def __init__(self, values, _name=None):
-        self.field = "id"
-        self.values = values
+    def __init__(
+        self, values: List[Union[int, str]], _name: Optional[QueryName] = None
+    ) -> None:
+        self.field: str = "id"
+        self.values: List[Union[int, str]] = values
+
         super(Ids, self).__init__(_name=_name, values=values)
 
-    def to_dict(self, with_name=True):
-        b = {"values": self.values}
-        if with_name and self._named:
-            b["_name"] = self.name
-        return {self.KEY: b}
-
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return self.KEY, "values=%s" % self.values
 
 
@@ -61,9 +61,9 @@ class Term(KeyFieldQueryClause):
 class Terms(AbstractSingleFieldQueryClause):
     KEY = "terms"
 
-    def __init__(self, **body):
-        _name = body.pop("_name", None)
-        boost = body.pop("boost", None)
+    def __init__(self, **body: Any) -> None:
+        _name: Optional[str] = body.pop("_name", None)
+        boost: Optional[float] = body.pop("boost", None)
         if len(body) != 1:
             raise ValueError("Wrong declaration: %s" % body)
         field, terms = self.expand__to_dot(body).popitem()

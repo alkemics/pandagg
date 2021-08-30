@@ -1,43 +1,59 @@
 from collections import OrderedDict, defaultdict
+from typing import Optional, List, Set, Dict
 
+from lighttree import Tree
+from lighttree.node import NodeId
+
+from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.query.joining import Nested
-from pandagg.tree._tree import Tree
-
-from pandagg.node.response.bucket import Bucket, BucketNode
+from pandagg.node.response.bucket import Bucket, RootBucket
+from pandagg.tree._tree import TreeReprMixin
+from pandagg.tree.aggs import Aggs
 from pandagg.tree.query import Query
+from pandagg.types import AggName, QueryClauseDict, AggregationsResponseDict
 
 
-class AggsResponseTree(Tree):
+class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
     """
     Tree shaped representation of an ElasticSearch aggregations response.
+
+    Note: this class is only used for interactive features, and is currently still experimental. Notably it lacks tests.
     """
 
-    def __init__(self, aggs, raw_response=None):
-        """
-        :param aggs: instance of pandagg.agg.Aggs from which this Elasticsearch response originates.
-        """
+    def __init__(
+        self, aggs: Aggs, raw_response: Optional[AggregationsResponseDict] = None
+    ) -> None:
         super(AggsResponseTree, self).__init__()
-        self.__aggs = aggs
-        root_node = BucketNode()
+        self.__aggs: Aggs = aggs
+
+        self.root: str
+        root_node = RootBucket()
         self.insert_node(root_node)
         if raw_response:
             self.parse(raw_response)
 
-    def parse(self, raw_response):
+    def parse(self, raw_response: AggregationsResponseDict) -> "AggsResponseTree":
         """
         Build response tree from ElasticSearch aggregation response
-
-        :param raw_response: ElasticSearch aggregation response
-        :return: self
         """
         _, agg_root_node = self.__aggs.get(self.__aggs.root)
         for child_name, child in self.__aggs.children(agg_root_node.identifier):
             self._parse_node_with_children(
-                child_name, agg_node=child, raw_response=raw_response, pid=self.root
+                # ignore warning about child_name not necessarily being a string, in our case it is
+                agg_name=child_name,  # type: ignore
+                agg_node=child,
+                raw_response=raw_response,
+                pid=self.root,
             )
         return self
 
-    def bucket_properties(self, bucket, properties=None, end_level=None, depth=None):
+    def bucket_properties(
+        self,
+        bucket: Bucket,
+        properties: Optional[OrderedDict] = None,
+        end_level: Optional[AggName] = None,
+        depth: Optional[int] = None,
+    ) -> OrderedDict:
         """
         Recursive method returning a given bucket's properties in the form of an ordered dictionnary.
         Travel from current bucket through all ancestors until reaching root.
@@ -59,7 +75,7 @@ class AggsResponseTree(Tree):
         _, parent = self.parent(bucket.identifier)
         return self.bucket_properties(parent, properties, end_level, depth)
 
-    def get_bucket_filter(self, nid):
+    def get_bucket_filter(self, nid: NodeId) -> Optional[QueryClauseDict]:
         """
         Build query filtering documents belonging to that bucket.
         Suppose the following configuration::
@@ -80,7 +96,9 @@ class AggsResponseTree(Tree):
             for level, key in bucket_properties.items()
         ]
 
-        filters_per_nested_level = defaultdict(list)
+        filters_per_nested_level: Dict[
+            Optional[str], List[QueryClauseDict]
+        ] = defaultdict(list)
 
         for agg_node, key in agg_node_key_tuples:
             level_agg_filter = agg_node.get_filter(key)
@@ -93,41 +111,48 @@ class AggsResponseTree(Tree):
 
         nested_with_conditions = [n for n in filters_per_nested_level.keys() if n]
 
+        if tree_mapping is None:
+            return self._build_filter({}, filters_per_nested_level).to_dict()
+
         all_nesteds = [
             n.identifier
-            for n in tree_mapping.list(
+            for _, n in tree_mapping.list(
                 filter_=lambda x: (x.KEY == "nested")
                 and any((i in x.identifier or "" for i in nested_with_conditions))
             )
         ]
 
-        nid_to_children = defaultdict(set)
+        nid_to_children: Dict[NodeId, Set[str]] = defaultdict(set)
         for nested in all_nesteds:
             nested_with_parents = [
-                n
-                for n in tree_mapping.ancestors(nid=nested, id_only=False)
-                if n.KEY == "nested"
+                n for _, n in tree_mapping.ancestors(nid=nested) if n.KEY == "nested"
             ]
             nearest_nested_parent = next(iter(nested_with_parents[1:]), None)
-            nid_to_children[nearest_nested_parent].add(nested)
+            if nearest_nested_parent is None:
+                continue
+            nid_to_children[nearest_nested_parent.identifier].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level).to_dict()
 
-    def show(self, **kwargs):
-        kwargs["key"] = kwargs.get("key", lambda x: x.line_repr(depth=0))
-        return super(AggsResponseTree, self).show(**kwargs)
-
-    def _clone_init(self, deep=False):
+    def _clone_init(self, deep: bool = False) -> "AggsResponseTree":
         return AggsResponseTree(aggs=self.__aggs.clone(deep=deep))
 
-    def _parse_node_with_children(self, agg_name, agg_node, raw_response, pid):
+    def _parse_node_with_children(
+        self,
+        agg_name: AggName,
+        agg_node: AggClause,
+        raw_response: AggregationsResponseDict,
+        pid: NodeId,
+    ) -> None:
         """
         Recursive method to parse ES raw response.
 
-        :param agg_node: current aggregation, pandagg.nodes.AggNode instance
-        :param raw_response: ES response at current level, dict
+        :param agg_node: current aggregation
+        :param raw_response: ES response at current level
         :param pid: parent node identifier
         """
         agg_raw_response = raw_response.get(agg_name)
+        if not agg_raw_response:
+            return None
         for key, raw_value in agg_node.extract_buckets(agg_raw_response):
             bucket = Bucket(
                 level=agg_name, key=key, value=agg_node.extract_bucket_value(raw_value)
@@ -135,7 +160,8 @@ class AggsResponseTree(Tree):
             self.insert_node(bucket, parent_id=pid)
             for child_name, child in self.__aggs.children(agg_node.identifier):
                 self._parse_node_with_children(
-                    child_name,
+                    # ignore typing error about child_name being possibly not a str, it is
+                    agg_name=child_name,  # type: ignore
                     agg_node=child,
                     raw_response=raw_value,
                     pid=bucket.identifier,
@@ -143,12 +169,16 @@ class AggsResponseTree(Tree):
 
     @classmethod
     def _build_filter(
-        cls, nid_to_children, filters_per_nested_level, current_nested_path=None
-    ):
+        cls,
+        nid_to_children: Dict[NodeId, Set[str]],
+        filters_per_nested_level: Dict[Optional[str], List[QueryClauseDict]],
+        current_nested_path: Optional[str] = None,
+    ) -> Query:
         """
         Recursive function to build bucket filters from highest to deepest nested conditions."""
         current_conditions = filters_per_nested_level.get(current_nested_path, [])
-        nested_children = nid_to_children[current_nested_path]
+        # TODO - test this method
+        nested_children = nid_to_children[current_nested_path]  # type: ignore
         for nested_child in nested_children:
             nested_child_conditions = cls._build_filter(
                 nid_to_children=nid_to_children,
@@ -157,7 +187,7 @@ class AggsResponseTree(Tree):
             )
             if nested_child_conditions:
                 current_conditions.append(
-                    Nested(path=nested_child, query=nested_child_conditions)
+                    Nested(path=nested_child, query=nested_child_conditions).to_dict()
                 )
         q = Query()
         for clause in current_conditions:

@@ -1,9 +1,9 @@
 import json
 from typing import Optional, Union, Any, Dict
 
-from lighttree import Key
+from lighttree import Key, Tree
 from lighttree.node import NodeId
-from pandagg.tree._tree import Tree
+from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
 from pandagg.node.aggs.abstract import (
@@ -16,13 +16,14 @@ from pandagg.node.aggs.abstract import (
 )
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
-from pandagg.types import AggName
+from pandagg.types import AggName, NamedAggsDict
+
+# {"my_agg": {"terms": "some_field"}} or {"my_agg": Terms(field="some_field")}
+AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]
+AggsOrDict = Union[AggsDictOrNode, "Aggs"]
 
 
-AggsDict = Dict[AggName, Union[AggClauseDict, AggClause]]
-
-
-class Aggs(Tree):
+class Aggs(TreeReprMixin, Tree[AggClause]):
     """
     Combination of aggregation clauses. This class provides handful methods to build an aggregation (see
     :func:`~pandagg.tree.aggs.Aggs.aggs` and :func:`~pandagg.tree.aggs.Aggs.groupby`), and is used as well
@@ -52,20 +53,23 @@ class Aggs(Tree):
 
     def __init__(
         self,
-        aggs=None,
+        aggs: Optional[AggsOrDict] = None,
         mappings: Optional[Union[MappingsDict, "Mappings"]] = None,
         nested_autocorrect: bool = False,
-        _groupby_ptr: Optional[str] = None,
-    ):
+        _groupby_ptr: Optional[NodeId] = None,
+    ) -> None:
+
         self.mappings: Optional[Mappings] = _mappings(mappings)
         self.nested_autocorrect: bool = nested_autocorrect
+
         super(Aggs, self).__init__()
 
         # an Aggs always has a root node, which is just the initial empty dict
+        self.root: NodeId
         self.insert_node(Root())
-        self.root: str
+
         # identifier of clause used for groupby
-        self._groupby_ptr = self.root if _groupby_ptr is None else _groupby_ptr
+        self._groupby_ptr: NodeId = self.root if _groupby_ptr is None else _groupby_ptr
 
         if aggs is not None:
             self._insert_aggs(aggs, at_root=True)
@@ -183,7 +187,7 @@ class Aggs(Tree):
 
     def aggs(
         self,
-        aggs: Union[AggsDict, "Aggs"],
+        aggs: Union[AggsDictOrNode, "Aggs"],
         insert_below: Optional[AggName] = None,
         at_root: bool = False,
     ) -> "Aggs":
@@ -215,7 +219,7 @@ class Aggs(Tree):
 
     def to_dict(
         self, from_: Optional[NodeId] = None, depth: Optional[int] = None
-    ) -> AggsDict:
+    ) -> NamedAggsDict:
         """
         Serialize Aggs as dict.
 
@@ -226,7 +230,7 @@ class Aggs(Tree):
         """
         from_ = self.root if from_ is None else from_
         _, node = self.get(from_)
-        children_queries: AggsDict = {}
+        children_queries: NamedAggsDict = {}
         if depth is None or depth > 0:
             if depth is not None:
                 depth -= 1
@@ -297,13 +301,13 @@ class Aggs(Tree):
         if len(root_children) == 1:
             child_id = root_children[0][1].identifier
             return "<Aggregations>\n%s" % str(
-                super(Tree, self).show(
+                super(Aggs, self).show(
                     child_id, *args, line_max_length=line_max_length, **kwargs
                 )  # type: ignore
             )
 
         return "<Aggregations>\n%s" % str(
-            super(Tree, self).show(
+            super(Aggs, self).show(
                 *args, line_max_length=line_max_length, **kwargs
             )  # type: ignore
         )
@@ -414,7 +418,7 @@ class Aggs(Tree):
 
     def _insert_aggs(
         self,
-        aggs: Union["Aggs", AggsDict],
+        aggs: Union["Aggs", AggsDictOrNode],
         insert_below_id: Optional[NodeId] = None,
         at_root: bool = False,
     ) -> None:

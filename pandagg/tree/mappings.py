@@ -1,17 +1,23 @@
-from typing import Optional, Union, Any, List
+from typing import Optional, Union, Any, List, Dict
 
 from lighttree.node import NodeId
+from lighttree import Tree
 from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.mappings import Object, Nested
-from pandagg.node.mappings.abstract import Field, RegularField, ComplexField
-
+from pandagg.node.mappings.abstract import Field, RegularField, ComplexField, Root
 
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
-from pandagg.tree._tree import Tree
-from pandagg.types import DocSource, MappingsDict
+from pandagg.tree._tree import TreeReprMixin
+from pandagg.types import (
+    DocSource,
+    MappingsDict,
+    FieldName,
+    FieldClauseDict,
+    FieldPropertiesDict,
+)
 
 
 def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mappings"]:
@@ -24,17 +30,17 @@ def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mapping
     raise TypeError("Unsupported %s type for Mappings" % type(m))
 
 
-class Mappings(Tree):
+class Mappings(TreeReprMixin, Tree[Field]):
     def __init__(
         self,
-        properties: Optional[Union[MappingsDict, "Mappings"]] = None,
+        properties: Optional[FieldPropertiesDict] = None,
         dynamic: bool = False,
         **body: Any
     ) -> None:
         super(Mappings, self).__init__()
         # a Mappings always has a root after __init__
         self.root: str
-        root_node = Field(dynamic=dynamic, **body)
+        root_node = Root(dynamic=dynamic, **body)
         self.insert_node(node=root_node)
         if properties:
             self._insert(
@@ -52,8 +58,6 @@ class Mappings(Tree):
         :param depth: integer, if provided, limit the serialization to a given depth
         :return: dict
         """
-        if self.root is None:
-            return {}
         from_ = self.root if from_ is None else from_
         key, node = self.get(from_)
         children_queries = {}
@@ -66,7 +70,7 @@ class Mappings(Tree):
                 )
         serialized_node = node.body
         if children_queries:
-            if node.KEY is None or node.KEY in ("object", "nested"):
+            if isinstance(node, Root) or node.KEY in ("object", "nested"):
                 serialized_node["properties"] = children_queries
             else:
                 serialized_node["fields"] = children_queries
@@ -145,7 +149,7 @@ class Mappings(Tree):
         _, node = self.get(nid)
         return node.KEY
 
-    def nested_at_field(self, field_path):
+    def nested_at_field(self, field_path: str) -> Optional[str]:
         """
         Return nested path applied on a given path. Return `None` is none applies.
 
@@ -195,7 +199,12 @@ class Mappings(Tree):
             if self.get(nid)[1].KEY == "nested"
         ]
 
-    def _insert(self, pid, properties, is_subfield):
+    def _insert(
+        self,
+        pid: NodeId,
+        properties: Dict[FieldName, FieldClauseDict],
+        is_subfield: bool,
+    ) -> None:
         """
         Recursive method to insert properties in current mappings.
 
@@ -206,17 +215,20 @@ class Mappings(Tree):
         """
         if not isinstance(properties, dict):
             raise ValueError("Wrong declaration, got %s" % properties)
-        for field_name, field in properties.items():
-            if isinstance(field, dict):
-                field = field.copy()
-                field = Field.get_dsl_class(field.pop("type", "object"))(
-                    _subfield=is_subfield, **field
+
+        field: Field
+        for field_name, field_ in properties.items():
+            if isinstance(field_, dict):
+                field_ = field_.copy()
+                field = Field.get_dsl_class(field_.pop("type", "object"))(
+                    _subfield=is_subfield, **field_
                 )
-            elif isinstance(field, Field):
+            elif isinstance(field_, Field):
+                field = field_
                 field._subfield = is_subfield
                 pass
             else:
-                raise ValueError("Unsupported type %s" % type(field))
+                raise ValueError("Unsupported type %s" % type(field_))
             self.insert_node(field, key=field_name, parent_id=pid)
             if isinstance(field, ComplexField) and field.properties:
                 self._insert(field.identifier, field.properties, False)

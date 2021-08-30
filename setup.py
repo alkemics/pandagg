@@ -10,7 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
 
 install_requires = [
-    "lighttree==1.3.1",
+    "lighttree==1.3.3",
     "elasticsearch>=7.0.0,<8.0.0",
     "typing_extensions",
 ]

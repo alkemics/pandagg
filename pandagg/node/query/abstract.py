@@ -1,19 +1,26 @@
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, Union, Dict, Any, Tuple, List
+from typing import Optional, Union, Dict, Any, Tuple, List, Type
 
-QueryType = str
-QueryClauseDict = Dict[str, Any]
+from pandagg.types import QueryType, QueryClauseDict
 
 
 class QueryClause(Node):
+
+    _classes: Dict[QueryType, Type["QueryClause"]]
+
     KEY: str
     _type_name = "query"
 
     def __init__(
-        self, _name=None, accept_children=True, keyed=True, _children=None, **body
-    ):
+        self,
+        _name: Optional[str] = None,
+        accept_children: bool = True,
+        keyed: bool = True,
+        _children: Any = None,
+        **body: Any
+    ) -> None:
         self.body = body.copy()
         self._named = _name is not None
         super(QueryClause, self).__init__(
@@ -21,7 +28,7 @@ class QueryClause(Node):
         )
         self._children = _children or {}
 
-    def line_repr(self, depth, **kwargs):
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         repr_args = []
         if self._named:
             repr_args.append("_name=%s" % str(self.identifier))
@@ -30,7 +37,7 @@ class QueryClause(Node):
         return self.KEY, ", ".join(repr_args)
 
     @staticmethod
-    def _params_repr(params):
+    def _params_repr(params: Dict) -> str:
         params = params or {}
         return ", ".join(
             "%s=%s" % (str(k), str(json.dumps(params[k], sort_keys=True)))
@@ -38,20 +45,20 @@ class QueryClause(Node):
         )
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.identifier
 
     @property
-    def _identifier_prefix(self):
+    def _identifier_prefix(self) -> str:
         return "%s_" % self.KEY
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         b = self.body.copy()
         if self._named:
             b["_name"] = self.name
         return {self.KEY: b}
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<{class_}, id={id}, type={type}, body={body}>".format(
             class_=str(self.__class__.__name__),
             type=str(self.KEY),
@@ -59,7 +66,7 @@ class QueryClause(Node):
             body=self.body,
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             return other.to_dict() == self.to_dict()
         # make sure we still equal to a dict with the same data
@@ -235,14 +242,14 @@ class MultiFieldsQueryClause(LeafQueryClause):
         self.fields = fields
         super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
 
-    def line_repr(self, depth: int, **kwargs) -> Tuple[str, str]:
+    def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return self.KEY, "fields=%s" % (list(map(str, self.fields)))
 
 
 class ParentParameterClause(QueryClause):
     KEY: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(ParentParameterClause, self).__init__(accept_children=True, keyed=False)
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
