@@ -18,7 +18,6 @@ Submodules
    :maxdepth: 8
 
    pandagg.aggs
-   pandagg.connections
    pandagg.discovery
    pandagg.exceptions
    pandagg.mappings
