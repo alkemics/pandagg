@@ -59,13 +59,25 @@ class NormalizedBucketDict(TypedDict, total=False):
     children: List[Any]
 
 
+@dataclasses.dataclass
 class Hit:
-    def __init__(self, data: HitDict) -> None:
-        self.data: HitDict = data
-        self._source: Optional[DocSource] = data.get("_source")
-        self._score: Optional[float] = data.get("_score")
-        self._id: Optional[str] = data.get("_id")
-        self._index: Optional[str] = data.get("_index")
+    data: HitDict
+
+    @property
+    def _source(self) -> Optional[DocSource]:
+        return self.data.get("_source")
+
+    @property
+    def _score(self) -> Optional[float]:
+        return self.data.get("_score")
+
+    @property
+    def _id(self) -> Optional[str]:
+        return self.data.get("_id")
+
+    @property
+    def _index(self) -> Optional[str]:
+        return self.data.get("_index")
 
     def __repr__(self) -> str:
         if self._score is None:
@@ -73,14 +85,21 @@ class Hit:
         return "<Hit %s> score=%.2f" % (self._id, self._score)
 
 
+@dataclasses.dataclass
 class Hits:
-    def __init__(self, hits: Optional[HitsDict]) -> None:
-        self.data: Optional[HitsDict] = hits
-        self.total: Optional[TotalDict] = hits.get("total") if hits else None
-        self.hits: List[Hit] = (
-            [Hit(hit) for hit in hits.get("hits", [])] if hits else []
-        )
-        self.max_score: Optional[float] = hits.get("max_score") if hits else None
+    data: Optional[HitsDict]
+
+    @property
+    def total(self) -> Optional[TotalDict]:
+        return self.data.get("total") if self.data else None
+
+    @property
+    def hits(self) -> List[Hit]:
+        return [Hit(hit) for hit in self.data.get("hits", [])] if self.data else []
+
+    @property
+    def max_score(self) -> Optional[float]:
+        return self.data.get("max_score") if self.data else None
 
     def __len__(self) -> int:
         return len(self.hits)
