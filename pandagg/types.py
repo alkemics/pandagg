@@ -29,7 +29,10 @@ AggClauseDict = Dict[AggType, ClauseBody]
 NamedAggsDict = Dict[AggName, AggClauseDict]
 
 
-BucketKey = Any
+BucketKeyAtom = Union[None, str, float]
+CompositeBucketKey = Dict[AggName, BucketKeyAtom]
+
+BucketKey = Union[BucketKeyAtom, CompositeBucketKey]
 BucketDict = Dict[str, Any]
 
 RangeDict = TypedDict("RangeDict", {"from": float, "to": float}, total=False)
@@ -37,7 +40,7 @@ DistanceType = Literal["arc", "plane"]
 ValidationMethod = Literal["STRICT", "COERCE", "IGNORE_MALFORMED"]
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html#_value_sources
-CompositeSource = Dict[str, Any]
+CompositeSource = AggClauseDict
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html#_pagination
 AfterKey = Dict[str, Any]
 
@@ -108,14 +111,17 @@ SearchDict = TypedDict(
     total=False,
 )
 
+BucketsDict = Dict[BucketKeyAtom, BucketDict]
+Buckets = Union[BucketsDict, List[BucketDict]]
 
-class BucketsDict(TypedDict, total=False):
-    buckets: Union[Dict[BucketKey, BucketDict], List[BucketDict]]
+
+class BucketsWrapperDict(TypedDict, total=False):
+    buckets: Buckets
     doc_count_error_upper_bound: int
     sum_other_doc_count: int
 
 
-AggClauseResponseDict = Union[BucketsDict, BucketDict]
+AggClauseResponseDict = Union[BucketsWrapperDict, BucketDict]
 AggregationsResponseDict = Dict[AggName, AggClauseResponseDict]
 
 

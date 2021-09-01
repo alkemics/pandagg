@@ -1,21 +1,17 @@
-from typing import Optional, Union, Any, Tuple
+from typing import Optional, Any, Tuple
 
-from pandagg.types import AggName
+from pandagg.types import AggName, BucketKey
 from pandagg.node._node import Node
-
-
-Value = Union[float, str]
-Key = Union[float, str]
 
 
 class Bucket(Node):
     def __init__(
-        self, value: Optional[Value], level: Optional[str], key: Optional[Key] = None
+        self, value: Any, level: Optional[AggName], key: BucketKey = None
     ) -> None:
         super(Bucket, self).__init__(keyed=False)
         self.level: Optional[AggName] = level
-        self.key: Optional[Key] = key
-        self.value: Optional[Value] = value
+        self.key: BucketKey = key
+        self.value: Any = value
 
     @property
     def attr_name(self) -> str:
@@ -40,7 +36,7 @@ class Bucket(Node):
         return s, str(self.value) if self.value else ""
 
     @property
-    def _coerced_key(self) -> Optional[Key]:
+    def _coerced_key(self) -> BucketKey:
         key = self.key
         try:
             # order matters, will

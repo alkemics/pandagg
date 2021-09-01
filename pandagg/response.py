@@ -246,10 +246,12 @@ class Aggregations:
     ]:
 
         if not until:
+            index_names_: List[AggName] = []
             if row_as_tuple:
-                return [], [(tuple(), response)]
-            r: GroupingKeysDict = {}
-            return [], [(r, response)]
+                r_: List[Tuple[GroupingKeysTuple, BucketDict]] = [(tuple(), response)]
+                return index_names_, r_
+            r__: GroupingKeysDict = {}
+            return index_names_, [(r__, response)]
 
         # initialization: cache ancestors once for faster computation
         until_id: NodeId = self._aggs.id_from_key(until)
@@ -263,10 +265,12 @@ class Aggregations:
         ]
 
         if not ancestors:
+            index_names__: List[AggName] = []
             if row_as_tuple:
-                return [], [(tuple(), response)]
-            r_: GroupingKeysDict = {}
-            return [], [(r_, response)]
+                r___: List[Tuple[GroupingKeysTuple, BucketDict]] = [(tuple(), response)]
+                return index_names__, r___
+            r____: GroupingKeysDict = {}
+            return index_names__, [(r____, response)]
 
         # from root aggregation to deepest aggregation clause
         index_names: List[AggName] = [
@@ -318,7 +322,9 @@ class Aggregations:
         key: AggName
         raw_bucket: BucketDict
 
-        for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
+        for key, raw_bucket in agg_node.extract_buckets(  # type: ignore
+            response[agg_name]
+        ):
             sub_row: GroupingKeysDict = copy.copy(row)
             if not isinstance(agg_node, UniqueBucketAgg) or with_single_bucket_groups:
                 sub_row[agg_name] = key
