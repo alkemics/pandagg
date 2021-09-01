@@ -144,19 +144,35 @@ class Hits:
         return "<Hits> total: %s, contains %d hits" % (total_repr, len(self.hits))
 
 
+@dataclasses.dataclass
 class SearchResponse:
-    def __init__(self, data: SearchResponseDict, search: Search) -> None:
-        self.data: SearchResponseDict = data
-        self.__search: Search = search
 
-        self.took: Optional[int] = data.get("took")
-        self.timed_out: Optional[int] = data.get("timed_out")
-        self._shards: Optional[ShardsDict] = data.get("_shards")
-        self.hits: Hits = Hits(data.get("hits"))
-        self.aggregations: Aggregations = Aggregations(
-            data.get("aggregations", {}), _search=self.__search
-        )
-        self.profile: Optional[ProfileDict] = data.get("profile")
+    data: SearchResponseDict
+    _search: Search
+
+    @property
+    def took(self) -> Optional[int]:
+        return self.data.get("took")
+
+    @property
+    def timed_out(self) -> Optional[int]:
+        return self.data.get("timed_out")
+
+    @property
+    def _shards(self) -> Optional[ShardsDict]:
+        return self.data.get("_shards")
+
+    @property
+    def hits(self) -> Hits:
+        return Hits(self.data.get("hits"))
+
+    @property
+    def aggregations(self) -> Aggregations:
+        return Aggregations(self.data.get("aggregations", {}), _search=self._search)
+
+    @property
+    def profile(self) -> Optional[ProfileDict]:
+        return self.data.get("profile")
 
     def __iter__(self) -> Iterator[Hit]:
         return iter(self.hits)
