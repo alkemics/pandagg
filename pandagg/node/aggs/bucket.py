@@ -10,7 +10,14 @@
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta, BucketKey, QueryClauseDict, RangeDict, BucketDict
+from pandagg.types import (
+    Meta,
+    BucketKey,
+    QueryClauseDict,
+    RangeDict,
+    BucketDict,
+    BucketKeyAtom,
+)
 from typing import Any, Optional, Dict, Union, List
 
 
@@ -159,16 +166,17 @@ class Filters(MultipleBucketAgg):
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """Provide filter to get documents belonging to document of given key."""
-        if key in self.filters.keys():
-            return self.filters[key]
+        key_: str = key  # type: ignore
+        if key_ in self.filters.keys():
+            return self.filters[key_]
         if self.other_bucket:
-            if key == self.DEFAULT_OTHER_KEY or key == self.other_bucket_key:
+            if key_ == self.DEFAULT_OTHER_KEY or key_ == self.other_bucket_key:
                 return {
                     "bool": {
                         "must_not": {"bool": {"should": list(self.filters.values())}}
                     }
                 }
-        raise ValueError("Unkown <%s> key" % key)
+        raise ValueError("Unkown <%s> key" % key_)
 
 
 class Histogram(MultipleBucketAgg):
@@ -187,14 +195,15 @@ class Histogram(MultipleBucketAgg):
         )
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
+        key_: BucketKeyAtom = key  # type: ignore
         try:
-            key = float(key)
+            key_ = float(key_)  # type: ignore
         except (TypeError, ValueError):
             raise ValueError(
                 "Filter key of an histogram aggregation must be numeric, git <%s> of type <%s>"
-                % (key, type(key))
+                % (key_, type(key_))
             )
-        return {"range": {self.field: {"gte": key, "lt": key + self.interval}}}
+        return {"range": {self.field: {"gte": key_, "lt": key_ + self.interval}}}
 
 
 class DateHistogram(MultipleBucketAgg):
@@ -300,8 +309,9 @@ class Range(MultipleBucketAgg):
             key += "*"
         return key
 
-    def get_filter(self, key: str) -> Dict[str, Any]:
-        from_, to_ = key.split(self.KEY_SEP)
+    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
+        key_: str = key  # type: ignore
+        from_, to_ = key_.split(self.KEY_SEP)
         inner = {}
         if from_ != "*":
             inner["gte"] = from_

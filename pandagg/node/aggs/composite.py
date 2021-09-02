@@ -1,4 +1,4 @@
-from .abstract import BucketAggClause
+from .abstract import BucketAggClause, AggClause
 from typing import Optional, Any, Dict, List, Iterator, Tuple
 from pandagg.types import (
     Meta,
@@ -9,6 +9,9 @@ from pandagg.types import (
     AggClauseResponseDict,
     AggName,
     QueryClauseDict,
+    CompositeBucketKey,
+    AggType,
+    ClauseBody,
 )
 
 
@@ -19,14 +22,14 @@ class Composite(BucketAggClause):
 
     def __init__(
         self,
-        sources: List[CompositeSource],
+        sources: List[Dict[AggName, CompositeSource]],
         size: Optional[int] = None,
         after_key: Optional[AfterKey] = None,
         meta: Meta = None,
         **body: Any
     ):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html"""  # noqa: E501
-        self._sources: List[CompositeSource] = sources
+        self._sources: List[Dict[AggName, CompositeSource]] = sources
         self._size: Optional[int] = size
         self._after_key: Optional[Dict[str, Any]] = after_key
         aggs = body.pop("aggs", None) or body.pop("aggregations", None)
@@ -40,22 +43,35 @@ class Composite(BucketAggClause):
 
     def extract_buckets(
         self, response_value: AggClauseResponseDict
-    ) -> Iterator[Tuple[BucketKey, BucketDict]]:
-        for bucket in response_value["buckets"]:
-            yield bucket["key"], bucket
+    ) -> Iterator[Tuple[CompositeBucketKey, BucketDict]]:
+        buckets: List[BucketDict] = response_value["buckets"]  # type: ignore
+        for bucket in buckets:
+            bucket_composite_key: CompositeBucketKey = bucket["key"]  # type: ignore
+            yield bucket_composite_key, bucket
 
     def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
         """In composite aggregation, key is a map, source name -> value"""
         if not key:
             return None
-        conditions = []
+        key_: CompositeBucketKey = key  # type: ignore
+        conditions: List[QueryClauseDict] = []
+        source: Dict[AggName, CompositeSource]
+
         for source in self._sources:
-            name, agg = source.popitem()
-            if name not in key:
+            name: AggName
+            source_clause: CompositeSource
+            name, source_clause = source.popitem()
+            if name not in key_:
                 continue
+            agg_type: AggType
+            agg_body: ClauseBody
             agg_type, agg_body = source.popitem()
-            agg_instance = self.get_dsl_class(agg_type)(**agg_body)
-            conditions.append(agg_instance.get_filter(key=key[name]))
+            agg_instance: AggClause = self.get_dsl_class(agg_type)(**agg_body)
+            condition: Optional[QueryClauseDict] = agg_instance.get_filter(
+                key=key_[name]
+            )
+            if condition is not None:
+                conditions.append(condition)
         if not conditions:
             return None
         return {"bool": {"filter": conditions}}

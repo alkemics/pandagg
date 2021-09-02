@@ -786,7 +786,7 @@ class Search(DSLMixin, Request):
         """
         es = self._get_connection()
         raw_data = es.search(index=self._index, body=self.to_dict())
-        return SearchResponse(data=raw_data, search=self)
+        return SearchResponse(data=raw_data, _search=self)
 
     def scan(self) -> Iterator[Hit]:
         """

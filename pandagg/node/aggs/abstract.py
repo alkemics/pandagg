@@ -15,6 +15,8 @@ from pandagg.types import (
     GapPolicy,
     AggName,
     AggClauseResponseDict,
+    BucketsWrapperDict,
+    BucketKeyAtom,
     BucketsDict,
 )
 
@@ -118,7 +120,9 @@ class AggClause(Node):
 
     @classmethod
     def extract_bucket_value(
-        cls, response: Union[BucketsDict, BucketDict], value_as_dict: bool = False
+        cls,
+        response: Union[BucketsWrapperDict, BucketDict],
+        value_as_dict: bool = False,
     ) -> Any:
         attrs = cls.VALUE_ATTRS
         if value_as_dict:
@@ -209,7 +213,9 @@ class Root(AggClause):
 
     @classmethod
     def extract_bucket_value(
-        cls, response: Union[BucketsDict, BucketDict], value_as_dict: bool = False
+        cls,
+        response: Union[BucketsWrapperDict, BucketDict],
+        value_as_dict: bool = False,
     ) -> Any:
         return None
 
@@ -303,16 +309,15 @@ class MultipleBucketAgg(BucketAggClause):
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
-        # response_value: BucketsDict
         buckets = response_value["buckets"]
+        key: BucketKeyAtom
         if self.keyed_:
-            # buckets: Dict[BucketKey, BucketDict]
-            # TODO: find how to properly type this
-            for key in buckets.keys():  # type: ignore
-                yield key, buckets[key]
+            buckets_: BucketsDict = buckets  # type: ignore
+            for key in buckets_.keys():
+                yield key, buckets_[key]
         else:
-            # buckets: List[BucketDict]
-            for bucket in buckets:
+            buckets__: List[BucketDict] = buckets  # type: ignore
+            for bucket in buckets__:
                 yield self._extract_bucket_key(bucket), bucket
 
     def _extract_bucket_key(self, bucket: BucketDict) -> BucketKey:

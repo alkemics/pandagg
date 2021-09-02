@@ -1,3 +1,4 @@
+from typing_extensions import TypedDict
 from typing import Optional, Union, Any, List, Dict
 
 from lighttree.node import NodeId
@@ -11,16 +12,20 @@ from pandagg.exceptions import (
     InvalidOperationMappingFieldError,
 )
 from pandagg.tree._tree import TreeReprMixin
-from pandagg.types import (
-    DocSource,
-    MappingsDict,
-    FieldName,
-    FieldClauseDict,
-    FieldPropertiesDict,
-)
+from pandagg.types import DocSource, MappingsDict, FieldName, FieldClauseDict
 
 
-def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mappings"]:
+FieldPropertiesDictOrNode = Dict[FieldName, Union[FieldClauseDict, Field]]
+
+
+class MappingsDictOrNode(TypedDict, total=False):
+    properties: FieldPropertiesDictOrNode
+    dynamic: bool
+
+
+def _mappings(
+    m: Optional[Union[MappingsDict, MappingsDictOrNode, "Mappings"]]
+) -> Optional["Mappings"]:
     if m is None:
         return None
     if isinstance(m, dict):
@@ -33,7 +38,7 @@ def _mappings(m: Optional[Union[MappingsDict, "Mappings"]]) -> Optional["Mapping
 class Mappings(TreeReprMixin, Tree[Field]):
     def __init__(
         self,
-        properties: Optional[FieldPropertiesDict] = None,
+        properties: Optional[FieldPropertiesDictOrNode] = None,
         dynamic: bool = False,
         **body: Any
     ) -> None:
@@ -200,10 +205,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
         ]
 
     def _insert(
-        self,
-        pid: NodeId,
-        properties: Dict[FieldName, FieldClauseDict],
-        is_subfield: bool,
+        self, pid: NodeId, properties: FieldPropertiesDictOrNode, is_subfield: bool
     ) -> None:
         """
         Recursive method to insert properties in current mappings.

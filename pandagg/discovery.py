@@ -19,9 +19,9 @@ class Index:
 
     @property
     def imappings(self) -> IMappings:
-        return IMappings(
-            Mappings(**self.mappings), client=self.client, index=[self.name]
-        )
+        # TODO- create mypy issue
+        mappings: Mappings = Mappings(**self.mappings)  # type: ignore
+        return IMappings(mappings=mappings, client=self.client, index=[self.name])
 
     def search(
         self, nested_autocorrect: bool = True, repr_auto_execute: bool = True
