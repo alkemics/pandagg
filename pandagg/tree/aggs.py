@@ -3,6 +3,7 @@ from typing import Optional, Union, Any, Dict
 
 from lighttree import Key, Tree
 from lighttree.node import NodeId
+from pandagg.node.aggs import Composite
 from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
@@ -16,7 +17,7 @@ from pandagg.node.aggs.abstract import (
 )
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
-from pandagg.types import AggName, NamedAggsDict
+from pandagg.types import AggName, NamedAggsDict, AfterKey
 
 # {"my_agg": {"terms": "some_field"}} or {"my_agg": Terms(field="some_field")}
 AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]
@@ -563,6 +564,52 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
             if k == key:
                 return n.identifier
         raise KeyError('No node found with key "%s"' % key)
+
+    def get_composition_supporting_agg(self) -> Optional[AggClause]:
+        """
+        Return id of composite-compatible aggregation clause if it exists, else None.
+        """
+        root_children = self.children(self.root)
+        if len(root_children) != 1:
+            return None
+        _, first_agg = root_children[0]
+        if isinstance(first_agg, Composite):
+            return first_agg
+        if first_agg.is_convertible_to_composite_source():
+            return first_agg
+        return None
+
+    def as_composite(self, size: int, after: Optional[AfterKey] = None) -> "Aggs":
+        """
+        Convert current aggregation into composite aggregation.
+        For now, simply support conversion of the root aggregation clause, and doesn't handle multi-source.
+        """
+        agg_to_convert: Optional[AggClause] = self.get_composition_supporting_agg()
+        if agg_to_convert is None:
+            raise ValueError("This aggregation cannot be converted in a composite agg.")
+
+        if isinstance(agg_to_convert, Composite):
+            c: Aggs = self.clone(with_nodes=True, deep=True)
+            new_c: Composite
+            _, new_c = c.get(agg_to_convert.identifier)  # type: ignore
+
+            new_c.body.pop("after", None)
+            if after is not None:
+                new_c.body["after"] = after
+            new_c.body.pop("size", None)
+            if size is not None:
+                new_c.body["size"] = size
+            return c
+
+        a: Aggs = self.clone(with_nodes=False)
+        agg_name: AggName
+        agg_name, _ = a.get(agg_to_convert.identifier)  # type: ignore
+        _, below_aggs = self.subtree(nid=agg_to_convert.identifier)
+        comp_agg = Composite(size=size, sources=[agg_to_convert.to_dict()], after=after)
+        a = a.groupby(agg_name, comp_agg).aggs(below_aggs)
+        if self._groupby_ptr != agg_to_convert:
+            a._groupby_ptr = self._groupby_ptr
+        return a
 
     def __str__(self) -> str:
         return json.dumps(self.to_dict(), indent=2)

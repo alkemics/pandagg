@@ -136,6 +136,14 @@ class Terms(MultipleBucketAgg):
             return {"bool": {"must_not": {"exists": {"field": self.field}}}}
         return {"term": {self.field: {"value": key}}}
 
+    def is_convertible_to_composite_source(self) -> bool:
+        # TODO: elasticsearch documentation is unclear about which body clauses are accepted as a source, for now just
+        # sure that 'include'/'exclude' are not supported as composite source:
+        # https://github.com/elastic/elasticsearch/issues/50368
+        if "include" in self.body or "exclude" in self.body:
+            return False
+        return True
+
 
 class Filters(MultipleBucketAgg):
 
@@ -205,6 +213,9 @@ class Histogram(MultipleBucketAgg):
             )
         return {"range": {self.field: {"gte": key_, "lt": key_ + self.interval}}}
 
+    def is_convertible_to_composite_source(self) -> bool:
+        return True
+
 
 class DateHistogram(MultipleBucketAgg):
     KEY = "date_histogram"
@@ -255,6 +266,9 @@ class DateHistogram(MultipleBucketAgg):
         return {
             "range": {self.field: {"gte": key, "lt": "%s||+%s" % (key, self.interval)}}
         }
+
+    def is_convertible_to_composite_source(self) -> bool:
+        return True
 
 
 class Range(MultipleBucketAgg):

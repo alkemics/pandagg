@@ -24,26 +24,35 @@ class Composite(BucketAggClause):
         self,
         sources: List[Dict[AggName, CompositeSource]],
         size: Optional[int] = None,
-        after_key: Optional[AfterKey] = None,
+        after: Optional[AfterKey] = None,
         meta: Meta = None,
         **body: Any
     ):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html"""  # noqa: E501
-        self._sources: List[Dict[AggName, CompositeSource]] = sources
-        self._size: Optional[int] = size
-        self._after_key: Optional[Dict[str, Any]] = after_key
         aggs = body.pop("aggs", None) or body.pop("aggregations", None)
         _children: Dict[AggName, Any] = aggs or {}  # type: ignore
         self._children: Dict[AggName, Any] = _children
         if size is not None:
             body["size"] = size
-        if after_key is not None:
-            body["after_key"] = after_key
+        if after is not None:
+            body["after"] = after
         super(Composite, self).__init__(meta=meta, sources=sources, **body)
 
     @property
+    def after(self) -> Optional[AfterKey]:
+        return self.body["after"]
+
+    @property
+    def size(self) -> Optional[int]:
+        return self.body["size"]
+
+    @property
+    def sources(self) -> List[Dict[AggName, CompositeSource]]:
+        return self.body["sources"]
+
+    @property
     def source_names(self) -> List[AggName]:
-        return [n for source in self._sources for n in source.keys()]
+        return [n for source in self.sources for n in source.keys()]
 
     def extract_buckets(
         self, response_value: AggClauseResponseDict
@@ -61,7 +70,7 @@ class Composite(BucketAggClause):
         conditions: List[QueryClauseDict] = []
         source: Dict[AggName, CompositeSource]
 
-        for source in self._sources:
+        for source in self.sources:
             name: AggName
             source_clause: CompositeSource
             name, source_clause = source.popitem()
