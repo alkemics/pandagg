@@ -1,5 +1,5 @@
 import json
-from typing import Optional, Union, Any, Dict
+from typing import Optional, Union, Any, Dict, Tuple
 
 from lighttree import Key, Tree
 from lighttree.node import NodeId
@@ -565,28 +565,35 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
                 return n.identifier
         raise KeyError('No node found with key "%s"' % key)
 
-    def get_composition_supporting_agg(self) -> Optional[AggClause]:
+    def get_composition_supporting_agg(
+        self,
+    ) -> Tuple[Optional[AggName], Optional[AggClause]]:
         """
         Return id of composite-compatible aggregation clause if it exists, else None.
         """
         root_children = self.children(self.root)
         if len(root_children) != 1:
-            return None
-        _, first_agg = root_children[0]
+            return None, None
+        first_agg_name: AggName
+        first_agg_name, first_agg = root_children[0]  # type: ignore
         if isinstance(first_agg, Composite):
-            return first_agg
+            return first_agg_name, first_agg
         if first_agg.is_convertible_to_composite_source():
-            return first_agg
-        return None
+            return first_agg_name, first_agg
+        return None, None
 
     def as_composite(self, size: int, after: Optional[AfterKey] = None) -> "Aggs":
         """
         Convert current aggregation into composite aggregation.
         For now, simply support conversion of the root aggregation clause, and doesn't handle multi-source.
         """
-        agg_to_convert: Optional[AggClause] = self.get_composition_supporting_agg()
-        if agg_to_convert is None:
-            raise ValueError("This aggregation cannot be converted in a composite agg.")
+        agg_name: Optional[AggName]
+        agg_to_convert: Optional[AggClause]
+        agg_name, agg_to_convert = self.get_composition_supporting_agg()
+        if agg_to_convert is None or agg_name is None:
+            raise ValueError(
+                "This aggregation cannot be converted into a composite agg."
+            )
 
         if isinstance(agg_to_convert, Composite):
             c: Aggs = self.clone(with_nodes=True, deep=True)
@@ -602,8 +609,6 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
             return c
 
         a: Aggs = self.clone(with_nodes=False)
-        agg_name: AggName
-        agg_name, _ = a.get(agg_to_convert.identifier)  # type: ignore
         _, below_aggs = self.subtree(nid=agg_to_convert.identifier)
         comp_agg = Composite(size=size, sources=[agg_to_convert.to_dict()], after=after)
         a = a.groupby(agg_name, comp_agg).aggs(below_aggs)

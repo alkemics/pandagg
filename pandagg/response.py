@@ -468,7 +468,7 @@ class Aggregations:
     def to_tabular(
         self,
         *,
-        index_orient: Literal[True],
+        index_orient: Literal[True] = True,
         grouped_by: Optional[AggName] = None,
         expand_columns: bool = True,
         expand_sep: str = "|",
