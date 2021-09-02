@@ -19,7 +19,7 @@ from elasticsearch import Elasticsearch
 from lighttree.node import NodeId
 
 from pandagg.query import Query
-from pandagg.aggs import Aggs
+from pandagg.aggs import Aggs, Composite
 from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root, AggClause
 from pandagg.node.aggs.bucket import Nested, ReverseNested
@@ -36,6 +36,8 @@ from pandagg.types import (
     ProfileDict,
     BucketDict,
     BucketKey,
+    CompositeBucketKey,
+    BucketKeyAtom,
 )
 
 if TYPE_CHECKING:
@@ -43,8 +45,8 @@ if TYPE_CHECKING:
     from pandagg.search import Search
 
 
-GroupingKeysDict = Dict[AggName, BucketKey]
-GroupingKeysTuple = Tuple[BucketKey, ...]
+GroupingKeysDict = Dict[AggName, BucketKeyAtom]
+GroupingKeysTuple = Tuple[BucketKeyAtom, ...]
 
 RowValues = Dict[str, Any]
 # dictionary containing both grouping keys and values
@@ -308,11 +310,16 @@ class Aggregations:
             return index_names__, [(r____, response)]
 
         # from root aggregation to deepest aggregation clause
-        index_names: List[AggName] = [
-            k
-            for k, a in ancestors
-            if (not isinstance(a, UniqueBucketAgg) or with_single_bucket_groups)
-        ]
+        index_names: List[AggName] = []
+
+        for name, a in ancestors:
+            if isinstance(a, UniqueBucketAgg) and not with_single_bucket_groups:
+                continue
+            if isinstance(a, Composite):
+                # a composite aggregation can generate multiple grouping columns
+                index_names.extend(a.source_names)
+            else:
+                index_names.append(name)
 
         first_agg_name: AggName
         first_agg_name, _ = ancestors[0]
@@ -329,7 +336,7 @@ class Aggregations:
         )
         if not row_as_tuple:
             return index_names, index_values
-        values_: List[Tuple[Tuple[BucketKey, ...], BucketDict]] = [
+        values_: List[Tuple[GroupingKeysTuple, BucketDict]] = [
             (tuple(grouping_row[index_name] for index_name in index_names), raw_bucket)
             for grouping_row, raw_bucket in index_values
         ]
@@ -354,28 +361,32 @@ class Aggregations:
 
         agg_node = agg_clauses_per_name[agg_name]
 
-        key: AggName
+        key: BucketKey
         raw_bucket: BucketDict
 
-        for key, raw_bucket in agg_node.extract_buckets(  # type: ignore
-            response[agg_name]
-        ):
+        for key, raw_bucket in agg_node.extract_buckets(response[agg_name]):
             sub_row: GroupingKeysDict = copy.copy(row)
             if not isinstance(agg_node, UniqueBucketAgg) or with_single_bucket_groups:
-                sub_row[agg_name] = key
+                if isinstance(agg_node, Composite):
+                    key_: CompositeBucketKey = key  # type: ignore
+                    for source_name in agg_node.source_names:
+                        sub_row[source_name] = key_[source_name]
+                else:
+                    key__: BucketKeyAtom = key  # type: ignore
+                    sub_row[agg_name] = key__
             if agg_name == until:
                 # end real yield
                 yield sub_row, raw_bucket
             elif agg_name in agg_clauses_per_name.keys():
                 # yield children
-                child_key: str
-                for child_key, _ in self._aggs.children(  # type: ignore
+                child_name: AggName
+                for child_name, _ in self._aggs.children(  # type: ignore
                     agg_node.identifier
                 ):
                     for nrow, nraw_bucket in self._parse_group_by(
                         row=sub_row,
                         response=raw_bucket,
-                        agg_name=child_key,
+                        agg_name=child_name,
                         until=until,
                         agg_clauses_per_name=agg_clauses_per_name,
                         with_single_bucket_groups=with_single_bucket_groups,
@@ -518,7 +529,7 @@ class Aggregations:
         index_names: List[AggName]
 
         if index_orient:
-            index_values: List[Tuple[Tuple[BucketKey, ...], BucketDict]]
+            index_values: List[Tuple[GroupingKeysTuple, BucketDict]]
             index_names, index_values = self.parse_group_by(
                 response=self.data,
                 until=grouping_agg_name,
@@ -635,7 +646,7 @@ class Aggregations:
 
     def to_normalized(self) -> NormalizedBucketDict:
         children: List[NormalizedBucketDict] = []
-        for k in sorted(list((self.data.keys()))):
+        for k in self.data.keys():
             for child in self._normalize_buckets(self.data, k):
                 children.append(child)
         return {"level": "root", "key": None, "value": None, "children": children}

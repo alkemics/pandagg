@@ -41,6 +41,10 @@ class Composite(BucketAggClause):
             body["after_key"] = after_key
         super(Composite, self).__init__(meta=meta, sources=sources, **body)
 
+    @property
+    def source_names(self) -> List[AggName]:
+        return [n for source in self._sources for n in source.keys()]
+
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[CompositeBucketKey, BucketDict]]:
