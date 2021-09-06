@@ -1,5 +1,7 @@
 .PHONY : develop check clean clean_pyc doc lint lint-diff black doc-references coverage tests
 
+ELASTICSEARCH_URL="localhost:9200"
+
 clean:
 	-python setup.py clean
 
@@ -25,8 +27,14 @@ develop:
 doc-references:
 	-make -C docs api-doc
 
+es-up:
+	docker compose up elasticsearch -d
+
+es-down:
+	docker compose down elasticsearch
+
 tests:
-	pytest
+	ELASTICSEARCH_URL=${ELASTICSEARCH_URL} pytest
 
 mypy:
 	mypy --install-types pandagg
