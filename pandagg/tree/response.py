@@ -133,7 +133,7 @@ class AggsResponseTree(TreeReprMixin, Tree[Bucket]):
             nid_to_children[nearest_nested_parent.identifier].add(nested)
         return self._build_filter(nid_to_children, filters_per_nested_level).to_dict()
 
-    def _clone_init(self, deep: bool = False) -> "AggsResponseTree":
+    def _clone_init(self, deep: bool, with_nodes: bool) -> "AggsResponseTree":
         return AggsResponseTree(aggs=self.__aggs.clone(deep=deep))
 
     def _parse_node_with_children(

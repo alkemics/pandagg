@@ -370,13 +370,13 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
                 name=child_name, node=child_node, insert_below_id=node.identifier
             )
 
-    def _clone_init(self, deep: bool = False) -> "Aggs":
+    def _clone_init(self, deep: bool, with_nodes: bool) -> "Aggs":
         return Aggs(
             mappings=self.mappings.clone(deep=deep)
             if self.mappings is not None
             else None,
             nested_autocorrect=self.nested_autocorrect,
-            _groupby_ptr=self._groupby_ptr,
+            _groupby_ptr=self._groupby_ptr if with_nodes else None,
         )
 
     def _is_eligible_grouping_node(self, nid: NodeId) -> bool:
@@ -565,35 +565,37 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
                 return n.identifier
         raise KeyError('No node found with key "%s"' % key)
 
-    def get_composition_supporting_agg(
-        self,
-    ) -> Tuple[Optional[AggName], Optional[AggClause]]:
+    def get_composition_supporting_agg(self) -> Tuple[AggName, AggClause]:
         """
-        Return id of composite-compatible aggregation clause if it exists, else None.
+        Return first composite-compatible aggregation clause if possible, raise an error otherwise.
         """
         root_children = self.children(self.root)
-        if len(root_children) != 1:
-            return None, None
+        if len(root_children) == 0:
+            raise ValueError("No aggregation to convert into composite.")
+        if len(root_children) > 1:
+            raise ValueError(
+                "There can be only one root aggregation clause to be able to convert it into a composite "
+                "aggregation."
+            )
         first_agg_name: AggName
         first_agg_name, first_agg = root_children[0]  # type: ignore
         if isinstance(first_agg, Composite):
             return first_agg_name, first_agg
-        if first_agg.is_convertible_to_composite_source():
-            return first_agg_name, first_agg
-        return None, None
+        if not first_agg.is_convertible_to_composite_source():
+            raise ValueError(
+                "<%s> agg clause is not convertible into a composite aggregation."
+                % first_agg_name
+            )
+        return first_agg_name, first_agg
 
     def as_composite(self, size: int, after: Optional[AfterKey] = None) -> "Aggs":
         """
         Convert current aggregation into composite aggregation.
         For now, simply support conversion of the root aggregation clause, and doesn't handle multi-source.
         """
-        agg_name: Optional[AggName]
-        agg_to_convert: Optional[AggClause]
+        agg_name: AggName
+        agg_to_convert: AggClause
         agg_name, agg_to_convert = self.get_composition_supporting_agg()
-        if agg_to_convert is None or agg_name is None:
-            raise ValueError(
-                "This aggregation cannot be converted into a composite agg."
-            )
 
         if isinstance(agg_to_convert, Composite):
             c: Aggs = self.clone(with_nodes=True, deep=True)
@@ -608,13 +610,18 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
                 new_c.body["size"] = size
             return c
 
-        a: Aggs = self.clone(with_nodes=False)
         _, below_aggs = self.subtree(nid=agg_to_convert.identifier)
-        comp_agg = Composite(size=size, sources=[agg_to_convert.to_dict()], after=after)
-        a = a.groupby(agg_name, comp_agg).aggs(below_aggs)
-        if self._groupby_ptr != agg_to_convert:
-            a._groupby_ptr = self._groupby_ptr
-        return a
+        initial_grouping_agg: AggName = self.get_key(self._groupby_ptr)  # type: ignore
+
+        a: Aggs = self.clone(with_nodes=False)
+        return (
+            a.groupby(
+                agg_name,
+                Composite(size=size, sources=[agg_to_convert.to_dict()], after=after),
+            )
+            .aggs(below_aggs)
+            .grouped_by(agg_name=initial_grouping_agg)
+        )
 
     def __str__(self) -> str:
         return json.dumps(self.to_dict(), indent=2)
