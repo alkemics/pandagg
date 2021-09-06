@@ -5,23 +5,34 @@ from typing import List, Any, Dict
 from typing_extensions import TypedDict
 
 
-def git_mappings():
-    # we will use user on several places
-    user_mapping = {
-        "properties": {"name": {"type": "text", "fields": {"raw": {"type": "keyword"}}}}
-    }
-    return {
-        "dynamic": False,
-        "properties": {
-            "description": {"type": "text", "analyzer": "snowball"},
-            "author": user_mapping,
-            "authored_date": {"type": "date"},
-            "committer": user_mapping,
-            "committed_date": {"type": "date"},
-            "parent_shas": {"type": "keyword"},
-            "files": {"type": "text", "analyzer": "file_path", "fielddata": True},
+GIT_MAPPINGS = {
+    "dynamic": False,
+    "properties": {
+        "description": {"type": "text", "analyzer": "snowball"},
+        "author": {
+            "properties": {
+                "name": {"type": "text", "fields": {"raw": {"type": "keyword"}}}
+            }
         },
-    }
+        "stats": {
+            "properties": {
+                "insertions": {"type": "integer"},
+                "lines": {"type": "integer"},
+                "files": {"type": "integer"},
+                "deletions": {"type": "integer"},
+            }
+        },
+        "authored_date": {"type": "date"},
+        "committer": {
+            "properties": {
+                "name": {"type": "text", "fields": {"raw": {"type": "keyword"}}}
+            }
+        },
+        "committed_date": {"type": "date"},
+        "parent_shas": {"type": "keyword"},
+        "files": {"type": "text", "analyzer": "file_path", "fielddata": True},
+    },
+}
 
 
 def create_git_index(client, index):
@@ -44,7 +55,7 @@ def create_git_index(client, index):
                     }
                 },
             },
-            "mappings": git_mappings(),
+            "mappings": GIT_MAPPINGS,
         },
     )
 

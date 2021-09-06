@@ -5,7 +5,7 @@ from pandagg.discovery import discover, Index
 from mock import patch
 
 from pandagg.interactive.mappings import IMappings
-from tests.test_data import git_mappings
+from tests.test_data import GIT_MAPPINGS
 from tests.testing_samples.mapping_example import MAPPINGS
 from tests.testing_samples.settings_example import SETTINGS
 
@@ -47,6 +47,6 @@ class TestDiscovery:
         existing_mappings = git.mappings.copy()
         # False cast to "false" in ES apis for some reason
         existing_mappings.pop("dynamic")
-        expected_mappings = git_mappings().copy()
+        expected_mappings = GIT_MAPPINGS.copy()
         expected_mappings.pop("dynamic")
         assert existing_mappings == expected_mappings

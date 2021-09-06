@@ -4,66 +4,59 @@ from mock import patch
 
 from elasticsearch import Elasticsearch
 
-from pandagg.node.aggs import Max
+from pandagg import Aggregations
+from pandagg.node.aggs import Max, DateHistogram, Sum
 from pandagg.search import Search
 from pandagg.query import Query, Bool, Match
 from pandagg.tree.mappings import Mappings
-from pandagg.utils import ordered
-from tests import PandaggTestCase
+from pandagg.utils import ordered, equal_queries
 
 
-class SearchTestCase(PandaggTestCase):
-    def setUp(self):
-        patcher = patch("uuid.uuid4", side_effect=range(1000))
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
+class TestSearch:
     def test_expand__to_dot_is_respected(self):
         s = Search().query("match", a__b=42, _expand__to_dot=False)
 
-        self.assertEqual({"query": {"match": {"a__b": {"query": 42}}}}, s.to_dict())
+        assert {"query": {"match": {"a__b": {"query": 42}}}} == s.to_dict()
 
     def test_search_query_combines_query(self):
         s = Search()
 
         s2 = s.query("match", f=42)
-        self.assertEqual(s2._query.to_dict(), Query(Match(f=42)).to_dict())
-        self.assertEqual(s._query.to_dict(), None)
+        assert s2._query.to_dict() == Query(Match(f=42)).to_dict()
+        assert s._query.to_dict() is None
 
         s3 = s2.query("match", f=43)
-        self.assertEqual(s2._query.to_dict(), Query(Match(f=42)).to_dict())
-        self.assertEqual(
-            ordered(s3._query.to_dict()),
-            ordered(Query(Bool(must=[Match(f=42), Match(f=43)])).to_dict()),
+        assert s2._query.to_dict() == Query(Match(f=42)).to_dict()
+        assert ordered(s3._query.to_dict()) == ordered(
+            Query(Bool(must=[Match(f=42), Match(f=43)])).to_dict()
         )
 
     def test_search_column_selection(self):
         mappings = Mappings(
             properties={"col1": {"type": "keyword"}, "col2": {"type": "integer"}}
         )
-        self.assertEqual(
-            Search(mappings=mappings)[["col1", "col2"]].to_dict(),
-            {"_source": {"includes": ["col1", "col2"]}},
-        )
+        assert Search(mappings=mappings)[["col1", "col2"]].to_dict() == {
+            "_source": {"includes": ["col1", "col2"]}
+        }
 
     def test_using(self):
         o = object()
         o2 = object()
         s = Search(using=o)
-        self.assertIs(s._using, o)
+        assert s._using is o
         s2 = s.using(o2)
-        self.assertIs(s._using, o)
-        self.assertIs(s2._using, o2)
+        assert s._using is o
+        assert s2._using is o2
 
     def test_query_always_returns_search(self):
         s = Search()
-        self.assertIsInstance(s.query("match", f=42), Search)
+        assert isinstance(s.query("match", f=42), Search)
 
     def test_source_copied_on_clone(self):
         s = Search().source(False)
 
-        self.assertEqual(s._clone()._source, s._source)
-        self.assertIs(s._clone()._source, False)
+        assert s._clone()._source == s._source
+        assert s._clone()._source is False
 
         s2 = Search().source([])
         assert s2._clone()._source == s2._source
@@ -87,10 +80,9 @@ class SearchTestCase(PandaggTestCase):
 
         s = s.aggs({"a": Max(field="a"), "b": Max(field="b")})
 
-        self.assertEqual(
-            s.to_dict(),
-            {"aggs": {"a": {"max": {"field": "a"}}, "b": {"max": {"field": "b"}}}},
-        )
+        assert s.to_dict() == {
+            "aggs": {"a": {"max": {"field": "a"}}, "b": {"max": {"field": "b"}}}
+        }
 
     def test_search_index(self):
         s = Search(index="i")
@@ -167,7 +159,7 @@ class SearchTestCase(PandaggTestCase):
             },
             "query": {"match": {"f": {"query": 42}}},
         }
-        self.assertEqual(d, s.to_dict())
+        assert d == s.to_dict()
 
         s = Search().params(size=5)
         assert {"size": 5} == s.to_dict()
@@ -190,7 +182,7 @@ class SearchTestCase(PandaggTestCase):
             .highlight("title", "body", fragment_size=50)
         )
 
-        self.assertUnorderedEqual(
+        assert equal_queries(
             {
                 "aggs": {
                     "per_country": {
@@ -277,8 +269,8 @@ class SearchTestCase(PandaggTestCase):
         s = Search.from_dict(d)
 
         # make sure we haven't modified anything in place
-        self.assertEqual(d, d2)
-        self.assertSearchEqual(d, s.to_dict())
+        assert d == d2
+        assert d == s.to_dict()
 
     def test_from_dict_doesnt_need_query(self):
         s = Search.from_dict({"size": 5})
@@ -299,28 +291,19 @@ class SearchTestCase(PandaggTestCase):
         ).source(["f1", "f2"]).to_dict()
 
     def test_source_on_clone(self):
-        self.assertEqual(
-            {
-                "_source": {"includes": ["foo.bar.*"], "excludes": ["foo.one"]},
-                "query": {
-                    "bool": {"filter": [{"term": {"title": {"value": "python"}}}]}
-                },
-            },
-            Search()
-            .source(includes=["foo.bar.*"])
-            .source(excludes=["foo.one"])
-            .filter("term", title="python")
-            .to_dict(),
-        )
-        self.assertEqual(
-            {
-                "_source": False,
-                "query": {
-                    "bool": {"filter": [{"term": {"title": {"value": "python"}}}]}
-                },
-            },
-            Search().source(False).filter("term", title="python").to_dict(),
-        )
+        assert {
+            "_source": {"includes": ["foo.bar.*"], "excludes": ["foo.one"]},
+            "query": {"bool": {"filter": [{"term": {"title": {"value": "python"}}}]}},
+        } == Search().source(includes=["foo.bar.*"]).source(
+            excludes=["foo.one"]
+        ).filter(
+            "term", title="python"
+        ).to_dict()
+
+        assert {
+            "_source": False,
+            "query": {"bool": {"filter": [{"term": {"title": {"value": "python"}}}]}},
+        } == Search().source(False).filter("term", title="python").to_dict()
 
     def test_source_on_clear(self):
         assert (
@@ -364,24 +347,19 @@ class SearchTestCase(PandaggTestCase):
         s = Search()
         s = s.exclude("match", title="python")
 
-        self.assertEqual(
-            {
-                "query": {
-                    "bool": {
-                        "filter": [
-                            {
-                                "bool": {
-                                    "must_not": [
-                                        {"match": {"title": {"query": "python"}}}
-                                    ]
-                                }
+        assert {
+            "query": {
+                "bool": {
+                    "filter": [
+                        {
+                            "bool": {
+                                "must_not": [{"match": {"title": {"query": "python"}}}]
                             }
-                        ]
-                    }
+                        }
+                    ]
                 }
-            },
-            s.to_dict(),
-        )
+            }
+        } == s.to_dict()
 
     def test_update_from_dict(self):
         s = Search()
@@ -484,4 +462,127 @@ class SearchTestCase(PandaggTestCase):
                 },
             },
             index=["yolo"],
+        )
+
+    def test_scan_composite_agg(self, data_client, git_mappings):
+        search = (
+            Search(using=data_client, index="git", mappings=git_mappings)
+            .groupby(
+                "compatible_histogram",
+                DateHistogram(
+                    field="authored_date", calendar_interval="1d", key_as_string=True
+                ),
+            )
+            .agg("insertions_sum", Sum(field="stats.insertions"))
+        )
+
+        bucket_iterator = search.scan_composite_agg(size=5)
+        assert hasattr(bucket_iterator, "__iter__")
+        buckets = list(bucket_iterator)
+        assert buckets == [
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 120.0},
+                "key": {"compatible_histogram": 1394409600000},
+            },
+            {
+                "doc_count": 4,
+                "insertions_sum": {"value": 45.0},
+                "key": {"compatible_histogram": 1394841600000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 34.0},
+                "key": {"compatible_histogram": 1395360000000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 36.0},
+                "key": {"compatible_histogram": 1395532800000},
+            },
+            {
+                "doc_count": 10,
+                "insertions_sum": {"value": 376.0},
+                "key": {"compatible_histogram": 1395619200000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 13.0},
+                "key": {"compatible_histogram": 1397952000000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 35.0},
+                "key": {"compatible_histogram": 1398124800000},
+            },
+            {
+                "doc_count": 3,
+                "insertions_sum": {"value": 187.0},
+                "key": {"compatible_histogram": 1398384000000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 103.0},
+                "key": {"compatible_histogram": 1398470400000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 29.0},
+                "key": {"compatible_histogram": 1398556800000},
+            },
+            {
+                "doc_count": 2,
+                "insertions_sum": {"value": 62.0},
+                "key": {"compatible_histogram": 1398902400000},
+            },
+            {
+                "doc_count": 1,
+                "insertions_sum": {"value": 23.0},
+                "key": {"compatible_histogram": 1398988800000},
+            },
+        ]
+
+    def test_scan_composite_agg_at_once(self, data_client, git_mappings):
+        search = (
+            Search(using=data_client, index="git", mappings=git_mappings)
+            .groupby(
+                "compatible_histogram",
+                DateHistogram(
+                    field="authored_date", calendar_interval="1d", key_as_string=False
+                ),
+            )
+            .groupby("author", "terms", field="author.name.raw")
+            .agg("insertions_sum", Sum(field="stats.insertions"))
+        )
+
+        agg_response = search.scan_composite_agg_at_once(size=5)
+        assert isinstance(agg_response, Aggregations)
+        assert agg_response.to_tabular(index_orient=True) == (
+            ["compatible_histogram", "author"],
+            {
+                (1394409600000, "Honza Král"): {
+                    "doc_count": 2,
+                    "insertions_sum": 120.0,
+                },
+                (1394841600000, "Honza Král"): {"doc_count": 4, "insertions_sum": 45.0},
+                (1395360000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 34.0},
+                (1395532800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 36.0},
+                (1395619200000, "Honza Král"): {
+                    "doc_count": 10,
+                    "insertions_sum": 376.0,
+                },
+                (1397952000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 13.0},
+                (1398124800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 35.0},
+                (1398384000000, "Honza Král"): {
+                    "doc_count": 3,
+                    "insertions_sum": 187.0,
+                },
+                (1398470400000, "Honza Král"): {
+                    "doc_count": 2,
+                    "insertions_sum": 103.0,
+                },
+                (1398556800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 29.0},
+                (1398902400000, "Honza Král"): {"doc_count": 2, "insertions_sum": 62.0},
+                (1398988800000, "Honza Král"): {"doc_count": 1, "insertions_sum": 23.0},
+            },
         )

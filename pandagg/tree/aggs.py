@@ -613,11 +613,15 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
         _, below_aggs = self.subtree(nid=agg_to_convert.identifier)
         initial_grouping_agg: AggName = self.get_key(self._groupby_ptr)  # type: ignore
 
-        a: Aggs = self.clone(with_nodes=False)
         return (
-            a.groupby(
+            self.clone(with_nodes=False)
+            .groupby(
                 agg_name,
-                Composite(size=size, sources=[agg_to_convert.to_dict()], after=after),
+                Composite(
+                    size=size,
+                    sources=[{agg_name: agg_to_convert.to_dict()}],
+                    after=after,
+                ),
             )
             .aggs(below_aggs)
             .grouped_by(agg_name=initial_grouping_agg)

@@ -1017,7 +1017,9 @@ A                                                             <terms, field="a">
             "compatible_terms": {
                 "composite": {
                     "size": 10,
-                    "sources": [{"terms": {"field": "some_field"}}],
+                    "sources": [
+                        {"compatible_terms": {"terms": {"field": "some_field"}}}
+                    ],
                 },
                 "aggs": {"max_metric": {"max": {"field": "some_other_field"}}},
             }
