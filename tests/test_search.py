@@ -586,3 +586,56 @@ class TestSearch:
                 (1398988800000, "Honza Král"): {"doc_count": 1, "insertions_sum": 23.0},
             },
         )
+
+        # multi-source composite
+        search = (
+            Search(using=data_client, index="git", mappings=git_mappings)
+            .groupby(
+                "composite_agg",
+                "composite",
+                sources=[
+                    {
+                        "commit_date": {
+                            "date_histogram": {
+                                "field": "authored_date",
+                                "calendar_interval": "1d",
+                            }
+                        }
+                    },
+                    {"author_name": {"terms": {"field": "author.name.raw"}}},
+                ],
+            )
+            .agg("insertions_sum", Sum(field="stats.insertions"))
+        )
+
+        agg_response = search.scan_composite_agg_at_once(size=5)
+        assert isinstance(agg_response, Aggregations)
+        assert agg_response.to_tabular(index_orient=True) == (
+            ["commit_date", "author_name"],
+            {
+                (1394409600000, "Honza Král"): {
+                    "doc_count": 2,
+                    "insertions_sum": 120.0,
+                },
+                (1394841600000, "Honza Král"): {"doc_count": 4, "insertions_sum": 45.0},
+                (1395360000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 34.0},
+                (1395532800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 36.0},
+                (1395619200000, "Honza Král"): {
+                    "doc_count": 10,
+                    "insertions_sum": 376.0,
+                },
+                (1397952000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 13.0},
+                (1398124800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 35.0},
+                (1398384000000, "Honza Král"): {
+                    "doc_count": 3,
+                    "insertions_sum": 187.0,
+                },
+                (1398470400000, "Honza Král"): {
+                    "doc_count": 2,
+                    "insertions_sum": 103.0,
+                },
+                (1398556800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 29.0},
+                (1398902400000, "Honza Král"): {"doc_count": 2, "insertions_sum": 62.0},
+                (1398988800000, "Honza Král"): {"doc_count": 1, "insertions_sum": 23.0},
+            },
+        )
