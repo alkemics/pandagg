@@ -129,6 +129,9 @@ class AggClause(Node):
             return {attr_: response.get(attr_) for attr_ in attrs}
         return response.get(attrs[0])
 
+    def is_convertible_to_composite_source(self) -> bool:
+        return False
+
     def __str__(self) -> str:
         return "<{class_}, type={type}, body={body}>".format(
             class_=str(self.__class__.__name__),

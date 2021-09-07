@@ -10,7 +10,7 @@ from elasticsearch.helpers import bulk
 from elasticsearch.helpers.test import get_test_client
 
 
-from .test_data import TEST_GIT_DATA, create_git_index
+from .test_data import TEST_GIT_DATA, create_git_index, GIT_MAPPINGS
 
 
 @fixture(scope="session")
@@ -36,6 +36,11 @@ def mock_client(dummy_response):
     client = Mock()
     client.search.return_value = dummy_response
     return client
+
+
+@fixture
+def git_mappings():
+    return GIT_MAPPINGS
 
 
 @fixture(scope="session")

@@ -463,7 +463,7 @@ class Query(Tree[QueryClause]):
 
     __bool__ = __nonzero__
 
-    def _clone_init(self, deep: bool_ = False) -> "Query":
+    def _clone_init(self, deep: bool_, with_nodes: bool_) -> "Query":
         return Query(
             mappings=None
             if self.mappings is None

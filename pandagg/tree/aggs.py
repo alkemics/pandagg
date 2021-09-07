@@ -1,8 +1,9 @@
 import json
-from typing import Optional, Union, Any, Dict
+from typing import Optional, Union, Any, Dict, Tuple
 
 from lighttree import Key, Tree
 from lighttree.node import NodeId
+from pandagg.node.aggs import Composite
 from pandagg.tree._tree import TreeReprMixin
 from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
@@ -16,7 +17,7 @@ from pandagg.node.aggs.abstract import (
 )
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
-from pandagg.types import AggName, NamedAggsDict
+from pandagg.types import AggName, NamedAggsDict, AfterKey
 
 # {"my_agg": {"terms": "some_field"}} or {"my_agg": Terms(field="some_field")}
 AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]
@@ -369,13 +370,13 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
                 name=child_name, node=child_node, insert_below_id=node.identifier
             )
 
-    def _clone_init(self, deep: bool = False) -> "Aggs":
+    def _clone_init(self, deep: bool, with_nodes: bool) -> "Aggs":
         return Aggs(
             mappings=self.mappings.clone(deep=deep)
             if self.mappings is not None
             else None,
             nested_autocorrect=self.nested_autocorrect,
-            _groupby_ptr=self._groupby_ptr,
+            _groupby_ptr=self._groupby_ptr if with_nodes else None,
         )
 
     def _is_eligible_grouping_node(self, nid: NodeId) -> bool:
@@ -563,6 +564,68 @@ class Aggs(TreeReprMixin, Tree[AggClause]):
             if k == key:
                 return n.identifier
         raise KeyError('No node found with key "%s"' % key)
+
+    def get_composition_supporting_agg(self) -> Tuple[AggName, AggClause]:
+        """
+        Return first composite-compatible aggregation clause if possible, raise an error otherwise.
+        """
+        root_children = self.children(self.root)
+        if len(root_children) == 0:
+            raise ValueError("No aggregation to convert into composite.")
+        if len(root_children) > 1:
+            raise ValueError(
+                "There can be only one root aggregation clause to be able to convert it into a composite "
+                "aggregation."
+            )
+        first_agg_name: AggName
+        first_agg_name, first_agg = root_children[0]  # type: ignore
+        if isinstance(first_agg, Composite):
+            return first_agg_name, first_agg
+        if not first_agg.is_convertible_to_composite_source():
+            raise ValueError(
+                "<%s> agg clause is not convertible into a composite aggregation."
+                % first_agg_name
+            )
+        return first_agg_name, first_agg
+
+    def as_composite(self, size: int, after: Optional[AfterKey] = None) -> "Aggs":
+        """
+        Convert current aggregation into composite aggregation.
+        For now, simply support conversion of the root aggregation clause, and doesn't handle multi-source.
+        """
+        agg_name: AggName
+        agg_to_convert: AggClause
+        agg_name, agg_to_convert = self.get_composition_supporting_agg()
+
+        if isinstance(agg_to_convert, Composite):
+            c: Aggs = self.clone(with_nodes=True, deep=True)
+            new_c: Composite
+            _, new_c = c.get(agg_to_convert.identifier)  # type: ignore
+
+            new_c.body.pop("after", None)
+            if after is not None:
+                new_c.body["after"] = after
+            new_c.body.pop("size", None)
+            if size is not None:
+                new_c.body["size"] = size
+            return c
+
+        _, below_aggs = self.subtree(nid=agg_to_convert.identifier)
+        initial_grouping_agg: AggName = self.get_key(self._groupby_ptr)  # type: ignore
+
+        return (
+            self.clone(with_nodes=False)
+            .groupby(
+                agg_name,
+                Composite(
+                    size=size,
+                    sources=[{agg_name: agg_to_convert.to_dict()}],
+                    after=after,
+                ),
+            )
+            .aggs(below_aggs)
+            .grouped_by(agg_name=initial_grouping_agg)
+        )
 
     def __str__(self) -> str:
         return json.dumps(self.to_dict(), indent=2)

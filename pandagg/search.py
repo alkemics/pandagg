@@ -21,7 +21,7 @@ from elasticsearch.helpers import scan
 
 from pandagg.node.aggs.abstract import TypeOrAgg
 from pandagg.query import Bool
-from pandagg.response import SearchResponse, Hit
+from pandagg.response import SearchResponse, Hit, Aggregations
 from pandagg.tree.mappings import _mappings, Mappings
 from pandagg.tree.query import (
     Query,
@@ -39,6 +39,8 @@ from pandagg.types import (
     SearchResponseDict,
     DeleteByQueryResponse,
     SearchDict,
+    BucketDict,
+    AfterKey,
 )
 from pandagg.utils import DSLMixin
 
@@ -787,6 +789,43 @@ class Search(DSLMixin, Request):
         es = self._get_connection()
         raw_data = es.search(index=self._index, body=self.to_dict())
         return SearchResponse(data=raw_data, _search=self)
+
+    def scan_composite_agg(self, size: int) -> Iterator[BucketDict]:
+        """Iterate over the whole aggregation composed buckets, yields buckets."""
+        s: Search = self._clone().size(0)
+        s._aggs = s._aggs.as_composite(size=size)
+        a_name, _ = s._aggs.get_composition_supporting_agg()
+        r: SearchResponse = s.execute()
+        buckets: List[BucketDict] = r.aggregations.data[a_name][  # type: ignore
+            "buckets"
+        ]
+        after_key: AfterKey = r.aggregations.data[a_name]["after_key"]  # type: ignore
+
+        init: bool = True
+        while init or len(buckets) == size:
+            init = False
+            s._aggs = s._aggs.as_composite(size=size, after=after_key)
+            r = s.execute()
+            agg_clause_response = r.aggregations.data[a_name]
+            buckets = agg_clause_response["buckets"]  # type: ignore
+            for bucket in buckets:
+                yield bucket
+            if "after_key" in agg_clause_response:
+                after_key = agg_clause_response["after_key"]  # type: ignore
+            else:
+                break
+
+    def scan_composite_agg_at_once(self, size: int) -> Aggregations:
+        """Iterate over the whole aggregation composed buckets (converting Aggs into composite agg if possible), and
+        return all buckets at once in a Aggregations instance.
+        """
+        all_buckets = list(self.scan_composite_agg(size=size))
+        s: Search = self._clone().size(0)
+        s._aggs = s._aggs.as_composite(size=size)
+        agg_name: AggName
+        agg_name, _ = s._aggs.get_composition_supporting_agg()  # type: ignore
+        # artificially merge all buckets as if they were returned in a single query
+        return Aggregations(_search=s, data={agg_name: {"buckets": all_buckets}})
 
     def scan(self) -> Iterator[Hit]:
         """

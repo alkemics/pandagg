@@ -1,4 +1,4 @@
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 import os
 
@@ -10,7 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
 
 install_requires = [
-    "lighttree==1.3.3",
+    "lighttree==1.3.4",
     "elasticsearch>=7.0.0,<8.0.0",
     "typing_extensions",
 ]

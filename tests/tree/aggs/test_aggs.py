@@ -1,4 +1,6 @@
 from unittest import TestCase
+
+import pytest
 from mock import patch
 
 from pandagg.tree.aggs import Aggs
@@ -948,3 +950,115 @@ A                                                             <terms, field="a">
                 }
             },
         )
+
+    def test_get_composition_supporting_agg(self):
+        # OK
+        name, agg_clause = (
+            Aggs()
+            .agg("compatible_terms", "terms", field="some_field")
+            .get_composition_supporting_agg()
+        )
+        assert name == "compatible_terms"
+        assert isinstance(agg_clause, Terms)
+
+        # OK
+        name, agg_clause = (
+            Aggs()
+            .groupby("compatible_terms", "terms", field="some_field")
+            .agg("max_metric", "max", field="some_other_field")
+            .get_composition_supporting_agg()
+        )
+        assert name == "compatible_terms"
+        assert isinstance(agg_clause, Terms)
+
+        # Not OK, since include is not authorized as source in term composition
+        with pytest.raises(ValueError) as e:
+            Aggs().agg(
+                "incompatible_terms", "terms", field="some_field", include="pref.*"
+            ).get_composition_supporting_agg()
+        assert e.value.args == (
+            "<incompatible_terms> agg clause is not convertible into a composite aggregation.",
+        )
+
+        # Not OK, because incompatible agg type
+        with pytest.raises(ValueError) as e:
+            Aggs().agg(
+                "incompatible_metric", "max", field="some_field"
+            ).get_composition_supporting_agg()
+        assert e.value.args == (
+            "<incompatible_metric> agg clause is not convertible into a composite "
+            "aggregation.",
+        )
+
+        # Not OK because there are two clauses at the root of the aggregation
+        with pytest.raises(ValueError) as e:
+            Aggs().aggs(
+                {
+                    "user_id": {"terms": {"field": "user.id"}},
+                    "user_name": {"terms": {"field": "user.name"}},
+                }
+            ).get_composition_supporting_agg()
+        assert e.value.args == (
+            "There can be only one root aggregation clause to be able to convert it into a composite aggregation.",
+        )
+
+    def test_as_composite(self):
+        # terms converted
+        initial_agg = (
+            Aggs()
+            .groupby("compatible_terms", "terms", field="some_field")
+            .agg("max_metric", "max", field="some_other_field")
+        )
+
+        comp_agg = initial_agg.as_composite(size=10)
+
+        assert isinstance(comp_agg, Aggs)
+        assert comp_agg.to_dict() == {
+            "compatible_terms": {
+                "composite": {
+                    "size": 10,
+                    "sources": [
+                        {"compatible_terms": {"terms": {"field": "some_field"}}}
+                    ],
+                },
+                "aggs": {"max_metric": {"max": {"field": "some_other_field"}}},
+            }
+        }
+        # ensure initial agg wasn't modified
+        assert initial_agg.to_dict() == {
+            "compatible_terms": {
+                "aggs": {"max_metric": {"max": {"field": "some_other_field"}}},
+                "terms": {"field": "some_field"},
+            }
+        }
+
+        initial_agg = (
+            Aggs()
+            .groupby(
+                "compatible_terms",
+                "composite",
+                sources=[{"terms_source": {"field": "some_field"}}],
+            )
+            .agg("max_metric", "max", field="some_other_field")
+        )
+
+        # composite modified
+        comp_agg = initial_agg.as_composite(size=10, after={"terms_source": "yolo"})
+        assert isinstance(comp_agg, Aggs)
+        assert comp_agg.to_dict() == {
+            "compatible_terms": {
+                "aggs": {"max_metric": {"max": {"field": "some_other_field"}}},
+                "composite": {
+                    "after": {"terms_source": "yolo"},
+                    "size": 10,
+                    "sources": [{"terms_source": {"field": "some_field"}}],
+                },
+            }
+        }
+        # ensure initial agg wasn't modified
+        assert initial_agg.to_dict() == {
+            "compatible_terms": {
+                "aggs": {"max_metric": {"max": {"field": "some_other_field"}}},
+                "composite": {"sources": [{"terms_source": {"field": "some_field"}}]},
+            }
+        }
