@@ -1,8 +1,9 @@
 # adapted from elasticsearch-dsl-py
 
 import dataclasses
+from itertools import chain
 from copy import deepcopy
-from typing import Optional, Any, List, Dict, Tuple, Union
+from typing import Optional, Any, List, Dict, Tuple, Union, Iterator, Iterable
 from typing_extensions import TypedDict, Literal
 
 from elasticsearch import Elasticsearch, helpers
@@ -18,8 +19,11 @@ class Template(TypedDict, total=False):
     settings: SettingsDict
 
 
+OpType = Literal["create", "index", "update", "delete"]
+
+
 class Action(TypedDict, total=False):
-    _op_type: Literal["create", "index", "update", "delete"]
+    _op_type: OpType
     _id: str
     _index: IndexName
     retry_on_conflict: int
@@ -35,16 +39,30 @@ class Action(TypedDict, total=False):
 @dataclasses.dataclass
 class DocumentBulkWriter:
     _index: "DeclarativeIndex"
-    _operations: List[Action] = dataclasses.field(init=False, default_factory=list)
+    _operations: Iterator[Action] = dataclasses.field(
+        init=False, default_factory=lambda: iter([])
+    )
 
     @property
     def _client(self) -> Elasticsearch:
         return self._index._get_connection()
 
-    def bulk(self, actions: List[Action]) -> "DocumentBulkWriter":
+    def _chain_actions(self, actions: Iterable[Action]) -> None:
+        self._operations = chain(self._operations, iter(actions))
+
+    def bulk(
+        self, actions: Iterable[Action], _op_type_overwrite: Optional[OpType] = None
+    ) -> "DocumentBulkWriter":
         # https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
         # https://elasticsearch-py.readthedocs.io/en/master/helpers.html
-        self._operations.extend(actions)
+
+        def _set_index(action: Action) -> Action:
+            action["_index"] = self._index.name
+            if _op_type_overwrite is not None:
+                action["_op_type"] = _op_type_overwrite
+            return action
+
+        self._chain_actions(map(_set_index, actions))
         return self
 
     def index(
@@ -58,14 +76,16 @@ class DocumentBulkWriter:
         # '_id' will be generated automatically if not present
         # https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html
         # upsert (create or update)
-        self._operations.append(
-            {
-                "_id": _id,
-                "_source": _source,
-                "_index": self._index.name,
-                "_op_type": op_type,
-                **kwargs,  # type: ignore
-            }
+        self._chain_actions(
+            [
+                {
+                    "_id": _id,
+                    "_source": _source,
+                    "_index": self._index.name,
+                    "_op_type": op_type,
+                    **kwargs,  # type: ignore
+                }
+            ]
         )
         return self
 
@@ -92,40 +112,42 @@ class DocumentBulkWriter:
 
         {"personal_info": [{"surname": "Bob"}]}
         """
-        self._operations.append(
-            {
-                "_id": _id,
-                "doc": doc,
-                "_index": self._index.name,
-                "_op_type": "update",
-                **kwargs,  # type: ignore
-            }
+        self._chain_actions(
+            [
+                {
+                    "_id": _id,
+                    "doc": doc,
+                    "_index": self._index.name,
+                    "_op_type": "update",
+                    **kwargs,  # type: ignore
+                }
+            ]
         )
         return self
 
     def delete(self, _id: str, **kwargs: Any) -> "DocumentBulkWriter":
-        self._operations.append(
-            {
-                "_id": _id,
-                "_index": self._index.name,
-                "_op_type": "delete",
-                **kwargs,  # type: ignore
-            }
+        self._chain_actions(
+            [
+                {
+                    "_id": _id,
+                    "_index": self._index.name,
+                    "_op_type": "delete",
+                    **kwargs,  # type: ignore
+                }
+            ]
         )
         return self
 
     def perform(self, **kwargs: Any) -> Tuple[int, Union[int, List[Any]]]:
         # return success, failed
         # perform stacked operations
-        res = helpers.bulk(
-            client=self._client, actions=list(self._operations), **kwargs
-        )
-        self._operations = []
+        res = helpers.bulk(client=self._client, actions=self._operations, **kwargs)
+        self._operations = iter([])
         return res
 
     def rollback(self) -> None:
         # remove all stacked operations
-        self._operations = []
+        self._operations = iter([])
 
 
 class IndexMeta(type):
