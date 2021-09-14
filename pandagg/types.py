@@ -46,7 +46,19 @@ AfterKey = Dict[str, Any]
 
 DocSource = Dict[str, Any]
 SettingsDict = Dict[str, Any]
+AliasName = str
 
+
+class AliasValue(TypedDict, total=False):
+    filter: QueryClauseDict
+    index_routing: str
+    is_hidden: bool
+    is_write_index: bool
+    rooting: str
+    search_routing: str
+
+
+IndexAliases = Dict[AliasName, AliasValue]
 IndexName = str
 
 # Mappings

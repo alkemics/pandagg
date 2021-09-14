@@ -30,7 +30,6 @@ class Ids(LeafQueryClause):
     def __init__(
         self, values: List[Union[int, str]], _name: Optional[QueryName] = None
     ) -> None:
-        self.field: str = "id"
         self.values: List[Union[int, str]] = values
 
         super(Ids, self).__init__(_name=_name, values=values)
