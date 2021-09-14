@@ -25,7 +25,7 @@ def client():
 def write_client(client):
     yield client
     client.indices.delete("test-*", ignore=404)
-    client.indices.delete_template("test-template", ignore=404)
+    client.indices.delete_index_template("test-template", ignore=404)
 
 
 @fixture(scope="session")

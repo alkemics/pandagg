@@ -4,7 +4,7 @@ import pytest
 
 from pandagg import Mappings, Search
 from pandagg.mappings import Keyword, Text, Date
-from pandagg.index import DeclarativeIndex
+from pandagg.index import DeclarativeIndex, DeclarativeIndexTemplate
 
 
 class Post(DeclarativeIndex):
@@ -12,6 +12,16 @@ class Post(DeclarativeIndex):
     mappings = {"properties": {"title": Text(), "published_from": Date()}}
     settings = {"number_of_shards": 1}
     aliases = {"post": {}}
+
+
+class PostTemplate(DeclarativeIndexTemplate):
+    name = "test-template"
+    index_patterns = "test-post*"
+    template = {
+        "mappings": {"properties": {"title": Text(), "published_from": Date()}},
+        "settings": {"number_of_shards": 1},
+        "aliases": {"post": {}},
+    }
 
 
 def test_declarative_without_name_raises():
@@ -119,3 +129,68 @@ def test_docwriter(write_client):
     assert len(index.docs._operations) == 1
     index.docs.rollback()
     assert len(index.docs._operations) == 0
+
+
+def test_index_template_invalid():
+    with pytest.raises(ValueError) as e:
+
+        class MyIndexTemplate(DeclarativeIndexTemplate):
+            pass
+
+    assert e.value.args == (
+        "<MyIndexTemplate> declarative index template must have a name",
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        class MyIndexTemplate2(DeclarativeIndexTemplate):
+            name = "template_2"
+
+    assert e.value.args == (
+        "<MyIndexTemplate2> declarative index template must have index_patterns",
+    )
+
+
+def test_template_declarative_copy_of_parameters():
+    ini_template = {
+        "mappings": {"properties": {"name": Keyword()}},
+        "settings": {"number_of_shards": 1},
+    }
+
+    class MyIndexTemplate(DeclarativeIndexTemplate):
+        name = "my_template"
+        index_patterns = ["my_template-*"]
+        template = {
+            "mappings": {"properties": {"name": Keyword()}},
+            "settings": {"number_of_shards": 1},
+        }
+        priority = 50
+        version = 1
+
+    assert MyIndexTemplate.template is not ini_template
+    assert isinstance(MyIndexTemplate._template_index, DeclarativeIndex)
+    assert MyIndexTemplate._template_index.to_dict() == {
+        "mappings": {"dynamic": False, "properties": {"name": {"type": "keyword"}}},
+        "settings": {"number_of_shards": 1},
+    }
+
+
+def test_template_save(write_client):
+    template = PostTemplate(write_client)
+    post_index = Post(write_client)
+    assert not post_index.exists()
+    assert not template.exists()
+    template.save()
+    assert template.exists()
+    post_index.docs.index(
+        _id="my_post_article",
+        _source={"title": "salut", "published_from": "2021-01-01"},
+    ).perform(refresh=True)
+    assert post_index.exists()
+    auto_created_index = write_client.indices.get("test-post")["test-post"]
+    assert auto_created_index["mappings"] == {
+        "dynamic": "false",
+        "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}},
+    }
+    assert auto_created_index["settings"]["index"]["number_of_shards"] == "1"
+    assert auto_created_index["aliases"] == {"post": {}}
