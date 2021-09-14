@@ -21,6 +21,13 @@ def client():
         skip()
 
 
+@fixture
+def write_client(client):
+    yield client
+    client.indices.delete("test-*", ignore=404)
+    client.indices.delete_template("test-template", ignore=404)
+
+
 @fixture(scope="session")
 def es_version(client):
     info = client.info()

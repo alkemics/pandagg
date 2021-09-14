@@ -902,7 +902,7 @@ class MultiSearch(Request):
         return iter(self._searches)
 
     def _clone(self) -> "MultiSearch":
-        ms = self.__class__(using=self._using, index=self._index)
+        ms = MultiSearch(using=self._using, index=self._index)
         ms._params = self._params.copy()
         ms._searches = self._searches[:]
         return ms
