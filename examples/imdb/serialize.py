@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-"""Module to extract
-"""
-
 import logging
 from os.path import join
 import simplejson

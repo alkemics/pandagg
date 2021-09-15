@@ -126,9 +126,42 @@ def test_docwriter(write_client):
     ).execute().hits.total == {"relation": "eq", "value": 0}
 
     index.docs.delete("my_second_post_article")
-    assert len(index.docs._operations) == 1
     index.docs.rollback()
-    assert len(index.docs._operations) == 0
+    assert len(list(index.docs._operations)) == 0
+
+
+def test_docwriter_bulk(write_client):
+    index = Post(client=write_client)
+    index.save()
+
+    def action_iterator():
+        for a in [
+            {"_id": 1, "_source": {"title": "salut"}},
+            {"_id": 2, "_source": {"title": "au revoir"}},
+        ]:
+            yield a
+
+    index.docs.bulk(actions=action_iterator())
+    assert list(index.docs._operations) == [
+        {"_id": 1, "_index": "test-post", "_source": {"title": "salut"}},
+        {"_id": 2, "_index": "test-post", "_source": {"title": "au revoir"}},
+    ]
+
+    index.docs.bulk(actions=action_iterator(), _op_type_overwrite="index")
+    assert list(index.docs._operations) == [
+        {
+            "_id": 1,
+            "_index": "test-post",
+            "_op_type": "index",
+            "_source": {"title": "salut"},
+        },
+        {
+            "_id": 2,
+            "_index": "test-post",
+            "_op_type": "index",
+            "_source": {"title": "au revoir"},
+        },
+    ]
 
 
 def test_index_template_invalid():
@@ -194,3 +227,17 @@ def test_template_save(write_client):
     }
     assert auto_created_index["settings"]["index"]["number_of_shards"] == "1"
     assert auto_created_index["aliases"] == {"post": {}}
+
+
+def test_index_docwriter_has_pending_operation():
+    index = Post()
+    assert not index.docs.has_pending_operation()
+    index.docs.index(
+        _id="my_post_article",
+        _source={"title": "salut", "published_from": "2021-01-01"},
+    )
+    assert index.docs.has_pending_operation()
+    # assert it is still present afterwards (iterator is not consumed)
+    assert index.docs.has_pending_operation()
+    index.docs.rollback()
+    assert not index.docs.has_pending_operation()
