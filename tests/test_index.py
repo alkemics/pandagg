@@ -227,3 +227,17 @@ def test_template_save(write_client):
     }
     assert auto_created_index["settings"]["index"]["number_of_shards"] == "1"
     assert auto_created_index["aliases"] == {"post": {}}
+
+
+def test_index_docwriter_has_pending_operation():
+    index = Post()
+    assert not index.docs.has_pending_operation()
+    index.docs.index(
+        _id="my_post_article",
+        _source={"title": "salut", "published_from": "2021-01-01"},
+    )
+    assert index.docs.has_pending_operation()
+    # assert it is still present afterwards (iterator is not consumed)
+    assert index.docs.has_pending_operation()
+    index.docs.rollback()
+    assert not index.docs.has_pending_operation()

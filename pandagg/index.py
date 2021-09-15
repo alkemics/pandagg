@@ -50,6 +50,13 @@ class DocumentBulkWriter:
     def _chain_actions(self, actions: Iterable[Action]) -> None:
         self._operations = chain(self._operations, iter(actions))
 
+    def has_pending_operation(self) -> bool:
+        op = next(self._operations, None)
+        if op is None:
+            return False
+        self._chain_actions([op])
+        return True
+
     def bulk(
         self, actions: Iterable[Action], _op_type_overwrite: Optional[OpType] = None
     ) -> "DocumentBulkWriter":
