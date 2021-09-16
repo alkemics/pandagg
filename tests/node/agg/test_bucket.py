@@ -10,6 +10,7 @@ from pandagg.node.aggs import (
     GeoHashGrid,
     AdjacencyMatrix,
     AutoDateHistogram,
+    VariableWidthHistogram,
 )
 
 from tests import PandaggTestCase
@@ -527,4 +528,23 @@ def test_auto_date_histogram():
             "2015-03-01",
             {"doc_count": 2, "key": 1425168000000, "key_as_string": "2015-03-01"},
         ),
+    ]
+
+
+def test_variable_width_histogram():
+    agg = VariableWidthHistogram(field="price", buckets=2)
+    assert agg.to_dict() == {
+        "variable_width_histogram": {"buckets": 2, "field": "price"}
+    }
+
+    raw_response = {
+        "buckets": [
+            {"min": 10.0, "key": 30.0, "max": 50.0, "doc_count": 2},
+            {"min": 150.0, "key": 185.0, "max": 200.0, "doc_count": 5},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (30.0, {"doc_count": 2, "key": 30.0, "max": 50.0, "min": 10.0}),
+        (185.0, {"doc_count": 5, "key": 185.0, "max": 200.0, "min": 150.0}),
     ]

@@ -9,7 +9,6 @@
 - significant terms
 - rare terms
 - significant text
-- variable width histogram
 """
 
 from typing import Any, Optional, Dict, Union, List
@@ -208,6 +207,23 @@ class DateHistogram(MultipleBucketAgg):
 
     def is_convertible_to_composite_source(self) -> bool:
         return True
+
+
+class VariableWidthHistogram(MultipleBucketAgg):
+    KEY = "variable_width_histogram"
+    VALUE_ATTRS = ["doc_count", "min", "max"]
+
+    def __init__(self, field: str, buckets: int, **body: Any) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-variablewidthhistogram-aggregation.html
+
+        Note: This aggregation cannot currently be nested under any aggregation that collects from more than a single
+        bucket.
+        """
+        self.field = field
+        super(VariableWidthHistogram, self).__init__(
+            field=field, buckets=buckets, **body
+        )
 
 
 class AutoDateHistogram(MultipleBucketAgg):

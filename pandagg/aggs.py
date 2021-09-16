@@ -14,6 +14,7 @@ from pandagg.node.aggs.bucket import (
     GeoDistance,
     AdjacencyMatrix,
     AutoDateHistogram,
+    VariableWidthHistogram,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -98,4 +99,5 @@ __all__ = [
     "GeoDistance",
     "AdjacencyMatrix",
     "AutoDateHistogram",
+    "VariableWidthHistogram",
 ]
