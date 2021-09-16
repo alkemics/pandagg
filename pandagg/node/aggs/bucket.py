@@ -1,8 +1,15 @@
 """Not implemented aggregations include:
-- children agg
-- ipv4
+- children
+- parent
 - sampler
+- diversified-sampler
+- geotilegrid
+- iprange
+- multi-terms
 - significant terms
+- rare terms
+- significant text
+- variable width histogram
 """
 
 from typing import Any, Optional, Dict, Union, List
