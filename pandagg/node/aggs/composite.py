@@ -25,14 +25,9 @@ class Composite(BucketAggClause):
         **body: Any
     ):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html"""  # noqa: E501
-        aggs = body.pop("aggs", None) or body.pop("aggregations", None)
-        _children: Dict[AggName, Any] = aggs or {}  # type: ignore
-        self._children: Dict[AggName, Any] = _children
-        if size is not None:
-            body["size"] = size
-        if after is not None:
-            body["after"] = after
-        super(Composite, self).__init__(meta=meta, sources=sources, **body)
+        super(Composite, self).__init__(
+            sources=sources, size=size, after=after, meta=meta, **body
+        )
 
     @property
     def after(self) -> Optional[AfterKey]:
