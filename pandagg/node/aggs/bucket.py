@@ -1,17 +1,16 @@
 """Not implemented aggregations include:
 - children agg
-- geo-distance
 - geo-hash grid
 - ipv4
 - sampler
 - significant terms
 """
 
+from typing import Any, Optional, Dict, Union, List
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta, QueryClauseDict, RangeDict
-from typing import Any, Optional, Dict, Union, List
+from pandagg.types import Meta, QueryClauseDict, RangeDict, DistanceType
 
 
 class Global(UniqueBucketAgg):
@@ -233,3 +232,28 @@ class DateRange(Range):
     KEY = "date_range"
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["date"]
+
+
+class GeoDistance(Range):
+    KEY = "geo_distance"
+    VALUE_ATTRS = ["doc_count"]
+    WHITELISTED_MAPPING_TYPES = ["geo_point"]
+
+    def __init__(
+        self,
+        field: str,
+        origin: str,
+        ranges: List[RangeDict],
+        unit: Optional[str] = None,
+        distance_type: Optional[DistanceType] = None,
+        keyed: bool = False,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
+        if unit is not None:
+            body["unit"] = unit
+        if distance_type is not None:
+            body["distance_type"] = distance_type
+        super(Range, self).__init__(
+            field=field, ranges=ranges, origin=origin, meta=meta, keyed=keyed, **body
+        )
