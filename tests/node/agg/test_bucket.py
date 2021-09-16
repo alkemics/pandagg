@@ -7,6 +7,7 @@ from pandagg.node.aggs import (
     Range,
     Histogram,
     GeoDistance,
+    GeoHashGrid,
 )
 
 from tests import PandaggTestCase
@@ -437,4 +438,23 @@ def test_geo_distance():
             "2015-03-01",
             {"doc_count": 2, "key": 1425168000000, "key_as_string": "2015-03-01"},
         ),
+    ]
+
+
+def test_geo_hash_grid():
+    agg = GeoHashGrid(field="location", precision=3)
+    assert agg.to_dict() == {"geohash_grid": {"field": "location", "precision": 3}}
+
+    raw_response = {
+        "buckets": [
+            {"key": "u17", "doc_count": 3},
+            {"key": "u09", "doc_count": 2},
+            {"key": "u15", "doc_count": 1},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("u17", {"doc_count": 3, "key": "u17"}),
+        ("u09", {"doc_count": 2, "key": "u09"}),
+        ("u15", {"doc_count": 1, "key": "u15"}),
     ]

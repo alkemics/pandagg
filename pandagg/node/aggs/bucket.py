@@ -1,6 +1,5 @@
 """Not implemented aggregations include:
 - children agg
-- geo-hash grid
 - ipv4
 - sampler
 - significant terms
@@ -257,3 +256,29 @@ class GeoDistance(Range):
         super(Range, self).__init__(
             field=field, ranges=ranges, origin=origin, meta=meta, keyed=keyed, **body
         )
+
+
+class GeoHashGrid(MultipleBucketAgg):
+    KEY = "geohash_grid"
+    VALUE_ATTRS = ["doc_count"]
+    WHITELISTED_MAPPING_TYPES = ["geo_point", "geo_shape"]
+
+    def __init__(
+        self,
+        field: str,
+        precision: Optional[int] = None,
+        bounds: Optional[Dict] = None,
+        size: Optional[int] = None,
+        shard_size: Optional[int] = None,
+        **body: Any
+    ) -> None:
+        self.field = field
+        if precision:
+            body["precision"] = precision
+        if bounds:
+            body["bounds"] = bounds
+        if size:
+            body["size"] = size
+        if shard_size:
+            body["shard_size"] = shard_size
+        super(GeoHashGrid, self).__init__(field=field, **body)

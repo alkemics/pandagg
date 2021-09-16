@@ -10,6 +10,8 @@ from pandagg.node.aggs.bucket import (
     Range,
     Missing,
     MatchAll,
+    GeoHashGrid,
+    GeoDistance,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -90,4 +92,6 @@ __all__ = [
     "SerialDiff",
     "MatchAll",
     "Composite",
+    "GeoHashGrid",
+    "GeoDistance",
 ]
