@@ -35,7 +35,9 @@ CompositeBucketKey = Dict[AggName, BucketKeyAtom]
 BucketKey = Union[BucketKeyAtom, CompositeBucketKey]
 BucketDict = Dict[str, Any]
 
-RangeDict = TypedDict("RangeDict", {"from": float, "to": float}, total=False)
+RangeDict = TypedDict(
+    "RangeDict", {"from": float, "to": float, "key": str}, total=False
+)
 DistanceType = Literal["arc", "plane"]
 ValidationMethod = Literal["STRICT", "COERCE", "IGNORE_MALFORMED"]
 

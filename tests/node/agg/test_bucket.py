@@ -6,6 +6,8 @@ from pandagg.node.aggs import (
     Nested,
     Range,
     Histogram,
+    GeoDistance,
+    GeoHashGrid,
 )
 
 from tests import PandaggTestCase
@@ -331,3 +333,128 @@ class BucketAggNodesTestCase(PandaggTestCase):
                 ),
             ],
         )
+
+
+def test_geo_distance():
+    # regular (not keyed)
+    agg = GeoDistance(
+        field="location",
+        origin="52.3760, 4.894",
+        unit="km",
+        distance_type="plane",
+        ranges=[{"to": 100}, {"from": 100, "to": 300}, {"from": 300}],
+    )
+    assert agg.to_dict() == {
+        "geo_distance": {
+            "distance_type": "plane",
+            "field": "location",
+            "origin": "52.3760, 4.894",
+            "ranges": [{"to": 100}, {"from": 100, "to": 300}, {"from": 300}],
+            "unit": "km",
+        }
+    }
+
+    raw_response = {
+        "buckets": [
+            {"key": "*-100000.0", "from": 0.0, "to": 100000.0, "doc_count": 3},
+            {
+                "key": "100000.0-300000.0",
+                "from": 100000.0,
+                "to": 300000.0,
+                "doc_count": 1,
+            },
+            {"key": "300000.0-*", "from": 300000.0, "doc_count": 2},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "*-100000.0",
+            {"doc_count": 3, "from": 0.0, "key": "*-100000.0", "to": 100000.0},
+        ),
+        (
+            "100000.0-300000.0",
+            {
+                "doc_count": 1,
+                "from": 100000.0,
+                "key": "100000.0-300000.0",
+                "to": 300000.0,
+            },
+        ),
+        ("300000.0-*", {"doc_count": 2, "from": 300000.0, "key": "300000.0-*"}),
+    ]
+
+    # keyed
+    agg = GeoDistance(
+        field="location",
+        origin="52.3760, 4.894",
+        unit="km",
+        distance_type="plane",
+        ranges=[{"to": 100}, {"from": 100, "to": 300}, {"from": 300}],
+        keyed=True,
+    )
+    assert agg.to_dict() == {
+        "geo_distance": {
+            "distance_type": "plane",
+            "field": "location",
+            "origin": "52.3760, 4.894",
+            "ranges": [{"to": 100}, {"from": 100, "to": 300}, {"from": 300}],
+            "unit": "km",
+            "keyed": True,
+        }
+    }
+
+    raw_response = {
+        "buckets": {
+            "2015-01-01": {
+                "key_as_string": "2015-01-01",
+                "key": 1420070400000,
+                "doc_count": 3,
+            },
+            "2015-02-01": {
+                "key_as_string": "2015-02-01",
+                "key": 1422748800000,
+                "doc_count": 2,
+            },
+            "2015-03-01": {
+                "key_as_string": "2015-03-01",
+                "key": 1425168000000,
+                "doc_count": 2,
+            },
+        }
+    }
+
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "2015-01-01",
+            {"doc_count": 3, "key": 1420070400000, "key_as_string": "2015-01-01"},
+        ),
+        (
+            "2015-02-01",
+            {"doc_count": 2, "key": 1422748800000, "key_as_string": "2015-02-01"},
+        ),
+        (
+            "2015-03-01",
+            {"doc_count": 2, "key": 1425168000000, "key_as_string": "2015-03-01"},
+        ),
+    ]
+
+
+def test_geo_hash_grid():
+    agg = GeoHashGrid(field="location", precision=3)
+    assert agg.to_dict() == {"geohash_grid": {"field": "location", "precision": 3}}
+
+    raw_response = {
+        "buckets": [
+            {"key": "u17", "doc_count": 3},
+            {"key": "u09", "doc_count": 2},
+            {"key": "u15", "doc_count": 1},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("u17", {"doc_count": 3, "key": "u17"}),
+        ("u09", {"doc_count": 2, "key": "u09"}),
+        ("u15", {"doc_count": 1, "key": "u15"}),
+    ]
