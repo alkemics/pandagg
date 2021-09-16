@@ -6,7 +6,6 @@
 - geotilegrid
 - iprange
 - multi-terms
-- rare terms
 - significant text
 """
 
@@ -343,3 +342,32 @@ class SignificantTerms(MultipleBucketAgg):
         """
         self.field = field
         super(SignificantTerms, self).__init__(field=field, **body)
+
+
+class RareTerms(MultipleBucketAgg):
+    KEY = "rare_terms"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        field: str,
+        max_doc_count: Optional[int] = None,
+        precision: Optional[float] = None,
+        include: Optional[Union[str, List[str]]] = None,
+        exclude: Optional[Union[str, List[str]]] = None,
+        missing: Optional[Any] = None,
+        **body: Any
+    ) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-rare-terms-aggregation.html
+        """
+        self.field = field
+        super(RareTerms, self).__init__(
+            field=field,
+            max_doc_count=max_doc_count,
+            precision=precision,
+            include=include,
+            exclude=exclude,
+            missing=missing,
+            **body
+        )

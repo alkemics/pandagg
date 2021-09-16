@@ -16,6 +16,7 @@ from pandagg.node.aggs.bucket import (
     AutoDateHistogram,
     VariableWidthHistogram,
     SignificantTerms,
+    RareTerms,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -102,4 +103,5 @@ __all__ = [
     "AutoDateHistogram",
     "VariableWidthHistogram",
     "SignificantTerms",
+    "RareTerms",
 ]

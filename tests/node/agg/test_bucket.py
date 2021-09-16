@@ -12,6 +12,7 @@ from pandagg.node.aggs import (
     AutoDateHistogram,
     VariableWidthHistogram,
     SignificantTerms,
+    RareTerms,
 )
 
 from tests import PandaggTestCase
@@ -578,4 +579,18 @@ def test_significant_terms():
                 "score": 0.371235374214817,
             },
         )
+    ]
+
+
+def test_rare_terms():
+    agg = RareTerms(field="genre")
+    assert agg.to_dict() == {"rare_terms": {"field": "genre"}}
+
+    raw_response = {
+        "buckets": [{"key": "swing", "doc_count": 1}, {"key": "jazz", "doc_count": 2}]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("swing", {"doc_count": 1, "key": "swing"}),
+        ("jazz", {"doc_count": 2, "key": "jazz"}),
     ]
