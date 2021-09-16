@@ -12,11 +12,6 @@ class AbstractAggNodesTestCase(TestCase):
             WHITELISTED_MAPPING_TYPES = ["boolean"]
             BLACKLISTED_MAPPING_TYPES = None
 
-            # depends on ElasticSearch aggregation handling, since this is a fake Aggregation this get_filter method
-            # doesn't really make sense, just wrote one so that all abstract methods are implemented
-            def get_filter(self, key):
-                return {"exists": {"field": key}}
-
             # example for unique bucket agg
             def extract_buckets(self, response_value):
                 yield (None, response_value)
@@ -24,10 +19,13 @@ class AbstractAggNodesTestCase(TestCase):
         node = CustomAgg(custom_body={"stuff": 2})
         self.assertEqual(node.to_dict(), {"custom_type": {"custom_body": {"stuff": 2}}})
 
-        node = CustomAgg(custom_body={"stuff": 2}, meta="meta_stuff")
+        node = CustomAgg(custom_body={"stuff": 2}, meta={"stuff": "meta_stuff"})
         self.assertEqual(
             node.to_dict(),
-            {"custom_type": {"custom_body": {"stuff": 2}}, "meta": "meta_stuff"},
+            {
+                "custom_type": {"custom_body": {"stuff": 2}},
+                "meta": {"stuff": "meta_stuff"},
+            },
         )
 
         self.assertEqual(
@@ -41,6 +39,3 @@ class AbstractAggNodesTestCase(TestCase):
 
         self.assertEqual(node.valid_on_field_type("string"), False)
         self.assertEqual(node.valid_on_field_type("boolean"), True)
-
-    def test_single_bucket_node(self):
-        pass

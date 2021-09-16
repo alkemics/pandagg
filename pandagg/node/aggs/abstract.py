@@ -9,7 +9,6 @@ from pandagg.types import (
     BucketDict,
     AggClauseDict,
     AggType,
-    QueryClauseDict,
     ClauseBody,
     Script,
     GapPolicy,
@@ -104,15 +103,6 @@ class AggClause(Node):
             aggs["meta"] = self.meta
         return aggs
 
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        """
-        Return filter query to list documents having this aggregation key.
-
-        :param key: string
-        :return: elasticsearch filter query
-        """
-        raise NotImplementedError()
-
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
@@ -205,9 +195,6 @@ class Root(AggClause):
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "_", ""
 
-    def get_filter(self, key: Optional[BucketKey]) -> Optional[QueryClauseDict]:
-        return None
-
     def extract_buckets(
         self, response_value: AggClauseResponseDict
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
@@ -233,9 +220,6 @@ class MetricAgg(AggClause):
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         # probably mypy bug in case of recursive typing
         yield None, response_value  # type: ignore
-
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        return None
 
 
 class BucketAggClause(AggClause):
@@ -271,10 +255,6 @@ class BucketAggClause(AggClause):
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         raise NotImplementedError()
 
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        """Provide filter to get documents belonging to document of given key."""
-        raise NotImplementedError()
-
 
 class UniqueBucketAgg(BucketAggClause):
     """Aggregations providing a single bucket."""
@@ -284,9 +264,6 @@ class UniqueBucketAgg(BucketAggClause):
     ) -> Iterator[Tuple[BucketKey, BucketDict]]:
         # probably mypy bug in case of recursive typing
         yield None, response_value  # type: ignore
-
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        raise NotImplementedError()
 
 
 class MultipleBucketAgg(BucketAggClause):
@@ -326,9 +303,6 @@ class MultipleBucketAgg(BucketAggClause):
     def _extract_bucket_key(self, bucket: BucketDict) -> BucketKey:
         return bucket[self.key_path]
 
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        raise NotImplementedError()
-
 
 class FieldOrScriptMetricAgg(MetricAgg):
     """
@@ -365,9 +339,6 @@ class Pipeline(UniqueBucketAgg):
         if gap_policy is not None:
             body_kwargs["gap_policy"] = gap_policy
         super(Pipeline, self).__init__(meta=meta, buckets_path=buckets_path, **body)
-
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        return None
 
 
 class ScriptPipeline(Pipeline):
