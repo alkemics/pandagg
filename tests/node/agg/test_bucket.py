@@ -11,6 +11,7 @@ from pandagg.node.aggs import (
     AdjacencyMatrix,
     AutoDateHistogram,
     VariableWidthHistogram,
+    SignificantTerms,
 )
 
 from tests import PandaggTestCase
@@ -547,4 +548,34 @@ def test_variable_width_histogram():
     assert list(agg.extract_buckets(raw_response)) == [
         (30.0, {"doc_count": 2, "key": 30.0, "max": 50.0, "min": 10.0}),
         (185.0, {"doc_count": 5, "key": 185.0, "max": 200.0, "min": 150.0}),
+    ]
+
+
+def test_significant_terms():
+    agg = SignificantTerms(field="crime_type")
+    assert agg.to_dict() == {"significant_terms": {"field": "crime_type"}}
+
+    raw_response = {
+        "doc_count": 47347,
+        "bg_count": 5064554,
+        "buckets": [
+            {
+                "key": "Bicycle theft",
+                "doc_count": 3640,
+                "score": 0.371235374214817,
+                "bg_count": 66799,
+            }
+        ],
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "Bicycle theft",
+            {
+                "bg_count": 66799,
+                "doc_count": 3640,
+                "key": "Bicycle theft",
+                "score": 0.371235374214817,
+            },
+        )
     ]

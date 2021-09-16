@@ -6,7 +6,6 @@
 - geotilegrid
 - iprange
 - multi-terms
-- significant terms
 - rare terms
 - significant text
 """
@@ -332,3 +331,15 @@ class GeoHashGrid(MultipleBucketAgg):
             shard_size=shard_size,
             **body
         )
+
+
+class SignificantTerms(MultipleBucketAgg):
+    KEY = "significant_terms"
+    VALUE_ATTRS = ["doc_count", "score", "bg_count"]
+
+    def __init__(self, field: str, **body: Any) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
+        """
+        self.field = field
+        super(SignificantTerms, self).__init__(field=field, **body)
