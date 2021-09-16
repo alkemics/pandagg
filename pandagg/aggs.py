@@ -12,6 +12,7 @@ from pandagg.node.aggs.bucket import (
     MatchAll,
     GeoHashGrid,
     GeoDistance,
+    AdjacencyMatrix,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -94,4 +95,5 @@ __all__ = [
     "Composite",
     "GeoHashGrid",
     "GeoDistance",
+    "AdjacencyMatrix",
 ]

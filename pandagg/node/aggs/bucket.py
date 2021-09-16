@@ -143,6 +143,24 @@ class Filters(MultipleBucketAgg):
         super(Filters, self).__init__(filters=filters, meta=meta, **body_kwargs)
 
 
+class AdjacencyMatrix(MultipleBucketAgg):
+
+    KEY = "adjacency_matrix"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        filters: Dict[str, QueryClauseDict],
+        separator: Optional[str] = None,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
+        self.filters: Dict[str, QueryClauseDict] = filters
+        if separator is not None:
+            body["separator"] = separator
+        super(AdjacencyMatrix, self).__init__(filters=filters, meta=meta, **body)
+
+
 class Histogram(MultipleBucketAgg):
 
     KEY = "histogram"
