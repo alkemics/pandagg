@@ -9,6 +9,7 @@ from pandagg.node.aggs import (
     GeoDistance,
     GeoHashGrid,
     AdjacencyMatrix,
+    AutoDateHistogram,
 )
 
 from tests import PandaggTestCase
@@ -495,4 +496,35 @@ def test_adjacency_matrix():
         ("grpB", {"doc_count": 2, "key": "grpB"}),
         ("grpB&grpC", {"doc_count": 1, "key": "grpB&grpC"}),
         ("grpC", {"doc_count": 1, "key": "grpC"}),
+    ]
+
+
+def test_auto_date_histogram():
+    agg = AutoDateHistogram(field="date", buckets=5, format="yyyy-MM-dd")
+    assert agg.to_dict() == {
+        "auto_date_histogram": {"field": "date", "buckets": 5, "format": "yyyy-MM-dd"}
+    }
+
+    raw_response = {
+        "buckets": [
+            {"key_as_string": "2015-01-01", "key": 1420070400000, "doc_count": 3},
+            {"key_as_string": "2015-02-01", "key": 1422748800000, "doc_count": 2},
+            {"key_as_string": "2015-03-01", "key": 1425168000000, "doc_count": 2},
+        ],
+        "interval": "1M",
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "2015-01-01",
+            {"doc_count": 3, "key": 1420070400000, "key_as_string": "2015-01-01"},
+        ),
+        (
+            "2015-02-01",
+            {"doc_count": 2, "key": 1422748800000, "key_as_string": "2015-02-01"},
+        ),
+        (
+            "2015-03-01",
+            {"doc_count": 2, "key": 1425168000000, "key_as_string": "2015-03-01"},
+        ),
     ]

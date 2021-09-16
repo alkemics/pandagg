@@ -171,7 +171,6 @@ class Histogram(MultipleBucketAgg):
         self, field: str, interval: int, meta: Optional[Meta] = None, **body: Any
     ) -> None:
         self.field: str = field
-        self.interval: int = interval
         super(Histogram, self).__init__(
             field=field, interval=interval, meta=meta, **body
         )
@@ -207,13 +206,13 @@ class DateHistogram(MultipleBucketAgg):
                 'One of "interval", "calendar_interval" or "fixed_interval" must be provided.'
             )
         if interval:
+            # deprecated
             body["interval"] = interval
         if calendar_interval:
             body["calendar_interval"] = calendar_interval
         if fixed_interval:
             body["fixed_interval"] = fixed_interval
 
-        self.interval = interval or calendar_interval or fixed_interval
         super(DateHistogram, self).__init__(
             field=field,
             meta=meta,
@@ -223,6 +222,41 @@ class DateHistogram(MultipleBucketAgg):
 
     def is_convertible_to_composite_source(self) -> bool:
         return True
+
+
+class AutoDateHistogram(MultipleBucketAgg):
+    KEY = "auto_date_histogram"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        field: str,
+        buckets: Optional[int] = None,
+        format: Optional[str] = None,
+        time_zone: Optional[str] = None,
+        minimum_interval: Optional[str] = None,
+        missing: Optional[str] = None,
+        meta: Optional[Meta] = None,
+        key_as_string: bool = True,
+        **body: Any
+    ) -> None:
+        self.field: str = field
+        if buckets is not None:
+            body["buckets"] = buckets
+        if format is not None:
+            body["format"] = format
+        if time_zone is not None:
+            body["time_zone"] = time_zone
+        if minimum_interval is not None:
+            body["minimum_interval"] = minimum_interval
+        if missing is not None:
+            body["missing"] = missing
+        super(AutoDateHistogram, self).__init__(
+            field=field,
+            meta=meta,
+            key_path="key_as_string" if key_as_string else "key",
+            **body
+        )
 
 
 class Range(MultipleBucketAgg):
