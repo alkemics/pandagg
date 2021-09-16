@@ -18,21 +18,17 @@ class GeoDistance(AbstractSingleFieldQueryClause):
         validation_method: Optional[ValidationMethod] = body.pop(
             "validation_method", None
         )
-
         if len(body) != 1:
             raise ValueError("Wrong declaration: %s" % body)
-
         field, location = self.expand__to_dot(body).popitem()
-
         self.field: str = field
-
-        b = {field: location}
-        if distance_type is not None:
-            b["distance_type"] = distance_type
-        if validation_method is not None:
-            b["validation_method"] = validation_method
         super(GeoDistance, self).__init__(
-            _name=_name, field=field, distance=distance, **b
+            _name=_name,
+            field=field,
+            distance=distance,
+            distance_type=distance_type,
+            validation_method=validation_method,
+            **{field: location}
         )
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:

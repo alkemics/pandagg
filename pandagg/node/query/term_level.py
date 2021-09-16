@@ -31,7 +31,6 @@ class Ids(LeafQueryClause):
         self, values: List[Union[int, str]], _name: Optional[QueryName] = None
     ) -> None:
         self.values: List[Union[int, str]] = values
-
         super(Ids, self).__init__(_name=_name, values=values)
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
@@ -66,10 +65,9 @@ class Terms(AbstractSingleFieldQueryClause):
         if len(body) != 1:
             raise ValueError("Wrong declaration: %s" % body)
         field, terms = self.expand__to_dot(body).popitem()
-        b = {field: terms}
-        if boost is not None:
-            b["boost"] = boost
-        super(Terms, self).__init__(_name=_name, field=field, **b)
+        super(Terms, self).__init__(
+            _name=_name, field=field, boost=boost, **{field: terms}
+        )
 
 
 class TermsSet(KeyFieldQueryClause):
