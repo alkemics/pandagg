@@ -2,7 +2,6 @@ from tests import PandaggTestCase
 import pandas as pd
 
 from pandagg.search import Search
-from pandagg.tree.response import AggsResponseTree
 from pandagg.response import SearchResponse, Hits, Hit, Aggregations
 from pandagg.tree.aggs import Aggs
 
@@ -132,14 +131,6 @@ class ResponseTestCase(PandaggTestCase):
 
 
 class AggregationsResponseTestCase(PandaggTestCase):
-    def test_parse_as_tree(self, *_):
-        my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
-        response = Aggregations(
-            data=sample.ES_AGG_RESPONSE, _search=Search().aggs(my_agg)
-        ).to_tree()
-        self.assertIsInstance(response, AggsResponseTree)
-        self.assertEqual(response.__str__(), sample.EXPECTED_RESPONSE_TREE_REPR)
-
     def test_normalize_buckets(self):
         my_agg = Aggs(sample.EXPECTED_AGG_QUERY, mappings=MAPPINGS)
         response = Aggregations(

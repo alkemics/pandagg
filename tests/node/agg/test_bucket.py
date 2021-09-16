@@ -81,9 +81,6 @@ class BucketAggNodesTestCase(PandaggTestCase):
 
         # test get_filter
         filter_agg = Filter(filter={"term": {"some_path": 1}})
-        self.assertEqual(filter_agg.get_filter(None), {"term": {"some_path": 1}})
-
-        # test query dict
         self.assertEqual(filter_agg.to_dict(), {"filter": {"term": {"some_path": 1}}})
 
     def test_nested(self):
@@ -105,9 +102,6 @@ class BucketAggNodesTestCase(PandaggTestCase):
 
         # test get_filter
         nested_agg = Nested(path="nested_path")
-        self.assertEqual(nested_agg.get_filter(None), None)
-
-        # test query dict
         self.assertEqual(nested_agg.to_dict(), {"nested": {"path": "nested_path"}})
 
     def test_filters(self):
@@ -143,26 +137,6 @@ class BucketAggNodesTestCase(PandaggTestCase):
             other_bucket=True,
             other_bucket_key="neither_one_nor_two",
         )
-        self.assertEqual(
-            filters_agg.get_filter("first_bucket"), {"term": {"some_path": 1}}
-        )
-        expected_others_filter = {
-            "bool": {
-                "must_not": {
-                    "bool": {
-                        "should": [
-                            {"term": {"some_path": 1}},
-                            {"term": {"some_path": 2}},
-                        ]
-                    }
-                }
-            }
-        }
-        self.assertQueryEqual(filters_agg.get_filter("_other_"), expected_others_filter)
-        self.assertQueryEqual(
-            filters_agg.get_filter("neither_one_nor_two"), expected_others_filter
-        )
-
         self.assertQueryEqual(
             filters_agg.to_dict(),
             {
@@ -272,9 +246,6 @@ class BucketAggNodesTestCase(PandaggTestCase):
 
         hist_agg = Histogram(field="price", interval=50)
         self.assertEqual(hist_agg.to_dict(), query)
-        self.assertEqual(
-            hist_agg.get_filter(100), {"range": {"price": {"gte": 100.0, "lt": 150.0}}}
-        )
 
         buckets_iterator = hist_agg.extract_buckets(es_raw_response)
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))
@@ -304,11 +275,6 @@ class BucketAggNodesTestCase(PandaggTestCase):
         date_hist_agg = DateHistogram(
             name="name", field="field", interval="1w", key_as_string=True
         )
-        self.assertEqual(
-            date_hist_agg.get_filter("2018-01-01"),
-            {"range": {"field": {"gte": "2018-01-01", "lt": "2018-01-01||+1w"}}},
-        )
-
         buckets_iterator = date_hist_agg.extract_buckets(es_raw_response)
 
         self.assertTrue(hasattr(buckets_iterator, "__iter__"))

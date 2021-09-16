@@ -1,17 +1,13 @@
-from .abstract import BucketAggClause, AggClause
+from .abstract import BucketAggClause
 from typing import Optional, Any, Dict, List, Iterator, Tuple
 from pandagg.types import (
     Meta,
     AfterKey,
     CompositeSource,
-    BucketKey,
     BucketDict,
     AggClauseResponseDict,
     AggName,
-    QueryClauseDict,
     CompositeBucketKey,
-    AggType,
-    ClauseBody,
 )
 
 
@@ -61,30 +57,3 @@ class Composite(BucketAggClause):
         for bucket in buckets:
             bucket_composite_key: CompositeBucketKey = bucket["key"]  # type: ignore
             yield bucket_composite_key, bucket
-
-    def get_filter(self, key: BucketKey) -> Optional[QueryClauseDict]:
-        """In composite aggregation, key is a map, source name -> value"""
-        if not key:
-            return None
-        key_: CompositeBucketKey = key  # type: ignore
-        conditions: List[QueryClauseDict] = []
-        source: Dict[AggName, CompositeSource]
-
-        for source in self.sources:
-            name: AggName
-            source_clause: CompositeSource
-            name, source_clause = source.popitem()
-            if name not in key_:
-                continue
-            agg_type: AggType
-            agg_body: ClauseBody
-            agg_type, agg_body = source.popitem()
-            agg_instance: AggClause = self.get_dsl_class(agg_type)(**agg_body)
-            condition: Optional[QueryClauseDict] = agg_instance.get_filter(
-                key=key_[name]
-            )
-            if condition is not None:
-                conditions.append(condition)
-        if not conditions:
-            return None
-        return {"bool": {"filter": conditions}}

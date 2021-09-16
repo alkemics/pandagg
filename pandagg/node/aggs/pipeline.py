@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Pipeline aggregations:
 https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-aggregations-pipeline.html
 """

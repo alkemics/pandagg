@@ -20,10 +20,8 @@ from lighttree.node import NodeId
 
 from pandagg.query import Query
 from pandagg.aggs import Aggs, Composite
-from pandagg.interactive.response import IResponse
 from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root, AggClause
 from pandagg.node.aggs.bucket import Nested, ReverseNested
-from pandagg.tree.response import AggsResponseTree
 from pandagg.types import (
     HitDict,
     HitsDict,
@@ -650,12 +648,6 @@ class Aggregations:
             for child in self._normalize_buckets(self.data, k):
                 children.append(child)
         return {"level": "root", "key": None, "value": None, "children": children}
-
-    def to_tree(self) -> AggsResponseTree:
-        return AggsResponseTree(aggs=self._aggs).parse(self.data)
-
-    def to_interactive_tree(self) -> IResponse:
-        return IResponse(tree=self.to_tree(), search=self._search, depth=1)
 
     def __repr__(self) -> str:
         if not self.keys():
