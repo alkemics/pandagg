@@ -24,6 +24,7 @@ from pandagg.node.aggs.bucket import (
     Children,
     Parent,
     SignificantText,
+    MultiTerms,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -118,4 +119,5 @@ __all__ = [
     "Children",
     "Parent",
     "SignificantText",
+    "MultiTerms",
 ]

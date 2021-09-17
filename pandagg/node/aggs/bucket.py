@@ -1,6 +1,4 @@
-"""Not implemented aggregations include:
-- multi-terms
-"""
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket.html
 
 from typing import Any, Optional, Dict, Union, List
 
@@ -437,3 +435,14 @@ class RareTerms(MultipleBucketAgg):
             missing=missing,
             **body
         )
+
+
+class MultiTerms(MultipleBucketAgg):
+    KEY = "multi_terms"
+    VALUE_ATTRS = ["doc_count", "doc_count_error_upper_bound", "sum_other_doc_count"]
+
+    def __init__(self, terms: List[Dict], **body: Any) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-multi-terms-aggregation.html
+        """
+        super(MultiTerms, self).__init__(terms=terms, key_as_string=True, **body)
