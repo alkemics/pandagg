@@ -27,7 +27,10 @@ class Filter(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
 
     def __init__(
-        self, filter: Optional[QueryClauseDict] = None, meta: Meta = None, **body: Any
+        self,
+        filter: Optional[QueryClauseDict] = None,
+        meta: Optional[Meta] = None,
+        **body: Any
     ):
         if (filter is not None) != (not body):
             raise ValueError(
@@ -41,8 +44,8 @@ class Filter(UniqueBucketAgg):
 
 
 class MatchAll(Filter):
-    def __init__(self, meta: Meta = None, **body: Any):
-        super(MatchAll, self).__init__(filter={"match_all": {}}, meta=meta, **body)
+    def __init__(self, **body: Any):
+        super(MatchAll, self).__init__(filter={"match_all": {}}, **body)
 
 
 class Nested(UniqueBucketAgg):
@@ -51,9 +54,9 @@ class Nested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, path: str, meta: Meta = None, **body: Any):
+    def __init__(self, path: str, **body: Any):
         self.path: str = path
-        super(Nested, self).__init__(path=path, meta=meta, **body)
+        super(Nested, self).__init__(path=path, **body)
 
 
 class ReverseNested(UniqueBucketAgg):
@@ -62,18 +65,18 @@ class ReverseNested(UniqueBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = ["nested"]
 
-    def __init__(self, path: Optional[str] = None, meta: Meta = None, **body: Any):
+    def __init__(self, path: Optional[str] = None, **body: Any) -> None:
         self.path: Optional[str] = path
-        super(ReverseNested, self).__init__(meta=meta, path=path, **body)
+        super(ReverseNested, self).__init__(path=path, **body)
 
 
 class Missing(UniqueBucketAgg):
     KEY = "missing"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, field: str, meta: Meta = None, **body: Any):
+    def __init__(self, field: str, **body: Any) -> None:
         self.field: str = field
-        super(Missing, self).__init__(field=field, meta=meta, **body)
+        super(Missing, self).__init__(field=field, **body)
 
 
 class Sampler(UniqueBucketAgg):
@@ -120,13 +123,10 @@ class Terms(MultipleBucketAgg):
         field: str,
         missing: Optional[Union[int, str]] = None,
         size: Optional[int] = None,
-        meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
         self.field: str = field
-        super(Terms, self).__init__(
-            field=field, missing=missing, size=size, meta=meta, **body
-        )
+        super(Terms, self).__init__(field=field, missing=missing, size=size, **body)
 
     def is_convertible_to_composite_source(self) -> bool:
         # TODO: elasticsearch documentation is unclear about which body clauses are accepted as a source, for now just
@@ -149,14 +149,12 @@ class Filters(MultipleBucketAgg):
         filters: Dict[str, QueryClauseDict],
         other_bucket: bool = False,
         other_bucket_key: Optional[str] = None,
-        meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
         super(Filters, self).__init__(
             filters=filters,
             other_bucket=other_bucket,
             other_bucket_key=other_bucket_key,
-            meta=meta,
             **body
         )
 
@@ -170,11 +168,10 @@ class AdjacencyMatrix(MultipleBucketAgg):
         self,
         filters: Dict[str, QueryClauseDict],
         separator: Optional[str] = None,
-        meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
         super(AdjacencyMatrix, self).__init__(
-            filters=filters, separator=separator, meta=meta, **body
+            filters=filters, separator=separator, **body
         )
 
 
@@ -184,13 +181,9 @@ class Histogram(MultipleBucketAgg):
     VALUE_ATTRS = ["doc_count"]
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
-    def __init__(
-        self, field: str, interval: int, meta: Optional[Meta] = None, **body: Any
-    ) -> None:
+    def __init__(self, field: str, interval: int, **body: Any) -> None:
         self.field: str = field
-        super(Histogram, self).__init__(
-            field=field, interval=interval, meta=meta, **body
-        )
+        super(Histogram, self).__init__(field=field, interval=interval, **body)
 
     def is_convertible_to_composite_source(self) -> bool:
         return True
@@ -207,7 +200,6 @@ class DateHistogram(MultipleBucketAgg):
         interval: str = None,
         calendar_interval: str = None,
         fixed_interval: str = None,
-        meta: Meta = None,
         key_as_string: bool = True,
         **body: Any
     ) -> None:
@@ -227,7 +219,6 @@ class DateHistogram(MultipleBucketAgg):
             interval=interval,
             calendar_interval=calendar_interval,
             fixed_interval=fixed_interval,
-            meta=meta,
             key_as_string=key_as_string,
             **body
         )
@@ -265,7 +256,6 @@ class AutoDateHistogram(MultipleBucketAgg):
         time_zone: Optional[str] = None,
         minimum_interval: Optional[str] = None,
         missing: Optional[str] = None,
-        meta: Optional[Meta] = None,
         key_as_string: bool = True,
         **body: Any
     ) -> None:
@@ -277,7 +267,6 @@ class AutoDateHistogram(MultipleBucketAgg):
             time_zone=time_zone,
             minimum_interval=minimum_interval,
             missing=missing,
-            meta=meta,
             key_as_string=key_as_string,
             **body
         )
@@ -289,17 +278,10 @@ class Range(MultipleBucketAgg):
     WHITELISTED_MAPPING_TYPES = NUMERIC_TYPES
 
     def __init__(
-        self,
-        field: str,
-        ranges: List[RangeDict],
-        keyed: bool = False,
-        meta: Optional[Meta] = None,
-        **body: Any
+        self, field: str, ranges: List[RangeDict], keyed: bool = False, **body: Any
     ) -> None:
         self.field: str = field
-        super(Range, self).__init__(
-            field=field, ranges=ranges, keyed=keyed, meta=meta, **body
-        )
+        super(Range, self).__init__(field=field, ranges=ranges, keyed=keyed, **body)
 
 
 class DateRange(Range):
@@ -327,7 +309,6 @@ class GeoDistance(Range):
         unit: Optional[str] = None,
         distance_type: Optional[DistanceType] = None,
         keyed: bool = False,
-        meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
         super(Range, self).__init__(
@@ -337,7 +318,6 @@ class GeoDistance(Range):
             unit=unit,
             distance_type=distance_type,
             keyed=keyed,
-            meta=meta,
             **body
         )
 

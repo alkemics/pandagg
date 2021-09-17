@@ -43,7 +43,7 @@ class AggClause(Node):
     ) -> None:
         # remove empty keys from body, make __init__ clearer
         self.body: Dict[str, Any] = {k: v for k, v in body.items() if v is not None}
-        self.meta: Optional[Dict[str, Any]] = meta
+        self.meta: Optional[Meta] = meta
         self._children: Dict[AggName, Any] = {}
         super(AggClause, self).__init__(identifier=identifier)
 
