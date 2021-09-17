@@ -13,6 +13,8 @@ from pandagg.node.aggs import (
     VariableWidthHistogram,
     SignificantTerms,
     RareTerms,
+    GeoTileGrid,
+    IPRange,
 )
 
 from tests import PandaggTestCase
@@ -593,4 +595,70 @@ def test_rare_terms():
     assert list(agg.extract_buckets(raw_response)) == [
         ("swing", {"doc_count": 1, "key": "swing"}),
         ("jazz", {"doc_count": 2, "key": "jazz"}),
+    ]
+
+
+def test_geo_tile_grid():
+    agg = GeoTileGrid(field="location", precision=8)
+    assert agg.to_dict() == {"geotile_grid": {"field": "location", "precision": 8}}
+
+    raw_response = {
+        "buckets": [
+            {"key": "8/131/84", "doc_count": 3},
+            {"key": "8/129/88", "doc_count": 2},
+            {"key": "8/131/85", "doc_count": 1},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("8/131/84", {"doc_count": 3, "key": "8/131/84"}),
+        ("8/129/88", {"doc_count": 2, "key": "8/129/88"}),
+        ("8/131/85", {"doc_count": 1, "key": "8/131/85"}),
+    ]
+
+
+def test_ip_range():
+    # unkeyed
+    agg = IPRange(field="ip", ranges=[{"to": "10.0.0.5"}, {"from": "10.0.0.5"}])
+    assert agg.to_dict() == {
+        "ip_range": {
+            "field": "ip",
+            "ranges": [{"to": "10.0.0.5"}, {"from": "10.0.0.5"}],
+        }
+    }
+
+    raw_response = {
+        "buckets": [
+            {"key": "*-10.0.0.5", "to": "10.0.0.5", "doc_count": 10},
+            {"key": "10.0.0.5-*", "from": "10.0.0.5", "doc_count": 260},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("*-10.0.0.5", {"doc_count": 10, "key": "*-10.0.0.5", "to": "10.0.0.5"}),
+        ("10.0.0.5-*", {"doc_count": 260, "from": "10.0.0.5", "key": "10.0.0.5-*"}),
+    ]
+
+    # keyed
+    agg = IPRange(
+        field="ip", ranges=[{"to": "10.0.0.5"}, {"from": "10.0.0.5"}], keyed=True
+    )
+    assert agg.to_dict() == {
+        "ip_range": {
+            "field": "ip",
+            "ranges": [{"to": "10.0.0.5"}, {"from": "10.0.0.5"}],
+            "keyed": True,
+        }
+    }
+
+    raw_response = {
+        "buckets": {
+            "*-10.0.0.5": {"to": "10.0.0.5", "doc_count": 10},
+            "10.0.0.5-*": {"from": "10.0.0.5", "doc_count": 260},
+        }
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("*-10.0.0.5", {"doc_count": 10, "to": "10.0.0.5"}),
+        ("10.0.0.5-*", {"doc_count": 260, "from": "10.0.0.5"}),
     ]

@@ -3,8 +3,6 @@
 - parent
 - sampler
 - diversified-sampler
-- geotilegrid
-- iprange
 - multi-terms
 - significant text
 """
@@ -279,6 +277,12 @@ class DateRange(Range):
     WHITELISTED_MAPPING_TYPES = ["date"]
 
 
+class IPRange(Range):
+    KEY = "ip_range"
+    VALUE_ATTRS = ["doc_count"]
+    WHITELISTED_MAPPING_TYPES = ["ip"]
+
+
 class GeoDistance(Range):
     KEY = "geo_distance"
     VALUE_ATTRS = ["doc_count"]
@@ -323,6 +327,31 @@ class GeoHashGrid(MultipleBucketAgg):
     ) -> None:
         self.field = field
         super(GeoHashGrid, self).__init__(
+            field=field,
+            precision=precision,
+            bounds=bounds,
+            size=size,
+            shard_size=shard_size,
+            **body
+        )
+
+
+class GeoTileGrid(MultipleBucketAgg):
+    KEY = "geotile_grid"
+    VALUE_ATTRS = ["doc_count"]
+    WHITELISTED_MAPPING_TYPES = ["geo_point", "geo_shape"]
+
+    def __init__(
+        self,
+        field: str,
+        precision: Optional[int] = None,
+        bounds: Optional[Dict] = None,
+        size: Optional[int] = None,
+        shard_size: Optional[int] = None,
+        **body: Any
+    ) -> None:
+        self.field = field
+        super(GeoTileGrid, self).__init__(
             field=field,
             precision=precision,
             bounds=bounds,
