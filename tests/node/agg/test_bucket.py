@@ -8,6 +8,11 @@ from pandagg.node.aggs import (
     Histogram,
     GeoDistance,
     GeoHashGrid,
+    AdjacencyMatrix,
+    AutoDateHistogram,
+    VariableWidthHistogram,
+    SignificantTerms,
+    RareTerms,
 )
 
 from tests import PandaggTestCase
@@ -457,4 +462,135 @@ def test_geo_hash_grid():
         ("u17", {"doc_count": 3, "key": "u17"}),
         ("u09", {"doc_count": 2, "key": "u09"}),
         ("u15", {"doc_count": 1, "key": "u15"}),
+    ]
+
+
+def test_adjacency_matrix():
+    agg = AdjacencyMatrix(
+        filters={
+            "grpA": {"terms": {"accounts": ["hillary", "sidney"]}},
+            "grpB": {"terms": {"accounts": ["donald", "mitt"]}},
+            "grpC": {"terms": {"accounts": ["vladimir", "nigel"]}},
+        }
+    )
+    assert agg.to_dict() == {
+        "adjacency_matrix": {
+            "filters": {
+                "grpA": {"terms": {"accounts": ["hillary", "sidney"]}},
+                "grpB": {"terms": {"accounts": ["donald", "mitt"]}},
+                "grpC": {"terms": {"accounts": ["vladimir", "nigel"]}},
+            }
+        }
+    }
+
+    raw_response = {
+        "buckets": [
+            {"key": "grpA", "doc_count": 2},
+            {"key": "grpA&grpB", "doc_count": 1},
+            {"key": "grpB", "doc_count": 2},
+            {"key": "grpB&grpC", "doc_count": 1},
+            {"key": "grpC", "doc_count": 1},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("grpA", {"doc_count": 2, "key": "grpA"}),
+        ("grpA&grpB", {"doc_count": 1, "key": "grpA&grpB"}),
+        ("grpB", {"doc_count": 2, "key": "grpB"}),
+        ("grpB&grpC", {"doc_count": 1, "key": "grpB&grpC"}),
+        ("grpC", {"doc_count": 1, "key": "grpC"}),
+    ]
+
+
+def test_auto_date_histogram():
+    agg = AutoDateHistogram(field="date", buckets=5, format="yyyy-MM-dd")
+    assert agg.to_dict() == {
+        "auto_date_histogram": {"field": "date", "buckets": 5, "format": "yyyy-MM-dd"}
+    }
+
+    raw_response = {
+        "buckets": [
+            {"key_as_string": "2015-01-01", "key": 1420070400000, "doc_count": 3},
+            {"key_as_string": "2015-02-01", "key": 1422748800000, "doc_count": 2},
+            {"key_as_string": "2015-03-01", "key": 1425168000000, "doc_count": 2},
+        ],
+        "interval": "1M",
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "2015-01-01",
+            {"doc_count": 3, "key": 1420070400000, "key_as_string": "2015-01-01"},
+        ),
+        (
+            "2015-02-01",
+            {"doc_count": 2, "key": 1422748800000, "key_as_string": "2015-02-01"},
+        ),
+        (
+            "2015-03-01",
+            {"doc_count": 2, "key": 1425168000000, "key_as_string": "2015-03-01"},
+        ),
+    ]
+
+
+def test_variable_width_histogram():
+    agg = VariableWidthHistogram(field="price", buckets=2)
+    assert agg.to_dict() == {
+        "variable_width_histogram": {"buckets": 2, "field": "price"}
+    }
+
+    raw_response = {
+        "buckets": [
+            {"min": 10.0, "key": 30.0, "max": 50.0, "doc_count": 2},
+            {"min": 150.0, "key": 185.0, "max": 200.0, "doc_count": 5},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (30.0, {"doc_count": 2, "key": 30.0, "max": 50.0, "min": 10.0}),
+        (185.0, {"doc_count": 5, "key": 185.0, "max": 200.0, "min": 150.0}),
+    ]
+
+
+def test_significant_terms():
+    agg = SignificantTerms(field="crime_type")
+    assert agg.to_dict() == {"significant_terms": {"field": "crime_type"}}
+
+    raw_response = {
+        "doc_count": 47347,
+        "bg_count": 5064554,
+        "buckets": [
+            {
+                "key": "Bicycle theft",
+                "doc_count": 3640,
+                "score": 0.371235374214817,
+                "bg_count": 66799,
+            }
+        ],
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "Bicycle theft",
+            {
+                "bg_count": 66799,
+                "doc_count": 3640,
+                "key": "Bicycle theft",
+                "score": 0.371235374214817,
+            },
+        )
+    ]
+
+
+def test_rare_terms():
+    agg = RareTerms(field="genre")
+    assert agg.to_dict() == {"rare_terms": {"field": "genre"}}
+
+    raw_response = {
+        "buckets": [{"key": "swing", "doc_count": 1}, {"key": "jazz", "doc_count": 2}]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("swing", {"doc_count": 1, "key": "swing"}),
+        ("jazz", {"doc_count": 2, "key": "jazz"}),
     ]

@@ -9,7 +9,6 @@ from pandagg.types import (
     BucketDict,
     AggClauseDict,
     AggType,
-    ClauseBody,
     Script,
     GapPolicy,
     AggName,
@@ -39,11 +38,13 @@ class AggClause(Node):
     WHITELISTED_MAPPING_TYPES: List[str]
     BLACKLISTED_MAPPING_TYPES: List[str]
 
-    def __init__(self, meta: Optional[Meta] = None, **body: Any) -> None:
-        identifier: Optional[str] = body.pop("identifier", None)
-        self.body: Dict[str, Any] = body
+    def __init__(
+        self, meta: Optional[Meta] = None, identifier: Optional[str] = None, **body: Any
+    ) -> None:
+        # remove empty keys from body, make __init__ clearer
+        self.body: Dict[str, Any] = {k: v for k, v in body.items() if v is not None}
         self.meta: Optional[Dict[str, Any]] = meta
-        self._children: Dict[str, Any] = {}
+        self._children: Dict[AggName, Any] = {}
         super(AggClause, self).__init__(identifier=identifier)
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
@@ -244,11 +245,9 @@ class BucketAggClause(AggClause):
 
     def __init__(self, meta: Optional[Meta] = None, **body: Any) -> None:
         identifier: Optional[str] = body.pop("identifier", None)
-        self.body: ClauseBody = body
-        self.meta: Optional[Meta] = meta
         aggs = body.pop("aggs", None) or body.pop("aggregations", None)
+        super(BucketAggClause, self).__init__(identifier=identifier, meta=meta, **body)
         self._children: Dict[AggName, Any] = aggs or {}  # type: ignore
-        super(AggClause, self).__init__(identifier=identifier)
 
     def extract_buckets(
         self, response_value: AggClauseResponseDict
@@ -271,7 +270,11 @@ class MultipleBucketAgg(BucketAggClause):
     IMPLICIT_KEYED: bool = False
 
     def __init__(
-        self, keyed: bool = False, key_path: str = "key", meta: Meta = None, **body: Any
+        self,
+        keyed: bool = False,
+        key_as_string: bool = False,
+        meta: Meta = None,
+        **body: Any
     ) -> None:
         """
         Aggregation that return either a list or a map of buckets.
@@ -281,7 +284,7 @@ class MultipleBucketAgg(BucketAggClause):
         """
         # keyed has another meaning in lighttree Node
         self.keyed_: bool = keyed or self.IMPLICIT_KEYED
-        self.key_path: str = key_path
+        self.key_path: str = "key_as_string" if key_as_string else "key"
         if keyed and not self.IMPLICIT_KEYED:
             body["keyed"] = keyed
         super(MultipleBucketAgg, self).__init__(meta=meta, **body)
@@ -317,12 +320,9 @@ class FieldOrScriptMetricAgg(MetricAgg):
         **body: Any
     ) -> None:
         self.field: Optional[str] = field
-        self.script: Optional[Script] = script
-        if field is not None:
-            body["field"] = field
-        if script is not None:
-            body["script"] = script
-        super(FieldOrScriptMetricAgg, self).__init__(meta=meta, **body)
+        super(FieldOrScriptMetricAgg, self).__init__(
+            field=field, script=script, meta=meta, **body
+        )
 
 
 class Pipeline(UniqueBucketAgg):
@@ -333,12 +333,9 @@ class Pipeline(UniqueBucketAgg):
         meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
-        self.buckets_path: str = buckets_path
-        self.gap_policy: Optional[GapPolicy] = gap_policy
-        body_kwargs = dict(body)
-        if gap_policy is not None:
-            body_kwargs["gap_policy"] = gap_policy
-        super(Pipeline, self).__init__(meta=meta, buckets_path=buckets_path, **body)
+        super(Pipeline, self).__init__(
+            buckets_path=buckets_path, gap_policy=gap_policy, meta=meta, **body
+        )
 
 
 class ScriptPipeline(Pipeline):

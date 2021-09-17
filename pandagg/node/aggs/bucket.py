@@ -1,8 +1,12 @@
 """Not implemented aggregations include:
-- children agg
-- ipv4
+- children
+- parent
 - sampler
-- significant terms
+- diversified-sampler
+- geotilegrid
+- iprange
+- multi-terms
+- significant text
 """
 
 from typing import Any, Optional, Dict, Union, List
@@ -37,7 +41,6 @@ class Filter(UniqueBucketAgg):
             filter_ = filter.copy()
         else:
             filter_ = body.copy()
-        self.filter: QueryClauseDict = filter_
         super(Filter, self).__init__(meta=meta, **filter_)
 
 
@@ -65,10 +68,7 @@ class ReverseNested(UniqueBucketAgg):
 
     def __init__(self, path: Optional[str] = None, meta: Meta = None, **body: Any):
         self.path: Optional[str] = path
-        body_kwargs = dict(body)
-        if path:
-            body_kwargs["path"] = path
-        super(ReverseNested, self).__init__(meta=meta, **body_kwargs)
+        super(ReverseNested, self).__init__(meta=meta, path=path, **body)
 
 
 class Missing(UniqueBucketAgg):
@@ -95,16 +95,9 @@ class Terms(MultipleBucketAgg):
         **body: Any
     ) -> None:
         self.field: str = field
-        self.missing: Optional[Union[int, str]] = missing
-        self.size: Optional[int] = size
-
-        body_kwargs = dict(body)
-        if missing is not None:
-            body_kwargs["missing"] = missing
-        if size is not None:
-            body_kwargs["size"] = size
-
-        super(Terms, self).__init__(field=field, meta=meta, **body_kwargs)
+        super(Terms, self).__init__(
+            field=field, missing=missing, size=size, meta=meta, **body
+        )
 
     def is_convertible_to_composite_source(self) -> bool:
         # TODO: elasticsearch documentation is unclear about which body clauses are accepted as a source, for now just
@@ -130,17 +123,30 @@ class Filters(MultipleBucketAgg):
         meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
-        self.filters: Dict[str, QueryClauseDict] = filters
-        self.other_bucket: bool = other_bucket
-        self.other_bucket_key: Optional[str] = other_bucket_key
+        super(Filters, self).__init__(
+            filters=filters,
+            other_bucket=other_bucket,
+            other_bucket_key=other_bucket_key,
+            meta=meta,
+            **body
+        )
 
-        body_kwargs = dict(body)
-        if other_bucket:
-            body_kwargs["other_bucket"] = other_bucket
-        if other_bucket_key:
-            body_kwargs["other_bucket_key"] = other_bucket_key
 
-        super(Filters, self).__init__(filters=filters, meta=meta, **body_kwargs)
+class AdjacencyMatrix(MultipleBucketAgg):
+
+    KEY = "adjacency_matrix"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        filters: Dict[str, QueryClauseDict],
+        separator: Optional[str] = None,
+        meta: Optional[Meta] = None,
+        **body: Any
+    ) -> None:
+        super(AdjacencyMatrix, self).__init__(
+            filters=filters, separator=separator, meta=meta, **body
+        )
 
 
 class Histogram(MultipleBucketAgg):
@@ -153,7 +159,6 @@ class Histogram(MultipleBucketAgg):
         self, field: str, interval: int, meta: Optional[Meta] = None, **body: Any
     ) -> None:
         self.field: str = field
-        self.interval: int = interval
         super(Histogram, self).__init__(
             field=field, interval=interval, meta=meta, **body
         )
@@ -188,23 +193,65 @@ class DateHistogram(MultipleBucketAgg):
             raise ValueError(
                 'One of "interval", "calendar_interval" or "fixed_interval" must be provided.'
             )
-        if interval:
-            body["interval"] = interval
-        if calendar_interval:
-            body["calendar_interval"] = calendar_interval
-        if fixed_interval:
-            body["fixed_interval"] = fixed_interval
-
-        self.interval = interval or calendar_interval or fixed_interval
         super(DateHistogram, self).__init__(
             field=field,
+            interval=interval,
+            calendar_interval=calendar_interval,
+            fixed_interval=fixed_interval,
             meta=meta,
-            key_path="key_as_string" if key_as_string else "key",
+            key_as_string=key_as_string,
             **body
         )
 
     def is_convertible_to_composite_source(self) -> bool:
         return True
+
+
+class VariableWidthHistogram(MultipleBucketAgg):
+    KEY = "variable_width_histogram"
+    VALUE_ATTRS = ["doc_count", "min", "max"]
+
+    def __init__(self, field: str, buckets: int, **body: Any) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-variablewidthhistogram-aggregation.html
+
+        Note: This aggregation cannot currently be nested under any aggregation that collects from more than a single
+        bucket.
+        """
+        self.field = field
+        super(VariableWidthHistogram, self).__init__(
+            field=field, buckets=buckets, **body
+        )
+
+
+class AutoDateHistogram(MultipleBucketAgg):
+    KEY = "auto_date_histogram"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        field: str,
+        buckets: Optional[int] = None,
+        format: Optional[str] = None,
+        time_zone: Optional[str] = None,
+        minimum_interval: Optional[str] = None,
+        missing: Optional[str] = None,
+        meta: Optional[Meta] = None,
+        key_as_string: bool = True,
+        **body: Any
+    ) -> None:
+        self.field: str = field
+        super(AutoDateHistogram, self).__init__(
+            field=field,
+            buckets=buckets,
+            format=format,
+            time_zone=time_zone,
+            minimum_interval=minimum_interval,
+            missing=missing,
+            meta=meta,
+            key_as_string=key_as_string,
+            **body
+        )
 
 
 class Range(MultipleBucketAgg):
@@ -221,9 +268,8 @@ class Range(MultipleBucketAgg):
         **body: Any
     ) -> None:
         self.field: str = field
-        self.ranges: List[RangeDict] = ranges
         super(Range, self).__init__(
-            field=field, ranges=ranges, meta=meta, keyed=keyed, **body
+            field=field, ranges=ranges, keyed=keyed, meta=meta, **body
         )
 
 
@@ -249,12 +295,15 @@ class GeoDistance(Range):
         meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
-        if unit is not None:
-            body["unit"] = unit
-        if distance_type is not None:
-            body["distance_type"] = distance_type
         super(Range, self).__init__(
-            field=field, ranges=ranges, origin=origin, meta=meta, keyed=keyed, **body
+            field=field,
+            origin=origin,
+            ranges=ranges,
+            unit=unit,
+            distance_type=distance_type,
+            keyed=keyed,
+            meta=meta,
+            **body
         )
 
 
@@ -273,12 +322,52 @@ class GeoHashGrid(MultipleBucketAgg):
         **body: Any
     ) -> None:
         self.field = field
-        if precision:
-            body["precision"] = precision
-        if bounds:
-            body["bounds"] = bounds
-        if size:
-            body["size"] = size
-        if shard_size:
-            body["shard_size"] = shard_size
-        super(GeoHashGrid, self).__init__(field=field, **body)
+        super(GeoHashGrid, self).__init__(
+            field=field,
+            precision=precision,
+            bounds=bounds,
+            size=size,
+            shard_size=shard_size,
+            **body
+        )
+
+
+class SignificantTerms(MultipleBucketAgg):
+    KEY = "significant_terms"
+    VALUE_ATTRS = ["doc_count", "score", "bg_count"]
+
+    def __init__(self, field: str, **body: Any) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
+        """
+        self.field = field
+        super(SignificantTerms, self).__init__(field=field, **body)
+
+
+class RareTerms(MultipleBucketAgg):
+    KEY = "rare_terms"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        field: str,
+        max_doc_count: Optional[int] = None,
+        precision: Optional[float] = None,
+        include: Optional[Union[str, List[str]]] = None,
+        exclude: Optional[Union[str, List[str]]] = None,
+        missing: Optional[Any] = None,
+        **body: Any
+    ) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-rare-terms-aggregation.html
+        """
+        self.field = field
+        super(RareTerms, self).__init__(
+            field=field,
+            max_doc_count=max_doc_count,
+            precision=precision,
+            include=include,
+            exclude=exclude,
+            missing=missing,
+            **body
+        )

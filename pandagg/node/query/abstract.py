@@ -21,7 +21,8 @@ class QueryClause(Node):
         _children: Any = None,
         **body: Any
     ) -> None:
-        self.body = body.copy()
+        # remove empty body values (clearer __init__)
+        self.body = {k: v for k, v in body.items() if v is not None}
         self._named = _name is not None
         super(QueryClause, self).__init__(
             identifier=_name, accept_children=accept_children, keyed=keyed
@@ -113,8 +114,6 @@ def Q(type_or_query: Optional[TypeOrQuery_] = None, **body: Any) -> QueryClause:
 
 
 class LeafQueryClause(QueryClause):
-    KEY: str
-
     def __init__(self, _name: Optional[str] = None, **body: Any):
         super(LeafQueryClause, self).__init__(
             _name=_name, accept_children=False, **body
@@ -182,7 +181,6 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
     """
 
     _implicit_param: Optional[str] = None
-    KEY: str
 
     def __init__(
         self,
@@ -235,9 +233,6 @@ class KeyFieldQueryClause(AbstractSingleFieldQueryClause):
 
 
 class MultiFieldsQueryClause(LeafQueryClause):
-
-    KEY: str
-
     def __init__(self, fields: List[str], _name: Optional[str] = None, **body: Any):
         self.fields = fields
         super(LeafQueryClause, self).__init__(_name=_name, fields=fields, **body)
@@ -247,8 +242,6 @@ class MultiFieldsQueryClause(LeafQueryClause):
 
 
 class ParentParameterClause(QueryClause):
-    KEY: str
-
     def __init__(self) -> None:
         super(ParentParameterClause, self).__init__(accept_children=True, keyed=False)
 
