@@ -1,5 +1,4 @@
 """Not implemented aggregations include:
-- children
 - parent
 - multi-terms
 - significant text
@@ -110,6 +109,14 @@ class DiversifiedSampler(UniqueBucketAgg):
             execution_hint=execution_hint,
             **body
         )
+
+
+class Children(UniqueBucketAgg):
+    KEY = "children"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(self, type: str, **body: Any) -> None:
+        super(Children, self).__init__(type=type, **body)
 
 
 class Terms(MultipleBucketAgg):

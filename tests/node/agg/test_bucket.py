@@ -18,6 +18,7 @@ from pandagg.node.aggs import (
     Sampler,
     DiversifiedSampler,
     Global,
+    Children,
 )
 
 from tests import PandaggTestCase
@@ -789,4 +790,45 @@ def test_global():
     assert hasattr(agg.extract_buckets(raw_response), "__iter__")
     assert list(agg.extract_buckets(raw_response)) == [
         (None, {"doc_count": 7, "avg_price": {"value": 140.71428571428572}})
+    ]
+
+
+def test_children():
+    agg = Children(
+        type="answer",
+        aggs={
+            "top-names": {"terms": {"field": "owner.display_name.keyword", "size": 10}}
+        },
+    )
+    assert agg.to_dict() == {"children": {"type": "answer"}}
+    assert agg._children == {
+        "top-names": {"terms": {"field": "owner.display_name.keyword", "size": 10}}
+    }
+    raw_response = {
+        "doc_count": 2,
+        "top-names": {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {"key": "Sam", "doc_count": 1},
+                {"key": "Troll", "doc_count": 1},
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 2,
+                "top-names": {
+                    "buckets": [
+                        {"doc_count": 1, "key": "Sam"},
+                        {"doc_count": 1, "key": "Troll"},
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0,
+                },
+            },
+        )
     ]
