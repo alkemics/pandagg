@@ -15,6 +15,7 @@ from pandagg.node.aggs import (
     RareTerms,
     GeoTileGrid,
     IPRange,
+    Sampler,
 )
 
 from tests import PandaggTestCase
@@ -661,4 +662,67 @@ def test_ip_range():
     assert list(agg.extract_buckets(raw_response)) == [
         ("*-10.0.0.5", {"doc_count": 10, "to": "10.0.0.5"}),
         ("10.0.0.5-*", {"doc_count": 260, "from": "10.0.0.5"}),
+    ]
+
+
+def test_sampler():
+    agg = Sampler(
+        shard_size=200,
+        aggs={
+            "keywords": {
+                "significant_terms": {
+                    "field": "tags",
+                    "exclude": ["kibana", "javascript"],
+                }
+            }
+        },
+    )
+    assert agg.to_dict() == {"sampler": {"shard_size": 200}}
+    assert agg._children == {
+        "keywords": {
+            "significant_terms": {"exclude": ["kibana", "javascript"], "field": "tags"}
+        }
+    }
+    raw_response = {
+        "doc_count": 200,
+        "keywords": {
+            "doc_count": 200,
+            "bg_count": 650,
+            "buckets": [
+                {
+                    "key": "elasticsearch",
+                    "doc_count": 150,
+                    "score": 1.078125,
+                    "bg_count": 200,
+                },
+                {"key": "logstash", "doc_count": 50, "score": 0.5625, "bg_count": 50},
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 200,
+                "keywords": {
+                    "bg_count": 650,
+                    "buckets": [
+                        {
+                            "bg_count": 200,
+                            "doc_count": 150,
+                            "key": "elasticsearch",
+                            "score": 1.078125,
+                        },
+                        {
+                            "bg_count": 50,
+                            "doc_count": 50,
+                            "key": "logstash",
+                            "score": 0.5625,
+                        },
+                    ],
+                    "doc_count": 200,
+                },
+            },
+        )
     ]

@@ -19,6 +19,7 @@ from pandagg.node.aggs.bucket import (
     RareTerms,
     GeoTileGrid,
     IPRange,
+    Sampler,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -108,4 +109,5 @@ __all__ = [
     "RareTerms",
     "GeoTileGrid",
     "IPRange",
+    "Sampler",
 ]

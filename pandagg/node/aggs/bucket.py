@@ -75,7 +75,15 @@ class Missing(UniqueBucketAgg):
 
     def __init__(self, field: str, meta: Meta = None, **body: Any):
         self.field: str = field
-        super(UniqueBucketAgg, self).__init__(field=field, meta=meta, **body)
+        super(Missing, self).__init__(field=field, meta=meta, **body)
+
+
+class Sampler(UniqueBucketAgg):
+    KEY = "sampler"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(self, shard_size: Optional[int] = None, **body: Any) -> None:
+        super(Sampler, self).__init__(shard_size=shard_size, **body)
 
 
 class Terms(MultipleBucketAgg):
