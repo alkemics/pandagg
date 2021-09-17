@@ -1,6 +1,5 @@
 """Not implemented aggregations include:
 - multi-terms
-- significant text
 """
 
 from typing import Any, Optional, Dict, Union, List
@@ -396,6 +395,19 @@ class SignificantTerms(MultipleBucketAgg):
         """
         self.field = field
         super(SignificantTerms, self).__init__(field=field, **body)
+
+
+class SignificantText(MultipleBucketAgg):
+    KEY = "significant_text"
+    VALUE_ATTRS = ["doc_count", "score", "bg_count"]
+    WHITELISTED_MAPPING_TYPES = ["text"]
+
+    def __init__(self, field: str, **body: Any) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significanttext-aggregation.html
+        """
+        self.field = field
+        super(SignificantText, self).__init__(field=field, **body)
 
 
 class RareTerms(MultipleBucketAgg):

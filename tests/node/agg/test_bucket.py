@@ -20,6 +20,7 @@ from pandagg.node.aggs import (
     Global,
     Children,
     Parent,
+    SignificantText,
 )
 
 from tests import PandaggTestCase
@@ -872,5 +873,24 @@ def test_parent():
                     "sum_other_doc_count": 0,
                 },
             },
+        )
+    ]
+
+
+def test_significant_text():
+    agg = SignificantText(field="content")
+    assert agg.to_dict() == {"significant_text": {"field": "content"}}
+
+    raw_response = {
+        "doc_count": 100,
+        "buckets": [
+            {"key": "h5n1", "doc_count": 4, "score": 4.71235374214817, "bg_count": 5}
+        ],
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "h5n1",
+            {"bg_count": 5, "doc_count": 4, "key": "h5n1", "score": 4.71235374214817},
         )
     ]

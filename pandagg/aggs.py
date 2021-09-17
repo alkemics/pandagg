@@ -23,6 +23,7 @@ from pandagg.node.aggs.bucket import (
     DiversifiedSampler,
     Children,
     Parent,
+    SignificantText,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -116,4 +117,5 @@ __all__ = [
     "DiversifiedSampler",
     "Children",
     "Parent",
+    "SignificantText",
 ]
