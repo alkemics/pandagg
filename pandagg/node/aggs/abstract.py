@@ -243,10 +243,10 @@ class BucketAggClause(AggClause):
     >>> )
     """
 
-    def __init__(self, meta: Optional[Meta] = None, **body: Any) -> None:
+    def __init__(self, **body: Any) -> None:
         identifier: Optional[str] = body.pop("identifier", None)
         aggs = body.pop("aggs", None) or body.pop("aggregations", None)
-        super(BucketAggClause, self).__init__(identifier=identifier, meta=meta, **body)
+        super(BucketAggClause, self).__init__(identifier=identifier, **body)
         self._children: Dict[AggName, Any] = aggs or {}  # type: ignore
 
     def extract_buckets(
@@ -270,11 +270,7 @@ class MultipleBucketAgg(BucketAggClause):
     IMPLICIT_KEYED: bool = False
 
     def __init__(
-        self,
-        keyed: bool = False,
-        key_as_string: bool = False,
-        meta: Meta = None,
-        **body: Any
+        self, keyed: bool = False, key_as_string: bool = False, **body: Any
     ) -> None:
         """
         Aggregation that return either a list or a map of buckets.
@@ -287,7 +283,7 @@ class MultipleBucketAgg(BucketAggClause):
         self.key_path: str = "key_as_string" if key_as_string else "key"
         if keyed and not self.IMPLICIT_KEYED:
             body["keyed"] = keyed
-        super(MultipleBucketAgg, self).__init__(meta=meta, **body)
+        super(MultipleBucketAgg, self).__init__(**body)
 
     def extract_buckets(
         self, response_value: AggClauseResponseDict
@@ -313,28 +309,18 @@ class FieldOrScriptMetricAgg(MetricAgg):
     """
 
     def __init__(
-        self,
-        field: Optional[str] = None,
-        script: Optional[Script] = None,
-        meta: Optional[Meta] = None,
-        **body: Any
+        self, field: Optional[str] = None, script: Optional[Script] = None, **body: Any
     ) -> None:
         self.field: Optional[str] = field
-        super(FieldOrScriptMetricAgg, self).__init__(
-            field=field, script=script, meta=meta, **body
-        )
+        super(FieldOrScriptMetricAgg, self).__init__(field=field, script=script, **body)
 
 
 class Pipeline(UniqueBucketAgg):
     def __init__(
-        self,
-        buckets_path: str,
-        gap_policy: Optional[GapPolicy] = None,
-        meta: Optional[Meta] = None,
-        **body: Any
+        self, buckets_path: str, gap_policy: Optional[GapPolicy] = None, **body: Any
     ) -> None:
         super(Pipeline, self).__init__(
-            buckets_path=buckets_path, gap_policy=gap_policy, meta=meta, **body
+            buckets_path=buckets_path, gap_policy=gap_policy, **body
         )
 
 
@@ -346,13 +332,8 @@ class ScriptPipeline(Pipeline):
         script: Script,
         buckets_path: str,
         gap_policy: Optional[GapPolicy] = None,
-        meta: Optional[Meta] = None,
         **body: Any
     ) -> None:
         super(ScriptPipeline, self).__init__(
-            buckets_path=buckets_path,
-            gap_policy=gap_policy,
-            meta=meta,
-            script=script,
-            **body
+            buckets_path=buckets_path, gap_policy=gap_policy, script=script, **body
         )

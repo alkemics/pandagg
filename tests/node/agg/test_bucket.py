@@ -17,6 +17,7 @@ from pandagg.node.aggs import (
     IPRange,
     Sampler,
     DiversifiedSampler,
+    Global,
 )
 
 from tests import PandaggTestCase
@@ -777,4 +778,15 @@ def test_diversified_sampler():
                 },
             },
         )
+    ]
+
+
+def test_global():
+    agg = Global(aggs={"avg_price": {"avg": {"field": "price"}}})
+    assert agg.to_dict() == {"global": {}}
+    assert agg._children == {"avg_price": {"avg": {"field": "price"}}}
+    raw_response = {"doc_count": 7, "avg_price": {"value": 140.71428571428572}}
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (None, {"doc_count": 7, "avg_price": {"value": 140.71428571428572}})
     ]

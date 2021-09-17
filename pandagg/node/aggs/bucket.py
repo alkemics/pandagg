@@ -17,8 +17,8 @@ class Global(UniqueBucketAgg):
     KEY = "global"
     VALUE_ATTRS = ["doc_count"]
 
-    def __init__(self, meta: Meta = None):
-        super(Global, self).__init__(agg_body={}, meta=meta)
+    def __init__(self, **body: Any) -> None:
+        super(Global, self).__init__(**body)
 
 
 class Filter(UniqueBucketAgg):
