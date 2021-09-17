@@ -19,6 +19,7 @@ from pandagg.node.aggs import (
     DiversifiedSampler,
     Global,
     Children,
+    Parent,
 )
 
 from tests import PandaggTestCase
@@ -825,6 +826,47 @@ def test_children():
                     "buckets": [
                         {"doc_count": 1, "key": "Sam"},
                         {"doc_count": 1, "key": "Troll"},
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0,
+                },
+            },
+        )
+    ]
+
+
+def test_parent():
+    agg = Parent(
+        type="answer",
+        aggs={"top-tags": {"terms": {"field": "tags.keyword", "size": 10}}},
+    )
+    assert agg.to_dict() == {"parent": {"type": "answer"}}
+    assert agg._children == {
+        "top-tags": {"terms": {"field": "tags.keyword", "size": 10}}
+    }
+    raw_response = {
+        "doc_count": 1,
+        "top-tags": {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {"key": "file-transfer", "doc_count": 1},
+                {"key": "windows-server-2003", "doc_count": 1},
+                {"key": "windows-server-2008", "doc_count": 1},
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 1,
+                "top-tags": {
+                    "buckets": [
+                        {"doc_count": 1, "key": "file-transfer"},
+                        {"doc_count": 1, "key": "windows-server-2003"},
+                        {"doc_count": 1, "key": "windows-server-2008"},
                     ],
                     "doc_count_error_upper_bound": 0,
                     "sum_other_doc_count": 0,

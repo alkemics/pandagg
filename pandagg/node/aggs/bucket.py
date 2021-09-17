@@ -1,5 +1,4 @@
 """Not implemented aggregations include:
-- parent
 - multi-terms
 - significant text
 """
@@ -117,6 +116,14 @@ class Children(UniqueBucketAgg):
 
     def __init__(self, type: str, **body: Any) -> None:
         super(Children, self).__init__(type=type, **body)
+
+
+class Parent(UniqueBucketAgg):
+    KEY = "parent"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(self, type: str, **body: Any) -> None:
+        super(Parent, self).__init__(type=type, **body)
 
 
 class Terms(MultipleBucketAgg):
