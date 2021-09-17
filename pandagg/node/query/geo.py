@@ -21,7 +21,6 @@ class GeoDistance(AbstractSingleFieldQueryClause):
         if len(body) != 1:
             raise ValueError("Wrong declaration: %s" % body)
         field, location = self.expand__to_dot(body).popitem()
-        self.field: str = field
         super(GeoDistance, self).__init__(
             _name=_name,
             field=field,

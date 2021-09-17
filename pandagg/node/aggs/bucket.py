@@ -1,10 +1,6 @@
 """Not implemented aggregations include:
 - children
 - parent
-- sampler
-- diversified-sampler
-- geotilegrid
-- iprange
 - multi-terms
 - significant text
 """
@@ -13,7 +9,7 @@ from typing import Any, Optional, Dict, Union, List
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta, QueryClauseDict, RangeDict, DistanceType
+from pandagg.types import Meta, QueryClauseDict, RangeDict, DistanceType, ExecutionHint
 
 
 class Global(UniqueBucketAgg):
@@ -77,7 +73,40 @@ class Missing(UniqueBucketAgg):
 
     def __init__(self, field: str, meta: Meta = None, **body: Any):
         self.field: str = field
-        super(UniqueBucketAgg, self).__init__(field=field, meta=meta, **body)
+        super(Missing, self).__init__(field=field, meta=meta, **body)
+
+
+class Sampler(UniqueBucketAgg):
+    KEY = "sampler"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(self, shard_size: Optional[int] = None, **body: Any) -> None:
+        super(Sampler, self).__init__(shard_size=shard_size, **body)
+
+
+class DiversifiedSampler(UniqueBucketAgg):
+    KEY = "diversified_sampler"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        field: str,
+        shard_size: Optional[int],
+        max_docs_per_value: Optional[int] = None,
+        execution_hint: Optional[ExecutionHint] = None,
+        **body: Any
+    ) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-diversified-sampler-aggregation.html
+        """
+        self.field = field
+        super(DiversifiedSampler, self).__init__(
+            shard_size=shard_size,
+            field=field,
+            max_docs_per_value=max_docs_per_value,
+            execution_hint=execution_hint,
+            **body
+        )
 
 
 class Terms(MultipleBucketAgg):
@@ -279,6 +308,12 @@ class DateRange(Range):
     WHITELISTED_MAPPING_TYPES = ["date"]
 
 
+class IPRange(Range):
+    KEY = "ip_range"
+    VALUE_ATTRS = ["doc_count"]
+    WHITELISTED_MAPPING_TYPES = ["ip"]
+
+
 class GeoDistance(Range):
     KEY = "geo_distance"
     VALUE_ATTRS = ["doc_count"]
@@ -323,6 +358,31 @@ class GeoHashGrid(MultipleBucketAgg):
     ) -> None:
         self.field = field
         super(GeoHashGrid, self).__init__(
+            field=field,
+            precision=precision,
+            bounds=bounds,
+            size=size,
+            shard_size=shard_size,
+            **body
+        )
+
+
+class GeoTileGrid(MultipleBucketAgg):
+    KEY = "geotile_grid"
+    VALUE_ATTRS = ["doc_count"]
+    WHITELISTED_MAPPING_TYPES = ["geo_point", "geo_shape"]
+
+    def __init__(
+        self,
+        field: str,
+        precision: Optional[int] = None,
+        bounds: Optional[Dict] = None,
+        size: Optional[int] = None,
+        shard_size: Optional[int] = None,
+        **body: Any
+    ) -> None:
+        self.field = field
+        super(GeoTileGrid, self).__init__(
             field=field,
             precision=precision,
             bounds=bounds,

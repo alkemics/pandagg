@@ -36,10 +36,11 @@ BucketKey = Union[BucketKeyAtom, CompositeBucketKey]
 BucketDict = Dict[str, Any]
 
 RangeDict = TypedDict(
-    "RangeDict", {"from": float, "to": float, "key": str}, total=False
+    "RangeDict", {"from": float, "to": float, "key": str, "mask": str}, total=False
 )
 DistanceType = Literal["arc", "plane"]
 ValidationMethod = Literal["STRICT", "COERCE", "IGNORE_MALFORMED"]
+ExecutionHint = Literal["map", "global_ordinals", "bytes_hash"]
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html#_value_sources
 CompositeSource = AggClauseDict

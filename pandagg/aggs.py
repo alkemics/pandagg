@@ -17,6 +17,10 @@ from pandagg.node.aggs.bucket import (
     VariableWidthHistogram,
     SignificantTerms,
     RareTerms,
+    GeoTileGrid,
+    IPRange,
+    Sampler,
+    DiversifiedSampler,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -104,4 +108,8 @@ __all__ = [
     "VariableWidthHistogram",
     "SignificantTerms",
     "RareTerms",
+    "GeoTileGrid",
+    "IPRange",
+    "Sampler",
+    "DiversifiedSampler",
 ]

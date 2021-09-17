@@ -13,6 +13,10 @@ from pandagg.node.aggs import (
     VariableWidthHistogram,
     SignificantTerms,
     RareTerms,
+    GeoTileGrid,
+    IPRange,
+    Sampler,
+    DiversifiedSampler,
 )
 
 from tests import PandaggTestCase
@@ -593,4 +597,184 @@ def test_rare_terms():
     assert list(agg.extract_buckets(raw_response)) == [
         ("swing", {"doc_count": 1, "key": "swing"}),
         ("jazz", {"doc_count": 2, "key": "jazz"}),
+    ]
+
+
+def test_geo_tile_grid():
+    agg = GeoTileGrid(field="location", precision=8)
+    assert agg.to_dict() == {"geotile_grid": {"field": "location", "precision": 8}}
+
+    raw_response = {
+        "buckets": [
+            {"key": "8/131/84", "doc_count": 3},
+            {"key": "8/129/88", "doc_count": 2},
+            {"key": "8/131/85", "doc_count": 1},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("8/131/84", {"doc_count": 3, "key": "8/131/84"}),
+        ("8/129/88", {"doc_count": 2, "key": "8/129/88"}),
+        ("8/131/85", {"doc_count": 1, "key": "8/131/85"}),
+    ]
+
+
+def test_ip_range():
+    # unkeyed
+    agg = IPRange(field="ip", ranges=[{"to": "10.0.0.5"}, {"from": "10.0.0.5"}])
+    assert agg.to_dict() == {
+        "ip_range": {
+            "field": "ip",
+            "ranges": [{"to": "10.0.0.5"}, {"from": "10.0.0.5"}],
+        }
+    }
+
+    raw_response = {
+        "buckets": [
+            {"key": "*-10.0.0.5", "to": "10.0.0.5", "doc_count": 10},
+            {"key": "10.0.0.5-*", "from": "10.0.0.5", "doc_count": 260},
+        ]
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("*-10.0.0.5", {"doc_count": 10, "key": "*-10.0.0.5", "to": "10.0.0.5"}),
+        ("10.0.0.5-*", {"doc_count": 260, "from": "10.0.0.5", "key": "10.0.0.5-*"}),
+    ]
+
+    # keyed
+    agg = IPRange(
+        field="ip", ranges=[{"to": "10.0.0.5"}, {"from": "10.0.0.5"}], keyed=True
+    )
+    assert agg.to_dict() == {
+        "ip_range": {
+            "field": "ip",
+            "ranges": [{"to": "10.0.0.5"}, {"from": "10.0.0.5"}],
+            "keyed": True,
+        }
+    }
+
+    raw_response = {
+        "buckets": {
+            "*-10.0.0.5": {"to": "10.0.0.5", "doc_count": 10},
+            "10.0.0.5-*": {"from": "10.0.0.5", "doc_count": 260},
+        }
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        ("*-10.0.0.5", {"doc_count": 10, "to": "10.0.0.5"}),
+        ("10.0.0.5-*", {"doc_count": 260, "from": "10.0.0.5"}),
+    ]
+
+
+def test_sampler():
+    agg = Sampler(
+        shard_size=200,
+        aggs={
+            "keywords": {
+                "significant_terms": {
+                    "field": "tags",
+                    "exclude": ["kibana", "javascript"],
+                }
+            }
+        },
+    )
+    assert agg.to_dict() == {"sampler": {"shard_size": 200}}
+    assert agg._children == {
+        "keywords": {
+            "significant_terms": {"exclude": ["kibana", "javascript"], "field": "tags"}
+        }
+    }
+    raw_response = {
+        "doc_count": 200,
+        "keywords": {
+            "doc_count": 200,
+            "bg_count": 650,
+            "buckets": [
+                {
+                    "key": "elasticsearch",
+                    "doc_count": 150,
+                    "score": 1.078125,
+                    "bg_count": 200,
+                },
+                {"key": "logstash", "doc_count": 50, "score": 0.5625, "bg_count": 50},
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 200,
+                "keywords": {
+                    "bg_count": 650,
+                    "buckets": [
+                        {
+                            "bg_count": 200,
+                            "doc_count": 150,
+                            "key": "elasticsearch",
+                            "score": 1.078125,
+                        },
+                        {
+                            "bg_count": 50,
+                            "doc_count": 50,
+                            "key": "logstash",
+                            "score": 0.5625,
+                        },
+                    ],
+                    "doc_count": 200,
+                },
+            },
+        )
+    ]
+
+
+def test_diversified_sampler():
+    agg = DiversifiedSampler(
+        field="author",
+        shard_size=200,
+        aggs={
+            "keywords": {
+                "significant_terms": {"field": "tags", "exclude": ["elasticsearch"]}
+            }
+        },
+    )
+    assert agg.to_dict() == {
+        "diversified_sampler": {"shard_size": 200, "field": "author"}
+    }
+    assert agg._children == {
+        "keywords": {
+            "significant_terms": {"field": "tags", "exclude": ["elasticsearch"]}
+        }
+    }
+    raw_response = {
+        "doc_count": 151,
+        "keywords": {
+            "doc_count": 151,
+            "bg_count": 650,
+            "buckets": [
+                {"key": "kibana", "doc_count": 150, "score": 2.213, "bg_count": 200}
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 151,
+                "keywords": {
+                    "bg_count": 650,
+                    "buckets": [
+                        {
+                            "bg_count": 200,
+                            "doc_count": 150,
+                            "key": "kibana",
+                            "score": 2.213,
+                        }
+                    ],
+                    "doc_count": 151,
+                },
+            },
+        )
     ]
