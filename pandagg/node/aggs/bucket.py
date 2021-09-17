@@ -1,8 +1,6 @@
 """Not implemented aggregations include:
 - children
 - parent
-- sampler
-- diversified-sampler
 - multi-terms
 - significant text
 """
@@ -11,7 +9,7 @@ from typing import Any, Optional, Dict, Union, List
 
 from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta, QueryClauseDict, RangeDict, DistanceType
+from pandagg.types import Meta, QueryClauseDict, RangeDict, DistanceType, ExecutionHint
 
 
 class Global(UniqueBucketAgg):
@@ -84,6 +82,31 @@ class Sampler(UniqueBucketAgg):
 
     def __init__(self, shard_size: Optional[int] = None, **body: Any) -> None:
         super(Sampler, self).__init__(shard_size=shard_size, **body)
+
+
+class DiversifiedSampler(UniqueBucketAgg):
+    KEY = "diversified_sampler"
+    VALUE_ATTRS = ["doc_count"]
+
+    def __init__(
+        self,
+        field: str,
+        shard_size: Optional[int],
+        max_docs_per_value: Optional[int] = None,
+        execution_hint: Optional[ExecutionHint] = None,
+        **body: Any
+    ) -> None:
+        """
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-diversified-sampler-aggregation.html
+        """
+        self.field = field
+        super(DiversifiedSampler, self).__init__(
+            shard_size=shard_size,
+            field=field,
+            max_docs_per_value=max_docs_per_value,
+            execution_hint=execution_hint,
+            **body
+        )
 
 
 class Terms(MultipleBucketAgg):

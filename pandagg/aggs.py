@@ -20,6 +20,7 @@ from pandagg.node.aggs.bucket import (
     GeoTileGrid,
     IPRange,
     Sampler,
+    DiversifiedSampler,
 )
 
 from pandagg.node.aggs.composite import Composite
@@ -110,4 +111,5 @@ __all__ = [
     "GeoTileGrid",
     "IPRange",
     "Sampler",
+    "DiversifiedSampler",
 ]

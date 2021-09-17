@@ -16,6 +16,7 @@ from pandagg.node.aggs import (
     GeoTileGrid,
     IPRange,
     Sampler,
+    DiversifiedSampler,
 )
 
 from tests import PandaggTestCase
@@ -722,6 +723,57 @@ def test_sampler():
                         },
                     ],
                     "doc_count": 200,
+                },
+            },
+        )
+    ]
+
+
+def test_diversified_sampler():
+    agg = DiversifiedSampler(
+        field="author",
+        shard_size=200,
+        aggs={
+            "keywords": {
+                "significant_terms": {"field": "tags", "exclude": ["elasticsearch"]}
+            }
+        },
+    )
+    assert agg.to_dict() == {
+        "diversified_sampler": {"shard_size": 200, "field": "author"}
+    }
+    assert agg._children == {
+        "keywords": {
+            "significant_terms": {"field": "tags", "exclude": ["elasticsearch"]}
+        }
+    }
+    raw_response = {
+        "doc_count": 151,
+        "keywords": {
+            "doc_count": 151,
+            "bg_count": 650,
+            "buckets": [
+                {"key": "kibana", "doc_count": 150, "score": 2.213, "bg_count": 200}
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 151,
+                "keywords": {
+                    "bg_count": 650,
+                    "buckets": [
+                        {
+                            "bg_count": 200,
+                            "doc_count": 150,
+                            "key": "kibana",
+                            "score": 2.213,
+                        }
+                    ],
+                    "doc_count": 151,
                 },
             },
         )
