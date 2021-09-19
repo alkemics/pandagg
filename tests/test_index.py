@@ -48,10 +48,7 @@ def test_declarative_copy_of_parameters():
     assert MyIndex.settings is not ini_settings
     assert MyIndex.aliases is not ini_aliases
     assert isinstance(MyIndex._mappings, Mappings)
-    assert MyIndex._mappings.to_dict() == {
-        "dynamic": False,
-        "properties": {"name": {"type": "keyword"}},
-    }
+    assert MyIndex._mappings.to_dict() == {"properties": {"name": {"type": "keyword"}}}
 
 
 def test_index_without_client_raises_error_on_write_op():
@@ -71,8 +68,7 @@ def test_create_index(write_client):
     persisted_index = write_client.indices.get("test-post")["test-post"]
     assert persisted_index["aliases"] == {"post": {}}
     assert persisted_index["mappings"] == {
-        "dynamic": "false",
-        "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}},
+        "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}}
     }
     assert persisted_index["settings"]["index"]["number_of_shards"] == "1"
 
@@ -203,7 +199,7 @@ def test_template_declarative_copy_of_parameters():
     assert MyIndexTemplate.template is not ini_template
     assert isinstance(MyIndexTemplate._template_index, DeclarativeIndex)
     assert MyIndexTemplate._template_index.to_dict() == {
-        "mappings": {"dynamic": False, "properties": {"name": {"type": "keyword"}}},
+        "mappings": {"properties": {"name": {"type": "keyword"}}},
         "settings": {"number_of_shards": 1},
     }
 
@@ -222,8 +218,7 @@ def test_template_save(write_client):
     assert post_index.exists()
     auto_created_index = write_client.indices.get("test-post")["test-post"]
     assert auto_created_index["mappings"] == {
-        "dynamic": "false",
-        "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}},
+        "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}}
     }
     assert auto_created_index["settings"]["index"]["number_of_shards"] == "1"
     assert auto_created_index["aliases"] == {"post": {}}

@@ -23,7 +23,7 @@ class Field(Node):
         """
         super(Node, self).__init__()
         self._subfield = body.pop("_subfield", False)
-        self._body = body.copy()
+        self._body = body
         self._multiple = multiple
         self._nullable = nullable
 
@@ -35,7 +35,7 @@ class Field(Node):
 
     @property
     def body(self) -> Dict[str, Any]:
-        b = self._body.copy()
+        b = {k: v for k, v in self._body.items() if v is not None}
         if self.KEY in ("object", ""):
             return b
         b["type"] = self.KEY

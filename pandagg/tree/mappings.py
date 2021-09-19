@@ -39,7 +39,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
     def __init__(
         self,
         properties: Optional[FieldPropertiesDictOrNode] = None,
-        dynamic: bool = False,
+        dynamic: Optional[bool] = None,
         **body: Any
     ) -> None:
         super(Mappings, self).__init__()
