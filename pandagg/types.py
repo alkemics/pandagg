@@ -217,3 +217,20 @@ class DeleteByQueryResponse(TypedDict, total=False):
     requests_per_second: float
     throttled_until_millis: int
     failures: List[Dict[str, Any]]
+
+
+OpType = Literal["create", "index", "update", "delete"]
+
+
+class Action(TypedDict, total=False):
+    _op_type: OpType
+    _id: str
+    _index: IndexName
+    retry_on_conflict: int
+    routing: str
+    version: int
+    version_type: Literal["external", "external_gte"]
+    _source: DocSource
+    doc: DocSource
+    require_alias: bool
+    dynamic_templates: Dict

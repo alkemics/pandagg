@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import json
 
 from pandagg.node._node import Node
-from typing import Optional, Any, Tuple, Dict, Type
+from typing import Optional, Any, Tuple, Dict, Type, Union, TYPE_CHECKING
 
 from pandagg.types import FieldType
+
+if TYPE_CHECKING:
+    from pandagg.document import DocumentSource
 
 
 class Field(Node):
@@ -14,7 +19,7 @@ class Field(Node):
     KEY: str
 
     def __init__(
-        self, multiple: Optional[bool] = None, nullable: bool = True, **body: Any
+        self, *, multiple: Optional[bool] = None, required: bool = False, **body: Any
     ) -> None:
         """
         :param multiple: boolean, default None, if True field must be an array, if False field must be a single item
@@ -25,7 +30,7 @@ class Field(Node):
         self._subfield = body.pop("_subfield", False)
         self._body = body
         self._multiple = multiple
-        self._nullable = nullable
+        self._required = required
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "", self._display_pattern % self.KEY.capitalize()
@@ -59,10 +64,21 @@ class Field(Node):
 
 
 class ComplexField(Field):
-    def __init__(self, **body: Any) -> None:
-        properties = body.pop("properties", None) or {}
+    def __init__(
+        self,
+        properties: Optional[Union[Dict, Type[DocumentSource]]] = None,
+        **body: Any
+    ) -> None:
+        properties = properties or {}
         if not isinstance(properties, dict):
-            raise ValueError("Invalid properties %s" % properties)
+            # Document type
+            if hasattr(properties, "_mappings_"):
+                properties = (
+                    properties._mappings_.to_dict().get("properties")  # type: ignore
+                    or {}
+                )
+            else:
+                raise ValueError("Invalid properties %s" % properties)
         self.properties: Dict[str, Any] = properties
         super(ComplexField, self).__init__(**body)
 

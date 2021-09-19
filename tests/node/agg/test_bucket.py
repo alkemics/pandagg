@@ -1,4 +1,4 @@
-from pandagg.node.aggs import (
+from pandagg.aggs import (
     Terms,
     Filter,
     Filters,

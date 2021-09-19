@@ -3,6 +3,7 @@
 import pytest
 
 from pandagg import Mappings, Search
+from pandagg.document import DocumentSource
 from pandagg.mappings import Keyword, Text, Date
 from pandagg.index import DeclarativeIndex, DeclarativeIndexTemplate
 
@@ -84,6 +85,49 @@ def test_index_search():
 
 
 def test_docwriter(write_client):
+    index = Post(client=write_client)
+    assert not index.exists()
+    index.save()
+    assert index.exists()
+
+    index.docs.index(
+        _id="my_post_article",
+        _source={"title": "salut", "published_from": "2021-01-01"},
+    )
+    index.docs.index(
+        _id="my_second_post_article",
+        _source={"title": "re-salut", "published_from": "2021-01-02"},
+    )
+    index.docs.index(
+        _source={"title": "salut-without-id", "published_from": "2021-01-03"}
+    )
+    res = index.docs.perform(refresh=True)
+    assert res == (3, [])
+
+    assert index.search().execute().hits.total == {"relation": "eq", "value": 3}
+    index.docs.update(
+        _id="my_second_post_article", doc={"title": "au revoir", "unmapped_field": 1}
+    )
+    assert index.docs.perform(refresh=True) == (1, [])
+    response = index.search().query("ids", values=["my_second_post_article"]).execute()
+    assert response.hits.total == {"relation": "eq", "value": 1}
+    assert response.hits.hits[0]._source == {
+        "published_from": "2021-01-02",
+        "title": "au revoir",
+        "unmapped_field": 1,
+    }
+
+    assert index.docs.delete("my_second_post_article").perform(refresh=True) == (1, [])
+    assert index.search().query(
+        "ids", values=["my_second_post_article"]
+    ).execute().hits.total == {"relation": "eq", "value": 0}
+
+    index.docs.delete("my_second_post_article")
+    index.docs.rollback()
+    assert len(list(index.docs._operations)) == 0
+
+
+def test_docwriter_document_instances(write_client):
     index = Post(client=write_client)
     assert not index.exists()
     index.save()
@@ -236,3 +280,62 @@ def test_index_docwriter_has_pending_operation():
     assert index.docs.has_pending_operation()
     index.docs.rollback()
     assert not index.docs.has_pending_operation()
+
+
+def test_index_mappings_consistency_with_document():
+    with pytest.raises(TypeError) as e:
+
+        class Post(DeclarativeIndex):
+            name = "test-post"
+            document = "yolo"
+
+    assert e.value.args == (
+        "<Post> declarative index 'document' attribute must be a <class "
+        "'pandagg.document.DocumentSource'> subclass, got <yolo> of type <class "
+        "'str'>",
+    )
+
+    # shouldn't raise error
+    class PostDocument(DocumentSource):
+        title = Text()
+        published_from = Date()
+
+    class PostIndex(DeclarativeIndex):
+        name = "test-post"
+        mappings = {
+            "properties": {
+                "title": Text(),
+                "published_from": Date(),
+                "created_at": Date(),
+            }
+        }
+        document = PostDocument
+
+    # equals the declared mappings (> Document)
+    assert PostIndex._mappings.to_dict() == {
+        "properties": {
+            "created_at": {"type": "date"},
+            "published_from": {"type": "date"},
+            "title": {"type": "text"},
+        }
+    }
+
+    with pytest.raises(TypeError) as e:
+        # invalid because more mappings elements in mappings than in document
+        class InvalidPostIndex(DeclarativeIndex):
+            name = "test-post"
+            mappings = {"properties": {"title": Text()}}
+            document = PostDocument
+
+    assert e.value.args == (
+        "Incompatible index declaration, mappings and document do not match.",
+    )
+
+    # only document is provided
+    class ValidPostIndex(DeclarativeIndex):
+        name = "test-post"
+        document = PostDocument
+
+    assert ValidPostIndex._mappings.to_dict() == {
+        "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}}
+    }
