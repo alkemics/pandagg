@@ -1,7 +1,6 @@
 from .abstract import BucketAggClause
 from typing import Optional, Any, Dict, List, Iterator, Tuple
 from pandagg.types import (
-    Meta,
     AfterKey,
     CompositeSource,
     BucketDict,
@@ -21,13 +20,10 @@ class Composite(BucketAggClause):
         sources: List[Dict[AggName, CompositeSource]],
         size: Optional[int] = None,
         after: Optional[AfterKey] = None,
-        meta: Meta = None,
         **body: Any
     ):
         """https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html"""  # noqa: E501
-        super(Composite, self).__init__(
-            sources=sources, size=size, after=after, meta=meta, **body
-        )
+        super(Composite, self).__init__(sources=sources, size=size, after=after, **body)
 
     @property
     def after(self) -> Optional[AfterKey]:

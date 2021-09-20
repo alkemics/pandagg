@@ -17,6 +17,11 @@ from pandagg.node.aggs import (
     IPRange,
     Sampler,
     DiversifiedSampler,
+    Global,
+    Children,
+    Parent,
+    SignificantText,
+    MultiTerms,
 )
 
 from tests import PandaggTestCase
@@ -777,4 +782,185 @@ def test_diversified_sampler():
                 },
             },
         )
+    ]
+
+
+def test_global():
+    agg = Global(aggs={"avg_price": {"avg": {"field": "price"}}})
+    assert agg.to_dict() == {"global": {}}
+    assert agg._children == {"avg_price": {"avg": {"field": "price"}}}
+    raw_response = {"doc_count": 7, "avg_price": {"value": 140.71428571428572}}
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (None, {"doc_count": 7, "avg_price": {"value": 140.71428571428572}})
+    ]
+
+
+def test_children():
+    agg = Children(
+        type="answer",
+        aggs={
+            "top-names": {"terms": {"field": "owner.display_name.keyword", "size": 10}}
+        },
+    )
+    assert agg.to_dict() == {"children": {"type": "answer"}}
+    assert agg._children == {
+        "top-names": {"terms": {"field": "owner.display_name.keyword", "size": 10}}
+    }
+    raw_response = {
+        "doc_count": 2,
+        "top-names": {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {"key": "Sam", "doc_count": 1},
+                {"key": "Troll", "doc_count": 1},
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 2,
+                "top-names": {
+                    "buckets": [
+                        {"doc_count": 1, "key": "Sam"},
+                        {"doc_count": 1, "key": "Troll"},
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0,
+                },
+            },
+        )
+    ]
+
+
+def test_parent():
+    agg = Parent(
+        type="answer",
+        aggs={"top-tags": {"terms": {"field": "tags.keyword", "size": 10}}},
+    )
+    assert agg.to_dict() == {"parent": {"type": "answer"}}
+    assert agg._children == {
+        "top-tags": {"terms": {"field": "tags.keyword", "size": 10}}
+    }
+    raw_response = {
+        "doc_count": 1,
+        "top-tags": {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {"key": "file-transfer", "doc_count": 1},
+                {"key": "windows-server-2003", "doc_count": 1},
+                {"key": "windows-server-2008", "doc_count": 1},
+            ],
+        },
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            None,
+            {
+                "doc_count": 1,
+                "top-tags": {
+                    "buckets": [
+                        {"doc_count": 1, "key": "file-transfer"},
+                        {"doc_count": 1, "key": "windows-server-2003"},
+                        {"doc_count": 1, "key": "windows-server-2008"},
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0,
+                },
+            },
+        )
+    ]
+
+
+def test_significant_text():
+    agg = SignificantText(field="content")
+    assert agg.to_dict() == {"significant_text": {"field": "content"}}
+
+    raw_response = {
+        "doc_count": 100,
+        "buckets": [
+            {"key": "h5n1", "doc_count": 4, "score": 4.71235374214817, "bg_count": 5}
+        ],
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "h5n1",
+            {"bg_count": 5, "doc_count": 4, "key": "h5n1", "score": 4.71235374214817},
+        )
+    ]
+
+
+def test_multi_terms():
+    agg = MultiTerms(terms=[{"field": "genre"}, {"field": "product"}])
+    assert agg.to_dict() == {
+        "multi_terms": {"terms": [{"field": "genre"}, {"field": "product"}]}
+    }
+
+    raw_response = {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+            {
+                "key": ["rock", "Product A"],
+                "key_as_string": "rock|Product A",
+                "doc_count": 2,
+            },
+            {
+                "key": ["electronic", "Product B"],
+                "key_as_string": "electronic|Product B",
+                "doc_count": 1,
+            },
+            {
+                "key": ["jazz", "Product B"],
+                "key_as_string": "jazz|Product B",
+                "doc_count": 1,
+            },
+            {
+                "key": ["rock", "Product B"],
+                "key_as_string": "rock|Product B",
+                "doc_count": 1,
+            },
+        ],
+    }
+    assert hasattr(agg.extract_buckets(raw_response), "__iter__")
+    assert list(agg.extract_buckets(raw_response)) == [
+        (
+            "rock|Product A",
+            {
+                "doc_count": 2,
+                "key": ["rock", "Product A"],
+                "key_as_string": "rock|Product A",
+            },
+        ),
+        (
+            "electronic|Product B",
+            {
+                "doc_count": 1,
+                "key": ["electronic", "Product B"],
+                "key_as_string": "electronic|Product B",
+            },
+        ),
+        (
+            "jazz|Product B",
+            {
+                "doc_count": 1,
+                "key": ["jazz", "Product B"],
+                "key_as_string": "jazz|Product B",
+            },
+        ),
+        (
+            "rock|Product B",
+            {
+                "doc_count": 1,
+                "key": ["rock", "Product B"],
+                "key_as_string": "rock|Product B",
+            },
+        ),
     ]
