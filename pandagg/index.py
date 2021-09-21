@@ -292,7 +292,7 @@ class DeclarativeIndex(metaclass=IndexMeta):
     mappings: Optional[MappingsDictOrNode] = None
     settings: Optional[SettingsDict] = None
     aliases: Optional[IndexAliases] = None
-    document: Optional[DocumentSource] = None
+    document: Optional[DocumentMeta] = None
 
     # initialized by metaclass, from mappings declaration
     _mappings: Mappings
@@ -321,14 +321,23 @@ class DeclarativeIndex(metaclass=IndexMeta):
         return self._client
 
     def search(
-        self, nested_autocorrect: bool = False, repr_auto_execute: bool = False
+        self,
+        nested_autocorrect: bool = False,
+        repr_auto_execute: bool = False,
+        deserialize_source: bool = False,
     ) -> Search:
+        if deserialize_source is True and self.document is None:
+            raise ValueError(
+                "'%s' DeclarativeIndex doesn't have any declared document to deserialize hits' sources"
+                % self.name
+            )
         return Search(
             using=self._client,
             mappings=self._mappings,
             index=self.name,
             nested_autocorrect=nested_autocorrect,
             repr_auto_execute=repr_auto_execute,
+            document_class=self.document if deserialize_source else None,
         )
 
     def create(self, **kwargs: Any) -> Any:

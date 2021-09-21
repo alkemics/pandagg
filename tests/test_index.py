@@ -339,3 +339,11 @@ def test_index_mappings_consistency_with_document():
     assert ValidPostIndex._mappings.to_dict() == {
         "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}}
     }
+
+    # test that Document is forwared to search
+    index = ValidPostIndex()
+    s = index.search(deserialize_source=True)
+    assert s._document_class is PostDocument
+
+    s = index.search(deserialize_source=False)
+    assert s._document_class is None

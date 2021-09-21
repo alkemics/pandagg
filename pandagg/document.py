@@ -1,7 +1,7 @@
 from typing import Tuple, Dict, Any
 
 from pandagg import Mappings
-from pandagg.node.mappings import Field
+from pandagg.node.mappings import Field, ComplexField
 
 
 class DocumentMeta(type):
@@ -75,6 +75,49 @@ class DocumentSource(metaclass=DocumentMeta):
                     v = v._to_dict_(with_empty_keys=with_empty_keys)
                 d[k] = v
         return d
+
+    @classmethod
+    def _from_dict_(
+        cls, source: Dict, strict: bool = True, path: str = ""
+    ) -> "DocumentSource":
+        doc = cls()
+        k: str
+        field: Field
+        for k, field in cls._field_attrs_.items():  # type: ignore
+            v = source.get(k)
+            child_path = k if not path else "%s.%s" % (path, k)
+
+            if isinstance(v, list):
+                if field._multiple is False and strict:
+                    raise TypeError(
+                        "Unexpected list for field %s, got %s" % (child_path, v)
+                    )
+                # remove null values
+                v = [a for a in v if a is not None]
+                # even if field is not declared as multiple, we set it up as a multiple (and ignore eventual typing
+                # hints)
+                if isinstance(field, ComplexField):
+                    children = [
+                        field._document._from_dict_(  # type: ignore
+                            a, strict=strict, path=child_path
+                        )
+                        for a in v
+                    ]
+                else:
+                    children = v
+                setattr(doc, k, children)
+                continue
+            # single element
+            if field._multiple and strict:
+                raise TypeError("Expected list for field %s, got %s" % (child_path, v))
+            if isinstance(field, ComplexField):
+                child = field._document._from_dict_(  # type: ignore
+                    v, strict=strict, path=child_path
+                )
+            else:
+                child = v
+            setattr(doc, k, child)
+        return doc
 
 
 class InnerDocSource(DocumentSource):

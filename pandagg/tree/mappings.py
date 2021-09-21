@@ -75,10 +75,12 @@ class Mappings(TreeReprMixin, Tree[Field]):
             if depth is not None:
                 depth -= 1
             for child_key, child_node in self.children(node.identifier):
+                if child_node._source_only:
+                    continue
                 children_queries[child_key] = self.to_dict(
                     from_=child_node.identifier, depth=depth
                 )
-        serialized_node = node.body
+        serialized_node = node.to_dict()
         if children_queries:
             if isinstance(node, Root) or node.KEY in ("object", "nested"):
                 serialized_node["properties"] = children_queries

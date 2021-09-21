@@ -15,7 +15,9 @@ class MappingsTreeTestCase(TestCase):
 
     def test_keyword_with_fields(self):
         unnamed_field = Keyword(fields={"searchable": {"type": "text"}}, fielddata=True)
-        self.assertEqual(unnamed_field.body, {"fielddata": True, "type": "keyword"})
+        self.assertEqual(
+            unnamed_field.to_dict(), {"fielddata": True, "type": "keyword"}
+        )
         self.assertEqual(unnamed_field.fields, {"searchable": {"type": "text"}})
 
     def test_deserialization(self):

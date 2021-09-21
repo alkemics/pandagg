@@ -8,7 +8,7 @@ from typing import Optional, Any, Tuple, Dict, Type, Union, TYPE_CHECKING
 from pandagg.types import FieldType
 
 if TYPE_CHECKING:
-    from pandagg.document import DocumentSource
+    from pandagg.document import DocumentSource, DocumentMeta
 
 
 class Field(Node):
@@ -28,9 +28,12 @@ class Field(Node):
         """
         super(Node, self).__init__()
         self._subfield = body.pop("_subfield", False)
+        # used only to declare a field present in source, but not in mappings. Used by DocumentSource instance, not
+        # serialized in mappings.
+        self._source_only: bool = body.pop("source_only", False)
         self._body = body
-        self._multiple = multiple
-        self._required = required
+        self._multiple: Optional[bool] = multiple
+        self._required: bool = required
 
     def line_repr(self, depth: int, **kwargs: Any) -> Tuple[str, str]:
         return "", self._display_pattern % self.KEY.capitalize()
@@ -38,8 +41,7 @@ class Field(Node):
     def is_valid_value(self, v: Any) -> bool:
         raise NotImplementedError()
 
-    @property
-    def body(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         b = {k: v for k, v in self._body.items() if v is not None}
         if self.KEY in ("object", ""):
             return b
@@ -59,11 +61,14 @@ class Field(Node):
     def __str__(self) -> str:
         return "<%s field>:\n%s" % (
             str(self.KEY).capitalize(),
-            str(json.dumps(self.body, indent=4)),
+            str(json.dumps(self.to_dict, indent=4)),
         )
 
 
 class ComplexField(Field):
+
+    _document: Optional[DocumentMeta]
+
     def __init__(
         self,
         properties: Optional[Union[Dict, Type[DocumentSource]]] = None,
@@ -73,6 +78,7 @@ class ComplexField(Field):
         if not isinstance(properties, dict):
             # Document type
             if hasattr(properties, "_mappings_"):
+                self._document = properties
                 properties = (
                     properties._mappings_.to_dict().get("properties")  # type: ignore
                     or {}

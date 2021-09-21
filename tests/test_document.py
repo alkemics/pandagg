@@ -10,7 +10,7 @@ class User(InnerDocSource):
 
     id: int = Long(required=True)
     signed_up: str = Date()
-    username: str = Text(fields={"keyword": Keyword()}, required=True)
+    username: str = Text(fields={"keyword": Keyword()}, required=True, multiple=False)
     email = Text(fields={"keyword": Keyword()})
     location = Text(fields={"keyword": Keyword()})
 
@@ -114,6 +114,69 @@ def test_nested_document_to_dict():
             {"author": {"id": 1, "username": "paul"}, "content": "it's me"},
         ],
     }
+
+
+def test_doc_deserialization():
+    post = Post._from_dict_(
+        {
+            "author": {"id": 1, "username": "paul"},
+            "body": "knock knock",
+            "comments": [
+                {"author": {"id": 2, "username": "chani"}, "content": "who's there?"},
+                {"author": {"id": 1, "username": "paul"}, "content": "it's me"},
+            ],
+        }
+    )
+    assert isinstance(post.author, User)
+    assert post.author.id == 1
+    assert post.author.username == "paul"
+    assert post.body == "knock knock"
+    assert len(post.comments) == 2
+    assert post.comments[0].author.id == 2
+    assert post.comments[0].author.username == "chani"
+    assert post.comments[0].content == "who's there?"
+    assert post.comments[1].author.id == 1
+    assert post.comments[1].author.username == "paul"
+    assert post.comments[1].content == "it's me"
+
+    # strict fails
+    with pytest.raises(TypeError) as e:
+        Post._from_dict_(
+            {
+                "author": {"id": 1, "username": "paul"},
+                "body": "knock knock",
+                "comments": [
+                    {
+                        "author": {"id": 2, "username": "chani"},
+                        "content": "who's there?",
+                    },
+                    {
+                        "author": {"id": 1, "username": ["paul", "paulo"]},
+                        "content": "it's me",
+                    },
+                ],
+            }
+        )
+    assert e.value.args == (
+        "Unexpected list for field comments.author.username, got ['paul', 'paulo']",
+    )
+
+    # not strict is ok
+    post = Post._from_dict_(
+        {
+            "author": {"id": 1, "username": "paul"},
+            "body": "knock knock",
+            "comments": [
+                {"author": {"id": 2, "username": "chani"}, "content": "who's there?"},
+                {
+                    "author": {"id": 1, "username": ["paul", "paulo"]},
+                    "content": "it's me",
+                },
+            ],
+        },
+        strict=False,
+    )
+    assert post.comments[1].author.username == ["paul", "paulo"]
 
 
 def test_nested_document_to_dict_empty_multiple():

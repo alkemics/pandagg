@@ -41,6 +41,8 @@ from pandagg.types import (
 if TYPE_CHECKING:
     import pandas as pd
     from pandagg.search import Search
+    from pandagg import DocumentMeta
+    from pandagg.document import DocumentSource
 
 
 GroupingKeysDict = Dict[AggName, BucketKeyAtom]
@@ -62,10 +64,14 @@ class NormalizedBucketDict(TypedDict, total=False):
 @dataclasses.dataclass
 class Hit:
     data: HitDict
+    _document_class: Optional[DocumentMeta]
 
     @property
-    def _source(self) -> Optional[DocSource]:
-        return self.data.get("_source")
+    def _source(self) -> Optional[Union[DocSource, DocumentSource]]:
+        source = self.data.get("_source")
+        if self._document_class is not None:
+            return self._document_class._from_dict_(source)  # type: ignore
+        return source
 
     @property
     def _score(self) -> Optional[float]:
@@ -88,6 +94,7 @@ class Hit:
 @dataclasses.dataclass
 class Hits:
     data: Optional[HitsDict]
+    _document_class: Optional[DocumentMeta]
 
     @property
     def total(self) -> Optional[TotalDict]:
@@ -95,7 +102,14 @@ class Hits:
 
     @property
     def hits(self) -> List[Hit]:
-        return [Hit(hit) for hit in self.data.get("hits", [])] if self.data else []
+        return (
+            [
+                Hit(hit, _document_class=self._document_class)
+                for hit in self.data.get("hits", [])
+            ]
+            if self.data
+            else []
+        )
 
     @property
     def max_score(self) -> Optional[float]:
@@ -183,7 +197,9 @@ class SearchResponse:
 
     @property
     def hits(self) -> Hits:
-        return Hits(self.data.get("hits"))
+        return Hits(
+            data=self.data.get("hits"), _document_class=self._search._document_class
+        )
 
     @property
     def aggregations(self) -> Aggregations:
