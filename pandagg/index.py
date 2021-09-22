@@ -9,31 +9,16 @@ from typing_extensions import TypedDict, Literal
 from elasticsearch import Elasticsearch, helpers
 
 from pandagg import Mappings, Search
+from pandagg.document import DocumentSource, DocumentMeta
 from pandagg.tree.mappings import MappingsDictOrNode
-from pandagg.types import SettingsDict, IndexAliases, DocSource, IndexName
+from pandagg.types import SettingsDict, IndexAliases, DocSource, Action, OpType
+from pandagg.utils import _cast_pre_save_source, get_action_modifier, is_subset
 
 
 class Template(TypedDict, total=False):
     aliases: IndexAliases
     mappings: MappingsDictOrNode
     settings: SettingsDict
-
-
-OpType = Literal["create", "index", "update", "delete"]
-
-
-class Action(TypedDict, total=False):
-    _op_type: OpType
-    _id: str
-    _index: IndexName
-    retry_on_conflict: int
-    routing: str
-    version: int
-    version_type: Literal["external", "external_gte"]
-    _source: DocSource
-    doc: DocSource
-    require_alias: bool
-    dynamic_templates: Dict
 
 
 @dataclasses.dataclass
@@ -58,36 +43,38 @@ class DocumentBulkWriter:
         return True
 
     def bulk(
-        self, actions: Iterable[Action], _op_type_overwrite: Optional[OpType] = None
+        self,
+        actions: Iterable[Union[Action, DocumentSource]],
+        _op_type_overwrite: Optional[OpType] = None,
     ) -> "DocumentBulkWriter":
         # https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
         # https://elasticsearch-py.readthedocs.io/en/master/helpers.html
 
-        def _set_index(action: Action) -> Action:
-            action["_index"] = self._index.name
-            if _op_type_overwrite is not None:
-                action["_op_type"] = _op_type_overwrite
-            return action
-
-        self._chain_actions(map(_set_index, actions))
+        self._chain_actions(
+            map(
+                get_action_modifier(
+                    index_name=self._index.name, _op_type_overwrite=_op_type_overwrite
+                ),
+                actions,
+            )
+        )
         return self
 
     def index(
         self,
-        _source: DocSource,
+        _source: Union[DocSource, DocumentSource],
+        *,
         op_type: Literal["create", "index"] = "index",
         _id: Optional[str] = None,
         **kwargs: Any
     ) -> "DocumentBulkWriter":
-        # if create: fails if _id already present
-        # '_id' will be generated automatically if not present
         # https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html
-        # upsert (create or update)
+        source: DocSource = _cast_pre_save_source(_source)
         self._chain_actions(
             [
                 {
                     "_id": _id,
-                    "_source": _source,
+                    "_source": source,
                     "_index": self._index.name,
                     "_op_type": op_type,
                     **kwargs,  # type: ignore
@@ -96,7 +83,9 @@ class DocumentBulkWriter:
         )
         return self
 
-    def update(self, _id: str, doc: DocSource, **kwargs: Any) -> "DocumentBulkWriter":
+    def update(
+        self, _id: str, doc: Union[DocSource, DocumentSource], **kwargs: Any
+    ) -> "DocumentBulkWriter":
         """
         Update an existing document.
 
@@ -119,11 +108,12 @@ class DocumentBulkWriter:
 
         {"personal_info": [{"surname": "Bob"}]}
         """
+        source: DocSource = _cast_pre_save_source(doc)
         self._chain_actions(
             [
                 {
                     "_id": _id,
-                    "doc": doc,
+                    "doc": source,
                     "_index": self._index.name,
                     "_op_type": "update",
                     **kwargs,  # type: ignore
@@ -156,6 +146,15 @@ class DocumentBulkWriter:
         # remove all stacked operations
         self._operations = iter([])
 
+    def validate(self, document: DocumentSource) -> None:
+        self._index._mappings.validate_document(document)
+
+
+def _deepcopy_mutable_attrs(attrs: Dict[str, Any], attrs_names: List[str]) -> None:
+    for attr_name in attrs_names:
+        if attrs.get(attr_name) is not None:
+            attrs[attr_name] = deepcopy(attrs[attr_name])
+
 
 class IndexMeta(type):
 
@@ -168,16 +167,40 @@ class IndexMeta(type):
             cls._abstract_index_initialized = True
             return super(IndexMeta, cls).__new__(cls, name, bases, attrs)
 
-        # Ensure name is defined, and copy mappings / settings / aliases to prevent any unintended mutation.
         if not attrs.get("name"):
             raise ValueError("<%s> declarative index must have a name" % name)
-        if attrs.get("mappings") is not None:
-            attrs["mappings"] = deepcopy(attrs["mappings"])
-        attrs["_mappings"] = Mappings(**attrs["mappings"])
-        if attrs.get("settings") is not None:
-            attrs["settings"] = deepcopy(attrs["settings"])
-        if attrs.get("aliases") is not None:
-            attrs["aliases"] = deepcopy(attrs["aliases"])
+        # Prevent any unintended mutation
+        _deepcopy_mutable_attrs(attrs, attrs_names=["mappings", "settings", "aliases"])
+
+        saved_mappings: Mappings
+        document: Optional[DocumentMeta] = None
+        if attrs.get("document"):
+            if not type(attrs["document"]) == DocumentMeta or not issubclass(
+                attrs["document"], DocumentSource
+            ):
+                raise TypeError(
+                    "<%s> declarative index 'document' attribute must be a %s subclass, got <%s> of type %s"
+                    % (name, DocumentSource, attrs["document"], type(attrs["document"]))
+                )
+            document = attrs["document"]
+        if attrs.get("mappings"):
+            # if mappings is provided, use it in priority
+            saved_mappings = Mappings(**attrs["mappings"])
+        elif document is not None:
+            # else, use document as mappings
+            saved_mappings = document._mappings_  # type: ignore
+        else:
+            saved_mappings = Mappings()
+
+        if attrs.get("mappings") and document:
+            # if both "mappings" and "document" are provided, ensure there is no conflict
+            if not is_subset(
+                document._mappings_.to_dict(), saved_mappings.to_dict()  # type: ignore
+            ):
+                raise TypeError(
+                    "Incompatible index declaration, mappings and document do not match."
+                )
+        attrs["_mappings"] = saved_mappings
         return super(IndexMeta, cls).__new__(cls, name, bases, attrs)
 
 
@@ -192,15 +215,14 @@ class IndexTemplateMeta(type):
             cls._abstract_index_initialized = True
             return super(IndexTemplateMeta, cls).__new__(cls, name, bases, attrs)
 
-        # Ensure name is defined, and copy mutable parameters to prevent any unintended mutation.
         if not attrs.get("name"):
             raise ValueError("<%s> declarative index template must have a name" % name)
         if not attrs.get("index_patterns"):
             raise ValueError(
                 "<%s> declarative index template must have index_patterns" % name
             )
-        if attrs.get("template") is not None:
-            attrs["template"] = deepcopy(attrs["template"])
+        # Prevent any unintended mutation
+        _deepcopy_mutable_attrs(attrs, attrs_names=["template"])
         attrs["_template_index"] = type(
             "%sTemplateIndex" % name,
             (DeclarativeIndex,),
@@ -270,6 +292,7 @@ class DeclarativeIndex(metaclass=IndexMeta):
     mappings: Optional[MappingsDictOrNode] = None
     settings: Optional[SettingsDict] = None
     aliases: Optional[IndexAliases] = None
+    document: Optional[DocumentMeta] = None
 
     # initialized by metaclass, from mappings declaration
     _mappings: Mappings
@@ -298,14 +321,23 @@ class DeclarativeIndex(metaclass=IndexMeta):
         return self._client
 
     def search(
-        self, nested_autocorrect: bool = False, repr_auto_execute: bool = False
+        self,
+        nested_autocorrect: bool = False,
+        repr_auto_execute: bool = False,
+        deserialize_source: bool = False,
     ) -> Search:
+        if deserialize_source is True and self.document is None:
+            raise ValueError(
+                "'%s' DeclarativeIndex doesn't have any declared document to deserialize hits' sources"
+                % self.name
+            )
         return Search(
             using=self._client,
             mappings=self._mappings,
             index=self.name,
             nested_autocorrect=nested_autocorrect,
             repr_auto_execute=repr_auto_execute,
+            document_class=self.document if deserialize_source else None,
         )
 
     def create(self, **kwargs: Any) -> Any:

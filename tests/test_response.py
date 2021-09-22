@@ -1,3 +1,5 @@
+from pandagg.document import DocumentSource
+from pandagg.node.mappings import Keyword
 from tests import PandaggTestCase
 import pandas as pd
 
@@ -10,22 +12,40 @@ from pandagg.utils import ordered
 from tests.testing_samples.mapping_example import MAPPINGS
 
 
+class SomeDoc(DocumentSource):
+    tag = Keyword()
+
+
 class ResponseTestCase(PandaggTestCase):
     def test_hit(self):
+
         h = Hit(
             {
                 "_index": "my_index_01",
                 "_id": "1",
                 "_score": 1.0,
-                "_source": {"field_23": 1},
-            }
+                "_source": {"tag": "1"},
+            },
+            _document_class=None,
         )
         self.assertEqual(h._index, "my_index_01")
         self.assertEqual(h._id, "1")
         self.assertEqual(h._score, 1.0)
-        self.assertEqual(h._source, {"field_23": 1})
+        self.assertEqual(h._source, {"tag": "1"})
 
         self.assertEqual(h.__repr__(), "<Hit 1> score=1.00")
+
+        h = Hit(
+            {
+                "_index": "my_index_01",
+                "_id": "1",
+                "_score": 1.0,
+                "_source": {"tag": "1"},
+            },
+            _document_class=SomeDoc,
+        )
+        assert isinstance(h._source, SomeDoc)
+        assert h._source.tag == "1"
 
     def test_hits(self):
         hits = Hits(
@@ -38,24 +58,27 @@ class ResponseTestCase(PandaggTestCase):
                         "_type": "_doc",
                         "_id": "1",
                         "_score": 1.0,
-                        "_source": {"field_23": 1, "yo": 2},
+                        "_source": {"tag": 1, "yo": 2},
                     },
                     {
                         "_index": "my_index_01",
                         "_type": "_doc",
                         "_id": "2",
                         "_score": 0.2,
-                        "_source": {"field_23": 2, "to": 1},
+                        "_source": {"tag": 2, "to": 1},
                     },
                 ],
-            }
+            },
+            _document_class=SomeDoc,
         )
         self.assertEqual(hits.total, {"value": 34, "relation": "eq"})
+        assert hits._document_class is SomeDoc
         self.assertEqual(hits._total_repr(), "34")
         self.assertEqual(len(hits), 2)
         self.assertEqual(len(hits.hits), 2)
         for h in hits.hits:
             self.assertIsInstance(h, Hit)
+            assert h._document_class is SomeDoc
         self.assertEqual(hits.__repr__(), "<Hits> total: 34, contains 2 hits")
 
         # as dataframe
@@ -64,14 +87,14 @@ class ResponseTestCase(PandaggTestCase):
         non_expanded_df = hits.to_dataframe(expand_source=False)
 
         self.assertEqual(
-            sorted(source_only_df.columns.tolist()), sorted(["field_23", "to", "yo"])
+            sorted(source_only_df.columns.tolist()), sorted(["tag", "to", "yo"])
         )
         self.assertEqual(source_only_df.shape, (2, 3))
         self.assertEqual(source_only_df.index.tolist(), ["1", "2"])
 
         self.assertEqual(
             sorted(with_metadata_df.columns.tolist()),
-            sorted(["_index", "_score", "_type", "field_23", "to", "yo"]),
+            sorted(["_index", "_score", "_type", "tag", "to", "yo"]),
         )
         self.assertEqual(with_metadata_df.shape, (2, 6))
         self.assertEqual(with_metadata_df.index.tolist(), ["1", "2"])

@@ -46,6 +46,7 @@ from pandagg.utils import DSLMixin
 
 if TYPE_CHECKING:
     import pandas as pd
+    from pandagg.document import DocumentMeta
 
 # because Search.bool method shadows bool typing
 bool_ = bool
@@ -156,6 +157,7 @@ class Search(DSLMixin, Request):
         mappings: Optional[Union[MappingsDict, Mappings]] = None,
         nested_autocorrect: bool = False,
         repr_auto_execute: bool = False,
+        document_class: DocumentMeta = None,
     ) -> None:
         """
         Search request to elasticsearch.
@@ -188,6 +190,7 @@ class Search(DSLMixin, Request):
             mappings=mappings, nested_autocorrect=nested_autocorrect
         )
         self._repr_auto_execute: bool = repr_auto_execute
+        self._document_class: Optional[DocumentMeta] = document_class
         super(Search, self).__init__(using=using, index=index)
 
     def query(
@@ -510,6 +513,7 @@ class Search(DSLMixin, Request):
         s._post_filter = self._post_filter.clone()
         s._mappings = None if self._mappings is None else self._mappings.clone()
         s._repr_auto_execute = self._repr_auto_execute
+        s._document_class = self._document_class
         return s
 
     def update_from_dict(self, d: Dict) -> "Search":
@@ -839,7 +843,7 @@ class Search(DSLMixin, Request):
         """
         es = self._get_connection()
         for hit in scan(es, query=self.to_dict(), index=self._index):
-            yield Hit(hit)
+            yield Hit(hit, _document_class=self._document_class)
 
     def delete(self) -> DeleteByQueryResponse:
         """

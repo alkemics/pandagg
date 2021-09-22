@@ -15,7 +15,9 @@ class MappingsTreeTestCase(TestCase):
 
     def test_keyword_with_fields(self):
         unnamed_field = Keyword(fields={"searchable": {"type": "text"}}, fielddata=True)
-        self.assertEqual(unnamed_field.body, {"fielddata": True, "type": "keyword"})
+        self.assertEqual(
+            unnamed_field.to_dict(), {"fielddata": True, "type": "keyword"}
+        )
         self.assertEqual(unnamed_field.fields, {"searchable": {"type": "text"}})
 
     def test_deserialization(self):
@@ -137,17 +139,17 @@ _
         tts = [
             {
                 "name": "non nullable",
-                "properties": {"pizza": Keyword(nullable=False)},
+                "properties": {"pizza": Keyword(required=True)},
                 "documents_expected_results": [
                     ({"pizza": "yolo"}, None),
-                    ({"pizza": None}, "Field <pizza> cannot be null"),
-                    ({}, "Field <pizza> cannot be null"),
+                    ({"pizza": None}, "Field <pizza> is required"),
+                    ({}, "Field <pizza> is required"),
                     ({"pizza": ["yo", "lo"]}, None),
                 ],
             },
             {
                 "name": "nullable",
-                "properties": {"pizza": Keyword(nullable=True)},
+                "properties": {"pizza": Keyword(required=False)},
                 "documents_expected_results": [
                     ({"pizza": "yolo"}, None),
                     ({"pizza": None}, None),
@@ -167,11 +169,11 @@ _
             },
             {
                 "name": "multiple non nullable",
-                "properties": {"pizza": Keyword(multiple=True, nullable=False)},
+                "properties": {"pizza": Keyword(multiple=True, required=True)},
                 "documents_expected_results": [
                     ({"pizza": "yolo"}, "Field <pizza> should be a array"),
-                    ({"pizza": None}, "Field <pizza> cannot be null"),
-                    ({}, "Field <pizza> cannot be null"),
+                    ({"pizza": None}, "Field <pizza> is required"),
+                    ({}, "Field <pizza> is required"),
                     ({"pizza": ["yo", "lo"]}, None),
                 ],
             },
@@ -189,7 +191,7 @@ _
                 "name": "nested multiple non nullable",
                 "properties": {
                     "some_good": Object(
-                        properties={"pizza": Keyword(multiple=True, nullable=False)}
+                        properties={"pizza": Keyword(multiple=True, required=True)}
                     )
                 },
                 "documents_expected_results": [
@@ -199,9 +201,9 @@ _
                     ),
                     (
                         {"some_good": {"pizza": None}},
-                        "Field <some_good.pizza> cannot be null",
+                        "Field <some_good.pizza> is required",
                     ),
-                    ({}, "Field <some_good.pizza> cannot be null"),
+                    ({}, "Field <some_good.pizza> is required"),
                     ({"some_good": {"pizza": ["yo", "lo"]}}, None),
                 ],
             },

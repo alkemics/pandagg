@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from typing_extensions import TypedDict
-from typing import Optional, Union, Any, List, Dict
+from typing import Optional, Union, Any, List, Dict, TYPE_CHECKING
 
 from lighttree.node import NodeId
 from lighttree import Tree
+
 from pandagg.node.aggs.abstract import AggClause
 from pandagg.node.mappings import Object, Nested
 from pandagg.node.mappings.abstract import Field, RegularField, ComplexField, Root
@@ -14,6 +17,8 @@ from pandagg.exceptions import (
 from pandagg.tree._tree import TreeReprMixin
 from pandagg.types import DocSource, MappingsDict, FieldName, FieldClauseDict
 
+if TYPE_CHECKING:
+    from pandagg.document import DocumentSource
 
 FieldPropertiesDictOrNode = Dict[FieldName, Union[FieldClauseDict, Field]]
 
@@ -39,7 +44,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
     def __init__(
         self,
         properties: Optional[FieldPropertiesDictOrNode] = None,
-        dynamic: bool = False,
+        dynamic: Optional[bool] = None,
         **body: Any
     ) -> None:
         super(Mappings, self).__init__()
@@ -70,10 +75,12 @@ class Mappings(TreeReprMixin, Tree[Field]):
             if depth is not None:
                 depth -= 1
             for child_key, child_node in self.children(node.identifier):
+                if child_node._source_only:
+                    continue
                 children_queries[child_key] = self.to_dict(
                     from_=child_node.identifier, depth=depth
                 )
-        serialized_node = node.body
+        serialized_node = node.to_dict()
         if children_queries:
             if isinstance(node, Root) or node.KEY in ("object", "nested"):
                 serialized_node["properties"] = children_queries
@@ -242,7 +249,10 @@ class Mappings(TreeReprMixin, Tree[Field]):
                     )
                 self._insert(field.identifier, field.fields, True)
 
-    def validate_document(self, d: DocSource) -> None:
+    def validate_document(self, d: Union[DocSource, DocumentSource]) -> None:
+        # if Document
+        if not isinstance(d, dict) and hasattr(d, "_to_dict_"):
+            d = d._to_dict_()
         self._validate_document(d, pid=self.root)
 
     def _validate_document(self, d: Any, pid: NodeId, path: str = "") -> None:
@@ -257,8 +267,8 @@ class Mappings(TreeReprMixin, Tree[Field]):
         for field_name, field in self.children(pid):  # type: ignore
             full_path = ".".join([path, field_name]) if path else field_name
             field_value = d.get(field_name)
-            if not field._nullable and not field_value:
-                raise ValueError("Field <%s> cannot be null" % full_path)
+            if field._required and not field_value:
+                raise ValueError("Field <%s> is required" % full_path)
 
             if field._multiple is True:
                 if field_value is not None:
@@ -267,9 +277,9 @@ class Mappings(TreeReprMixin, Tree[Field]):
                     field_value_list = field_value
                 else:
                     field_value_list = []
-                if not field._nullable and not any(field_value_list):
+                if field._required and not any(field_value_list):
                     # deal with case: [None]
-                    raise ValueError("Field <%s> cannot be null" % full_path)
+                    raise ValueError("Field <%s> is required" % full_path)
             elif field._multiple is False:
                 if isinstance(field_value, list):
                     raise ValueError("Field <%s> should not be an array" % full_path)
