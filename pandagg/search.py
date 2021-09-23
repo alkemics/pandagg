@@ -792,7 +792,7 @@ class Search(DSLMixin, Request):
         """
         es = self._get_connection()
         raw_data = es.search(index=self._index, body=self.to_dict())
-        return SearchResponse(data=raw_data, _search=self)
+        return SearchResponse(data=raw_data, _search=self)  # type: ignore
 
     def scan_composite_agg(self, size: int) -> Iterator[BucketDict]:
         """Iterate over the whole aggregation composed buckets, yields buckets."""
@@ -851,7 +851,7 @@ class Search(DSLMixin, Request):
         """
 
         es = self._get_connection()
-        return es.delete_by_query(index=self._index, body=self.to_dict())
+        return es.delete_by_query(index=self._index, body=self.to_dict())  # type: ignore
 
     def __eq__(self, other: Any) -> bool_:
         return (
@@ -942,7 +942,7 @@ class MultiSearch(Request):
         Execute the multi search request and return a list of search results.
         """
         es = self._get_connection()
-        return es.msearch(index=self._index, body=self.to_dict(), **self._params)
+        return es.msearch(index=self._index, body=self.to_dict(), **self._params)  # type: ignore
 
     def __eq__(self, other: Any) -> bool:
         return (
