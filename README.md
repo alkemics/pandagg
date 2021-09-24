@@ -4,6 +4,7 @@
 [![Coverage](https://codecov.io/github/alkemics/pandagg/coverage.svg?branch=master)](https://codecov.io/gh/alkemics/pandagg)
 [![Docs](https://readthedocs.org/projects/pandagg/badge/?version=latest&style=flat)](https://pandagg.readthedocs.io/en/latest/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 
 ## What is it?
@@ -17,14 +18,14 @@ Some of its interactive features are inspired by [pandas](https://github.com/pan
 **pandagg** is also greatly inspired by the official high level python client [elasticsearch-dsl](https://github.com/elastic/elasticsearch-dsl-py),
 and is intended to make it more convenient to deal with deeply nested queries and aggregations.
 
+## Why another library
 
-## Features
-
-- flexible aggregation and search queries declaration, with ability to insert clauses at specific points (and not only below last manipulated clause)
-- query validation based on provided mappings
-- parsing of aggregation results in convenient formats: tree with interactive navigation, csv-like tabular breakdown, pandas dataframe, and others
-- cluster indices discovery module, and mappings interactive navigation
-
+`pandagg` provides the following features:
+- interactive mode for cluster discovery
+- richer aggregations syntax, and aggregations parsing features
+- declarative indices
+- bulk ORM operations
+- typing annotations
 
 ## Documentation
 
@@ -134,12 +135,12 @@ Parse it in tabular format:
 >>> response.aggregations.to_dataframe()
                     avg_nb_roles  avg_rank  doc_count
 decade genres
-2000.0 Drama           14.385391  6.269675      11500
 1990.0 Documentary      3.778982  6.517093       8393
-2000.0 Short            4.053082  6.836253      13451
-       Documentary      5.581433  6.980898       8639
-1990.0 Short            3.023284  6.311326      12197
        Drama           18.518067  5.981429      12232
+       Short            3.023284  6.311326      12197
+2000.0 Documentary      5.581433  6.980898       8639
+       Drama           14.385391  6.269675      11500
+       Short            4.053082  6.836253      13451
 ```
 
 ## Disclaimers
@@ -148,18 +149,13 @@ It does not ensure retro-compatible with previous versions of elasticsearch (int
 of the roadmap to tag **pandagg** versions according to the ElasticSearch versions they are related to (ie
 v7.1.4 would work with Elasticsearch v7.X.X).
 
-It doesn't provide yet all functionalities provided by the official client (for instance ORM like insert/updates, index
-operations etc..). Primary focus of **pandagg** was on read operations.
-
 ## Contributing
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome.
 
 
-## Roadmap
+## Roadmap priorities
 
-- on aggregation `nodes`, ensure all allowed `fields` are listed
-- expand functionalities: proper ORM similar to elasticsearch-dsl Document classes, index managing operations
-- package versions for different ElasticSearch versions
-- composite aggregation iterator
 - clean and proper documentation
+- package versions for different ElasticSearch versions
+- onboard new contributors

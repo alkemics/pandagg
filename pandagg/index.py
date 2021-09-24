@@ -269,7 +269,7 @@ class DeclarativeIndexTemplate(metaclass=IndexTemplateMeta):
             d["version"] = self.version
         return d
 
-    def save(self) -> None:
+    def save(self) -> Any:
         return self._get_connection().indices.put_index_template(
             name=self.name, body=self.to_dict()
         )
