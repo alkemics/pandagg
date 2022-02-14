@@ -803,6 +803,7 @@ class Search(DSLMixin, Request):
         buckets: List[BucketDict] = r.aggregations.data[a_name][  # type: ignore
             "buckets"
         ]
+        yield from buckets
         after_key: AfterKey = r.aggregations.data[a_name]["after_key"]  # type: ignore
 
         init: bool = True
@@ -812,8 +813,7 @@ class Search(DSLMixin, Request):
             r = s.execute()
             agg_clause_response = r.aggregations.data[a_name]
             buckets = agg_clause_response["buckets"]  # type: ignore
-            for bucket in buckets:
-                yield bucket
+            yield from buckets
             if "after_key" in agg_clause_response:
                 after_key = agg_clause_response["after_key"]  # type: ignore
             else:
