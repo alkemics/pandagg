@@ -39,34 +39,32 @@ def create_git_index(client, index):
 
     client.indices.create(
         index=index,
-        body={
-            "settings": {
-                # just one shard, no replicas for testing
-                "number_of_shards": 1,
-                "number_of_replicas": 0,
-                # custom analyzer for analyzing file paths
-                "analysis": {
-                    "analyzer": {
-                        "file_path": {
-                            "type": "custom",
-                            "tokenizer": "path_hierarchy",
-                            "filter": ["lowercase"],
-                        }
+        settings={
+            # just one shard, no replicas for testing
+            "number_of_shards": 1,
+            "number_of_replicas": 0,
+            # custom analyzer for analyzing file paths
+            "analysis": {
+                "analyzer": {
+                    "file_path": {
+                        "type": "custom",
+                        "tokenizer": "path_hierarchy",
+                        "filter": ["lowercase"],
                     }
-                },
+                }
             },
-            "mappings": GIT_MAPPINGS,
         },
+        mappings=GIT_MAPPINGS,
     )
 
 
-class TestDocument(TypedDict):
+class _TestDocument(TypedDict):
     _id: str
     _source: Dict[str, Any]
     _index: str
 
 
-TEST_GIT_DATA: List[TestDocument] = [
+TEST_GIT_DATA: List[_TestDocument] = [
     {
         "_id": "3ca6e1e73a071a705b4babd2f581c91a2a3e5037",
         "_source": {

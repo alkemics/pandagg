@@ -96,7 +96,7 @@ def test_search_index():
     assert s._index == ["i"]
     s = s.index("i2")
     assert s._index == ["i", "i2"]
-    s = s.index(u"i3")
+    s = s.index("i3")
     assert s._index == ["i", "i2", "i3"]
     s = s.index()
     assert s._index is None
@@ -410,13 +410,13 @@ def test_repr_execution(client_search):
 
     s.size(2).__repr__()
     client_search.assert_called_once()
-    client_search.assert_any_call(body={"size": 2}, index=["yolo"])
+    client_search.assert_any_call(size=2, index=["yolo"])
 
     client_search.reset_mock()
 
     s.size(2)._repr_html_()
     client_search.assert_called_once()
-    client_search.assert_any_call(body={"size": 2}, index=["yolo"])
+    client_search.assert_any_call(size=2, index=["yolo"])
 
 
 @patch.object(Elasticsearch, "search")
@@ -457,14 +457,12 @@ def test_repr_aggs_execution(client_search):
     s.__repr__()
     client_search.assert_called_once()
     client_search.assert_any_call(
-        body={
-            "size": 0,
-            "aggs": {
-                "toto_terms": {
-                    "terms": {"field": "toto"},
-                    "aggs": {"toto_avg_price": {"avg": {"field": "price"}}},
-                }
-            },
+        size=0,
+        aggs={
+            "toto_terms": {
+                "terms": {"field": "toto"},
+                "aggs": {"toto_avg_price": {"avg": {"field": "price"}}},
+            }
         },
         index=["yolo"],
     )
