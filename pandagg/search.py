@@ -831,18 +831,18 @@ class Search(DSLMixin, Request):
         # artificially merge all buckets as if they were returned in a single query
         return Aggregations(_search=s, data={agg_name: {"buckets": all_buckets}})
 
-    def scan(self) -> Iterator[Hit]:
+    def scan(self, **kwargs: Any) -> Iterator[Hit]:
         """
         Turn the search into a scan search and return a generator that will
         iterate over all the documents matching the query.
 
-        Use ``params`` method to specify any additional arguments you with to
-        pass to the underlying ``scan`` helper from ``elasticsearch-py`` -
+        Use ``kwargs`` to specify any additional arguments to pass to the underlying ``scan`` helper from
+        ``elasticsearch-py`` -
         https://elasticsearch-py.readthedocs.io/en/master/helpers.html#elasticsearch.helpers.scan
 
         """
         es = self._get_connection()
-        for hit in scan(es, query=self.to_dict(), index=self._index):
+        for hit in scan(es, query=self.to_dict(), index=self._index, **kwargs):
             yield Hit(hit, _document_class=self._document_class)
 
     def delete(self) -> DeleteByQueryResponse:
