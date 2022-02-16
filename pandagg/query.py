@@ -31,6 +31,7 @@ from pandagg.node.query.compound import (
     DisMax,
 )
 from pandagg.node.query.joining import Nested, HasChild, HasParent, ParentId
+from pandagg.node.query.match_all import MatchNone, MatchAll
 from pandagg.node.query.geo import GeoShape, GeoPolygone, GeoDistance, GeoBoundingBox
 from pandagg.node.query.specialized import (
     DistanceFeature,
@@ -78,6 +79,9 @@ __all__ = [
     "HasParent",
     "HasChild",
     "ParentId",
+    # match_all
+    "MatchAll",
+    "MatchNone",
     # shape
     "Shape",
     # geo
