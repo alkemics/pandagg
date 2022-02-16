@@ -39,6 +39,8 @@ class Filter(UniqueBucketAgg):
 
 
 class MatchAll(Filter):
+    KEY = "match_all"
+
     def __init__(self, **body: Any):
         super(MatchAll, self).__init__(filter={"match_all": {}}, **body)
 
