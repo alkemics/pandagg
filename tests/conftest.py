@@ -24,8 +24,9 @@ def client():
 @fixture
 def write_client(client):
     yield client
-    client.indices.delete("test-*", ignore=404)
-    client.indices.delete_index_template("test-template", ignore=404)
+    client.indices.delete(index="test-git", ignore=404)
+    client.indices.delete(index="test-post", ignore=404)
+    client.indices.delete_index_template(name="test-template", ignore=404)
 
 
 @fixture(scope="session")
@@ -52,13 +53,13 @@ def git_mappings():
 
 @fixture(scope="session")
 def data_client(client):
-    client.indices.delete("git", ignore=(404,))
+    client.indices.delete(index="git", ignore=(404,))
     # create mappings
     create_git_index(client, "git")
     # load data
     bulk(client, TEST_GIT_DATA, raise_on_error=True, refresh=True)
     yield client
-    client.indices.delete("git")
+    client.indices.delete(index="git")
 
 
 @fixture
@@ -109,4 +110,4 @@ def updatable_index(client):
     create_git_index(client, index)
     bulk(client, TEST_GIT_DATA, raise_on_error=True, refresh=True)
     yield index
-    client.indices.delete(index, ignore=404)
+    client.indices.delete(index=index, ignore=404)

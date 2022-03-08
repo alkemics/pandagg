@@ -72,7 +72,7 @@ class ComplexField(Field):
     def __init__(
         self,
         properties: Optional[Union[Dict, Type[DocumentSource]]] = None,
-        **body: Any
+        **body: Any,
     ) -> None:
         properties = properties or {}
         if not isinstance(properties, dict):

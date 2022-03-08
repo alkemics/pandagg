@@ -200,7 +200,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         compound_param: str = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.query(
@@ -209,7 +209,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             compound_param=compound_param,
-            **body
+            **body,
         )
         return s
 
@@ -224,7 +224,7 @@ class Search(DSLMixin, Request):
         insert_below: Optional[QueryName] = None,
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.bool(
@@ -235,7 +235,7 @@ class Search(DSLMixin, Request):
             insert_below=insert_below,
             on=on,
             mode=mode,
-            **body
+            **body,
         )
         return s
 
@@ -248,7 +248,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.filter(
@@ -257,7 +257,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -270,7 +270,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.must_not(
@@ -279,7 +279,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -292,7 +292,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.should(
@@ -301,7 +301,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -314,7 +314,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.must(
@@ -323,7 +323,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -336,7 +336,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         """Must not wrapped in filter context."""
         s = self._clone()
@@ -356,7 +356,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         compound_param: str = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._post_filter = s._post_filter.query(
@@ -365,7 +365,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             compound_param=compound_param,
-            **body
+            **body,
         )
         return s
 
@@ -375,7 +375,7 @@ class Search(DSLMixin, Request):
         type_or_agg: Optional[TypeOrAgg] = None,
         insert_below: Optional[AggName] = None,
         at_root: bool_ = False,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.agg(
@@ -383,7 +383,7 @@ class Search(DSLMixin, Request):
             type_or_agg=type_or_agg,
             insert_below=insert_below,
             at_root=at_root,
-            **body
+            **body,
         )
         return s
 
@@ -407,7 +407,7 @@ class Search(DSLMixin, Request):
         type_or_agg: Optional[TypeOrAgg] = None,
         insert_below: Optional[AggName] = None,
         at_root: bool_ = False,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.groupby(
@@ -415,7 +415,7 @@ class Search(DSLMixin, Request):
             type_or_agg=type_or_agg,
             insert_below=insert_below,
             at_root=at_root,
-            **body
+            **body,
         )
         return s
 
@@ -791,7 +791,7 @@ class Search(DSLMixin, Request):
         the data.
         """
         es = self._get_connection()
-        raw_data = es.search(index=self._index, body=self.to_dict())
+        raw_data = es.search(index=self._index, **self.to_dict())  # type: ignore
         return SearchResponse(data=raw_data, _search=self)  # type: ignore
 
     def scan_composite_agg(self, size: int) -> Iterator[BucketDict]:

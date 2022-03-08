@@ -348,7 +348,7 @@ class DeclarativeIndex(metaclass=IndexMeta):
         ``Elasticsearch.indices.create`` unchanged.
         """
         return self._get_connection().indices.create(
-            index=self.name, body=self.to_dict(), **kwargs
+            index=self.name, **self.to_dict(), **kwargs
         )
 
     def is_closed(self) -> bool:

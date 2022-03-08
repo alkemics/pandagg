@@ -45,7 +45,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
         self,
         properties: Optional[FieldPropertiesDictOrNode] = None,
         dynamic: Optional[bool] = None,
-        **body: Any
+        **body: Any,
     ) -> None:
         super(Mappings, self).__init__()
         # a Mappings always has a root after __init__
@@ -119,7 +119,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
             nid = self.get_node_id_by_path(agg_field.split("."))
         except Exception:
             raise AbsentMappingFieldError(
-                u"Agg of type <%s> on non-existing field <%s>."
+                "Agg of type <%s> on non-existing field <%s>."
                 % (agg_clause.KEY, agg_field)
             )
         _, field_node = self.get(nid)
@@ -129,7 +129,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
             if not exc:
                 return False
             raise InvalidOperationMappingFieldError(
-                u"Agg of type <%s> not possible on field of type <%s>."
+                "Agg of type <%s> not possible on field of type <%s>."
                 % (agg_clause.KEY, field_type)
             )
         return True
@@ -156,7 +156,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
             nid = self.get_node_id_by_path(field_path.split("."))
         except ValueError:
             raise AbsentMappingFieldError(
-                u"<%s field is not present in mappings>" % field_path
+                "<%s field is not present in mappings>" % field_path
             )
         _, node = self.get(nid)
         return node.KEY
