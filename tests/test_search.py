@@ -1,10 +1,11 @@
 from copy import deepcopy
+from typing import List
 
 from mock import patch
 
 from elasticsearch import Elasticsearch
 
-from pandagg import Aggregations
+from pandagg import Aggregations, Hit
 from pandagg.node.aggs import Max, DateHistogram, Sum
 from pandagg.search import Search
 from pandagg.query import Query, Bool, Match
@@ -466,6 +467,15 @@ def test_repr_aggs_execution(client_search):
         },
         index=["yolo"],
     )
+
+
+def test_scan(data_client):
+    search = Search(using=data_client, index="git")
+    hits_it = search.scan(scroll="1m", size=30)
+    assert hasattr(hits_it, "__iter__")
+    hits: List[Hit] = list(hits_it)
+    assert len(hits) == 52
+    assert all(isinstance(h, Hit) for h in hits)
 
 
 def test_scan_composite_agg(data_client, git_mappings):
