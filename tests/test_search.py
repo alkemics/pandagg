@@ -486,6 +486,31 @@ def test_scan_composite_agg(data_client, git_mappings):
     assert buckets == [
         {
             "doc_count": 2,
+            "insertions_sum": {"value": 91.0},
+            "key": {"compatible_histogram": 1393804800000},
+        },
+        {
+            "doc_count": 1,
+            "insertions_sum": {"value": 692.0},
+            "key": {"compatible_histogram": 1393891200000},
+        },
+        {
+            "doc_count": 3,
+            "insertions_sum": {"value": 134.0},
+            "key": {"compatible_histogram": 1393977600000},
+        },
+        {
+            "doc_count": 3,
+            "insertions_sum": {"value": 179.0},
+            "key": {"compatible_histogram": 1394064000000},
+        },
+        {
+            "doc_count": 9,
+            "insertions_sum": {"value": 344.0},
+            "key": {"compatible_histogram": 1394150400000},
+        },
+        {
+            "doc_count": 2,
             "insertions_sum": {"value": 120.0},
             "key": {"compatible_histogram": 1394409600000},
         },
@@ -565,6 +590,11 @@ def test_scan_composite_agg_at_once(data_client, git_mappings):
     assert agg_response.to_tabular(index_orient=True) == (
         ["compatible_histogram", "author"],
         {
+            (1393804800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 91.0},
+            (1393891200000, "Honza Král"): {"doc_count": 1, "insertions_sum": 692.0},
+            (1393977600000, "Honza Král"): {"doc_count": 3, "insertions_sum": 134.0},
+            (1394064000000, "Honza Král"): {"doc_count": 3, "insertions_sum": 179.0},
+            (1394150400000, "Honza Král"): {"doc_count": 9, "insertions_sum": 344.0},
             (1394409600000, "Honza Král"): {"doc_count": 2, "insertions_sum": 120.0},
             (1394841600000, "Honza Král"): {"doc_count": 4, "insertions_sum": 45.0},
             (1395360000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 34.0},
@@ -606,6 +636,11 @@ def test_scan_composite_agg_at_once(data_client, git_mappings):
     assert agg_response.to_tabular(index_orient=True) == (
         ["commit_date", "author_name"],
         {
+            (1393804800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 91.0},
+            (1393891200000, "Honza Král"): {"doc_count": 1, "insertions_sum": 692.0},
+            (1393977600000, "Honza Král"): {"doc_count": 3, "insertions_sum": 134.0},
+            (1394064000000, "Honza Král"): {"doc_count": 3, "insertions_sum": 179.0},
+            (1394150400000, "Honza Král"): {"doc_count": 9, "insertions_sum": 344.0},
             (1394409600000, "Honza Král"): {"doc_count": 2, "insertions_sum": 120.0},
             (1394841600000, "Honza Král"): {"doc_count": 4, "insertions_sum": 45.0},
             (1395360000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 34.0},
