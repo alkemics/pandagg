@@ -6,30 +6,13 @@ import csv
 from os.path import abspath, join, dirname, exists
 import urllib3
 from elasticsearch import Elasticsearch
-
-from pandagg.index import DeclarativeIndex
+from model import NYCRestaurants
 
 NYC_RESTAURANTS = (
     "https://data.cityofnewyork.us/api/views/43nn-pn8j/rows.csv?accessType=DOWNLOAD"
 )
 DATASET_PATH = join(dirname(abspath(__file__)), "nyc-restaurants.csv")
 CHUNK_SIZE = 16384
-
-
-class NYCRestaurants(DeclarativeIndex):
-    name = "nyc-restaurants"
-    mappings = {
-        "properties": {
-            "name": {"type": "text"},
-            "borough": {"type": "keyword"},
-            "cuisine": {"type": "keyword"},
-            "grade": {"type": "keyword"},
-            "score": {"type": "integer"},
-            "location": {"type": "geo_point"},
-            "inspection_date": {"type": "date", "format": "MM/dd/yyyy"},
-        }
-    }
-    settings = {"number_of_shards": 1}
 
 
 def download_dataset():
