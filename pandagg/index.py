@@ -23,6 +23,11 @@ class Template(TypedDict, total=False):
 
 @dataclasses.dataclass
 class DocumentBulkWriter:
+
+    """Class responsible for performing document operations by batches.
+    Not intended to be used directly (it is used within `DeclarativeIndex`).
+    """
+
     _index: "DeclarativeIndex"
     _operations: Iterator[Action] = dataclasses.field(
         init=False, default_factory=lambda: iter([])
@@ -158,6 +163,15 @@ def _deepcopy_mutable_attrs(attrs: Dict[str, Any], attrs_names: List[str]) -> No
 
 class IndexMeta(type):
 
+    """DeclarativeIndex Metaclass.
+
+    - ensure `DeclarativeIndex` has a `name`
+    - ensure Mappings declaration is valid, and that `mappings` and `document` do not conflict
+    - build `Mappings` instance into `_mappings` attribute, based on `mappings` if provided, else on `document` if
+    provided.
+    - deepcopies `mappings` and `settings` attributes so that they cannot be mutated by side effects.
+    """
+
     # global flag to apply changes to descendants of DeclarativeIndex class (and not the abstract class itself)
     _abstract_index_initialized = False
 
@@ -288,6 +302,58 @@ class DeclarativeIndexTemplate(metaclass=IndexTemplateMeta):
 
 class DeclarativeIndex(metaclass=IndexMeta):
 
+    """Express an index structure. Provide methods to persist this structure to the cluster, and to perform queries on
+    it.
+
+    The only compulsory class attribute is the index name.
+    Index settings and aliases can simply be declared via `settings` and `aliases` attributes.
+    Mappings though can be declared by using `mappings` and/or `document` attributes.
+
+    - `mappings` attribute more strictly sticks to Elasticsearch syntax, and take precedence over `document` attribute.
+    - `document` attribute accepts a `DocumentSource` class, and provide ORM capabilities, see `DocumentSource`.
+
+    Example of index declaration::
+
+        from pandagg.index import DeclarativeIndex
+
+        class Inspection(DocumentSource):
+            name = Text()
+            borough = Keyword()
+            score = Integer()
+            location = GeoPoint()
+            inspection_date = Date(format="MM/dd/yyyy")
+
+
+        class NYCRestaurants(DeclarativeIndex):
+            name = "nyc-restaurants"
+            document = Inspection
+            mappings = {
+                "properties": {
+                    "name": {"type": "text"},
+                    "borough": {"type": "keyword"},
+                    "score": {"type": "integer"},
+                    "location": {"type": "geo_point"},
+                    "inspection_date": {"type": "date", "format": "MM/dd/yyyy"},
+                }
+            }
+            settings = {"number_of_shards": 2}
+
+    This declaration can be used to persist this expected state to the cluster
+
+        from elasticsearch import Elasticsearch
+        client = Elasticsearch()
+        index = NYCRestaurants(client=client)
+
+        if not index.exists():
+            index.save()
+
+    Search this index using `search` method.
+
+        >>> index.search().execute()
+        <Response> took 3ms, success: True, total result >=10000, contains 10 hits
+
+    """
+
     name: str
     mappings: Optional[MappingsDictOrNode] = None
     settings: Optional[SettingsDict] = None
@@ -322,10 +388,17 @@ class DeclarativeIndex(metaclass=IndexMeta):
 
     def search(
         self,
+        deserialize_source: bool = False,
         nested_autocorrect: bool = False,
         repr_auto_execute: bool = False,
-        deserialize_source: bool = False,
     ) -> Search:
+        """Return a Search instance:
+        :param deserialize_source: if True, hits sources are deserialized into `DocumentSource` instances (based on
+        class provided in `DeclarativeIndex` `document` attribute).
+        :param nested_autocorrect: if True, missing nested clauses will automatically be injected.
+        :param repr_auto_execute: intended for interactive usage only, if True automatically performs a request whil
+        :rtype: Search
+        """
         if deserialize_source is True and self.document is None:
             raise ValueError(
                 "'%s' DeclarativeIndex doesn't have any declared document to deserialize hits' sources"
