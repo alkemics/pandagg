@@ -46,9 +46,11 @@ class Indices(Obj):
 
 
 def discover(using: Elasticsearch, index: str = "*") -> Indices:
-    """
-    :param using: Elasticsearch client
+    """Scan cluster and return indices that match the provided index pattern.
+
+    :param using: Elasticsearch client.
     :param index: Comma-separated list or wildcard expression of index names used to limit the request.
+    :rtype: Indices
     """
     indices = Indices()
     for index_name, index_detail in using.indices.get(index=index).items():

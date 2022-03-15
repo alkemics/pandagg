@@ -100,7 +100,7 @@ class Request:
         """
         Set the index for the search. If called empty it will remove all information.
 
-        Example:
+        Example::
 
             s = Search()
             s = s.index('twitter-2015.01.01', 'twitter-2015.01.02')

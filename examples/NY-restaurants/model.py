@@ -16,7 +16,7 @@ class Inspection(DocumentSource):
 class NYCRestaurants(DeclarativeIndex):
     name = "nyc-restaurants"
     document = Inspection
-    # Note: "mappings" attribute is optional if "document" is provided
+    # Note: "mappings" attribute take precedence over "document" attribute in mappings definition
     mappings = {
         "properties": {
             "name": {"type": "text"},
