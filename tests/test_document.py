@@ -58,6 +58,14 @@ def test_document_init():
     )
 
 
+def test_doc_repr():
+    user = User(id=1, signed_up="2021-01-01")
+    assert (
+        user.__repr__()
+        == "User(id=1, signed_up='2021-01-01', username=None, email=None, location=None)"
+    )
+
+
 def test_pre_save(write_client):
     class AutoDatePost(DocumentSource):
 
