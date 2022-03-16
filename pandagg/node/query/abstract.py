@@ -1,9 +1,8 @@
 import json
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from pandagg.node._node import Node
-from typing import Optional, Union, Dict, Any, Tuple, List, Type
-
-from pandagg.types import QueryType, QueryClauseDict
+from pandagg.types import QueryClauseDict, QueryType
 
 
 class QueryClause(Node):

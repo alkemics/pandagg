@@ -1,10 +1,10 @@
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket.html
 
-from typing import Any, Optional, Dict, Union, List
+from typing import Any, Dict, List, Optional, Union
 
-from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import MultipleBucketAgg, UniqueBucketAgg
-from pandagg.types import Meta, QueryClauseDict, RangeDict, DistanceType, ExecutionHint
+from pandagg.node.types import NUMERIC_TYPES
+from pandagg.types import DistanceType, ExecutionHint, Meta, QueryClauseDict, RangeDict
 
 
 class Global(UniqueBucketAgg):

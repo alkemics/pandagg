@@ -2,47 +2,48 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-from typing_extensions import Literal, TypedDict
 from typing import (
-    Iterator,
-    Optional,
-    List,
     TYPE_CHECKING,
+    Any,
     Dict,
+    Iterator,
+    List,
+    Optional,
     Tuple,
     Union,
     overload,
-    Any,
 )
 
 from elasticsearch import Elasticsearch
 from lighttree.node import NodeId
+from typing_extensions import Literal, TypedDict
 
-from pandagg.query import Query
 from pandagg.aggs import Aggs, Composite
-from pandagg.node.aggs.abstract import UniqueBucketAgg, MetricAgg, Root, AggClause
+from pandagg.node.aggs.abstract import AggClause, MetricAgg, Root, UniqueBucketAgg
 from pandagg.node.aggs.bucket import Nested, ReverseNested
+from pandagg.query import Query
 from pandagg.types import (
-    HitDict,
-    HitsDict,
-    DocSource,
-    TotalDict,
-    SearchResponseDict,
-    ShardsDict,
-    AggregationsResponseDict,
     AggName,
-    ProfileDict,
+    AggregationsResponseDict,
     BucketDict,
     BucketKey,
-    CompositeBucketKey,
     BucketKeyAtom,
+    CompositeBucketKey,
+    DocSource,
+    HitDict,
+    HitsDict,
+    ProfileDict,
+    SearchResponseDict,
+    ShardsDict,
+    TotalDict,
 )
 
 if TYPE_CHECKING:
     import pandas as pd
-    from pandagg.search import Search
+
     from pandagg import DocumentMeta
     from pandagg.document import DocumentSource
+    from pandagg.search import Search
 
 
 GroupingKeysDict = Dict[AggName, BucketKeyAtom]

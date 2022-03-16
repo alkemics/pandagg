@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from typing_extensions import TypedDict
-from typing import Optional, Union, Any, List, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from lighttree.node import NodeId
 from lighttree import Tree
-
-from pandagg.node.aggs.abstract import AggClause
-from pandagg.node.mappings import Object, Nested
-from pandagg.node.mappings.abstract import Field, RegularField, ComplexField, Root
+from lighttree.node import NodeId
+from typing_extensions import TypedDict
 
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
+from pandagg.node.aggs.abstract import AggClause
+from pandagg.node.mappings import Nested, Object
+from pandagg.node.mappings.abstract import ComplexField, Field, RegularField, Root
 from pandagg.tree._tree import TreeReprMixin
-from pandagg.types import DocSource, MappingsDict, FieldName, FieldClauseDict
+from pandagg.types import DocSource, FieldClauseDict, FieldName, MappingsDict
 
 if TYPE_CHECKING:
     from pandagg.document import DocumentSource

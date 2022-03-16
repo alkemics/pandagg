@@ -1,7 +1,7 @@
 from typing import Any, List
 
-from pandagg.node.types import NUMERIC_TYPES
 from pandagg.node.aggs.abstract import FieldOrScriptMetricAgg, MetricAgg
+from pandagg.node.types import NUMERIC_TYPES
 
 
 class TopHits(MetricAgg):

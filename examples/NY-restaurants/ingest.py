@@ -3,7 +3,8 @@
 """Script that downloads a public dataset and streams it to an Elasticsearch cluster"""
 
 import csv
-from os.path import abspath, join, dirname, exists
+from os.path import abspath, dirname, exists, join
+
 import urllib3
 from elasticsearch import Elasticsearch
 from model import NYCRestaurants

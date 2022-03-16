@@ -1,4 +1,4 @@
-from .abstract import LeafQueryClause, KeyFieldQueryClause, MultiFieldsQueryClause
+from .abstract import KeyFieldQueryClause, LeafQueryClause, MultiFieldsQueryClause
 
 
 class Intervals(KeyFieldQueryClause):

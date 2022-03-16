@@ -8,7 +8,6 @@ results.
 from pandagg.aggs import Aggs, Avg, Terms
 from tests.testing_samples.mapping_example import MAPPINGS
 
-
 EXPECTED_AGG_QUERY = {
     "classification_type": {
         "aggs": {

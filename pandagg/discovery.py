@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from lighttree.interactive import Obj
 from elasticsearch import Elasticsearch
+from lighttree.interactive import Obj
 
 from pandagg import Mappings, MappingsDict
 from pandagg.interactive.mappings import IMappings
