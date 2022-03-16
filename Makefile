@@ -20,6 +20,11 @@ lint:
 black:
 	black examples docs pandagg tests setup.py
 
+isort:
+	isort examples docs pandagg tests setup.py
+
+format: isort black lint
+
 develop:
 	-python -m pip install -e ".[develop]"
 
