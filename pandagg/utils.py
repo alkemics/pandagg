@@ -1,9 +1,9 @@
 # adapted from https://github.com/elastic/elasticsearch-dsl-py/blob/master/elasticsearch_dsl/utils.py#L162
 from __future__ import annotations
 
-from typing import Dict, Tuple, Any, Union, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
 
-from pandagg.types import DocSource, Action, IndexName, OpType
+from pandagg.types import Action, DocSource, IndexName, OpType
 
 if TYPE_CHECKING:
     from pandagg.document import DocumentSource

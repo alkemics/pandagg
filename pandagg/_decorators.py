@@ -1,7 +1,6 @@
 from textwrap import dedent
 from typing import Any, Callable
 
-
 # Substitution and Appender are copied from pandas.util._decorators
 # https://github.com/pandas-dev/pandas/blob/master/LICENSE
 

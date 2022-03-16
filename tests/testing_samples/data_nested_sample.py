@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-EXPECTED_REPR = u""""""
+EXPECTED_REPR = """"""
 
 EXPECTED_AGG_QUERY = {
     "week": {

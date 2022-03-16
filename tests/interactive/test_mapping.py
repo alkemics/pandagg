@@ -1,10 +1,8 @@
 from pandagg import Search
-
-from pandagg.mappings import Keyword, Text, Nested, Object, Integer
-from pandagg.tree.mappings import Mappings
 from pandagg.interactive._field_agg_factory import field_classes_per_name
 from pandagg.interactive.mappings import IMappings
-
+from pandagg.mappings import Integer, Keyword, Nested, Object, Text
+from pandagg.tree.mappings import Mappings
 from tests.testing_samples.mapping_example import MAPPINGS
 
 

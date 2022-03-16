@@ -21,7 +21,7 @@ The index should provide good performances trying to answer these kind question 
 
 
 ## Data source
-I exported following SQL tables from MariaDB [following these instructions](https://relational.fit.cvut.cz/dataset/IMDb).
+https://relational.fit.cvut.cz/dataset/IMDb.
 
 Relational schema is the following:
 
@@ -98,66 +98,21 @@ _
 ## Steps to start playing with your index
 
 
-You can either directly use the demo index available [here]('https://beba020ee88d49488d8f30c163472151.eu-west-2.aws.cloud.es.io:9243/')
-with credentials user: `pandagg`, password: `pandagg`:
+Follow below steps to install it yourself locally.
 
-Access it with following client instantiation:
 ```
-from elasticsearch import Elasticsearch
-client = Elasticsearch(
-    hosts=['https://beba020ee88d49488d8f30c163472151.eu-west-2.aws.cloud.es.io:9243/'],
-    http_auth=('pandagg', 'pandagg')
-)
-```
-
-
-Or follow below steps to install it yourself locally.
-In this case, you can either generate yourself the files, or download them from [here](https://drive.google.com/file/d/1po3T18l9QoYxPEGh-iKV4oN3DslWGu8-/view?usp=sharing) (file md5 `b363dee23720052501e24d15361ed605`).
-
-#### Dump tables
-Follow instruction on bottom of https://relational.fit.cvut.cz/dataset/IMDb page and dump following tables in a
-directory:
-- movies.csv
-- movies_genres.csv
-- movies_directors.csv
-- directors.csv
-- directors_genres.csv
-- roles.csv
-- actors.csv
-
-#### Clone pandagg and setup environment
-```
+# clone repo
 git clone git@github.com:alkemics/pandagg.git
 cd pandagg
 
+# create and activate your virtual environment using virtualenv or any similar tool
 virtualenv env
-python setup.py develop
-pip install pandas simplejson jupyter seaborn
+source env/bin/activate
+
+# install dependencies for this example
+make develop
+pip install pandas simplejson mysqlclient mariadb
+
+# run ingestion script (type `python examples/imdb/ingest.py --help` for options)
+python examples/imdb/ingest.py
 ```
-Then copy `conf.py.dist` file into `conf.py` and edit variables as suits you, for instance:
-```
-# your cluster address
-ES_HOST = 'localhost:9200'
-
-# where your table dumps are stored, and where serialized output will be written
-DATA_DIR = '/path/to/dumps/'
-OUTPUT_FILE_NAME = 'serialized.json'
-```
-
-#### Serialize movie documents and insert them
-
-```
-# generate serialized movies documents, ready to be inserted in ES
-# can take a while
-python examples/imdb/serialize.py
-
-# create index with mappings if necessary, bulk insert documents in ES
-python examples/imdb/load.py
-```
-
-
-#### Explore pandagg notebooks
-
-An example notebook is available to showcase some of `pandagg` functionalities: [here it is](https://gistpreview.github.io/?4cedcfe49660cd6757b94ba491abb95a).
-
-Code is present in `examples/imdb/IMDB exploration.py` file.

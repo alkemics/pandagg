@@ -19,14 +19,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"pandagg"
-copyright = u"2020, Léonard Binet"
-author = u"Léonard Binet"
+project = "pandagg"
+copyright = "2020, Léonard Binet"
+author = "Léonard Binet"
 
 # The short X.Y version
-version = u""
+version = ""
 # The full version, including alpha/beta/rc tags
-release = u"0.1"
+release = "0.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -130,7 +130,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "pandagg.tex", u"pandagg Documentation", u"Léonard Binet", "manual")
+    (master_doc, "pandagg.tex", "pandagg Documentation", "Léonard Binet", "manual")
 ]
 
 
@@ -138,7 +138,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pandagg", u"pandagg Documentation", [author], 1)]
+man_pages = [(master_doc, "pandagg", "pandagg Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -150,7 +150,7 @@ texinfo_documents = [
     (
         master_doc,
         "pandagg",
-        u"pandagg Documentation",
+        "pandagg Documentation",
         author,
         "pandagg",
         "One line description of project.",

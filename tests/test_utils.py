@@ -1,8 +1,8 @@
 import pytest
 
 from pandagg.document import DocumentSource
-from pandagg.node.mappings import Text, Keyword
-from pandagg.utils import equal_queries, equal_search, is_subset, get_action_modifier
+from pandagg.node.mappings import Keyword, Text
+from pandagg.utils import equal_queries, equal_search, get_action_modifier, is_subset
 
 
 def test_equal():

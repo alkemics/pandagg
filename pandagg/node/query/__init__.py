@@ -4,6 +4,7 @@ from .compound import *
 from .full_text import *
 from .geo import *
 from .joining import *
+from .match_all import *
 from .shape import *
 from .span import *
 from .specialized import *

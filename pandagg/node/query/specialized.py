@@ -1,4 +1,4 @@
-from .abstract import LeafQueryClause, FlatFieldQueryClause, MultiFieldsQueryClause
+from .abstract import FlatFieldQueryClause, LeafQueryClause, MultiFieldsQueryClause
 
 
 class DistanceFeature(FlatFieldQueryClause):

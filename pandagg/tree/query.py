@@ -1,24 +1,24 @@
 import json
-from typing import Optional, Union, Any, List, Dict
-from typing_extensions import Literal
+from typing import Any, Dict, List, Optional, Union
 
 from lighttree import Key, Tree
 from lighttree.node import NodeId
+from typing_extensions import Literal
+
 from pandagg._decorators import Substitution
 from pandagg.node.query._parameter_clause import ParentParameterClause
 from pandagg.node.query.abstract import (
-    QueryClause,
     LeafQueryClause,
     Q,
+    QueryClause,
     QueryClauseDict,
     QueryType,
     TypeOrQuery_,
 )
-from pandagg.node.query.compound import CompoundClause, Bool
+from pandagg.node.query.compound import Bool, CompoundClause
 from pandagg.node.query.joining import Nested
-
-from pandagg.tree.mappings import _mappings, MappingsDict, Mappings
-from pandagg.types import QueryName, ClauseBody
+from pandagg.tree.mappings import Mappings, MappingsDict, _mappings
+from pandagg.types import ClauseBody, QueryName
 
 # because a method `bool` shadows the real bool
 bool_ = bool
