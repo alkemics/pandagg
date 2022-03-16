@@ -1,16 +1,14 @@
 # adapted from elasticsearch-dsl.py
 
 import re
-
-from mock import Mock
 from unittest import SkipTest
-from pytest import fixture, skip
 
 from elasticsearch.helpers import bulk
 from elasticsearch.helpers.test import get_test_client
+from mock import Mock
+from pytest import fixture, skip
 
-
-from .test_data import TEST_GIT_DATA, create_git_index, GIT_MAPPINGS
+from .test_data import GIT_MAPPINGS, TEST_GIT_DATA, create_git_index
 
 
 @fixture(scope="session")

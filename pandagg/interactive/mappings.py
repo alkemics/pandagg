@@ -1,13 +1,12 @@
 import json
-from typing import Optional, List
+from typing import List, Optional
 
 from elasticsearch import Elasticsearch
-
 from lighttree import TreeBasedObj
 from lighttree.node import NodeId
 
-from pandagg.tree.mappings import Mappings
 from pandagg.interactive._field_agg_factory import field_classes_per_name
+from pandagg.tree.mappings import Mappings
 from pandagg.utils import DSLMixin
 
 

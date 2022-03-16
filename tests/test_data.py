@@ -1,9 +1,8 @@
 # adapated from elasticsearch-dsl.py
 
-from typing import List, Any, Dict
+from typing import Any, Dict, List
 
 from typing_extensions import TypedDict
-
 
 GIT_MAPPINGS = {
     "dynamic": False,

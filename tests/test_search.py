@@ -1,16 +1,15 @@
 from copy import deepcopy
 from typing import List
 
+from elasticsearch import Elasticsearch
 from mock import patch
 
-from elasticsearch import Elasticsearch
-
 from pandagg import Aggregations, Hit
-from pandagg.node.aggs import Max, DateHistogram, Sum
+from pandagg.node.aggs import DateHistogram, Max, Sum
+from pandagg.query import Bool, Match, Query
 from pandagg.search import Search
-from pandagg.query import Query, Bool, Match
 from pandagg.tree.mappings import Mappings
-from pandagg.utils import ordered, equal_queries
+from pandagg.utils import equal_queries, ordered
 
 
 def test_expand__to_dot_is_respected():

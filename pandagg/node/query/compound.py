@@ -1,7 +1,7 @@
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
-from pandagg.types import QueryName
 from pandagg.node.query.abstract import QueryClause
+from pandagg.types import QueryName
 
 
 class CompoundClause(QueryClause):

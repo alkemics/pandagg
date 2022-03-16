@@ -1,7 +1,7 @@
-from typing import Tuple, Dict, Any
+from typing import Any, Dict, Tuple
 
 from pandagg import Mappings
-from pandagg.node.mappings import Field, ComplexField
+from pandagg.node.mappings import ComplexField, Field
 
 
 class DocumentMeta(type):

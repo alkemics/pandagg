@@ -1,9 +1,8 @@
 from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
-
-from pandagg.discovery import discover, Index
 from mock import patch
 
+from pandagg.discovery import Index, discover
 from pandagg.interactive.mappings import IMappings
 from tests.test_data import GIT_MAPPINGS
 from tests.testing_samples.mapping_example import MAPPINGS

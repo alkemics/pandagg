@@ -1,23 +1,23 @@
 import json
-from typing import Optional, Union, Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 from lighttree import Key, Tree
 from lighttree.node import NodeId
-from pandagg.node.aggs import Composite
-from pandagg.tree._tree import TreeReprMixin
-from pandagg.tree.mappings import _mappings, Mappings, MappingsDict
 
+from pandagg.node.aggs import Composite
 from pandagg.node.aggs.abstract import (
+    A,
+    AggClause,
+    AggClauseDict,
     BucketAggClause,
     Root,
-    A,
     TypeOrAgg,
-    AggClauseDict,
-    AggClause,
 )
 from pandagg.node.aggs.bucket import Nested, ReverseNested
 from pandagg.node.aggs.pipeline import BucketSelector, BucketSort
-from pandagg.types import AggName, NamedAggsDict, AfterKey
+from pandagg.tree._tree import TreeReprMixin
+from pandagg.tree.mappings import Mappings, MappingsDict, _mappings
+from pandagg.types import AfterKey, AggName, NamedAggsDict
 
 # {"my_agg": {"terms": "some_field"}} or {"my_agg": Terms(field="some_field")}
 AggsDictOrNode = Dict[AggName, Union[AggClauseDict, AggClause]]

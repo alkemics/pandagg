@@ -1,8 +1,8 @@
 import pytest
 
 from pandagg import Mappings
-from pandagg.document import InnerDocSource, DocumentSource
-from pandagg.mappings import Text, Long, Date, Keyword, Object, Nested
+from pandagg.document import DocumentSource, InnerDocSource
+from pandagg.mappings import Date, Keyword, Long, Nested, Object, Text
 from pandagg.node.mappings import Boolean
 
 

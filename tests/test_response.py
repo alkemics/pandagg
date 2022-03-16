@@ -1,14 +1,13 @@
-from pandagg.document import DocumentSource
-from pandagg.node.mappings import Keyword
-from tests import PandaggTestCase
 import pandas as pd
 
-from pandagg.search import Search
-from pandagg.response import SearchResponse, Hits, Hit, Aggregations
-from pandagg.tree.aggs import Aggs
-
 import tests.testing_samples.data_sample as sample
+from pandagg.document import DocumentSource
+from pandagg.node.mappings import Keyword
+from pandagg.response import Aggregations, Hit, Hits, SearchResponse
+from pandagg.search import Search
+from pandagg.tree.aggs import Aggs
 from pandagg.utils import ordered
+from tests import PandaggTestCase
 from tests.testing_samples.mapping_example import MAPPINGS
 
 

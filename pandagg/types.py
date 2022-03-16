@@ -1,5 +1,6 @@
-from typing_extensions import TypedDict, Literal
-from typing import Optional, Dict, Any, List, Union
+from typing import Any, Dict, List, Optional, Union
+
+from typing_extensions import Literal, TypedDict
 
 ClauseName = str
 ClauseType = str

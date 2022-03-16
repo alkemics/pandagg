@@ -1,13 +1,15 @@
-from .abstract import BucketAggClause
-from typing import Optional, Any, Dict, List, Iterator, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+
 from pandagg.types import (
     AfterKey,
-    CompositeSource,
-    BucketDict,
     AggClauseResponseDict,
     AggName,
+    BucketDict,
     CompositeBucketKey,
+    CompositeSource,
 )
+
+from .abstract import BucketAggClause
 
 
 class Composite(BucketAggClause):

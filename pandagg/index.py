@@ -1,17 +1,17 @@
 # adapted from elasticsearch-dsl-py
 
 import dataclasses
-from itertools import chain
 from copy import deepcopy
-from typing import Optional, Any, List, Dict, Tuple, Union, Iterator, Iterable
-from typing_extensions import TypedDict, Literal
+from itertools import chain
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from elasticsearch import Elasticsearch, helpers
+from typing_extensions import Literal, TypedDict
 
 from pandagg import Mappings, Search
-from pandagg.document import DocumentSource, DocumentMeta
+from pandagg.document import DocumentMeta, DocumentSource
 from pandagg.tree.mappings import MappingsDictOrNode
-from pandagg.types import SettingsDict, IndexAliases, DocSource, Action, OpType
+from pandagg.types import Action, DocSource, IndexAliases, OpType, SettingsDict
 from pandagg.utils import _cast_pre_save_source, get_action_modifier, is_subset
 
 

@@ -2,9 +2,7 @@ __version__ = "0.2.4"
 
 import os
 
-from setuptools import setup
-from setuptools import find_packages
-
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
@@ -17,6 +15,7 @@ install_requires = [
 
 develop_requires = [
     "pre-commit",
+    "isort",
     "black",
     "coverage",
     "flake8",

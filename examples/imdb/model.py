@@ -1,6 +1,6 @@
 from pandagg.document import DocumentSource, InnerDocSource
 from pandagg.index import DeclarativeIndex
-from pandagg.mappings import Keyword, Text, Float, Nested, Integer
+from pandagg.mappings import Float, Integer, Keyword, Nested, Text
 
 
 class Role(InnerDocSource):

@@ -1,23 +1,20 @@
 import argparse
+import csv
+import json
 import logging
 import os
-from typing import List
-
-import json
-from typing import Iterator
+from os import path, remove
 from os.path import join
+from typing import Iterator, List
+
+import mariadb
+import numpy as np
+import pandas as pd
+import simplejson
 from elasticsearch import Elasticsearch
 
 from examples.imdb.model import Movies
 from pandagg.index import Action
-import simplejson
-import pandas as pd
-import numpy as np
-
-from os import path, remove
-import csv
-import mariadb
-
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

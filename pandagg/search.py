@@ -5,15 +5,15 @@ from __future__ import annotations
 import copy
 import json
 from typing import (
-    Optional,
-    Union,
-    Tuple,
-    List,
+    TYPE_CHECKING,
     Any,
-    TypeVar,
     Dict,
     Iterator,
-    TYPE_CHECKING,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
 )
 
 from elasticsearch import Elasticsearch
@@ -21,31 +21,32 @@ from elasticsearch.helpers import scan
 
 from pandagg.node.aggs.abstract import TypeOrAgg
 from pandagg.query import Bool
-from pandagg.response import SearchResponse, Hit, Aggregations
-from pandagg.tree.mappings import _mappings, Mappings
-from pandagg.tree.query import (
-    Query,
-    ADD,
-    TypeOrQuery,
-    InsertionModes,
-    SingleOrMultipleQueryClause,
-)
+from pandagg.response import Aggregations, Hit, SearchResponse
 from pandagg.tree.aggs import Aggs, AggsDictOrNode
+from pandagg.tree.mappings import Mappings, _mappings
+from pandagg.tree.query import (
+    ADD,
+    InsertionModes,
+    Query,
+    SingleOrMultipleQueryClause,
+    TypeOrQuery,
+)
 from pandagg.types import (
+    AfterKey,
+    AggName,
+    BucketDict,
+    ClauseBody,
+    DeleteByQueryResponse,
     MappingsDict,
     QueryName,
-    ClauseBody,
-    AggName,
-    SearchResponseDict,
-    DeleteByQueryResponse,
     SearchDict,
-    BucketDict,
-    AfterKey,
+    SearchResponseDict,
 )
 from pandagg.utils import DSLMixin
 
 if TYPE_CHECKING:
     import pandas as pd
+
     from pandagg.document import DocumentMeta
 
 # because Search.bool method shadows bool typing

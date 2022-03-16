@@ -1,6 +1,6 @@
 from pandagg.document import DocumentSource
 from pandagg.index import DeclarativeIndex
-from pandagg.mappings import Text, Keyword, Integer, GeoPoint, Date
+from pandagg.mappings import Date, GeoPoint, Integer, Keyword, Text
 
 
 class Inspection(DocumentSource):

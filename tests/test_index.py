@@ -4,8 +4,8 @@ import pytest
 
 from pandagg import Mappings, Search
 from pandagg.document import DocumentSource
-from pandagg.mappings import Keyword, Text, Date
 from pandagg.index import DeclarativeIndex, DeclarativeIndexTemplate
+from pandagg.mappings import Date, Keyword, Text
 
 
 class Post(DeclarativeIndex):

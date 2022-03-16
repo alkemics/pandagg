@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased] - 2022-02-11
 
 ### Added
+- Use isort to automatically sort imports
 
 ### Changed
 
