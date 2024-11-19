@@ -1,0 +1,18 @@
+version: 2.1
+
+orbs:
+  ci: alkemics/ci@2
+
+aliases:
+  - filter-PR-only: &PR-only
+      branches:
+        ignore: master
+
+workflows:
+    main:
+      jobs:
+        - ci/hodor:
+            filters: *PR-only
+            context:
+              - github
+              - hodor
