@@ -1,10 +1,9 @@
 import dataclasses
-from typing import List, Type, Any, Callable, Dict
-
-from pandagg.search import Search
+from typing import Any, Callable, Dict, List, Type
 
 from pandagg.node.aggs.abstract import AggClause, BucketAggClause
 from pandagg.node.types import MAPPING_TYPES
+from pandagg.search import Search
 from pandagg.types import FieldType
 
 

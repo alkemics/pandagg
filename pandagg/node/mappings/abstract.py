@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
 
 from pandagg.node._node import Node
-from typing import Optional, Any, Tuple, Dict, Type, Union, TYPE_CHECKING
-
 from pandagg.types import FieldType
 
 if TYPE_CHECKING:
-    from pandagg.document import DocumentSource, DocumentMeta
+    from pandagg.document import DocumentMeta, DocumentSource
 
 
 class Field(Node):
@@ -72,7 +71,7 @@ class ComplexField(Field):
     def __init__(
         self,
         properties: Optional[Union[Dict, Type[DocumentSource]]] = None,
-        **body: Any
+        **body: Any,
     ) -> None:
         properties = properties or {}
         if not isinstance(properties, dict):

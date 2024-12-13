@@ -1,15 +1,15 @@
 from copy import deepcopy
-
-from mock import patch
+from typing import List
 
 from elasticsearch import Elasticsearch
+from mock import patch
 
-from pandagg import Aggregations
-from pandagg.node.aggs import Max, DateHistogram, Sum
+from pandagg import Aggregations, Hit
+from pandagg.node.aggs import DateHistogram, Max, Sum
+from pandagg.query import Bool, Match, Query
 from pandagg.search import Search
-from pandagg.query import Query, Bool, Match
 from pandagg.tree.mappings import Mappings
-from pandagg.utils import ordered, equal_queries
+from pandagg.utils import equal_queries, ordered
 
 
 def test_expand__to_dot_is_respected():
@@ -96,7 +96,7 @@ def test_search_index():
     assert s._index == ["i"]
     s = s.index("i2")
     assert s._index == ["i", "i2"]
-    s = s.index(u"i3")
+    s = s.index("i3")
     assert s._index == ["i", "i2", "i3"]
     s = s.index()
     assert s._index is None
@@ -410,13 +410,13 @@ def test_repr_execution(client_search):
 
     s.size(2).__repr__()
     client_search.assert_called_once()
-    client_search.assert_any_call(body={"size": 2}, index=["yolo"])
+    client_search.assert_any_call(size=2, index=["yolo"])
 
     client_search.reset_mock()
 
     s.size(2)._repr_html_()
     client_search.assert_called_once()
-    client_search.assert_any_call(body={"size": 2}, index=["yolo"])
+    client_search.assert_any_call(size=2, index=["yolo"])
 
 
 @patch.object(Elasticsearch, "search")
@@ -457,17 +457,24 @@ def test_repr_aggs_execution(client_search):
     s.__repr__()
     client_search.assert_called_once()
     client_search.assert_any_call(
-        body={
-            "size": 0,
-            "aggs": {
-                "toto_terms": {
-                    "terms": {"field": "toto"},
-                    "aggs": {"toto_avg_price": {"avg": {"field": "price"}}},
-                }
-            },
+        size=0,
+        aggs={
+            "toto_terms": {
+                "terms": {"field": "toto"},
+                "aggs": {"toto_avg_price": {"avg": {"field": "price"}}},
+            }
         },
         index=["yolo"],
     )
+
+
+def test_scan(data_client):
+    search = Search(using=data_client, index="git")
+    hits_it = search.scan(scroll="1m", size=30)
+    assert hasattr(hits_it, "__iter__")
+    hits: List[Hit] = list(hits_it)
+    assert len(hits) == 52
+    assert all(isinstance(h, Hit) for h in hits)
 
 
 def test_scan_composite_agg(data_client, git_mappings):
@@ -486,6 +493,31 @@ def test_scan_composite_agg(data_client, git_mappings):
     assert hasattr(bucket_iterator, "__iter__")
     buckets = list(bucket_iterator)
     assert buckets == [
+        {
+            "doc_count": 2,
+            "insertions_sum": {"value": 91.0},
+            "key": {"compatible_histogram": 1393804800000},
+        },
+        {
+            "doc_count": 1,
+            "insertions_sum": {"value": 692.0},
+            "key": {"compatible_histogram": 1393891200000},
+        },
+        {
+            "doc_count": 3,
+            "insertions_sum": {"value": 134.0},
+            "key": {"compatible_histogram": 1393977600000},
+        },
+        {
+            "doc_count": 3,
+            "insertions_sum": {"value": 179.0},
+            "key": {"compatible_histogram": 1394064000000},
+        },
+        {
+            "doc_count": 9,
+            "insertions_sum": {"value": 344.0},
+            "key": {"compatible_histogram": 1394150400000},
+        },
         {
             "doc_count": 2,
             "insertions_sum": {"value": 120.0},
@@ -567,6 +599,11 @@ def test_scan_composite_agg_at_once(data_client, git_mappings):
     assert agg_response.to_tabular(index_orient=True) == (
         ["compatible_histogram", "author"],
         {
+            (1393804800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 91.0},
+            (1393891200000, "Honza Král"): {"doc_count": 1, "insertions_sum": 692.0},
+            (1393977600000, "Honza Král"): {"doc_count": 3, "insertions_sum": 134.0},
+            (1394064000000, "Honza Král"): {"doc_count": 3, "insertions_sum": 179.0},
+            (1394150400000, "Honza Král"): {"doc_count": 9, "insertions_sum": 344.0},
             (1394409600000, "Honza Král"): {"doc_count": 2, "insertions_sum": 120.0},
             (1394841600000, "Honza Král"): {"doc_count": 4, "insertions_sum": 45.0},
             (1395360000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 34.0},
@@ -608,6 +645,11 @@ def test_scan_composite_agg_at_once(data_client, git_mappings):
     assert agg_response.to_tabular(index_orient=True) == (
         ["commit_date", "author_name"],
         {
+            (1393804800000, "Honza Král"): {"doc_count": 2, "insertions_sum": 91.0},
+            (1393891200000, "Honza Král"): {"doc_count": 1, "insertions_sum": 692.0},
+            (1393977600000, "Honza Král"): {"doc_count": 3, "insertions_sum": 134.0},
+            (1394064000000, "Honza Král"): {"doc_count": 3, "insertions_sum": 179.0},
+            (1394150400000, "Honza Král"): {"doc_count": 9, "insertions_sum": 344.0},
             (1394409600000, "Honza Král"): {"doc_count": 2, "insertions_sum": 120.0},
             (1394841600000, "Honza Král"): {"doc_count": 4, "insertions_sum": 45.0},
             (1395360000000, "Honza Král"): {"doc_count": 2, "insertions_sum": 34.0},

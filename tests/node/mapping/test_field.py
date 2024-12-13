@@ -1,5 +1,5 @@
 from pandagg.document import DocumentSource, InnerDocSource
-from pandagg.node.mappings import Text, Keyword, Nested, Object
+from pandagg.node.mappings import Keyword, Nested, Object, Text
 from pandagg.node.mappings.abstract import Root
 
 
