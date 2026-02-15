@@ -1,11 +1,43 @@
-from typing import Tuple, Dict, Any
+from typing import Any, Dict, Tuple
 
 from pandagg import Mappings
-from pandagg.node.mappings import Field, ComplexField
+from pandagg.node.mappings import ComplexField, Field
 
 
 class DocumentMeta(type):
+
+    """`DocumentSource` metaclass.
+
+    Note: you shouldn't have to use it directly, see `DocumentSource` instead.
+    """
+
     def __new__(cls, name: str, bases: Tuple, attrs: Dict) -> "DocumentMeta":
+        """Document metaclass is responsible for:
+
+        - registering `Fields`:
+            - as a `Mappings` instance in `_mappings_` attribute
+            - as a dict of `Fields` in `_field_attrs_`
+        - keeping other attributes and methods as is
+        - building `__init__` to accepts only those declared fields at `DocumentSource` instanciation
+
+        In following example::
+
+            class RestaurantInspection(DocumentSource):
+
+                description = "Represent a new-york restaurant inspection."
+
+                name = Text()
+                borough = Keyword()
+                cuisine = Keyword()
+
+            document = RestaurantInspection(
+                name="Almighty burger",
+                borough="Brooklyn"
+            )
+
+        The `description` attribute isn't a `Field` instance, and won't be considered as a valid input at document
+        instanciation.
+        """
         regular_attrs: Dict = {}
         field_attrs: Dict = {}
         for k, v in attrs.items():
@@ -32,31 +64,88 @@ class DocumentMeta(type):
                 setattr(self, k, v)
             self._post_init_()
 
+        def __str__(self: "DocumentSource") -> str:
+            return "{}({})".format(
+                self.__class__.__name__,
+                ", ".join(
+                    "{}={!r}".format(key, getattr(self, key))
+                    for key in field_attrs.keys()
+                ),
+            )
+
         regular_attrs["__init__"] = __init__
+        regular_attrs["__str__"] = __str__
+        regular_attrs["__repr__"] = __str__
         return super(DocumentMeta, cls).__new__(cls, name, bases, regular_attrs)
 
 
 class DocumentSource(metaclass=DocumentMeta):
 
-    # __init__ is overidden by metaclass, this is only so that pycharm doesn't highlights fake errors when instantiating
-    # documents
+    """
+    Model-like class for persisting documents in elasticsearch.
+
+    It is both used for mappings declaration, and for document manipulation and persistence::
+
+        class RestaurantInspection(DocumentSource):
+            name = Text()
+            borough = Keyword()
+            cuisine = Keyword()
+            grade = Keyword()
+            score = Integer()
+            location = GeoPoint()
+            inspection_date = Date(format="MM/dd/yyyy")
+
+    This document can be referenced in a DeclarativeIndex class to declare index mappings::
+
+        class NYCRestaurants(DeclarativeIndex):
+            name = "nyc-restaurants"
+            document = RestaurantInspection
+
+
+
+    Note: these mappings will be used to create index mappings when using DeclarativeIndex `save` method.
+
+    It is possible to serialize mappings via `_mappings.to_dict` method::
+
+        >>> NYCRestaurants._mappings.to_dict()
+        {
+            'properties': {
+                'name': {'type': 'text'},
+                'borough': {'type': 'keyword'},
+                'cuisine': {'type': 'keyword'},
+                'grade': {'type': 'keyword'},
+                'score': {'type': 'integer'},
+                'location': {'type': 'geo_point'},
+                'inspection_date': {'format': 'MM/dd/yyyy', 'type': 'date'}
+            }
+        }
+
+    """
+
     def __init__(self, **kwargs: Any) -> None:
-        pass
+        """Overridden by metaclass, it is declared here only so that pycharm doesn't highlight fake errors when
+        instantiating documents.
+        """
 
     def _post_init_(self) -> None:
-        # intended to be overwritten
-        # apply transformations after instantiation
-        # note: it applies both when instantiating manually documents, and when documents are instantiated while
-        # deserializing ElasticSearch search response
-        pass
+        """Intended to be overwritten.
+        Apply transformations after document instantiation. Executed both when manually instantiating documents, and
+        when documents are instantiated while deserializing ElasticSearch search response.
+        """
 
     def _pre_save_op_(self) -> None:
-        # intended to be overwritten
-        # apply transformations before any persisting operation (create / index / update)
-        # for instance to update 'last_updated_at' date
-        pass
+        """Intended to be overwritten.
+        Apply transformations before any persisting operation (create / index / update).
+
+        Example: update 'last_updated_at' date.
+        """
 
     def _to_dict_(self, with_empty_keys: bool = False) -> Dict[str, Any]:
+        """
+        Serialize document as a json-compatible python dict.
+
+        :param with_empty_keys: if True, empty field will be serialized with `None` value.
+        """
         d: Dict[str, Any] = {}
         k: str
         field: Field
@@ -80,6 +169,14 @@ class DocumentSource(metaclass=DocumentMeta):
     def _from_dict_(
         cls, source: Dict, strict: bool = True, path: str = ""
     ) -> "DocumentSource":
+        """
+        Deserialize document source into a Document instance.
+
+        :param source: document source (python dict) to deserialize.
+        :param strict: if True, check that fields declared with `multiple=True` or `multiple=False` have the intended
+        shape (fields with `multiple=True` are expected to contain a list or values, fields with `multiple=False` are
+        expected to contain a single value.)
+        """
         doc = cls()
         k: str
         field: Field
@@ -121,4 +218,7 @@ class DocumentSource(metaclass=DocumentMeta):
 
 
 class InnerDocSource(DocumentSource):
-    pass
+
+    """
+    Common class for inner documents like Object or Nested
+    """

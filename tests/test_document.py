@@ -1,8 +1,8 @@
 import pytest
 
 from pandagg import Mappings
-from pandagg.document import InnerDocSource, DocumentSource
-from pandagg.mappings import Text, Long, Date, Keyword, Object, Nested
+from pandagg.document import DocumentSource, InnerDocSource
+from pandagg.mappings import Date, Keyword, Long, Nested, Object, Text
 from pandagg.node.mappings import Boolean
 
 
@@ -55,6 +55,14 @@ def test_document_init():
         User(fake_field=1)
     assert e.value.args == (
         "'fake_field' is an invalid keyword argument for <class 'tests.test_document.User'>",
+    )
+
+
+def test_doc_repr():
+    user = User(id=1, signed_up="2021-01-01")
+    assert (
+        user.__repr__()
+        == "User(id=1, signed_up='2021-01-01', username=None, email=None, location=None)"
     )
 
 

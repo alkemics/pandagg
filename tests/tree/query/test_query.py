@@ -1,13 +1,12 @@
+from lighttree.tree import NotFoundNodeError
 from mock import patch
 
-from lighttree.tree import NotFoundNodeError
-
 from pandagg.node.query._parameter_clause import _Must
-from pandagg.query import Query, Range, Prefix, Ids, Term, Terms, Nested
-from pandagg.node.query.term_level import Term as TermNode, Exists as ExistsNode
-from pandagg.node.query.joining import Nested as NestedNode
 from pandagg.node.query.compound import Bool
-
+from pandagg.node.query.joining import Nested as NestedNode
+from pandagg.node.query.term_level import Exists as ExistsNode
+from pandagg.node.query.term_level import Term as TermNode
+from pandagg.query import Ids, Nested, Prefix, Query, Range, Term, Terms
 from pandagg.utils import equal_queries, ordered
 from tests import PandaggTestCase
 

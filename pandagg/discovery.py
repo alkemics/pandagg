@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from lighttree.interactive import Obj
 from elasticsearch import Elasticsearch
+from lighttree.interactive import Obj
 
 from pandagg import Mappings, MappingsDict
 from pandagg.interactive.mappings import IMappings
@@ -46,9 +46,11 @@ class Indices(Obj):
 
 
 def discover(using: Elasticsearch, index: str = "*") -> Indices:
-    """
-    :param using: Elasticsearch client
+    """Scan cluster and return indices that match the provided index pattern.
+
+    :param using: Elasticsearch client.
     :param index: Comma-separated list or wildcard expression of index names used to limit the request.
+    :rtype: Indices
     """
     indices = Indices()
     for index_name, index_detail in using.indices.get(index=index).items():

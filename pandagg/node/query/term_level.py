@@ -1,11 +1,12 @@
-from typing import Optional, Any, Tuple, List, Union
+from typing import Any, List, Optional, Tuple, Union
+
+from pandagg.types import QueryName
 
 from .abstract import (
-    LeafQueryClause,
     AbstractSingleFieldQueryClause,
     KeyFieldQueryClause,
+    LeafQueryClause,
 )
-from pandagg.types import QueryName
 
 
 class Exists(LeafQueryClause):

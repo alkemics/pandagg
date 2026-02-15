@@ -1,12 +1,12 @@
 from pandagg.query import (
-    Terms,
-    Term,
-    Fuzzy,
     Exists,
+    Fuzzy,
     Ids,
     Prefix,
     Range,
     Regexp,
+    Term,
+    Terms,
     TermsSet,
     Wildcard,
 )

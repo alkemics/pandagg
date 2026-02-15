@@ -5,15 +5,15 @@ from __future__ import annotations
 import copy
 import json
 from typing import (
-    Optional,
-    Union,
-    Tuple,
-    List,
+    TYPE_CHECKING,
     Any,
-    TypeVar,
     Dict,
     Iterator,
-    TYPE_CHECKING,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
 )
 
 from elasticsearch import Elasticsearch
@@ -21,31 +21,32 @@ from elasticsearch.helpers import scan
 
 from pandagg.node.aggs.abstract import TypeOrAgg
 from pandagg.query import Bool
-from pandagg.response import SearchResponse, Hit, Aggregations
-from pandagg.tree.mappings import _mappings, Mappings
-from pandagg.tree.query import (
-    Query,
-    ADD,
-    TypeOrQuery,
-    InsertionModes,
-    SingleOrMultipleQueryClause,
-)
+from pandagg.response import Aggregations, Hit, SearchResponse
 from pandagg.tree.aggs import Aggs, AggsDictOrNode
+from pandagg.tree.mappings import Mappings, _mappings
+from pandagg.tree.query import (
+    ADD,
+    InsertionModes,
+    Query,
+    SingleOrMultipleQueryClause,
+    TypeOrQuery,
+)
 from pandagg.types import (
+    AfterKey,
+    AggName,
+    BucketDict,
+    ClauseBody,
+    DeleteByQueryResponse,
     MappingsDict,
     QueryName,
-    ClauseBody,
-    AggName,
-    SearchResponseDict,
-    DeleteByQueryResponse,
     SearchDict,
-    BucketDict,
-    AfterKey,
+    SearchResponseDict,
 )
 from pandagg.utils import DSLMixin
 
 if TYPE_CHECKING:
     import pandas as pd
+
     from pandagg.document import DocumentMeta
 
 # because Search.bool method shadows bool typing
@@ -100,7 +101,7 @@ class Request:
         """
         Set the index for the search. If called empty it will remove all information.
 
-        Example:
+        Example::
 
             s = Search()
             s = s.index('twitter-2015.01.01', 'twitter-2015.01.02')
@@ -200,7 +201,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         compound_param: str = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.query(
@@ -209,7 +210,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             compound_param=compound_param,
-            **body
+            **body,
         )
         return s
 
@@ -224,7 +225,7 @@ class Search(DSLMixin, Request):
         insert_below: Optional[QueryName] = None,
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.bool(
@@ -235,7 +236,7 @@ class Search(DSLMixin, Request):
             insert_below=insert_below,
             on=on,
             mode=mode,
-            **body
+            **body,
         )
         return s
 
@@ -248,7 +249,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.filter(
@@ -257,7 +258,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -270,7 +271,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.must_not(
@@ -279,7 +280,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -292,7 +293,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.should(
@@ -301,7 +302,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -314,7 +315,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._query = s._query.must(
@@ -323,7 +324,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             bool_body=bool_body,
-            **body
+            **body,
         )
         return s
 
@@ -336,7 +337,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         bool_body: ClauseBody = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         """Must not wrapped in filter context."""
         s = self._clone()
@@ -356,7 +357,7 @@ class Search(DSLMixin, Request):
         on: Optional[QueryName] = None,
         mode: InsertionModes = ADD,
         compound_param: str = None,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._post_filter = s._post_filter.query(
@@ -365,7 +366,7 @@ class Search(DSLMixin, Request):
             on=on,
             mode=mode,
             compound_param=compound_param,
-            **body
+            **body,
         )
         return s
 
@@ -375,7 +376,7 @@ class Search(DSLMixin, Request):
         type_or_agg: Optional[TypeOrAgg] = None,
         insert_below: Optional[AggName] = None,
         at_root: bool_ = False,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.agg(
@@ -383,7 +384,7 @@ class Search(DSLMixin, Request):
             type_or_agg=type_or_agg,
             insert_below=insert_below,
             at_root=at_root,
-            **body
+            **body,
         )
         return s
 
@@ -407,7 +408,7 @@ class Search(DSLMixin, Request):
         type_or_agg: Optional[TypeOrAgg] = None,
         insert_below: Optional[AggName] = None,
         at_root: bool_ = False,
-        **body: Any
+        **body: Any,
     ) -> "Search":
         s = self._clone()
         s._aggs = s._aggs.groupby(
@@ -415,7 +416,7 @@ class Search(DSLMixin, Request):
             type_or_agg=type_or_agg,
             insert_below=insert_below,
             at_root=at_root,
-            **body
+            **body,
         )
         return s
 
@@ -791,7 +792,7 @@ class Search(DSLMixin, Request):
         the data.
         """
         es = self._get_connection()
-        raw_data = es.search(index=self._index, body=self.to_dict())
+        raw_data = es.search(index=self._index, **self.to_dict())  # type: ignore
         return SearchResponse(data=raw_data, _search=self)  # type: ignore
 
     def scan_composite_agg(self, size: int) -> Iterator[BucketDict]:
@@ -803,6 +804,7 @@ class Search(DSLMixin, Request):
         buckets: List[BucketDict] = r.aggregations.data[a_name][  # type: ignore
             "buckets"
         ]
+        yield from buckets
         after_key: AfterKey = r.aggregations.data[a_name]["after_key"]  # type: ignore
 
         init: bool = True
@@ -812,8 +814,7 @@ class Search(DSLMixin, Request):
             r = s.execute()
             agg_clause_response = r.aggregations.data[a_name]
             buckets = agg_clause_response["buckets"]  # type: ignore
-            for bucket in buckets:
-                yield bucket
+            yield from buckets
             if "after_key" in agg_clause_response:
                 after_key = agg_clause_response["after_key"]  # type: ignore
             else:
@@ -831,18 +832,18 @@ class Search(DSLMixin, Request):
         # artificially merge all buckets as if they were returned in a single query
         return Aggregations(_search=s, data={agg_name: {"buckets": all_buckets}})
 
-    def scan(self) -> Iterator[Hit]:
+    def scan(self, **kwargs: Any) -> Iterator[Hit]:
         """
         Turn the search into a scan search and return a generator that will
         iterate over all the documents matching the query.
 
-        Use ``params`` method to specify any additional arguments you with to
-        pass to the underlying ``scan`` helper from ``elasticsearch-py`` -
+        Use ``kwargs`` to specify any additional arguments to pass to the underlying ``scan`` helper from
+        ``elasticsearch-py`` -
         https://elasticsearch-py.readthedocs.io/en/master/helpers.html#elasticsearch.helpers.scan
 
         """
         es = self._get_connection()
-        for hit in scan(es, query=self.to_dict(), index=self._index):
+        for hit in scan(es, query=self.to_dict(), index=self._index, **kwargs):
             yield Hit(hit, _document_class=self._document_class)
 
     def delete(self) -> DeleteByQueryResponse:

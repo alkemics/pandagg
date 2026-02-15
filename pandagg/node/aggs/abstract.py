@@ -1,21 +1,20 @@
 import json
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from pandagg.node._node import Node
-from typing import Optional, List, Union, Dict, Any, Tuple, Iterator, Type
-
 from pandagg.types import (
-    Meta,
-    BucketKey,
-    BucketDict,
     AggClauseDict,
-    AggType,
-    Script,
-    GapPolicy,
-    AggName,
     AggClauseResponseDict,
-    BucketsWrapperDict,
+    AggName,
+    AggType,
+    BucketDict,
+    BucketKey,
     BucketKeyAtom,
     BucketsDict,
+    BucketsWrapperDict,
+    GapPolicy,
+    Meta,
+    Script,
 )
 
 

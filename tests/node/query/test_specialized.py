@@ -1,10 +1,10 @@
 from pandagg.query import (
-    Wrapper,
     DistanceFeature,
     MoreLikeThis,
     Percolate,
     RankFeature,
     Script,
+    Wrapper,
 )
 
 

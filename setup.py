@@ -1,22 +1,21 @@
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 import os
 
-from setuptools import setup
-from setuptools import find_packages
-
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, "README.md")).read()
 
 install_requires = [
-    "lighttree==1.3.4",
+    "lighttree==1.3.5",
     "elasticsearch>=7.0.0,<8.0.0",
     "typing_extensions",
 ]
 
 develop_requires = [
     "pre-commit",
+    "isort",
     "black",
     "coverage",
     "flake8",
@@ -27,6 +26,7 @@ develop_requires = [
     "pandas",
     "Sphinx",
     "twine",
+    "simplejson",
 ]
 
 setup(

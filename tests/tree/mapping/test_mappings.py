@@ -1,9 +1,9 @@
 import pytest
 
 from pandagg.exceptions import AbsentMappingFieldError
-from pandagg.mappings import Keyword, Object, Text, Nested, Integer, Mappings
+from pandagg.mappings import Integer, Keyword, Mappings, Nested, Object, Text
 from pandagg.node.mappings.abstract import Field
-from tests.testing_samples.mapping_example import MAPPINGS, EXPECTED_MAPPING_TREE_REPR
+from tests.testing_samples.mapping_example import EXPECTED_MAPPING_TREE_REPR, MAPPINGS
 
 
 def test_deserialization():

@@ -1,7 +1,8 @@
 from typing import Any, Optional, Tuple
 
-from .abstract import KeyFieldQueryClause, AbstractSingleFieldQueryClause
 from pandagg.types import DistanceType, ValidationMethod
+
+from .abstract import AbstractSingleFieldQueryClause, KeyFieldQueryClause
 
 
 class GeoBoundingBox(KeyFieldQueryClause):

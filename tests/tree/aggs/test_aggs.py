@@ -3,15 +3,13 @@ from unittest import TestCase
 import pytest
 from mock import patch
 
-from pandagg.tree.aggs import Aggs
-from pandagg.exceptions import (
-    InvalidOperationMappingFieldError,
-    AbsentMappingFieldError,
-)
-from pandagg.aggs import DateHistogram, Terms, Avg, Min, Filter
-
 import tests.testing_samples.data_sample as sample
-
+from pandagg.aggs import Avg, DateHistogram, Filter, Min, Terms
+from pandagg.exceptions import (
+    AbsentMappingFieldError,
+    InvalidOperationMappingFieldError,
+)
+from pandagg.tree.aggs import Aggs
 from tests.testing_samples.mapping_example import MAPPINGS
 
 

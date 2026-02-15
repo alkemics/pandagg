@@ -4,8 +4,8 @@ import pytest
 
 from pandagg import Mappings, Search
 from pandagg.document import DocumentSource
-from pandagg.mappings import Keyword, Text, Date
 from pandagg.index import DeclarativeIndex, DeclarativeIndexTemplate
+from pandagg.mappings import Date, Keyword, Text
 
 
 class Post(DeclarativeIndex):
@@ -62,11 +62,11 @@ def test_index_without_client_raises_error_on_write_op():
 
 
 def test_create_index(write_client):
-    assert not write_client.indices.exists("test-post")
+    assert not write_client.indices.exists(index="test-post")
     index = Post(client=write_client)
     index.save()
-    assert write_client.indices.exists("test-post")
-    persisted_index = write_client.indices.get("test-post")["test-post"]
+    assert write_client.indices.exists(index="test-post")
+    persisted_index = write_client.indices.get(index="test-post")["test-post"]
     assert persisted_index["aliases"] == {"post": {}}
     assert persisted_index["mappings"] == {
         "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}}
@@ -260,7 +260,7 @@ def test_template_save(write_client):
         _source={"title": "salut", "published_from": "2021-01-01"},
     ).perform(refresh=True)
     assert post_index.exists()
-    auto_created_index = write_client.indices.get("test-post")["test-post"]
+    auto_created_index = write_client.indices.get(index="test-post")["test-post"]
     assert auto_created_index["mappings"] == {
         "properties": {"published_from": {"type": "date"}, "title": {"type": "text"}}
     }

@@ -1,7 +1,8 @@
+from typing import Any, Dict
+
 from lighttree import AutoIdNode as OriginalNode
 
 from pandagg.utils import DSLMixin
-from typing import Dict, Any
 
 
 class Node(DSLMixin, OriginalNode):

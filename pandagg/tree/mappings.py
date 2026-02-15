@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from typing_extensions import TypedDict
-from typing import Optional, Union, Any, List, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from lighttree.node import NodeId
 from lighttree import Tree
-
-from pandagg.node.aggs.abstract import AggClause
-from pandagg.node.mappings import Object, Nested
-from pandagg.node.mappings.abstract import Field, RegularField, ComplexField, Root
+from lighttree.node import NodeId
+from typing_extensions import TypedDict
 
 from pandagg.exceptions import (
     AbsentMappingFieldError,
     InvalidOperationMappingFieldError,
 )
+from pandagg.node.aggs.abstract import AggClause
+from pandagg.node.mappings import Nested, Object
+from pandagg.node.mappings.abstract import ComplexField, Field, RegularField, Root
 from pandagg.tree._tree import TreeReprMixin
-from pandagg.types import DocSource, MappingsDict, FieldName, FieldClauseDict
+from pandagg.types import DocSource, FieldClauseDict, FieldName, MappingsDict
 
 if TYPE_CHECKING:
     from pandagg.document import DocumentSource
@@ -45,7 +44,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
         self,
         properties: Optional[FieldPropertiesDictOrNode] = None,
         dynamic: Optional[bool] = None,
-        **body: Any
+        **body: Any,
     ) -> None:
         super(Mappings, self).__init__()
         # a Mappings always has a root after __init__
@@ -119,7 +118,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
             nid = self.get_node_id_by_path(agg_field.split("."))
         except Exception:
             raise AbsentMappingFieldError(
-                u"Agg of type <%s> on non-existing field <%s>."
+                "Agg of type <%s> on non-existing field <%s>."
                 % (agg_clause.KEY, agg_field)
             )
         _, field_node = self.get(nid)
@@ -129,7 +128,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
             if not exc:
                 return False
             raise InvalidOperationMappingFieldError(
-                u"Agg of type <%s> not possible on field of type <%s>."
+                "Agg of type <%s> not possible on field of type <%s>."
                 % (agg_clause.KEY, field_type)
             )
         return True
@@ -156,7 +155,7 @@ class Mappings(TreeReprMixin, Tree[Field]):
             nid = self.get_node_id_by_path(field_path.split("."))
         except ValueError:
             raise AbsentMappingFieldError(
-                u"<%s field is not present in mappings>" % field_path
+                "<%s field is not present in mappings>" % field_path
             )
         _, node = self.get(nid)
         return node.KEY
